@@ -39,6 +39,8 @@ Equon follows a hybrid visual direction that combines large game artwork, editor
 
 The interface is designed primarily for conventional 16:9 displays, including setups connected to a television, with readability at a distance and consistent controller focus as key priorities.
 
+Desgin on figma: https://www.figma.com/design/DIkoemv1pnAg8px8TZchNG/Untitled?node-id=0-1&p=f&t=4hBnYoyVth7OYjoR-0
+
 ## Platform
 
 - **Initial target:** Windows
