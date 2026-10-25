@@ -51,12 +51,20 @@ Não tratar falha de leitura como prova de que o jogo não está instalado. O es
 | `id` | `BIGSERIAL` | Chave primária. |
 | `steam_id` | `BIGINT` | ID da única conta Steam configurada; único. |
 | `steam_api_key` | `TEXT` | Chave usada nas requisições à Steam Web API quando necessária. |
+| `gold_trophies_qnt` | `INTEGER` | Quantidade atual de conquistas desbloqueadas classificadas como gold; `NOT NULL DEFAULT 0`, nunca negativa. |
+| `silver_trophies_qnt` | `INTEGER` | Quantidade atual de conquistas desbloqueadas classificadas como silver; `NOT NULL DEFAULT 0`, nunca negativa. |
+| `bronze_trophies_qnt` | `INTEGER` | Quantidade atual de conquistas desbloqueadas classificadas como bronze; `NOT NULL DEFAULT 0`, nunca negativa. |
+| `platine_trophies_qnt` | `INTEGER` | Quantidade de jogos em que o usuário desbloqueou todas as conquistas conhecidas; `NOT NULL DEFAULT 0`, nunca negativa. |
 
 Regras:
 - Deve haver somente um registro em `USERS` no escopo atual. Uma PK, sozinha, não garante uma única linha; impor essa regra explicitamente na aplicação ou no banco.
 - Usar a chave somente no lado confiável da aplicação. Não expor ao renderer nem gravar em logs ou mensagens de erro.
 - Proteger a chave em repouso com um mecanismo adequado ao Windows, se possível.
 - Confirmar os requisitos de autenticação de cada endpoint; não presumir que todos exijam a chave.
+- As quatro colunas de quantidade de troféus são contadores agregados da única conta. Mantê-las consistentes com `ACHIEVEMENTS`; não incrementá-las cegamente a cada sincronização.
+- Após sincronizar conquistas, recalcular os contadores a partir do estado persistido ou aplicar atualizações idempotentes equivalentes, para evitar contagem duplicada.
+- `gold_trophies_qnt`, `silver_trophies_qnt` e `bronze_trophies_qnt` contam conquistas **desbloqueadas** do respectivo tier.
+- `platine_trophies_qnt` conta jogos com pelo menos uma conquista conhecida e com todas as conquistas conhecidas desbloqueadas. Jogos com zero conquistas conhecidas não contam como platina.
 
 ### 2.3 `ACHIEVEMENTS`
 
@@ -74,14 +82,34 @@ Armazena as definições das conquistas e seu estado para a única conta configu
 | `unlocked` | `BOOLEAN` | `NOT NULL DEFAULT FALSE`; estado de desbloqueio. |
 | `unlocked_at` | `TIMESTAMPTZ` | Data/hora do desbloqueio; pode ser `NULL`. |
 | `global_percent` | `REAL` | Percentual global; pode ser `NULL`. |
+| `tier` | `VARCHAR(10)` ou enum equivalente | Tier calculado a partir de `global_percent`; valores válidos: `gold`, `silver`, `bronze`. Pode ser `bronze` enquanto não houver percentual global confiável. |
 
 Restrições obrigatórias:
 - `FOREIGN KEY (game_id) REFERENCES GAMES(id) ON DELETE CASCADE`
 - `UNIQUE (game_id, api_name)`
+- `CHECK (tier IN ('bronze', 'silver', 'gold'))`, ou restrição equivalente se for usado um enum.
 
 `api_name` é único dentro de cada jogo, não necessariamente entre jogos. Ao excluir um jogo, excluir suas conquistas automaticamente.
 
+#### Regra de cálculo de `tier`
+
+Calcular o tier a partir de `global_percent`:
+
+- `gold`: `global_percent <= 15`.
+- `silver`: `global_percent > 15 AND global_percent < 50`.
+- `bronze`: `global_percent >= 50`.
+- Se `global_percent IS NULL`, `tier` deve ficar `bronze`.
+
+O cálculo deve usar o valor global em porcentagem (por exemplo, `15.0` representa 15%, não `0.15`). Recalcular `tier` sempre que `global_percent` for atualizado durante uma sincronização. Se o valor global mudar de faixa, atualizar o tier e recalcular os contadores do usuário.
+
 O progresso pessoal de um jogo é calculado como `(conquistas desbloqueadas / total de conquistas conhecidas) * 100`. Se o total for zero, não dividir por zero; mostrar progresso indisponível ou não aplicável. `global_percent` é a porcentagem global de jogadores que desbloquearam uma conquista, não o progresso pessoal.
+
+#### Contadores de troféus e platinas
+
+- Os contadores em `USERS` devem refletir o estado atual persistido das conquistas, não o número de eventos de sincronização. Uma sincronização repetida não pode aumentar contadores se nada mudou.
+- Um jogo concede uma platina quando possui pelo menos uma conquista conhecida e todas as suas conquistas conhecidas estão desbloqueadas (`unlocked = TRUE`).
+- Se uma conquista desbloqueada passar a outro tier porque o percentual global foi atualizado, mover sua contribuição para o contador correto.
+- Se a sincronização falhar ou os dados forem incompletos, preservar os dados conhecidos e não redefinir conquistas/contadores com base em uma resposta inválida. Recalcular contadores somente a partir de dados persistidos confiáveis.
 
 ### 2.4 `GENRES`
 
@@ -165,7 +193,9 @@ Quando o launcher conseguir observar o encerramento de um jogo compatível:
 3. Sincronizar as conquistas **somente daquele jogo**.
 4. Inserir novas conquistas e atualizar as existentes usando `(game_id, api_name)`.
 5. Atualizar `unlocked`, `unlocked_at` e `global_percent` quando os dados correspondentes estiverem disponíveis.
-6. Registrar erros sem impedir o uso do launcher.
+6. Recalcular `tier` sempre que `global_percent` for atualizado, usando as faixas documentadas.
+7. Atualizar os contadores agregados de `USERS` de forma idempotente, incluindo a quantidade de troféus por tier e de jogos platinados.
+8. Registrar erros sem impedir o uso do launcher.
 
 O monitoramento pode não capturar todos os launchers intermediários ou processos filhos; não prometer precisão universal.
 
@@ -182,7 +212,7 @@ A atualização automática após fechar um jogo sincroniza apenas esse jogo. A 
 
 ### Idempotência
 
-Usar `UNIQUE (game_id, api_name)` e `upsert` ou estratégia transacional equivalente. Executar novamente a sincronização com os mesmos dados não deve duplicar registros. Não definir `unlocked = FALSE` nem apagar conquistas porque uma consulta falhou. Atualizar `global_percent` apenas com um valor confiável.
+Usar `UNIQUE (game_id, api_name)` e `upsert` ou estratégia transacional equivalente. Executar novamente a sincronização com os mesmos dados não deve duplicar registros nem aumentar artificialmente os contadores. Recalcular `tier` após atualizar `global_percent` e manter os contadores de `USERS` sincronizados com as conquistas persistidas. Não definir `unlocked = FALSE` nem apagar conquistas porque uma consulta falhou. Atualizar `global_percent` apenas com um valor confiável. Atualizar conquistas, tiers e contadores dentro de uma transação sempre que possível.
 
 ## 5. Integridade e exclusões
 
@@ -190,6 +220,8 @@ Usar `UNIQUE (game_id, api_name)` e `upsert` ou estratégia transacional equival
 - `GAMES.steam_id` único quando preenchido.
 - `ACHIEVEMENTS.game_id` referencia `GAMES.id`, com `ON DELETE CASCADE`.
 - `ACHIEVEMENTS` tem `UNIQUE (game_id, api_name)`.
+- `ACHIEVEMENTS.tier` aceita somente `bronze`, `silver` e `gold`.
+- Os contadores de `USERS` são não negativos e refletem as conquistas desbloqueadas e jogos platinados.
 - `GENRES.name` é único.
 - `GAME_GENRES` tem PK composta `(game_id, genre_id)`.
 - Ambas as FKs de `GAME_GENRES` usam `ON DELETE CASCADE`.
@@ -209,16 +241,19 @@ A IA deve verificar o código e pedir decisão antes de inventar comportamento p
 6. Frequência de atualização dos metadados `appdetails`, além dos fluxos de conquistas já definidos.
 7. Como impor no banco ou na aplicação a regra de um único registro em `USERS`.
 8. Validar limites, parâmetros e estrutura atual das respostas da Steam API antes da implementação.
+9. Confirmar se `tier` será armazenado e recalculado na aplicação ou por mecanismo no banco; a regra de negócio acima deve ser respeitada em ambos os casos.
+10. Confirmar a política de consistência dos contadores: recomendação é recalculá-los a partir de `ACHIEVEMENTS` após sincronizações, dentro de uma transação.
 
 ## 7. Instruções para a IA de programação
 
 1. Leia este documento, o PRD, o UML, o código e as migrações antes de implementar.
 2. Preserve a arquitetura de usuário único; não crie `USER_ACHIEVEMENTS` nem múltiplos perfis.
-3. Adicione `GAMES.origin`, `UNIQUE (game_id, api_name)` e as FKs/políticas de exclusão descritas caso ainda não existam.
+3. Adicione `GAMES.origin`, os contadores de troféus em `USERS`, `ACHIEVEMENTS.tier`, `UNIQUE (game_id, api_name)` e as FKs/políticas de exclusão descritas caso ainda não existam.
 4. Use minutos como unidade de `GAMES.playtime`.
 5. Não sobrescreva `hidden` nem `beated` em sincronizações externas.
 6. Separe sincronização de metadados, detecção de instalação, medição de sessões e sincronização de conquistas.
 7. Sincronize as conquistas do jogo ao encerrá-lo e ofereça uma ação separada para sincronizar manualmente todas as conquistas.
+8. Calcule `tier` pelas faixas de `global_percent` e mantenha os contadores em `USERS` idempotentes, incluindo platinas quando todas as conquistas conhecidas de um jogo estiverem desbloqueadas.
 8. Trate erros de rede, permissões, respostas incompletas e jogos sem suporte sem perder os últimos dados válidos.
 9. Use migrações e testes para alterações no esquema.
 10. Se o código contradisser este documento, explique a divergência e proponha a alteração antes de fazer mudanças destrutivas.
