@@ -10,10 +10,11 @@ simplicidade, priorizando o controle sem excluir mouse e teclado.
 
 ## 1. Visão do produto
 
-Criar um launcher desktop que unifique jogos da Steam e jogos adicionados manualmente em uma biblioteca visual, rápida e
-navegável por controle. O produto deve combinar artes de jogos em
-destaque, organização editorial e referências retrô discretas, mantendo
-identidade própria.
+Criar um launcher desktop que unifique jogos da Steam e jogos
+adicionados manualmente em uma biblioteca visual, rápida e navegável por
+controle. O produto deve combinar artes de jogos em destaque,
+organização editorial e referências retrô discretas, mantendo identidade
+própria.
 
 O launcher não pretende substituir as lojas, vender jogos ou replicar
 integralmente as funcionalidades de cada plataforma. Seu papel principal
@@ -105,10 +106,11 @@ limitações, condições de teste e método de inicialização suportado.
 
 ### 6.3 Detalhes do jogo
 
--   Mostrar título, arte, tempo total de jogo, origem e estado de instalação quando
-    conhecidos.
+-   Mostrar título, arte, tempo total de jogo, origem e estado de
+    instalação quando conhecidos.
 -   Disponibilizar ação principal para iniciar o jogo.
--   Mostrar tempo jogado, seja essa informação vinda de uma fonte externa ou registrada pelo launcher quando houver sessões
+-   Mostrar tempo jogado, seja essa informação vinda de uma fonte
+    externa ou registrada pelo launcher quando houver sessões
     observadas.
 -   Mostrar metadados adicionais somente quando disponíveis.
 -   Informar falhas de inicialização com uma mensagem útil e opção de
@@ -156,18 +158,78 @@ limitações, condições de teste e método de inicialização suportado.
 
 ### 6.8 Conquistas e progresso
 
-- Consultar conquistas dos jogos por meio das integrações que oferecerem suporte.
-- Exibir a quantidade de conquistas desbloqueadas e o total conhecido.
-- Calcular e apresentar o percentual de conclusão quando houver dados suficientes.
-- Exibir nome, descrição, ícone e estado de desbloqueio das conquistas quando essas informações estiverem disponíveis.
-- Registrar a data de desbloqueio quando fornecida pela fonte.
-- Sincronizar e atualizar os dados sem bloquear a interface.
-- Armazenar os dados localmente em cache, preservando as últimas informações disponíveis quando uma fonte estiver temporariamente indisponível.
-- Permitir solicitar uma sincronização manual.
-- Diferenciar dados sincronizados, dados desatualizados e informações indisponíveis.
-- Respeitar as permissões, configurações de privacidade e limitações de cada plataforma.
-- Não presumir que jogos adicionados manualmente ou todas as lojas ofereçam suporte a conquistas.
-- Isolar falhas na sincronização de conquistas para que não comprometam a biblioteca ou a inicialização dos jogos.
+#### Visão geral de conquistas
+
+-   Disponibilizar uma área própria de Conquistas na navegação
+    principal.
+-   Exibir estatísticas agregadas da conta: total de conquistas
+    desbloqueadas e quantidades por categoria de troféu (Platina, Gold,
+    Silver e Bronze), conforme os dados persistidos e as regras de
+    contagem deste documento.
+-   Exibir uma lista dos jogos que possuem suporte a conquistas, com
+    arte, título, origem, percentual de conclusão e quantidade
+    desbloqueada em relação ao total conhecido.
+-   A ordenação padrão da lista deve ser pela última sessão, começando
+    pelo jogo jogado mais recentemente.
+-   Disponibilizar uma segunda ordenação por percentual de conclusão, do
+    maior para o menor.
+-   Não usar quantidades fixas ou exemplos numéricos dos mockups como
+    requisitos. Os totais exibidos devem ser calculados a partir dos
+    dados reais disponíveis.
+
+#### Detalhes das conquistas de um jogo
+
+-   Exibir o título do jogo, a quantidade de conquistas desbloqueadas em
+    relação ao total conhecido e o percentual de conclusão, quando
+    calculável.
+-   Exibir os totais de troféus por categoria para o jogo, conforme as
+    conquistas conhecidas e desbloqueadas.
+-   Separar visualmente as conquistas obtidas das conquistas não
+    obtidas.
+-   Nas conquistas obtidas, ordenar pela data de aquisição, começando
+    pela mais recente. Conquistas sem data de aquisição disponível devem
+    aparecer depois das que possuem data.
+-   Nas conquistas não obtidas, ordenar pela raridade, começando pela
+    menos rara e seguindo até a mais rara. Usar o percentual global de
+    desbloqueio como referência: maior percentual primeiro e menor
+    percentual depois. Conquistas sem percentual global conhecido devem
+    aparecer após as que possuem esse dado.
+-   Exibir nome, descrição, ícone, estado de desbloqueio e data de
+    aquisição quando essas informações estiverem disponíveis.
+-   Exibir o percentual global de desbloqueio quando fornecido pela
+    plataforma.
+
+#### Platina
+
+-   Quando todas as conquistas conhecidas de um jogo estiverem
+    desbloqueadas e houver pelo menos uma conquista conhecida,
+    apresentar o estado de jogo platinado.
+-   Dar destaque visual à platina na tela de detalhes do jogo.
+-   Jogos sem conquistas conhecidas não devem ser considerados
+    platinados.
+
+#### Sincronização e disponibilidade
+
+-   Sincronizar as conquistas de todos os jogos compatíveis somente
+    quando o usuário solicitar explicitamente uma sincronização manual.
+-   Sincronizar automaticamente as conquistas apenas do jogo que acabou
+    de ser fechado, quando esse jogo oferecer suporte e o encerramento
+    puder ser observado pelo launcher.
+-   Não executar sincronização periódica ou sincronização automática de
+    toda a biblioteca.
+-   Executar sincronizações em segundo plano, sem bloquear a interface,
+    e apresentar progresso/resultado quando viável.
+-   Armazenar os dados localmente, preservando as últimas informações
+    válidas quando uma fonte estiver temporariamente indisponível.
+-   Diferenciar dados atualizados, dados desatualizados e informações
+    indisponíveis.
+-   Para um jogo que não ofereça suporte a conquistas, apresentar uma
+    mensagem explícita informando que aquele jogo não possui conquistas.
+    Não apresentar o caso como erro de sincronização.
+-   Respeitar as permissões, configurações de privacidade e limitações
+    de cada plataforma.
+-   Isolar falhas na sincronização de conquistas para que não
+    comprometam a biblioteca ou a inicialização dos jogos.
 
 ## 7. Requisitos não funcionais
 
@@ -244,6 +306,14 @@ O MVP poderá ser considerado funcional quando:
 8.  Erros de inicialização são apresentados de forma compreensível.
 9.  Os testes automatizados principais passam.
 10. O aplicativo funciona nas resoluções-alvo sem exigir ultrawide.
+11. A área de Conquistas apresenta a ordenação padrão e alternativa
+    definidas; os detalhes de cada jogo ordenam conquistas obtidas e não
+    obtidas conforme suas regras específicas.
+12. A sincronização completa da biblioteca só ocorre por ação manual,
+    enquanto o fechamento de um jogo compatível sincroniza somente as
+    conquistas daquele jogo.
+13. Jogos sem suporte a conquistas apresentam uma mensagem informativa,
+    sem serem tratados como falha.
 
 ## 10. Fora de escopo até decisão posterior
 

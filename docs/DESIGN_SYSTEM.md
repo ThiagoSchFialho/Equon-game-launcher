@@ -47,7 +47,8 @@ sem excesso de efeitos, legível a distância e funcional com controle.
 A Home deve ajudar a retomar a atividade e descobrir a coleção, não ser
 apenas um banner.
 
-Regiões possíveis: - Navegação principal. - Continuar jogando. - Lista de jogos recentes. - Atalho claro para a biblioteca completa.
+Regiões possíveis: - Navegação principal. - Continuar jogando. - Lista
+de jogos recentes. - Atalho claro para a biblioteca completa.
 
 ### Biblioteca
 
@@ -83,20 +84,32 @@ de iluminação.
 
 ### Cores
 
-| Token                    | Valor inicial   | Uso
-| ------------------------ | --------------- | ----------------------------------
-| `color.background`       | `#101216`       | Fundo global
-| `color.surface`          | `#191D24`       | Superfícies principais
-| `color.surface-raised`   | `#232833`       | Painéis e menus elevados
-| `color.text-primary`     | `#F3F4F6`       | Texto principal
-| `color.text-secondary`   | `#A7AFBC`       | Metadados e texto secundário
-| `color.border`           | `#343B48`       | Divisórias e contornos discretos
-| `color.accent`           | `#D7A85B`       | Acento quente, referência retrô
-| `color.focus`            | `#F4D28C`       | Foco de navegação
-| `color.success`          | `#78C6A3`       | Confirmação e sucesso
-| `color.warning`          | `#E7B86A`       | Avisos
-| `color.danger`           | `#F07C7C`       | Erros e ações destrutivas
+  -----------------------------------------------------------------------
+  Token                    Valor inicial  Uso
+  ------------------------ -------------- -------------------------------
+  `color.background`       `#101216`      Fundo global
 
+  `color.surface`          `#191D24`      Superfícies principais
+
+  `color.surface-raised`   `#232833`      Painéis e menus elevados
+
+  `color.text-primary`     `#F3F4F6`      Texto principal
+
+  `color.text-secondary`   `#A7AFBC`      Metadados e texto secundário
+
+  `color.border`           `#343B48`      Divisórias e contornos
+                                          discretos
+
+  `color.accent`           `#D7A85B`      Acento quente, referência retrô
+
+  `color.focus`            `#F4D28C`      Foco de navegação
+
+  `color.success`          `#78C6A3`      Confirmação e sucesso
+
+  `color.warning`          `#E7B86A`      Avisos
+
+  `color.danger`           `#F07C7C`      Erros e ações destrutivas
+  -----------------------------------------------------------------------
 
 Regras: - Não usar o acento em todos os elementos; reservar para
 seleção, ações importantes e detalhes. - Não depender apenas da cor para
@@ -121,17 +134,10 @@ Os valores devem usar tokens escaláveis e ser validados também em
 
 ### Espaçamento
 
-Adotar uma escala baseada em múltiplos de 4 px:
-- `space-1`: 4 px
-- `space-2`: 8 px
-- `space-3`: 12 px
-- `space-4`: 16 px
-- `space-5`: 20 px
-- `space-6`: 24 px
-- `space-8`: 32 px
-- `space-10`: 40 px
-- `space-12`: 48 px
-- `space-16`: 64 px
+Adotar uma escala baseada em múltiplos de 4 px: - `space-1`: 4 px -
+`space-2`: 8 px - `space-3`: 12 px - `space-4`: 16 px - `space-5`: 20
+px - `space-6`: 24 px - `space-8`: 32 px - `space-10`: 40 px -
+`space-12`: 48 px - `space-16`: 64 px
 
 Usar margens externas generosas e espaçamento consistente entre regiões.
 Ajustar densidade pela composição, não reduzindo indiscriminadamente
@@ -271,7 +277,79 @@ comportamento para escalonamento de interface e DPI do Windows.
 -   Estados vazios devem orientar o próximo passo.
 -   Textos devem ser concisos, sem sacrificar clareza.
 
-## 10. Critérios de aprovação visual
+## 10. Sistema de conquistas
+
+A área de Conquistas é uma seção própria da navegação principal,
+distinta da Biblioteca. Deve seguir a linguagem visual do Equon e ser
+inteiramente operável por controle, teclado e mouse.
+
+### Visão geral
+
+-   Exibir um resumo agregado com o total de conquistas desbloqueadas e
+    os totais por categoria: Platina, Gold, Silver e Bronze.
+-   Os números devem ser derivados dos dados reais. Mockups e imagens de
+    referência são ilustrativos e não estabelecem quantidades fixas.
+-   Cada item da lista de jogos deve apresentar arte, título, origem,
+    percentual de conclusão, barra de progresso e quantidade
+    desbloqueada / total conhecido.
+-   A ordenação padrão é por última sessão, do jogo jogado mais
+    recentemente ao mais antigo.
+-   A ordenação alternativa é por percentual de conclusão, do maior para
+    o menor.
+-   A opção de ordenação atual deve ser identificável e a troca deve ser
+    acessível por controle, teclado e mouse.
+-   Jogos sem conquistas não precisam aparecer como itens normais na
+    lista de progresso. Quando o usuário abrir a área de conquistas de
+    um jogo sem suporte, mostrar uma mensagem explícita informando que o
+    jogo não possui conquistas.
+
+### Detalhes de um jogo
+
+-   Apresentar progresso total, barra de conclusão e distribuição dos
+    troféus por categoria.
+-   Separar conquistas obtidas e não obtidas em duas regiões/colunas,
+    conforme o espaço disponível.
+-   Na lista de conquistas obtidas, ordenar pela data de aquisição, da
+    mais recente para a mais antiga. Datas indisponíveis ficam depois
+    das datas conhecidas.
+-   Na lista de conquistas não obtidas, ordenar pela raridade da menos
+    rara à mais rara. Para dados Steam, usar `global_percent` em ordem
+    decrescente: maior percentual primeiro. Percentuais desconhecidos
+    ficam ao final.
+-   Cada item pode apresentar ícone, nome, descrição, data de aquisição
+    (quando desbloqueada e disponível) e percentual global de
+    desbloqueio.
+-   O tier da conquista deve ser reconhecível visualmente sem depender
+    exclusivamente da cor.
+
+### Estado platinado
+
+-   Quando todas as conquistas conhecidas estiverem desbloqueadas e
+    existir pelo menos uma conquista conhecida, apresentar um estado
+    especial de jogo platinado.
+-   Dar destaque à arte/ícone da Platina sem ocultar o histórico/lista
+    de conquistas obtidas.
+-   O estado platinado não deve ser inferido apenas pelo percentual
+    arredondado exibido; deve ser determinado pela condição real de
+    todas as conquistas conhecidas desbloqueadas.
+
+### Sincronização e estados
+
+-   A interface deve oferecer uma ação explícita para sincronizar
+    manualmente as conquistas de todos os jogos compatíveis.
+-   O fechamento de um jogo compatível pode disparar a sincronização
+    somente daquele jogo.
+-   Não apresentar sincronização periódica nem sincronização automática
+    global.
+-   Durante a sincronização, indicar atividade e, quando viável,
+    progresso; ao terminar, informar sucesso parcial ou falhas por jogo
+    sem bloquear a navegação.
+-   Quando a fonte estiver indisponível, preservar os dados anteriores e
+    indicar que estão desatualizados, se aplicável.
+-   Diferenciar claramente jogo sem suporte a conquistas de erro de
+    sincronização.
+
+## 11. Critérios de aprovação visual
 
 Uma tela ou componente está pronto quando: 1. Segue os tokens e não
 introduz valores arbitrários sem justificativa. 2. Funciona em 1920×1080
@@ -282,7 +360,7 @@ layout em navegação. 7. Responde de forma aceitável sem animação. 8. Foi
 revisado visualmente em execução, não apenas aprovado por leitura de
 código.
 
-## 11. Decisões ainda abertas
+## 12. Decisões ainda abertas
 
 -   Nome e identidade de marca.
 -   Família tipográfica final.
@@ -293,7 +371,7 @@ código.
 -   Configurações de movimento e acessibilidade expostas ao usuário.
 -   Se haverá temas adicionais no futuro.
 
-## 12. Instruções para implementação por IA
+## 13. Instruções para implementação por IA
 
 -   Não inventar uma nova paleta ou escala tipográfica por tela.
 -   Consultar estes tokens antes de adicionar estilos.
@@ -303,4 +381,6 @@ código.
     componente.
 -   Não considerar uma tela concluída sem capturas ou inspeção visual em
     execução.
+-   Não transformar números ou quantidades presentes nos mockups em
+    valores fixos; exibir sempre os dados reais disponíveis.
 -   Atualizar este documento quando uma decisão de design for alterada.

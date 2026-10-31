@@ -1,7 +1,9 @@
 # Equon Game Launcher --- Roadmap
 
+**Status:** Initial proposal.\
 **Purpose:** Turn the product requirements into small, testable
-milestones.
+milestones. No dates are promised; revise this roadmap after the
+architecture decisions are confirmed.
 
 ## Delivery principles
 
@@ -18,7 +20,7 @@ milestones.
 ### Tasks
 
 -   [ ] Review `README.md`, `PRODUCT.md`, `DESIGN_SYSTEM.md`, and
-    `DATABASE.md`.
+    `DATA_BASE_CONTEXT.md`.
 -   [ ] Choose the desktop framework and UI stack.
 -   [ ] Choose the database engine. The UML currently uses
     PostgreSQL-style types, but an embedded database may be simpler for
@@ -55,7 +57,7 @@ repeatable, and no secrets are committed.
 ### Tasks
 
 -   [ ] Add database connection and versioned migrations.
--   [ ] Implement the schema from `DATABASE.md`.
+-   [ ] Implement the schema from `DATA_BASE_CONTEXT.md`.
 -   [ ] Confirm `GAMES.origin`, non-negative `playtime`, and uniqueness
     of non-null Steam IDs.
 -   [ ] Confirm `UNIQUE (game_id, api_name)` and achievement FK cascade.
@@ -140,7 +142,7 @@ matches are not silently merged.
 duplicates; metadata refresh does not overwrite manual flags; API
 failures do not break the rest of the library.
 
-## Phase 7 --- Steam achievements
+## Phase 7 --- Achievements
 
 ### Tasks
 
@@ -149,19 +151,41 @@ failures do not break the rest of the library.
 -   [ ] Import global percentages using
     `GetGlobalAchievementPercentagesForApp`.
 -   [ ] Upsert by `(game_id, api_name)`.
--   [ ] Sync a game's achievements after that game closes, where
-    supported.
--   [ ] Add a manual action to sync achievements for all supported Steam
+-   [ ] Sync a game's achievements automatically only after that game
+    closes, when supported and when the launcher can observe the close.
+-   [ ] Add a manual action to sync achievements for all supported
     games.
+-   [ ] Do not implement periodic or automatic full-library
+    synchronization.
 -   [ ] Run sync in the background and isolate per-game failures.
 -   [ ] Calculate personal completion as unlocked / total known
-    achievements.
+    achievements; handle games with no known achievements.
+-   [ ] Implement the global achievements overview with aggregate trophy
+    counts and a per-game progress list.
+-   [ ] Sort the overview by last session descending by default.
+-   [ ] Add the alternative overview sort by personal completion
+    percentage, descending.
+-   [ ] Sort unlocked achievements by unlock date, newest first.
+-   [ ] Sort locked achievements by `global_percent` descending (least
+    rare first); place unknown dates/percentages last.
+-   [ ] Show an explicit informational state for games that do not
+    support achievements.
+-   [ ] Implement the platinum state when every known achievement for a
+    game is unlocked and at least one achievement is known.
 -   [ ] Preserve last known good data; allow `unlocked_at` and
     `global_percent` to be `NULL`.
+-   [ ] Implement controller-friendly loading, stale-data, partial
+    failure, and no-support states.
+-   [ ] Test counters, tiers, platinum calculation, ordering, and
+    idempotent synchronization.
 
 **Acceptance:** Repeated sync creates no duplicates; closing one game
-syncs only that game; full-library sync requires a manual action; failed
-requests do not mark all achievements locked or delete existing data.
+syncs only that game's achievements; full-library sync happens only
+after an explicit manual action; overview and per-game lists follow the
+specified ordering; unsupported games show an informational message;
+failed requests do not mark all achievements locked or delete existing
+data; displayed totals are calculated from actual data and are not
+hardcoded from illustrative mockups.
 
 ## Phase 8 --- Epic and GOG integrations
 
