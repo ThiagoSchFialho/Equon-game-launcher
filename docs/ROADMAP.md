@@ -53,8 +53,9 @@ decision.
     layer boundaries in `ARCHITECTURE.md` §6.
 -   [ ] Configure the secure window settings (`contextIsolation`,
     `nodeIntegration` off, `sandbox`, restricted navigation, CSP).
--   [ ] Add the scripts that rebuild `better-sqlite3` for Node (tests)
-    and for Electron (app); document them.
+-   [x] Make `better-sqlite3` work for Node (tests) and Electron (app);
+    document it. (v13 ships N-API prebuilds, so no rebuild scripts are
+    needed; a test guards this. See `ARCHITECTURE.md` §3.15.)
 -   [ ] Run the validation spike: render a grid of ~200 images, read a
     gamepad, load the SQLite module in Electron, check whether the
     chosen Electron provides `node:sqlite`, and record startup time and

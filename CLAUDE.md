@@ -31,7 +31,7 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 - Vitest for tests; ESLint (flat config) + Prettier.
 - SQLite via `better-sqlite3`, hand-written SQL in repositories, no ORM, versioned `.sql` migrations tracked with `PRAGMA user_version`.
 - Planned scripts: `dev`, `build`, `test`, `lint`, `typecheck`, `format`. **Update this section with the real commands once Phase 1 creates them.**
-- **Native module rule:** `better-sqlite3` is built for one runtime at a time (Node for tests, Electron for the app). `NODE_MODULE_VERSION` errors are a rebuild problem, not a code bug. Always run tests through `npm test`, never Vitest directly.
+- **Native module rule:** `better-sqlite3` ≥ 13 ships N-API prebuilds, so one binary serves Node (tests) and Electron (app); there are no rebuild scripts. `tests/native/better-sqlite3.test.ts` guards this; if it fails with a load / `NODE_MODULE_VERSION` error, the prebuilds changed and rebuild scripts must come back (`ARCHITECTURE.md` §3.15). Run tests through `npm test`.
 
 ## Architecture rules
 

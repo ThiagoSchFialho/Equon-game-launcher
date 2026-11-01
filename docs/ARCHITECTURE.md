@@ -111,7 +111,7 @@ Chosen by Claude at the owner's request to pick the best fit.
 
 **Why:** no extra dependencies; the schema relies on SQLite-specific details (CHECK constraints, `ON CONFLICT` upserts, explicit `NULL` ordering, pragmas) that are clearest in plain SQL; migrations are easy to review; repositories can be tested against a real in-memory SQLite database.
 
-**Native-module caveat:** `better-sqlite3` is compiled for one Node ABI at a time. The app runs on Electron's Node and the tests run on the system Node, so they need different builds (see §3.15). If the Phase 1 spike shows that the chosen Electron includes `node:sqlite` (built into Node; its official stability is "release candidate" as of Node 24.15), consider switching the driver to remove the native module and the rebuild dance. Reopen D-03 only if that check succeeds.
+**Native-module caveat:** older `better-sqlite3` versions were compiled for one Node ABI at a time. Since v13 the package uses N-API and ships prebuilt binaries, so one binary loads under both the system Node (tests) and Electron (app); see §3.15. Phase 1 confirmed this and also that Electron 44 provides `node:sqlite`. D-03 stays as is: `node:sqlite` is still "release candidate" and the rebuild cost that motivated a switch no longer exists.
 
 **Trade-off:** SQL is not checked at compile time. Mitigation: repository tests against real SQLite. If this becomes painful, Kysely (query builder with a migrator) is the upgrade path, because repositories are the only place SQL exists. Drizzle was not chosen: schema-first generation adds a layer between the documented schema and the real constraints.
 
@@ -299,7 +299,12 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 
 **Enforce the layer rules with lint.** Use `no-restricted-imports` (per-folder overrides) so that the rules in §6 fail the build instead of relying on discipline: `renderer` may not import `infrastructure`, `integrations` or `main`; `core` may not import `electron`, Node built-ins for filesystem/process, network libraries, or SQL drivers.
 
-**Native-module ABI rule.** `better-sqlite3` is built for one runtime at a time: Node (tests) or Electron (the app). Using the wrong build fails with `NODE_MODULE_VERSION` errors, which are not code bugs. Handle it in scripts: `pretest` rebuilds for Node; `predev` and the build/package scripts rebuild for Electron (via `@electron/rebuild`). Document this in the README so people and AI assistants do not chase it as a bug. Always run tests through `npm test`, never by calling Vitest directly.
+**Native-module rule.** `better-sqlite3` ≥ 13 uses N-API and ships prebuilt binaries (`prebuilds/win32-x64.node`), so the same binary serves Node (tests) and Electron (the app) with **no rebuild**. Verified in Phase 1 with Node 24.18 and Electron 44.10.1 (Node 24.22.1, ABI 149). Consequences:
+
+- There are no rebuild scripts, and `postinstall` does not run `electron-builder install-app-deps` (it compiled the module from source with node-gyp for no benefit and would fail on machines without a C++ toolchain).
+- `tests/native/better-sqlite3.test.ts` loads the module under Node and under the pinned Electron runtime. If a future version drops the N-API prebuilds, that test fails, and rebuild scripts (`@electron/rebuild` for Electron, `npm rebuild` for Node) must be reinstated.
+- A `NODE_MODULE_VERSION` error would mean the above changed; it is not a code bug.
+- Packaging the module (asar unpack) is verified in Phase 8 (D-13).
 
 ---
 
