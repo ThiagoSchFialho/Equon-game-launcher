@@ -1,6 +1,6 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.5
+**Version:** 0.6
 **Status:** Draft — Phase 0 (no production code exists yet)
 **Last updated:** 2026-11-01
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
@@ -66,14 +66,14 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-12 | Steam discovery, installation state and running state | Accepted | Read `libraryfolders.vdf` + `appmanifest_*.acf` `StateFlags`, with the safeguards in §3.12 |
 | D-13 | Windows packaging / installer | Open | Decide in Phase 8; do not block earlier phases |
 | D-14 | Package manager, test framework, lint/format | Open | Needed before Phase 1 |
-| D-15 | Artwork sources and cache policy | Accepted | SteamGridDB (API key) + Steam `appdetails`; local file picker as fallback; Google Images not adopted (§3.13) |
-| D-16 | Refresh frequency for `appdetails` metadata | Open | Not defined in any doc |
-| D-17 | Steam launch mechanism | Open | Candidate: `steam://rungameid/<appid>`; validate (§3.12) |
+| D-15 | Artwork sources and cache policy | Proposed | SteamGridDB (API key) + Steam `appdetails`; local file picker as fallback; Google Images not adopted (§3.13) |
+| D-16 | Refresh frequency for `appdetails` metadata | Accepted | Fetched only when a game is discovered/added; failed fetches are retried (§3.14) |
+| D-17 | Steam launch mechanism | Accepted | `steam://rungameid/<appid>`, built in the main process (§3.12) |
 
 Decisions that **block Phase 1** (project skeleton): D-01, D-02, D-03, D-14.
 Decisions that **block Phase 2** (database): D-02, D-03, D-05, D-06, D-08, D-09, D-10.
 Decisions that **block Phase 4** (manual-game slice): D-07, D-08.
-Decisions that **block Phase 6** (Steam library and metadata): D-12, D-16, D-17.
+Decisions that **block Phase 6** (Steam library and metadata): D-12, D-16, D-17 (all accepted).
 
 **Still blocking Phase 1:** D-14 only.
 
@@ -224,7 +224,13 @@ The reference implementation (a prototype using an Express router) already does 
 
 **Running state and sessions:** the `AppRunning` flag lets the launcher notice a game starting and stopping, including games started from Steam itself. Candidate mechanism: poll the manifests (or watch the `steamapps` folders for changes, if reliable on Windows) and treat transitions as session start/end. Interval or watcher choice is decided by measurement. Treat the result as **best-effort**: the flag is Steam-internal and may lag or go stale if a game crashes or Steam closes. Validate those cases, and keep process polling of the game's install folder (`installdir` from the manifest) as a fallback. Document observed limits; the PRD does not promise perfect capture.
 
-**Launch (D-17, still open):** the prototype does not cover launching. Candidate: the `steam://rungameid/<appid>` URL protocol, built in the main process from a validated numeric App ID only, never from a renderer-supplied string. Validate on a real install.
+**Launch (D-17, Accepted):** launch Steam games with the URL protocol `steam://rungameid/<appid>`.
+
+- The URL is built in the main process from a validated numeric App ID taken from the database, never from a string supplied by the renderer. It is opened through Electron's external-URL mechanism, restricted to this exact pattern (see §7).
+- Opening the URL only asks Steam to start the game; it does not prove the game started. Treat the launch as successful when the manifest `AppRunning` flag is observed (D-12) within a timeout. If it is not, show an actionable error with a retry option. The timeout is set by measurement, not guessed.
+- Offer **Play** only when `installed = 1`. For `NULL` (unknown), warn instead of launching blindly. If the game is updating or installing, show that state rather than launching.
+- If Steam is not running, the protocol is expected to start the client; validate this behavior and its delay on a real install.
+- A session starts when `AppRunning` is observed, not when the URL is opened.
 
 ### 3.13 D-15 — Artwork sources and cache (Proposed)
 
@@ -258,6 +264,22 @@ Each game needs: a **square cover**, a **logo**, a **1920×1080 image**, and a *
 - Do not bundle or redistribute fetched images; the cache is personal and local.
 
 **Open sub-decisions:** cache eviction; stored sizes/variants (decide after measuring); the fallback look when a game has no 1920×1080 image; and the native file dialog used to pick executables and images, which is not navigable with a controller (conflicts with `PRODUCT.md` §6.6 for the add-game flow; may need a custom controller-friendly file browser).
+
+### 3.14 D-16 — `appdetails` refresh frequency (Accepted: once, on discovery)
+
+Steam metadata (title, description, developer, release date, age rating, genres) is fetched from `appdetails` **only when a game is first discovered or added**. There is no periodic refresh and no refresh at launcher startup.
+
+Consequences and rules:
+
+- A game already in the database is not fetched again when it is re-discovered by a later library scan.
+- Metadata can become stale if Steam changes it. This is accepted.
+- A failed fetch (network error, unsuccessful response, malformed data) must not count as "done". The game stays marked as missing metadata and the fetch is retried on a later library refresh, with bounded retries and without blocking the UI. A game that genuinely has no description is different from a game whose fetch failed, so the database needs a way to tell them apart. **Proposal:** a nullable `GAMES.metadata_fetched_at` timestamp, set only after a valid response is saved. `DATA_BASE_CONTEXT.md` must be updated before implementing.
+- When a first scan finds many games, fetches go through a throttled queue; a third-party source reports a limit of roughly 200 requests per 5 minutes for this endpoint (not confirmed, verify).
+- Fetching never overwrites `hidden` or `beated`, and never replaces valid stored values with empty ones.
+- Achievement synchronization is separate and unaffected (§10).
+- Artwork (D-15) follows the same moment: fetched when the game is discovered or added, then cached.
+
+Whether to offer a manual "refresh metadata" action for a single game is not decided; it would be an explicit user action, not an automatic refresh.
 
 ---
 
@@ -397,7 +419,7 @@ A discovery result always carries warnings and errors, so partial failure is vis
 | Discovery | `libraryfolders.vdf` + manifests (D-12) | User adds games |
 | Metadata and genres | `appdetails` | None |
 | Installation state | Manifest `StateFlags`, tri-state (D-12) | To be defined; do not reuse Steam logic |
-| Launch | Candidate: `steam://rungameid` (D-17) | Executable + args + working dir |
+| Launch | `steam://rungameid/<appid>` (D-17) | Executable + args + working dir |
 | Session observation | Best-effort: manifest `AppRunning`, process polling as fallback | Reliable for direct child processes |
 | Achievements | Steam Web API | Not supported |
 
@@ -496,12 +518,12 @@ A failed scan must not mark every game from that source as uninstalled.
 
 ### Metadata and genres
 
-For Steam, use `appdetails`: check the success flag, validate optional fields, normalize, then persist. Never overwrite `hidden` or `beated`, and never replace valid values with empty strings after a network or format error. Genre names are normalized to avoid duplicates. Metadata sync is separate from installation detection and session measurement. Refresh frequency: D-16.
+For Steam, use `appdetails`: check the success flag, validate optional fields, normalize, then persist. Never overwrite `hidden` or `beated`, and never replace valid values with empty strings after a network or format error. Genre names are normalized to avoid duplicates. Metadata sync is separate from installation detection and session measurement. Fetched only on discovery or when adding a game, with retry after failures (§3.14, D-16).
 
 ### Launch and session
 
 1. Validate the launch configuration (§7).
-2. Invoke the adapter's launch.
+2. Invoke the adapter's launch. For Steam, open `steam://rungameid/<appid>` built in the main process (D-17) and confirm the start by observing `AppRunning`.
 3. Insert a `running` session and observe the process where feasible: for Steam games through the manifest `AppRunning` flag (D-12), for manual games through the launched process.
 4. On exit, finalize the session and update `playtime` / `time_last_played` in one transaction (D-08), then trigger the per-game achievements sync if applicable.
 5. On launch failure, show an actionable error with a retry option.
@@ -578,3 +600,4 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-01 | 0.3 | Dropped Epic/GOG automatic integration (D-17 removed); Epic games are added manually with `origin = manual`; roadmap phases renumbered |
 | 2026-11-01 | 0.4 | Owner accepted D-01, D-02, D-04–D-10. Accepted D-03 (SQL migrations + `better-sqlite3`), D-11 (polled Gamepad API), D-12 (Steam manifest-based discovery, installation and running state, with safeguards). Added D-17 (Steam launch, open) |
 | 2026-11-01 | 0.5 | Proposed D-15: SteamGridDB + Steam `appdetails` + local file picker for artwork; Google Images not adopted; proposed `GAME_ARTWORK` table and cache rules |
+| 2026-11-01 | 0.6 | Accepted D-16 (fetch `appdetails` only on discovery/add, retry failures; proposed `metadata_fetched_at`) and D-17 (`steam://rungameid/<appid>` with start confirmed via `AppRunning`) |
