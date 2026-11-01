@@ -40,26 +40,27 @@ decision.
 
 ### Tasks
 
--   [ ] Create the desktop application skeleton.
--   [ ] Configure development, test, lint, and production-build scripts.
--   [ ] Add a basic automated test.
--   [ ] Establish boundaries between UI and privileged desktop
+-   [x] Create the desktop application skeleton.
+-   [x] Configure development, test, lint, and production-build scripts.
+-   [x] Add a basic automated test.
+-   [x] Establish boundaries between UI and privileged desktop
     operations.
--   [ ] Add a minimal screen/window proving the application launches.
--   [ ] Document local setup in the README.
--   [ ] Pin the Node and Electron versions; confirm that electron-vite is
+-   [x] Add a minimal screen/window proving the application launches.
+-   [x] Document local setup in the README.
+-   [x] Pin the Node and Electron versions; confirm that electron-vite is
     actively maintained (fallback: Electron Forge Vite template).
--   [ ] Enable strict TypeScript and add the lint rules that enforce the
+-   [x] Enable strict TypeScript and add the lint rules that enforce the
     layer boundaries in `ARCHITECTURE.md` §6.
--   [ ] Configure the secure window settings (`contextIsolation`,
+-   [x] Configure the secure window settings (`contextIsolation`,
     `nodeIntegration` off, `sandbox`, restricted navigation, CSP).
 -   [x] Make `better-sqlite3` work for Node (tests) and Electron (app);
     document it. (v13 ships N-API prebuilds, so no rebuild scripts are
     needed; a test guards this. See `ARCHITECTURE.md` §3.15.)
--   [ ] Run the validation spike: render a grid of ~200 images, read a
+-   [x] Run the validation spike: render a grid of ~200 images, read a
     gamepad, load the SQLite module in Electron, check whether the
     chosen Electron provides `node:sqlite`, and record startup time and
-    memory in `ARCHITECTURE.md`.
+    memory in `ARCHITECTURE.md`. (Gamepad button presses, reconnect and
+    focus loss still need a manual check on hardware.)
 
 **Acceptance:** App starts locally, automated checks pass, setup is
 repeatable, and no secrets are committed. Spike results are recorded;

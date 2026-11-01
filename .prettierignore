@@ -4,3 +4,5 @@ pnpm-lock.yaml
 LICENSE.md
 tsconfig.json
 tsconfig.*.json
+# Docs are hand-formatted; do not let `npm run format` rewrite them
+*.md

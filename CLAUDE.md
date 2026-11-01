@@ -30,7 +30,9 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 - electron-vite (separate main / preload / renderer builds); strict TypeScript.
 - Vitest for tests; ESLint (flat config) + Prettier.
 - SQLite via `better-sqlite3`, hand-written SQL in repositories, no ORM, versioned `.sql` migrations tracked with `PRAGMA user_version`.
-- Planned scripts: `dev`, `build`, `test`, `lint`, `typecheck`, `format`. **Update this section with the real commands once Phase 1 creates them.**
+- Scripts: `npm run dev`, `npm run build`, `npm start` (preview build), `npm test` (Vitest, run once), `npm run lint`, `npm run typecheck`, `npm run format`. Node 24.18.0 (`.nvmrc`), Electron 44.10.1 (exact).
+- If Electron fails with `electron.app` undefined, `ELECTRON_RUN_AS_NODE=1` is set in the shell (VS Code sets it); unset it for `dev`/`start`.
+- Sandboxed preload can only load `electron`; it imports constants/types from `src/shared/ipc/contract.ts` (no runtime deps). zod schemas live in `src/shared/ipc/schemas.ts` and are used by main.
 - **Native module rule:** `better-sqlite3` ≥ 13 ships N-API prebuilds, so one binary serves Node (tests) and Electron (app); there are no rebuild scripts. `tests/native/better-sqlite3.test.ts` guards this; if it fails with a load / `NODE_MODULE_VERSION` error, the prebuilds changed and rebuild scripts must come back (`ARCHITECTURE.md` §3.15). Run tests through `npm test`.
 
 ## Architecture rules

@@ -47,13 +47,42 @@ Design on Figma: https://www.figma.com/design/DIkoemv1pnAg8px8TZchNG/Untitled?no
 - **Primary input:** Game controller
 - **Additional input:** Mouse and keyboard
 
-## Planned Tech Stack
+## Tech Stack
 
-These choices are recorded in `docs/ARCHITECTURE.md`; nothing is implemented yet.
+Recorded in `docs/ARCHITECTURE.md`. Only the project skeleton (Phase 1) exists so far.
 
 - **Desktop:** Electron, React, and TypeScript, built with electron-vite.
 - **Local database:** SQLite (embedded, no separate server) via `better-sqlite3`.
 - **Tooling:** npm, Vitest, ESLint, and Prettier.
+
+## Local Setup
+
+Requirements: Windows, Node.js **24.18.0** (see `.nvmrc`) and npm. No C++ toolchain is needed.
+
+```sh
+npm install      # installs dependencies and downloads the pinned Electron (44.10.1)
+npm run dev      # starts the app with hot reload
+```
+
+| Script | What it does |
+| --- | --- |
+| `npm run dev` | Start the app in development mode |
+| `npm run build` | Typecheck and build main, preload and renderer into `out/` |
+| `npm start` | Preview the production build |
+| `npm test` | Run the Vitest suite once |
+| `npm run lint` | ESLint, including the layer-boundary rules |
+| `npm run typecheck` | `tsc --noEmit` for the Node and web projects |
+| `npm run format` | Prettier |
+
+Packaging (`build:unpack`, `build:win`) exists but the installer is not decided yet (D-13).
+
+### Native module (`better-sqlite3`)
+
+`better-sqlite3` 13 ships N-API prebuilt binaries, so the same binary works in Node (tests) and Electron (app) and **no rebuild is needed**. `tests/native/better-sqlite3.test.ts` checks both runtimes. If it ever fails with a load or `NODE_MODULE_VERSION` error, the package stopped shipping compatible prebuilds; that is a tooling problem, not a code bug (see `docs/ARCHITECTURE.md` §3.15).
+
+### Troubleshooting
+
+- **`Cannot read properties of undefined (reading 'isPackaged')` on `npm run dev`:** the terminal has `ELECTRON_RUN_AS_NODE=1` set (VS Code's integrated terminal can set it). Clear it for the session: `Remove-Item Env:ELECTRON_RUN_AS_NODE` in PowerShell, or `unset ELECTRON_RUN_AS_NODE` in Git Bash.
 
 ## Documentation
 

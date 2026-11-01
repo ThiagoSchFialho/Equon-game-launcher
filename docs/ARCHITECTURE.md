@@ -1,7 +1,7 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.9
-**Status:** Draft — Phase 0 (no production code exists yet)
+**Version:** 0.10
+**Status:** Draft — Phase 1 (project skeleton)
 **Last updated:** 2026-11-01
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
 **Purpose:** Define technical boundaries, record architecture decisions, and list what is still unresolved before implementation starts.
@@ -92,6 +92,17 @@ Decisions that **block Phase 6** (Steam library and metadata): D-12, D-16, D-17 
 | Fit | Matches the security text already in the PRD | Would require rewriting the PRD security section |
 
 **Validation task (does not block):** early in Phase 1, build a throwaway spike that renders a grid of ~200 cover images, reads a gamepad, loads the SQLite native module, checks whether the chosen Electron version bundles a Node that provides `node:sqlite` (see §3.3), and reports startup time and memory on reference hardware. The PRD forbids arbitrary performance numbers before measurement, so record the measured results here. If they are unacceptable, reopen this decision.
+
+**Phase 1 spike results (2026-11-01).** Code kept on the unmerged branch `spike/phase1-validation`.
+
+- Machine: AMD Ryzen 5 5500, 32 GB RAM, AMD Radeon RX 6600, NVMe SSD, Windows 11 Pro. Owner to confirm whether this is the reference hardware.
+- Runtime: Electron 44.10.1 (Chromium 152, Node 24.22.1, ABI 149), unpackaged production build (`electron-vite build` + `electron .`), warm disk cache.
+- Startup, process start → first visible frame: about 340 ms without the grid (3 runs: 334–344 ms); about 485 ms with the 200-cover grid (5 runs: 461–519 ms). App ready at about 160 ms in both cases.
+- Memory (sum of working sets from `app.getAppMetrics()`, 3 s after load): about 344 MB without the grid; about 490 MB with 200 covers loaded at once (renderer ~215 MB, GPU ~115 MB, browser ~113 MB, utility ~50 MB).
+- Covers: 200 generated 600×900 PNGs at about 680 KB each (131 MB total; pessimistic compared with typical art), all loaded eagerly with no lazy loading or virtualization. All 200 had loaded by first show.
+- SQLite: `better-sqlite3` 13.0.3 loads in the Electron main process without a rebuild (SQLite 3.53.4, `foreign_keys = 1`; load + 10 000 inserts in one transaction ≈ 32 ms). `node:sqlite` is also available in this Electron (SQLite 3.53.4).
+- Gamepad: with the window's permission handlers denying everything, `navigator.getGamepads()` works. An Xbox 360 controller (XInput) was listed with `mapping = "standard"`, 17 buttons and 4 axes; resting axes read up to about ±0.05, so a dead zone is needed. **Button presses, disconnect/reconnect and window-focus loss still need manual verification on hardware** (Phase 3).
+- Assessment: no reason to reopen D-01 or D-03. Memory grows with eagerly loaded covers, which supports lazy loading/virtualization decisions in Phase 3/8 (§12). These are first measurements, not budgets.
 
 ### 3.2 D-02 — Database engine (Accepted: SQLite)
 
@@ -631,3 +642,4 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-01 | 0.7 | Accepted D-14 (npm, electron-vite, Vitest, ESLint + Prettier, strict TypeScript); documented the `better-sqlite3` Node/Electron ABI rule and the `node:sqlite` check for the Phase 1 spike. Phase 1 unblocked |
 | 2026-11-01 | 0.8 | Accepted D-15 (artwork). Aligned `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md` and `ROADMAP.md` with all accepted decisions. Recorded the open Home cover type |
 | 2026-11-01 | 0.9 | Added a fifth art type: portrait cover 600×900 for the Home screen. Renamed `cover` to `cover_square`; added `cover_portrait` |
+| 2026-11-01 | 0.10 | Phase 1: recorded spike results (§3.1); better-sqlite3 13 needs no rebuild (N-API prebuilds), rebuild scripts dropped (§3.3, §3.15); electron-vite 6 confirmed maintained (release 2026-10-14) |
