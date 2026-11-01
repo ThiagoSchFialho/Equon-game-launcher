@@ -1,6 +1,6 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.6
+**Version:** 0.7
 **Status:** Draft — Phase 0 (no production code exists yet)
 **Last updated:** 2026-11-01
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
@@ -65,8 +65,8 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-11 | Controller input approach | Accepted | Browser Gamepad API (polled) behind an input abstraction; validate on hardware (§3.11) |
 | D-12 | Steam discovery, installation state and running state | Accepted | Read `libraryfolders.vdf` + `appmanifest_*.acf` `StateFlags`, with the safeguards in §3.12 |
 | D-13 | Windows packaging / installer | Open | Decide in Phase 8; do not block earlier phases |
-| D-14 | Package manager, test framework, lint/format | Open | Needed before Phase 1 |
-| D-15 | Artwork sources and cache policy | Proposed | SteamGridDB (API key) + Steam `appdetails`; local file picker as fallback; Google Images not adopted (§3.13) |
+| D-14 | Package manager, build tool, test framework, lint/format | Accepted | npm; electron-vite; Vitest; ESLint + Prettier; TypeScript `strict` (§3.15) |
+| D-15 | Artwork sources and cache policy | Accepted | SteamGridDB (API key) + Steam `appdetails`; local file picker as fallback; Google Images not adopted (§3.13) |
 | D-16 | Refresh frequency for `appdetails` metadata | Accepted | Fetched only when a game is discovered/added; failed fetches are retried (§3.14) |
 | D-17 | Steam launch mechanism | Accepted | `steam://rungameid/<appid>`, built in the main process (§3.12) |
 
@@ -75,7 +75,7 @@ Decisions that **block Phase 2** (database): D-02, D-03, D-05, D-06, D-08, D-09,
 Decisions that **block Phase 4** (manual-game slice): D-07, D-08.
 Decisions that **block Phase 6** (Steam library and metadata): D-12, D-16, D-17 (all accepted).
 
-**Still blocking Phase 1:** D-14 only.
+**Phase 1 is unblocked:** D-01, D-02, D-03 and D-14 are all accepted. Remaining open or proposed: D-13 (installer, Phase 8) and D-15 (artwork, proposed).
 
 ---
 
@@ -91,7 +91,7 @@ Decisions that **block Phase 6** (Steam library and metadata): D-12, D-16, D-17 
 | Costs | Larger package; higher idle memory | Rust host layer; process monitoring and registry/file access must be written in Rust |
 | Fit | Matches the security text already in the PRD | Would require rewriting the PRD security section |
 
-**Validation task (does not block):** early in Phase 1, build a throwaway spike that renders a grid of ~200 cover images, reads a gamepad, loads the SQLite native module, and reports startup time and memory on reference hardware. The PRD forbids arbitrary performance numbers before measurement, so record the measured results here. If they are unacceptable, reopen this decision.
+**Validation task (does not block):** early in Phase 1, build a throwaway spike that renders a grid of ~200 cover images, reads a gamepad, loads the SQLite native module, checks whether the chosen Electron version bundles a Node that provides `node:sqlite` (see §3.3), and reports startup time and memory on reference hardware. The PRD forbids arbitrary performance numbers before measurement, so record the measured results here. If they are unacceptable, reopen this decision.
 
 ### 3.2 D-02 — Database engine (Accepted: SQLite)
 
@@ -110,6 +110,8 @@ Chosen by Claude at the owner's request to pick the best fit.
 - **Data access:** hand-written SQL inside repositories (one per aggregate) that return domain types. No ORM. SQL lives only in `infrastructure/persistence`.
 
 **Why:** no extra dependencies; the schema relies on SQLite-specific details (CHECK constraints, `ON CONFLICT` upserts, explicit `NULL` ordering, pragmas) that are clearest in plain SQL; migrations are easy to review; repositories can be tested against a real in-memory SQLite database.
+
+**Native-module caveat:** `better-sqlite3` is compiled for one Node ABI at a time. The app runs on Electron's Node and the tests run on the system Node, so they need different builds (see §3.15). If the Phase 1 spike shows that the chosen Electron includes `node:sqlite` (built into Node; its official stability is "release candidate" as of Node 24.15), consider switching the driver to remove the native module and the rebuild dance. Reopen D-03 only if that check succeeds.
 
 **Trade-off:** SQL is not checked at compile time. Mitigation: repository tests against real SQLite. If this becomes painful, Kysely (query builder with a migrator) is the upgrade path, because repositories are the only place SQL exists. Drizzle was not chosen: schema-first generation adds a layer between the documented schema and the real constraints.
 
@@ -280,6 +282,23 @@ Consequences and rules:
 - Artwork (D-15) follows the same moment: fetched when the game is discovered or added, then cached.
 
 Whether to offer a manual "refresh metadata" action for a single game is not decided; it would be an explicit user action, not an automatic refresh.
+
+### 3.15 D-14 — Tooling (Accepted)
+
+| Item | Decision |
+| --- | --- |
+| Package manager | **npm**, with the lockfile committed. Ships with Node and has the fewest packaging surprises with Electron and native modules. |
+| Runtime versions | Pin the Node version (`.nvmrc` and `engines`) and the exact Electron version. |
+| Build tool | **electron-vite**: separate builds for main, preload and renderer, matching §6. Before adopting, check that the project is actively maintained; fallback: the Electron Forge Vite template. Packaging (installer) stays a separate decision (D-13). |
+| Language | TypeScript with `strict: true`; `tsc --noEmit` as the typecheck script. |
+| Tests | **Vitest** for domain, application, persistence and adapter tests. React Testing Library for renderer components once the UI exists. Playwright in Electron mode for a smoke test later (not in Phase 1). |
+| Lint / format | **ESLint** (flat config, `typescript-eslint`, React hooks plugin) and **Prettier**. |
+| Scripts | `dev`, `build`, `test`, `lint`, `typecheck`, `format`. |
+| Git hooks | None for now, to avoid unjustified dependencies. |
+
+**Enforce the layer rules with lint.** Use `no-restricted-imports` (per-folder overrides) so that the rules in §6 fail the build instead of relying on discipline: `renderer` may not import `infrastructure`, `integrations` or `main`; `core` may not import `electron`, Node built-ins for filesystem/process, network libraries, or SQL drivers.
+
+**Native-module ABI rule.** `better-sqlite3` is built for one runtime at a time: Node (tests) or Electron (the app). Using the wrong build fails with `NODE_MODULE_VERSION` errors, which are not code bugs. Handle it in scripts: `pretest` rebuilds for Node; `predev` and the build/package scripts rebuild for Electron (via `@electron/rebuild`). Document this in the README so people and AI assistants do not chase it as a bug. Always run tests through `npm test`, never by calling Vitest directly.
 
 ---
 
@@ -583,7 +602,7 @@ Routine tests must not call live Steam endpoints; keep a separate real-world ver
 
 ## 16. Implementation order
 
-Follows `ROADMAP.md`. Do not generate the application skeleton until D-01, D-02, D-03 and D-14 are **Accepted** and recorded here. The first coding task should be **Phase 1 — Project skeleton only**; do not ask for the whole roadmap in one prompt.
+Follows `ROADMAP.md`. Do not generate the application skeleton until D-01, D-02, D-03 and D-14 are **Accepted** and recorded here. Phase 1 is now unblocked. The first coding task should be **Phase 1 — Project skeleton only**; do not ask for the whole roadmap in one prompt.
 
 ### Definition of done
 
@@ -601,3 +620,4 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-01 | 0.4 | Owner accepted D-01, D-02, D-04–D-10. Accepted D-03 (SQL migrations + `better-sqlite3`), D-11 (polled Gamepad API), D-12 (Steam manifest-based discovery, installation and running state, with safeguards). Added D-17 (Steam launch, open) |
 | 2026-11-01 | 0.5 | Proposed D-15: SteamGridDB + Steam `appdetails` + local file picker for artwork; Google Images not adopted; proposed `GAME_ARTWORK` table and cache rules |
 | 2026-11-01 | 0.6 | Accepted D-16 (fetch `appdetails` only on discovery/add, retry failures; proposed `metadata_fetched_at`) and D-17 (`steam://rungameid/<appid>` with start confirmed via `AppRunning`) |
+| 2026-11-01 | 0.7 | Accepted D-14 (npm, electron-vite, Vitest, ESLint + Prettier, strict TypeScript); documented the `better-sqlite3` Node/Electron ABI rule and the `node:sqlite` check for the Phase 1 spike. Phase 1 unblocked |
