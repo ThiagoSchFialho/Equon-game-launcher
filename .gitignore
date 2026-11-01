@@ -42,3 +42,6 @@ desktop.ini
 
 # TypeScript
 *.tsbuildinfo
+
+# Tool caches
+.eslintcache
