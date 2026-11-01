@@ -99,13 +99,20 @@ displays.
 -   [ ] Observe the process where feasible.
 -   [ ] Record session duration and accumulate `playtime` in minutes.
 -   [ ] Define recovery for unexpected launcher shutdown.
+-   [ ] Validate with real games from other launchers (e.g. Epic Games
+    Store), which are added manually with `origin = manual`. Document
+    games that fail to start from their `.exe` directly because they
+    require the official client (login/DRM), and decide whether the
+    launch configuration needs an alternative launch method.
 
 **Acceptance:** A user can add a local executable, select it, and launch
 it; observed sessions update playtime without negative values or
-duplicate accumulation. Document process-monitoring limitations.
+duplicate accumulation. Document process-monitoring limitations and any
+games that need their official client to start.
 
 This is the first end-to-end milestone and should precede broad store
-integration.
+integration. Manual games are the supported path for Epic and GOG
+titles; no automatic Epic/GOG integration is planned.
 
 ## Phase 5 --- Library organization
 
@@ -187,23 +194,7 @@ failed requests do not mark all achievements locked or delete existing
 data; displayed totals are calculated from actual data and are not
 hardcoded from illustrative mockups.
 
-## Phase 8 --- Epic and GOG integrations
-
-### Tasks
-
--   [ ] Research and document supported local discovery and launch
-    methods for Epic Games Store.
--   [ ] Implement its adapter only after data sources and limitations
-    are validated.
--   [ ] Repeat the research and implementation process for GOG.
--   [ ] Test each adapter and partial-failure behavior.
--   [ ] Review cross-source duplicate detection.
-
-**Acceptance:** Each adapter reports its real capabilities; a store
-failure does not break other sources; unsupported data is not
-fabricated; official-client requirements are documented.
-
-## Phase 9 --- Hardening and release preparation
+## Phase 8 --- Hardening and release preparation
 
 ### Tasks
 
