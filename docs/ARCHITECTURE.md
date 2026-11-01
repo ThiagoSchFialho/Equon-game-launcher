@@ -1,6 +1,6 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.7
+**Version:** 0.9
 **Status:** Draft — Phase 0 (no production code exists yet)
 **Last updated:** 2026-11-01
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
@@ -75,7 +75,7 @@ Decisions that **block Phase 2** (database): D-02, D-03, D-05, D-06, D-08, D-09,
 Decisions that **block Phase 4** (manual-game slice): D-07, D-08.
 Decisions that **block Phase 6** (Steam library and metadata): D-12, D-16, D-17 (all accepted).
 
-**Phase 1 is unblocked:** D-01, D-02, D-03 and D-14 are all accepted. Remaining open or proposed: D-13 (installer, Phase 8) and D-15 (artwork, proposed).
+**Phase 1 is unblocked:** D-01, D-02, D-03 and D-14 are all accepted. The only decision still open is D-13 (installer, Phase 8). The Home cover question is settled: a separate `cover_portrait` art type (§3.13).
 
 ---
 
@@ -117,7 +117,7 @@ Chosen by Claude at the owner's request to pick the best fit.
 
 ### 3.4 D-04 — Steam API key storage (Accepted: `safeStorage`)
 
-`DATA_BASE_CONTEXT.md` stores `steam_api_key` as `TEXT` in `USERS` and requires protection at rest "with a mechanism appropriate to Windows". `PRODUCT.md` §7 says "do not store store credentials in the MVP". These conflict (see §4).
+`DATA_BASE_CONTEXT.md` stores `steam_api_key` as `TEXT` in `USERS` and requires protection at rest "with a mechanism appropriate to Windows". `PRODUCT.md` §7 says "do not store store credentials in the MVP". These conflicted (see §4); resolved by the decision below and by the updated documents.
 
 **Recommendation:**
 
@@ -138,7 +138,7 @@ Docs disagree: `DATA_BASE_CONTEXT.md` gives `steam`, `yuzu`, `local`; earlier ar
 
 ### 3.7 D-07 — Manual-game launch configuration (Accepted)
 
-The UML has no field for executable, arguments, or working directory. **Proposal:** a separate table, e.g. `GAME_LAUNCH_CONFIGS(game_id PK/FK → GAMES.id ON DELETE CASCADE, executable_path NOT NULL, arguments, working_directory)`. This keeps launch data out of `GAMES`, which is shared by all origins. Treat all three values as untrusted input (§7). Update `DATA_BASE_CONTEXT.md` before implementing.
+The UML has no field for executable, arguments, or working directory. **Proposal:** a separate table, e.g. `GAME_LAUNCH_CONFIGS(game_id PK/FK → GAMES.id ON DELETE CASCADE, executable_path NOT NULL, arguments, working_directory)`. This keeps launch data out of `GAMES`, which is shared by all origins. Treat all three values as untrusted input (§7). Defined in `DATA_BASE_CONTEXT.md` §3.7.
 
 ### 3.8 D-08 — Sessions and playtime rounding (Accepted)
 
@@ -155,7 +155,7 @@ PLAY_SESSIONS(
 - Insert a `running` row when a launch is observed.
 - On normal exit, set `ended_at`, `duration_seconds`, `status = 'completed'`, and update `GAMES.playtime` and `time_last_played` in one transaction.
 - On startup, rows still `running` are marked `interrupted`. Whether interrupted sessions contribute time is an **open sub-decision** (default proposal: they do not, because the duration is unknown).
-- Rounding: rounding each session to whole minutes loses time over many short sessions. Prefer deriving minutes from accumulated seconds. Whatever rule is chosen must be written here and covered by tests; `playtime` never goes negative.
+- Rounding: rounding each session to whole minutes loses time over many short sessions. **Rule:** `GAMES.playtime = floor(sum of duration_seconds of the game's completed sessions / 60)`, recomputed in the same transaction that closes the session (idempotent; see `DATA_BASE_CONTEXT.md` §3.8). Covered by tests; `playtime` never goes negative.
 - Open sub-decision: `PRODUCT.md` asks to distinguish launcher-measured time from store-reported statistics. If store playtime is ever imported, a source indicator will be needed.
 
 ### 3.9 D-09 — `tier` and trophy counters (Accepted: application layer)
@@ -234,13 +234,14 @@ The reference implementation (a prototype using an Express router) already does 
 - If Steam is not running, the protocol is expected to start the client; validate this behavior and its delay on a real install.
 - A session starts when `AppRunning` is observed, not when the URL is opened.
 
-### 3.13 D-15 — Artwork sources and cache (Proposed)
+### 3.13 D-15 — Artwork sources and cache (Accepted)
 
-Each game needs: a **square cover**, a **logo**, a **1920×1080 image**, and a **header image**.
+Each game needs five images: a **square cover** (Library), a **portrait cover 600×900** (Home), a **logo**, a **1920×1080 image**, and a **header image**. The two covers are independent assets; neither is cropped from the other.
 
 | Asset | Steam games | Manual games |
 | --- | --- | --- |
-| Square cover | SteamGridDB grids, filtered to square dimensions, looked up by Steam App ID | SteamGridDB name search; the user confirms the match. Otherwise a local file |
+| Square cover (`cover_square`) | SteamGridDB grids, filtered to square dimensions, looked up by Steam App ID | SteamGridDB name search; the user confirms the match. Otherwise a local file |
+| Portrait cover (`cover_portrait`, 600×900) | SteamGridDB grids, filtered to 600×900, looked up by Steam App ID. `appdetails` has no vertical cover; Steam's own CDN asset for it is undocumented and must not be relied on | Same as the square cover |
 | Logo | SteamGridDB logos | Same as cover |
 | 1920×1080 | `screenshots[].path_full` from `appdetails` (usually 1920×1080; verify real dimensions after download) | A local file chosen by the user. SteamGridDB heroes are wide banners, not 16:9 (verify dimensions), so use them only as a fallback with `cover` fit |
 | Header | `header_image` from `appdetails` | SteamGridDB horizontal grid (460×215 / 920×430) or a crop of the 1920×1080 image |
@@ -260,7 +261,7 @@ Each game needs: a **square cover**, a **logo**, a **1920×1080 image**, and a *
 - The SteamGridDB key is per user, set in Settings, encrypted with `safeStorage` (D-04), and never sent to the renderer or logged. Do not embed a shared key in the app; a proxy server contradicts the no-server requirement.
 - Fetch lazily when a game is added or discovered, through a throttled queue with bounded retries. Never block the UI. The app must be fully usable with placeholders and with no key configured (Steam games still get `header_image` and screenshots).
 - Cache on disk in the app data folder, one file per game per kind. Never hotlink remote images at runtime. Serve cached files to the renderer through a controlled mechanism, not arbitrary file paths.
-- Proposed table: `GAME_ARTWORK(game_id → GAMES.id ON DELETE CASCADE, kind, local_path, source, source_url, width, height, user_selected, fetched_at, UNIQUE (game_id, kind))`. `DATA_BASE_CONTEXT.md` must be updated before implementing.
+- Persistence: table `GAME_ARTWORK`, with kinds `cover_square`, `cover_portrait`, `logo`, `background` and `header`; defined in `DATA_BASE_CONTEXT.md` §3.9.
 - Artwork the user selected is never overwritten by an automatic fetch (same principle as `hidden` / `beated`). Refresh only on an explicit action or when art is missing.
 - A failed fetch keeps the existing cached art. Validate every download (content type, maximum size, decoded dimensions) before saving.
 - Do not bundle or redistribute fetched images; the cache is personal and local.
@@ -275,7 +276,7 @@ Consequences and rules:
 
 - A game already in the database is not fetched again when it is re-discovered by a later library scan.
 - Metadata can become stale if Steam changes it. This is accepted.
-- A failed fetch (network error, unsuccessful response, malformed data) must not count as "done". The game stays marked as missing metadata and the fetch is retried on a later library refresh, with bounded retries and without blocking the UI. A game that genuinely has no description is different from a game whose fetch failed, so the database needs a way to tell them apart. **Proposal:** a nullable `GAMES.metadata_fetched_at` timestamp, set only after a valid response is saved. `DATA_BASE_CONTEXT.md` must be updated before implementing.
+- A failed fetch (network error, unsuccessful response, malformed data) must not count as "done". The game stays marked as missing metadata and the fetch is retried on a later library refresh, with bounded retries and without blocking the UI. A game that genuinely has no description is different from a game whose fetch failed, so the database needs a way to tell them apart. **Decision:** a nullable `GAMES.metadata_fetched_at` timestamp, set only after a valid response is saved (see `DATA_BASE_CONTEXT.md` §3.1).
 - When a first scan finds many games, fetches go through a throttled queue; a third-party source reports a limit of roughly 200 requests per 5 minutes for this endpoint (not confirmed, verify).
 - Fetching never overwrites `hidden` or `beated`, and never replaces valid stored values with empty ones.
 - Achievement synchronization is separate and unaffected (§10).
@@ -304,7 +305,7 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 
 ## 4. Inconsistencies found across the project docs
 
-Items 1–6 now have accepted decisions (D-04 to D-08, D-02), but the other docs (`DATA_BASE_CONTEXT.md`, `PRODUCT.md`) still need to be updated to match. Items 7–9 are settled or housekeeping.
+Items 1–6 have accepted decisions (D-02, D-04 to D-08) and are now reflected in `DATA_BASE_CONTEXT.md` v0.2 and `PRODUCT.md` v0.2. Item 7 follows the Epic/GOG decision. Items 8–9 are housekeeping; item 9 (documentation language) is still open.
 
 1. **API key vs "no credentials":** `USERS.steam_api_key` vs `PRODUCT.md` §7 "do not store store credentials in the MVP". See D-04.
 2. **`origin` naming:** `local` / `yuzu` (database doc) vs `manual` (this document and the PRD). See D-05.
@@ -447,6 +448,8 @@ Games from Epic, GOG and other launchers are registered as manual games. Some ma
 ---
 
 ## 9. Persistence
+
+`DATA_BASE_CONTEXT.md` v0.2 is the authoritative description of the schema. This section summarizes it.
 
 ### Rules to preserve (from `DATA_BASE_CONTEXT.md`)
 
@@ -621,3 +624,5 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-01 | 0.5 | Proposed D-15: SteamGridDB + Steam `appdetails` + local file picker for artwork; Google Images not adopted; proposed `GAME_ARTWORK` table and cache rules |
 | 2026-11-01 | 0.6 | Accepted D-16 (fetch `appdetails` only on discovery/add, retry failures; proposed `metadata_fetched_at`) and D-17 (`steam://rungameid/<appid>` with start confirmed via `AppRunning`) |
 | 2026-11-01 | 0.7 | Accepted D-14 (npm, electron-vite, Vitest, ESLint + Prettier, strict TypeScript); documented the `better-sqlite3` Node/Electron ABI rule and the `node:sqlite` check for the Phase 1 spike. Phase 1 unblocked |
+| 2026-11-01 | 0.8 | Accepted D-15 (artwork). Aligned `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md` and `ROADMAP.md` with all accepted decisions. Recorded the open Home cover type |
+| 2026-11-01 | 0.9 | Added a fifth art type: portrait cover 600×900 for the Home screen. Renamed `cover` to `cover_square`; added `cover_portrait` |

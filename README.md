@@ -21,9 +21,9 @@ The project is currently under development.
 
 ## Planned Features
 
-- Steam game library integration.
-- Support for manually added games and other game sources.
-- Game details, artwork, and metadata.
+- Steam game library integration (local installs, launch, and installation status).
+- Manually added games. This is how games from the Epic Games Store, GOG, or any other launcher are added; there is no automatic Epic or GOG integration.
+- Game details, artwork (via Steam, SteamGridDB, or local files), and metadata.
 - Playtime tracking.
 - Steam achievement synchronization.
 - Search, filtering, and sorting.
@@ -39,10 +39,26 @@ Equon follows a hybrid visual direction that combines large game artwork, editor
 
 The interface is designed primarily for conventional 16:9 displays, including setups connected to a television, with readability at a distance and consistent controller focus as key priorities.
 
-Desgin on figma: https://www.figma.com/design/DIkoemv1pnAg8px8TZchNG/Untitled?node-id=0-1&p=f&t=4hBnYoyVth7OYjoR-0
+Design on Figma: https://www.figma.com/design/DIkoemv1pnAg8px8TZchNG/Untitled?node-id=0-1&p=f&t=4hBnYoyVth7OYjoR-0
 
 ## Platform
 
 - **Initial target:** Windows
 - **Primary input:** Game controller
 - **Additional input:** Mouse and keyboard
+
+## Planned Tech Stack
+
+These choices are recorded in `docs/ARCHITECTURE.md`; nothing is implemented yet.
+
+- **Desktop:** Electron, React, and TypeScript, built with electron-vite.
+- **Local database:** SQLite (embedded, no separate server) via `better-sqlite3`.
+- **Tooling:** npm, Vitest, ESLint, and Prettier.
+
+## Documentation
+
+- [`docs/PRODUCT.md`](docs/PRODUCT.md): product requirements and MVP scope.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): architecture and decision log.
+- [`docs/DATA_BASE_CONTEXT.md`](docs/DATA_BASE_CONTEXT.md): data model and integrity rules.
+- [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md): visual design system.
+- [`docs/ROADMAP.md`](docs/ROADMAP.md): implementation phases.

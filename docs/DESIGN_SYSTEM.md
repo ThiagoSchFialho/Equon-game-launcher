@@ -1,7 +1,7 @@
 # Game Launcher --- Design System
 
-**Versão:** 0.1\
-**Status:** Direção visual inicial; valores sujeitos a prototipagem\
+**Versão:** 0.2\
+**Status:** Direção visual inicial; valores sujeitos a prototipagem; tipos de arte alinhados a `ARCHITECTURE.md` (D-15)\
 **Plataforma:** Windows, foco em monitor/TV 16:9\
 **Direção:** híbrida e autoral, cinematográfica, editorial e
 retro-moderna
@@ -229,17 +229,41 @@ desativadas.
 
 ## 6. Capas, imagens e fundos
 
--   Definir formatos de arte por função: quadrado para avatares/ícones,
-    retrato para capas verticais e paisagem para banners/destaques.
+### Tipos de arte por jogo
+
+Cada jogo pode ter cinco artes. Os nomes abaixo são os mesmos usados no
+banco de dados (`GAME_ARTWORK.kind`). A capa vertical e a quadrada são
+artes independentes; nenhuma é recortada a partir da outra.
+
+| Arte (`kind`) | Formato | Onde aparece nos mockups |
+| --- | --- | --- |
+| `cover_square` | Capa quadrada (1:1) | Biblioteca (grade de cards) |
+| `cover_portrait` | Capa vertical 600×900 (2:3) | Início (cards de continuar jogando e recentes) |
+| `logo` | Logotipo, preferencialmente com transparência | Detalhes do jogo, sobre o fundo |
+| `background` | Imagem 1920×1080 (16:9) | Detalhes do jogo, como arte dominante |
+| `header` | Imagem larga (`header_image` da Steam, cerca de 2:1) | Lista de conquistas, miniatura de cada jogo |
+
+### Regras
+
 -   Não esticar imagens para preencher proporções incompatíveis.
--   Definir regras de `cover`/`contain` por componente.
--   Usar placeholders consistentes quando uma imagem estiver ausente.
+-   Definir regras de `cover`/`contain` por componente e por tipo de
+    arte (o fundo 1920×1080 usa `cover`; o logotipo usa `contain`).
+-   Usar placeholders consistentes quando uma imagem estiver ausente,
+    um por tipo de arte (cada um na proporção do seu tipo). A interface deve funcionar sem nenhuma arte.
+-   Jogos manuais sem fundo 1920×1080: definir o visual de fallback
+    (por exemplo, cor de superfície com a capa e o logotipo) antes de
+    implementar a tela de detalhes.
+-   Usar sempre as imagens do cache local; nunca carregar uma imagem
+    remota em tempo de execução.
 -   Carregar imagens progressivamente e limitar resolução/tamanho quando
-    apropriado.
+    apropriado. Não carregar todas as capas em alta resolução ao mesmo
+    tempo.
 -   Usar gradientes de contraste somente quando necessários para
     legibilidade.
 -   Não assumir que a imagem principal sempre terá espaço negativo no
     mesmo lado.
+-   O logotipo deve permanecer legível sobre fundos variados; avaliar
+    contraste antes de colocá-lo diretamente sobre a imagem.
 
 ## 7. Responsividade e área segura
 
@@ -367,7 +391,9 @@ código.
 -   Logo e sistema de ícones próprios.
 -   Layout definitivo da Home e da biblioteca.
 -   Proporções e tamanhos finais dos cards.
--   Fonte de metadados e política de cache.
+-   Visual de fallback quando não houver imagem 1920×1080.
+-   Navegador de arquivos acessível por controle para escolher
+    executáveis e imagens.
 -   Configurações de movimento e acessibilidade expostas ao usuário.
 -   Se haverá temas adicionais no futuro.
 
@@ -383,4 +409,6 @@ código.
     execução.
 -   Não transformar números ou quantidades presentes nos mockups em
     valores fixos; exibir sempre os dados reais disponíveis.
+-   Usar apenas artes do cache local e os tipos de arte da seção 6;
+    não inventar novos tipos sem atualizar este documento e o banco.
 -   Atualizar este documento quando uma decisão de design for alterada.

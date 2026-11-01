@@ -19,19 +19,18 @@ architecture decisions are confirmed.
 
 ### Tasks
 
--   [ ] Review `README.md`, `PRODUCT.md`, `DESIGN_SYSTEM.md`, and
+-   [x] Review `README.md`, `PRODUCT.md`, `DESIGN_SYSTEM.md`, and
     `DATA_BASE_CONTEXT.md`.
--   [ ] Choose the desktop framework and UI stack.
--   [ ] Choose the database engine. The UML currently uses
-    PostgreSQL-style types, but an embedded database may be simpler for
-    a local single-user app.
--   [ ] Choose package manager, test framework, lint/format tools, and
-    migration strategy.
--   [ ] Decide secure storage for the Steam API key.
--   [ ] Define approved `origin` values and how unknown installation
-    state is represented.
--   [ ] Record decisions in `ARCHITECTURE.md`.
--   [ ] Set up Git and `.gitignore`.
+-   [x] Choose the desktop framework and UI stack (Electron, React,
+    TypeScript; D-01).
+-   [x] Choose the database engine (SQLite; D-02).
+-   [x] Choose package manager, build tool, test framework, lint/format
+    tools, and migration strategy (D-03, D-14).
+-   [x] Decide secure storage for API keys (`safeStorage`; D-04).
+-   [x] Define approved `origin` values and how unknown installation
+    state is represented (D-05, D-06).
+-   [x] Record decisions in `ARCHITECTURE.md`.
+-   [ ] Set up Git and `.gitignore` (a starter `.gitignore` is provided).
 
 **Acceptance:** Key technical decisions and unresolved questions are
 documented. No production feature code is written just to avoid making a
@@ -48,20 +47,44 @@ decision.
     operations.
 -   [ ] Add a minimal screen/window proving the application launches.
 -   [ ] Document local setup in the README.
+-   [ ] Pin the Node and Electron versions; confirm that electron-vite is
+    actively maintained (fallback: Electron Forge Vite template).
+-   [ ] Enable strict TypeScript and add the lint rules that enforce the
+    layer boundaries in `ARCHITECTURE.md` §6.
+-   [ ] Configure the secure window settings (`contextIsolation`,
+    `nodeIntegration` off, `sandbox`, restricted navigation, CSP).
+-   [ ] Add the scripts that rebuild `better-sqlite3` for Node (tests)
+    and for Electron (app); document them.
+-   [ ] Run the validation spike: render a grid of ~200 images, read a
+    gamepad, load the SQLite module in Electron, check whether the
+    chosen Electron provides `node:sqlite`, and record startup time and
+    memory in `ARCHITECTURE.md`.
 
 **Acceptance:** App starts locally, automated checks pass, setup is
-repeatable, and no secrets are committed.
+repeatable, and no secrets are committed. Spike results are recorded;
+D-01 or D-03 is reopened only if they are unacceptable.
 
 ## Phase 2 --- Database and domain
 
 ### Tasks
 
--   [ ] Add database connection and versioned migrations.
--   [ ] Implement the schema from `DATA_BASE_CONTEXT.md`.
+-   [ ] Add database connection (with `PRAGMA foreign_keys = ON` on every
+    connection) and versioned SQL migrations.
+-   [ ] Implement the schema from `DATA_BASE_CONTEXT.md`, including
+    `GAME_LAUNCH_CONFIGS`, `PLAY_SESSIONS`, `GAME_ARTWORK`, nullable
+    `installed`, `metadata_fetched_at`, the single-row `USERS` rule and
+    encrypted key columns.
+-   [ ] Create `GAME_ARTWORK` with the five kinds: `cover_square`,
+    `cover_portrait`, `logo`, `background` and `header`.
 -   [ ] Confirm `GAMES.origin`, non-negative `playtime`, and uniqueness
     of non-null Steam IDs.
 -   [ ] Confirm `UNIQUE (game_id, api_name)` and achievement FK cascade.
 -   [ ] Confirm `GAME_GENRES` composite PK and cascading FKs.
+-   [ ] Confirm foreign keys are actually enforced (tests must fail if
+    the pragma is missing) and that upserts never touch `hidden` or
+    `beated`.
+-   [ ] Confirm the single running session per game and the
+    `playtime` derivation from completed sessions.
 -   [ ] Implement data-access functions for games, genres, and
     achievements.
 -   [ ] Add tests for constraints, migrations, cascades, transactions,
@@ -78,6 +101,12 @@ does not divide by zero; manual flags are preserved.
 -   [ ] Build primary navigation and initial Home, Library, and Game
     Details screens using `DESIGN_SYSTEM.md`.
 -   [ ] Implement visible, predictable controller focus.
+-   [ ] Implement the input module: Gamepad API polling, edge
+    detection, dead zones and repeat rate, semantic actions, and a fake
+    input source for tests.
+-   [ ] Implement placeholders for each artwork type (`cover_square`,
+    `cover_portrait`, `logo`, `background`, `header`) and progressive
+    image loading from the local cache.
 -   [ ] Support confirm, back, directions, and scrolling.
 -   [ ] Preserve mouse and keyboard alternatives.
 -   [ ] Implement loading, empty, unavailable, and error states.
@@ -91,14 +120,18 @@ displays.
 
 ### Tasks
 
--   [ ] Decide how to store executable path, optional arguments, and
-    working directory.
+-   [ ] Store executable path, optional arguments, and working directory
+    in `GAME_LAUNCH_CONFIGS` (D-07); validate them as untrusted input.
 -   [ ] Add, edit, and remove a manual game.
 -   [ ] Show it in Library and Game Details.
 -   [ ] Launch it with useful validation and errors.
 -   [ ] Observe the process where feasible.
--   [ ] Record session duration and accumulate `playtime` in minutes.
--   [ ] Define recovery for unexpected launcher shutdown.
+-   [ ] Record each session in `PLAY_SESSIONS` and derive `playtime`
+    (minutes) from the completed sessions' seconds in one transaction.
+-   [ ] Let the user choose local artwork files for a manual game.
+-   [ ] Decide how executables and images are picked with a controller
+    (the native file dialog is not controller-navigable).
+-   [ ] Mark sessions left `running` as `interrupted` on startup.
 -   [ ] Validate with real games from other launchers (e.g. Epic Games
     Store), which are added manually with `origin = manual`. Document
     games that fail to start from their `.exe` directly because they
@@ -135,24 +168,45 @@ matches are not silently merged.
 
 ### Tasks
 
--   [ ] Validate Steam library discovery, including `appmanifest_*.acf`
-    and multiple library folders.
--   [ ] Discover installed Steam games and represent installation state
-    reliably.
--   [ ] Validate the Steam game launch mechanism.
--   [ ] Import metadata and genres from `appdetails`.
+-   [ ] Locate Steam through the Windows registry, with fallback and a
+    user override in Settings.
+-   [ ] Read `libraryfolders.vdf` and every `appmanifest_*.acf`, handling
+    multiple library folders and ignoring non-game manifests.
+-   [ ] Interpret `StateFlags` (installed, running, installing,
+    updating, paused, unhealthy) and pin the behavior with fixtures.
+-   [ ] Write `installed` as `1`, `0` or `NULL` following the rules in
+    `DATA_BASE_CONTEXT.md` §3.2; a failed read never writes `0`.
+-   [ ] Launch Steam games with `steam://rungameid/<appid>`, built in the
+    main process from a validated App ID, and confirm the start by
+    observing the `AppRunning` flag.
+-   [ ] Observe Steam sessions from the manifest state, with process
+    polling as a fallback; document the limits.
+-   [ ] Import metadata and genres from `appdetails` **only when a game
+    is discovered or added**; set `metadata_fetched_at` only after a
+    valid response and retry failures on later refreshes.
 -   [ ] Normalize responses and handle missing fields.
--   [ ] Securely store the API key and Steam account ID.
--   [ ] Test using fixtures and simulated failures.
+-   [ ] Build the artwork pipeline: Steam `header_image` and
+    screenshots, SteamGridDB (square and portrait covers, logo; name search
+    with user confirmation for manual games), throttled queue, local cache,
+    validation of downloads, and no overwriting of user-selected art.
+-   [ ] Securely store the Steam account ID and the Steam and
+    SteamGridDB API keys (encrypted with `safeStorage`).
+-   [ ] Test using fixtures and simulated failures (unreadable library,
+    missing `libraryfolders.vdf`, download in progress, running game,
+    corrupt files, network errors).
 
 **Acceptance:** Supported Steam games are discovered without obvious
 duplicates; metadata refresh does not overwrite manual flags; API
-failures do not break the rest of the library.
+failures do not break the rest of the library; a disconnected library
+drive marks its games as unknown, not uninstalled; the app is fully
+usable without a SteamGridDB key.
 
 ## Phase 7 --- Achievements
 
 ### Tasks
 
+-   [ ] Validate the current Steam Web API formats and limits before
+    implementing; never log URLs that contain the API key.
 -   [ ] Import definitions using `GetSchemaForGame`.
 -   [ ] Import unlock state using `GetPlayerAchievements`.
 -   [ ] Import global percentages using
@@ -201,13 +255,14 @@ hardcoded from illustrative mockups.
 -   [ ] Measure startup, library rendering, image loading, and scan
     performance on reference hardware.
 -   [ ] Optimize caching and progressive image loading based on
-    measurements.
+    measurements; decide artwork cache eviction and stored sizes.
 -   [ ] Test controller disconnect/reconnect and input edge cases.
 -   [ ] Test 1920×1080 and 1280×720.
 -   [ ] Test network failures, malformed API responses, permissions, and
     interrupted sync.
 -   [ ] Verify migration and backup/recovery approach.
--   [ ] Configure Windows packaging/installer.
+-   [ ] Decide and configure Windows packaging/installer (D-13),
+    including correct packaging of the `better-sqlite3` native module.
 -   [ ] Review security, logging, API key handling, and dependencies.
 -   [ ] Update README with implemented features, setup, limitations, and
     screenshots.
@@ -228,6 +283,6 @@ recoverable; README distinguishes implemented features from plans.
 
 ## Suggested first coding task
 
-After Phase 0 decisions are confirmed, ask the coding assistant to
+The Phase 0 decisions are confirmed (see `ARCHITECTURE.md`). Ask the coding assistant to
 implement **only Phase 1 --- Project skeleton**. Do not ask it to
 implement the entire roadmap in one prompt.

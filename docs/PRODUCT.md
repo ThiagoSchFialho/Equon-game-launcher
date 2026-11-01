@@ -1,7 +1,7 @@
 # Game Launcher --- Product Requirements Document
 
-**Versão:** 0.1\
-**Status:** Proposta inicial para revisão\
+**Versão:** 0.2\
+**Status:** Em revisão; alinhado às decisões técnicas registradas em `ARCHITECTURE.md`\
 **Plataforma-alvo:** Windows\
 **Público inicial:** usuário de PC que quer uma experiência de
 biblioteca de jogos semelhante à de um console\
@@ -41,6 +41,9 @@ integralmente as funcionalidades de cada plataforma. Seu papel principal
 -   Oferecer um sistema público de plugins ou temas de terceiros.
 -   Substituir os clientes oficiais necessários para alguns jogos, DRM
     ou serviços online.
+-   Integrar automaticamente com a Epic Games Store ou com a GOG. Jogos
+    dessas lojas, e de qualquer outro launcher, são adicionados
+    manualmente.
 
 ## 4. Usuários e contexto de uso
 
@@ -94,10 +97,15 @@ com o computador ligado a uma TV.
 
 ### 6.2 Integrações
 
--   **Steam:** descobrir instalações locais e iniciar jogos por um
-    mecanismo validado.
+-   **Steam:** descobrir instalações locais a partir dos arquivos da
+    própria Steam (bibliotecas e manifestos de aplicativos), identificar
+    o estado de instalação e de execução e iniciar jogos pelo protocolo
+    `steam://rungameid/<appid>`.
 -   **Manual:** permitir selecionar executável, argumentos opcionais e
-    diretório de trabalho.
+    diretório de trabalho. É o caminho suportado para jogos da Epic
+    Games Store, da GOG e de qualquer outro launcher. Alguns desses
+    jogos podem só abrir pelo cliente oficial; esse caso deve ser
+    validado com jogos reais.
 
 As integrações devem ser implementadas por adaptadores independentes.
 Não presumir que todas as lojas ofereçam APIs públicas equivalentes.
@@ -135,6 +143,11 @@ limitações, condições de teste e método de inicialização suportado.
     fornecidas por uma loja.
 -   Não prometer capturar perfeitamente todos os processos filhos ou
     jogos iniciados por launchers intermediários na primeira versão.
+-   Para jogos Steam, o início e o fim da sessão são observados pelo
+    estado do jogo nos arquivos da Steam; o resultado é de melhor
+    esforço, com precisão limitada pela forma de observação.
+-   Sessões interrompidas por encerramento inesperado não somam tempo
+    por padrão, pois a duração é desconhecida.
 
 ### 6.6 Controle e navegação
 
@@ -231,6 +244,29 @@ limitações, condições de teste e método de inicialização suportado.
 -   Isolar falhas na sincronização de conquistas para que não
     comprometam a biblioteca ou a inicialização dos jogos.
 
+### 6.9 Artes e metadados
+
+-   Cada jogo pode ter cinco artes: **capa quadrada** (Biblioteca),
+    **capa vertical 600×900** (Início), **logotipo**, **imagem
+    1920×1080** e **imagem de cabeçalho** (header).
+-   Fontes: Steam (`header_image` e capturas de tela dos metadados),
+    SteamGridDB (capas quadrada e vertical e logotipo, com chave de API
+    pessoal gratuita) e arquivos locais escolhidos pelo usuário. Não usar buscas
+    de imagens da web.
+-   Para jogos manuais, a busca no SteamGridDB é feita por título e o
+    usuário confirma qual resultado corresponde ao jogo.
+-   Os metadados da Steam (título, descrição, desenvolvedor, data,
+    classificação indicativa e gêneros) e as artes são obtidos **apenas
+    quando o jogo é descoberto ou adicionado**; não há atualização
+    periódica. Se a obtenção falhar, ela é tentada novamente em uma
+    atualização posterior da biblioteca.
+-   As artes ficam em cache local; a interface nunca depende de imagens
+    remotas em tempo de execução.
+-   Arte escolhida pelo usuário nunca é substituída por um download
+    automático.
+-   Sem arte disponível, a interface mostra um placeholder; o
+    aplicativo continua plenamente utilizável sem a chave do SteamGridDB.
+
 ## 7. Requisitos não funcionais
 
 ### Desempenho
@@ -252,7 +288,11 @@ limitações, condições de teste e método de inicialização suportado.
     sistema de arquivos ou execução de comandos ao renderer.
 -   Tratar caminhos e argumentos de executáveis como entradas não
     confiáveis.
--   Não armazenar credenciais de lojas no MVP.
+-   Não armazenar logins nem senhas de lojas no MVP.
+-   As chaves de API (Steam Web API e SteamGridDB) são armazenadas
+    criptografadas com os recursos do sistema (Electron `safeStorage`),
+    só são descriptografadas no processo principal e nunca vão para a
+    interface, para logs ou para mensagens de erro.
 
 ### Confiabilidade
 
@@ -314,6 +354,10 @@ O MVP poderá ser considerado funcional quando:
     conquistas daquele jogo.
 13. Jogos sem suporte a conquistas apresentam uma mensagem informativa,
     sem serem tratados como falha.
+14. Cada jogo mostra suas artes em cache ou placeholders; falhas de
+    download ou ausência de chave não impedem o uso do aplicativo.
+15. Metadados e artes são obtidos apenas na descoberta ou adição do
+    jogo, e uma falha de obtenção é tentada novamente depois.
 
 ## 10. Fora de escopo até decisão posterior
 
@@ -332,12 +376,21 @@ O MVP poderá ser considerado funcional quando:
     mesma forma.
 -   Jogos com launchers intermediários podem exigir estratégias
     específicas de monitoramento.
--   Metadados e imagens podem exigir uma fonte externa, chaves de API e
-    atenção a termos de uso.
+-   Metadados e imagens dependem de fontes externas (Steam e
+    SteamGridDB), chaves de API e limites de uso; as artes são
+    contribuídas pela comunidade e devem ficar apenas em cache pessoal e
+    local, sem redistribuição.
+-   O seletor de arquivos nativo do Windows não é navegável com
+    controle; o fluxo de adicionar jogo manual (executável e imagens)
+    pode exigir um navegador de arquivos próprio.
+-   Os flags de estado dos manifestos da Steam não são um contrato
+    oficial e podem mudar; é preciso validar em instalações reais.
+-   Alguns jogos de outros launchers (por exemplo, da Epic) podem só
+    abrir pelo cliente oficial.
 -   A estratégia de navegação por controle deve ser validada em hardware
     real.
--   O uso de Electron deve ser comparado com medições reais de consumo e
-    responsividade.
+-   O Electron foi adotado como base; seu consumo e responsividade
+    ainda devem ser medidos em um protótipo em hardware real.
 
 ## 12. Estratégia de entrega
 
