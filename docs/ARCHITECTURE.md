@@ -1,6 +1,6 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.4
+**Version:** 0.5
 **Status:** Draft — Phase 0 (no production code exists yet)
 **Last updated:** 2026-11-01
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
@@ -66,7 +66,7 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-12 | Steam discovery, installation state and running state | Accepted | Read `libraryfolders.vdf` + `appmanifest_*.acf` `StateFlags`, with the safeguards in §3.12 |
 | D-13 | Windows packaging / installer | Open | Decide in Phase 8; do not block earlier phases |
 | D-14 | Package manager, test framework, lint/format | Open | Needed before Phase 1 |
-| D-15 | Artwork and metadata source, cache policy | Open | Needs a decision before Phase 3 screens use real art |
+| D-15 | Artwork sources and cache policy | Accepted | SteamGridDB (API key) + Steam `appdetails`; local file picker as fallback; Google Images not adopted (§3.13) |
 | D-16 | Refresh frequency for `appdetails` metadata | Open | Not defined in any doc |
 | D-17 | Steam launch mechanism | Open | Candidate: `steam://rungameid/<appid>`; validate (§3.12) |
 
@@ -121,7 +121,7 @@ Chosen by Claude at the owner's request to pick the best fit.
 
 - Encrypt the key with Electron `safeStorage` (backed by the Windows DPAPI on Windows) and persist only the encrypted blob.
 - Decrypt only inside the main process, only when making a Steam request.
-- Never send the key to the renderer, never log it, never include it in error messages or URLs that get logged.
+- Never send the key to the renderer, never log it, never include it in error messages or URLs that get logged. The same mechanism stores the SteamGridDB key if D-15 is accepted.
 - Limitation to document: DPAPI protects against other Windows users, not against other processes running as the same user.
 
 The Steam Web API key is an API key, not a store login. If the owner agrees, amend the PRD sentence to say so.
@@ -225,6 +225,39 @@ The reference implementation (a prototype using an Express router) already does 
 **Running state and sessions:** the `AppRunning` flag lets the launcher notice a game starting and stopping, including games started from Steam itself. Candidate mechanism: poll the manifests (or watch the `steamapps` folders for changes, if reliable on Windows) and treat transitions as session start/end. Interval or watcher choice is decided by measurement. Treat the result as **best-effort**: the flag is Steam-internal and may lag or go stale if a game crashes or Steam closes. Validate those cases, and keep process polling of the game's install folder (`installdir` from the manifest) as a fallback. Document observed limits; the PRD does not promise perfect capture.
 
 **Launch (D-17, still open):** the prototype does not cover launching. Candidate: the `steam://rungameid/<appid>` URL protocol, built in the main process from a validated numeric App ID only, never from a renderer-supplied string. Validate on a real install.
+
+### 3.13 D-15 — Artwork sources and cache (Proposed)
+
+Each game needs: a **square cover**, a **logo**, a **1920×1080 image**, and a **header image**.
+
+| Asset | Steam games | Manual games |
+| --- | --- | --- |
+| Square cover | SteamGridDB grids, filtered to square dimensions, looked up by Steam App ID | SteamGridDB name search; the user confirms the match. Otherwise a local file |
+| Logo | SteamGridDB logos | Same as cover |
+| 1920×1080 | `screenshots[].path_full` from `appdetails` (usually 1920×1080; verify real dimensions after download) | A local file chosen by the user. SteamGridDB heroes are wide banners, not 16:9 (verify dimensions), so use them only as a fallback with `cover` fit |
+| Header | `header_image` from `appdetails` | SteamGridDB horizontal grid (460×215 / 920×430) or a crop of the 1920×1080 image |
+
+**SteamGridDB (adopted).** REST API v2 at `https://www.steamgriddb.com/api/v2`, `Authorization: Bearer <key>`. The key is free but requires a SteamGridDB account. Supports lookup by Steam App ID or SteamGridDB game ID, name search (needed for non-Steam games), and filters by dimensions and style. Art is community-contributed. A third-party document reports about 500 requests per hour on the free tier; this is not confirmed, so verify it and design for throttling.
+
+**Steam `appdetails` (adopted).** Provides `header_image` and `screenshots`. Validate the success flag and treat every field as optional. Steam's own CDN asset names (library capsule, hero, logo images) exist but are undocumented; do not rely on them without validation.
+
+**Google Images (not adopted).**
+- The official Custom Search JSON API is closed to new customers and is discontinued on 2027-01-01.
+- Scraping Google Images breaks Google's terms and is fragile.
+- Third-party search APIs cost money and need another key.
+- Results are arbitrary copyrighted images with unpredictable sizes and a real risk of showing the wrong game.
+- The need "use any image I find" is covered better by letting the user **pick a local file** (and, possibly later, paste a validated `https` URL).
+
+**Rules**
+- The SteamGridDB key is per user, set in Settings, encrypted with `safeStorage` (D-04), and never sent to the renderer or logged. Do not embed a shared key in the app; a proxy server contradicts the no-server requirement.
+- Fetch lazily when a game is added or discovered, through a throttled queue with bounded retries. Never block the UI. The app must be fully usable with placeholders and with no key configured (Steam games still get `header_image` and screenshots).
+- Cache on disk in the app data folder, one file per game per kind. Never hotlink remote images at runtime. Serve cached files to the renderer through a controlled mechanism, not arbitrary file paths.
+- Proposed table: `GAME_ARTWORK(game_id → GAMES.id ON DELETE CASCADE, kind, local_path, source, source_url, width, height, user_selected, fetched_at, UNIQUE (game_id, kind))`. `DATA_BASE_CONTEXT.md` must be updated before implementing.
+- Artwork the user selected is never overwritten by an automatic fetch (same principle as `hidden` / `beated`). Refresh only on an explicit action or when art is missing.
+- A failed fetch keeps the existing cached art. Validate every download (content type, maximum size, decoded dimensions) before saving.
+- Do not bundle or redistribute fetched images; the cache is personal and local.
+
+**Open sub-decisions:** cache eviction; stored sizes/variants (decide after measuring); the fallback look when a game has no 1920×1080 image; and the native file dialog used to pick executables and images, which is not navigable with a controller (conflicts with `PRODUCT.md` §6.6 for the add-game flow; may need a custom controller-friendly file browser).
 
 ---
 
@@ -483,7 +516,7 @@ On startup, reconcile sessions left `running` by a previous crash.
 - One focus manager owns focus. Focus must never disappear when a list updates, a filter changes, or images load; dialogs move focus in and return it on close; the app must never trap focus.
 - Every screen defines default, focus, unavailable, empty, loading and error states (`DESIGN_SYSTEM.md` §11).
 - The on-screen keyboard is a first-class component, used by search and any text field.
-- Images: load progressively, request appropriate sizes, cache on disk, and avoid loading every high-resolution cover at once. Use placeholders for missing art. The art source and cache policy are D-15.
+- Images: load progressively, request appropriate sizes, cache on disk, and avoid loading every high-resolution cover at once. Use placeholders for missing art. Sources and cache policy: §3.13 (D-15).
 - Long lists: consider virtualization; decide based on measurement.
 - Background work (scans, sync) must not block rendering. A synchronous SQLite driver blocks the process it runs in, so keep transactions short and measure; if blocking shows up, move database or scan work to a worker or utility process.
 - Do not set numeric performance budgets before measuring a prototype on reference hardware (PRD rule).
@@ -544,3 +577,4 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-01 | 0.2 | Aligned with updated PRD, database context, design system and roadmap; added decision log with recommendations, cross-document inconsistencies, Electron process model, SQLite adaptation, achievements architecture, session model proposal |
 | 2026-11-01 | 0.3 | Dropped Epic/GOG automatic integration (D-17 removed); Epic games are added manually with `origin = manual`; roadmap phases renumbered |
 | 2026-11-01 | 0.4 | Owner accepted D-01, D-02, D-04–D-10. Accepted D-03 (SQL migrations + `better-sqlite3`), D-11 (polled Gamepad API), D-12 (Steam manifest-based discovery, installation and running state, with safeguards). Added D-17 (Steam launch, open) |
+| 2026-11-01 | 0.5 | Proposed D-15: SteamGridDB + Steam `appdetails` + local file picker for artwork; Google Images not adopted; proposed `GAME_ARTWORK` table and cache rules |
