@@ -59,8 +59,8 @@ decision.
 -   [x] Run the validation spike: render a grid of ~200 images, read a
     gamepad, load the SQLite module in Electron, check whether the
     chosen Electron provides `node:sqlite`, and record startup time and
-    memory in `ARCHITECTURE.md`. (Gamepad button presses, reconnect and
-    focus loss still need a manual check on hardware.)
+    memory in `ARCHITECTURE.md`. (Buttons, triggers and sticks verified on hardware; reconnect and
+    focus loss are checked in Phase 3.)
 
 **Acceptance:** App starts locally, automated checks pass, setup is
 repeatable, and no secrets are committed. Spike results are recorded;
