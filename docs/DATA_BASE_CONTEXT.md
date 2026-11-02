@@ -1,6 +1,6 @@
 # Equon Game Launcher — Contexto do Banco de Dados
 
-**Versão:** 0.4
+**Versão:** 0.5
 **Status:** Rascunho — alinhado às decisões D-01 a D-17 do `ARCHITECTURE.md`
 **Idioma:** português
 **Finalidade:** descrever o modelo de dados, as regras de integridade e as decisões que a IA de programação e as pessoas devem respeitar ao criar migrações, repositórios e casos de uso.
@@ -17,7 +17,7 @@ Quando este documento e o código divergirem, atualize o documento no mesmo comm
 - Migrações: arquivos `.sql` versionados em `src/infrastructure/persistence/migrations/` (`0001_init.sql`, ...), embutidos no bundle e listados em `migrations/index.ts`. Um executor pequeno os aplica em ordem e registra a versão em `PRAGMA user_version`. Cada migração roda em transação junto com a atualização da versão; as chaves estrangeiras são desligadas fora da transação e `foreign_key_check` precisa passar antes do commit.
 - **Obrigatório:** executar `PRAGMA foreign_keys = ON` em **toda** conexão. Sem isso o SQLite ignora as chaves estrangeiras e os `ON DELETE CASCADE` não funcionam.
 - O estado de desbloqueio das conquistas fica em `ACHIEVEMENTS`. **Não** criar `USER_ACHIEVEMENTS` nem perfis múltiplos.
-- Fontes Steam usadas: arquivos locais da Steam (instalação), `appdetails` (metadados), Steam Web API (conquistas) e SteamGridDB (artes). Epic Games e GOG **não** têm integração automática; esses jogos são adicionados manualmente (`origin = 'manual'`). Jogos de emuladores (Yuzu, PlayStation 2 e origens criadas pelo usuário) também são adicionados manualmente, cada um com a sua origem (ver 3.10).
+- Fontes Steam usadas: arquivos locais da Steam (instalação), `appdetails` (metadados), Steam Web API (conquistas) e SteamGridDB (artes). Epic Games e GOG **não** têm integração automática; esses jogos são adicionados manualmente (`origin = 'manual'`). Jogos de emuladores também são adicionados manualmente, cada um com a sua origem (ver 3.10); o único emulador suportado é o Yuzu (3.12).
 - Segredos (chaves de API) nunca ficam em texto puro no banco (D-04).
 
 ---
@@ -76,7 +76,7 @@ Regras:
 
 - `origin` identifica a **fonte do registro**, não o estado de instalação. Os valores possíveis estão na tabela `ORIGINS` (3.10), não fixos no schema.
 - Jogos com `origin = 'steam'` devem ter `steam_id` (`CHECK (origin <> 'steam' OR steam_id IS NOT NULL)`).
-- Jogos da Epic, GOG e de outros launchers são cadastrados como `manual`. Jogos de emulador usam a origem do emulador (por exemplo, `yuzu`, `ps2` ou uma origem criada pelo usuário).
+- Jogos da Epic, GOG e de outros launchers são cadastrados como `manual`. Jogos do Yuzu usam a origem `yuzu` (3.12).
 - Só jogos descobertos pelo adaptador da Steam usam `steam`; o usuário nunca escolhe `steam` ao adicionar um jogo.
 - `hidden` e `beated` começam em `0` e só mudam por ação do usuário.
 - `playtime` nunca é negativo. A regra de cálculo está em 3.8; para jogos Steam sincronizados, ver 3.11.
@@ -192,14 +192,18 @@ Configuração de lançamento de jogos **manuais**.
 | Coluna | Tipo | Regras |
 | --- | --- | --- |
 | `game_id` | `INTEGER PRIMARY KEY` | FK para `GAMES(id)` com `ON DELETE CASCADE` |
-| `executable_path` | `TEXT NOT NULL` | Caminho do executável |
+| `executable_path` | `TEXT` | Caminho do `.exe` ou do atalho `.url` do jogo; `NULL` em jogos de emulador |
+| `rom_path` | `TEXT` | Caminho da ROM em jogos de emulador (Yuzu); `NULL` nos demais. Migração `0003` |
 | `arguments` | `TEXT` | Lista JSON de argumentos (texto); `NULL` = sem argumentos; `CHECK (json_type(arguments) = 'array')` |
 | `working_directory` | `TEXT` | Diretório de trabalho; `NULL` = padrão |
 
 Regras:
 
-- Só existe para jogos com origem diferente de `steam` (`manual`, emuladores e origens do usuário; verificado na camada de aplicação). Para um emulador, `executable_path` é o emulador e o caminho da ROM vai em `arguments`.
-- Os três campos são **entrada não confiável**: validar se o executável existe e é um arquivo; nunca montar uma linha de comando como texto; passar argumentos como lista, sem shell.
+- `CHECK ((executable_path IS NULL) <> (rom_path IS NULL))`: exatamente um dos dois é preenchido.
+- Só existe para jogos com origem diferente de `steam` (verificado na camada de aplicação).
+- **Jogos do Yuzu (origem `yuzu`):** guardam só `rom_path`; o emulador vem da tabela `EMULATORS` (3.12) e é resolvido na hora de abrir, então trocar o `yuzu.exe` vale para todos os jogos. `arguments` e `working_directory` não são usados.
+- **Atalhos `.url` (decidido na Fase 4):** `executable_path` pode apontar para um atalho de internet do Windows. O processo principal lê o arquivo, extrai o endereço (`URL=`) e só aceita os protocolos `com.epicgames.launcher:` (Epic), `steam:`, `uplay:` (Ubisoft), `origin2:` e `link2ea:` (EA) e `battlenet:`, conferidos ao salvar e de novo ao abrir. O endereço é aberto pelo Windows (nunca por shell). Como nenhum processo é observado, **o tempo de jogo desses jogos não é medido**.
+- Todos os caminhos são **entrada não confiável**: validar se o arquivo existe e tem uma extensão permitida (`.exe`, `.url`, ROMs do Yuzu); nunca montar uma linha de comando como texto; passar argumentos como lista, sem shell.
 - Jogos da Steam são lançados por `steam://rungameid/<appid>` (D-17) e não usam esta tabela.
 - Jogos da Epic que só abrem pelo cliente oficial podem exigir outra forma de lançamento; validar na Fase 4.
 
@@ -283,8 +287,6 @@ Origens possíveis de um jogo. É uma tabela, não uma lista fixa, para que o us
 | `key` | `TEXT PRIMARY KEY` | Identificador estável: só letras minúsculas, dígitos e hífen (`steam`, `manual`, `yuzu`, `ps2`, `nintendo-64`), verificado por `CHECK`. Nunca muda depois de criado |
 | `name` | `TEXT NOT NULL UNIQUE COLLATE NOCASE` | Nome exibido; editável |
 | `builtin` | `INTEGER NOT NULL DEFAULT 0` | `CHECK (builtin IN (0,1))`; origens de fábrica não podem ser excluídas |
-| `default_executable_path` | `TEXT` | Emulador padrão da origem (opcional). Migração `0002` |
-| `default_arguments` | `TEXT` | Lista JSON de argumentos padrão; o texto `{rom}` marca onde entra o caminho da ROM. `CHECK (json_type(default_arguments) = 'array')`. Migração `0002` |
 
 Linhas criadas pela migração inicial:
 
@@ -292,15 +294,30 @@ Linhas criadas pela migração inicial:
 | --- | --- | --- |
 | `steam` | Steam | Única origem com adaptador automático (descoberta, metadados, conquistas) |
 | `manual` | Jogo Local | Jogos de PC de qualquer launcher (Epic, GOG, ...). Nome alterado de "PC" para "Jogo Local" pela migração `0002` |
-| `yuzu` | Yuzu | Jogos de Nintendo Switch pelo emulador |
-| `ps2` | PlayStation 2 | Jogos de PlayStation 2 pelo emulador |
+| `yuzu` | Yuzu | Jogos de Nintendo Switch pelo emulador Yuzu (3.12) |
+| `ps2` | PlayStation 2 | Sem emulador suportado por enquanto: funciona como jogo comum (executável) |
 
 Regras:
 
 - O usuário pode criar, renomear e excluir as próprias origens. A `key` de uma origem nova é gerada a partir do nome (minúsculas, hífens) e não muda se o nome mudar.
 - Uma origem com jogos não pode ser excluída (`ON DELETE RESTRICT`); origens `builtin` nunca são excluídas.
 - Toda origem diferente de `steam` funciona como jogo manual: o usuário cadastra o jogo e a configuração de lançamento (3.7).
-- **Emulador padrão (decidido na Fase 4):** uma origem pode guardar um executável e argumentos padrão. Ao cadastrar um jogo dessa origem, o formulário vem preenchido e o usuário só escolhe a ROM; `{rom}` nos argumentos é substituído pelo caminho escolhido (ou a ROM é acrescentada ao final se não houver `{rom}`). O jogo guarda a **configuração completa** em `GAME_LAUNCH_CONFIGS`: trocar o emulador da origem depois não altera jogos já cadastrados.
+- Emuladores não são configurados nas origens: ver `EMULATORS` (3.12).
+
+### 3.12 `EMULATORS` (decidido na Fase 4)
+
+Emuladores suportados pelo launcher e o executável que o usuário configurou para cada um. A lista de emuladores suportados fica no código e no `CHECK`; por enquanto só o **Yuzu**.
+
+| Coluna | Tipo | Regras |
+| --- | --- | --- |
+| `key` | `TEXT PRIMARY KEY` | `CHECK (key IN ('yuzu'))`; igual à `key` da origem dos jogos desse emulador |
+| `executable_path` | `TEXT NOT NULL` | Caminho do executável do emulador (`.exe`), entrada não confiável |
+
+Regras:
+
+- Configurado pela tela "Adicionar emulador" da Biblioteca; pode ser trocado ou removido.
+- **Yuzu:** ROMs `.nsp`, `.xci`, `.nca`, `.nro` e `.nso`. O jogo abre com `yuzu.exe -f -g "<rom>"` (`-f` tela cheia, `-g` jogo), montado no processo principal como lista de argumentos, sem shell.
+- Estado de instalação de um jogo do Yuzu: existência da ROM (mesmas regras de 3.2). Sem o emulador configurado (ou com o executável ausente), o jogo não pode ser iniciado e a interface explica o motivo.
 
 ---
 
@@ -381,7 +398,8 @@ API REST v2 com chave pessoal gratuita. Fornece capa quadrada e logo (e, para jo
 | Origens | Tabela `ORIGINS` extensível; de fábrica: `steam`, `manual`, `yuzu`, `ps2` | D-05 |
 | Estado de instalação desconhecido | `installed` nulo (`NULL` = desconhecido) | D-06 |
 | Estado de instalação de jogos manuais | Existência do executável; erro de leitura → `NULL` | Fase 4 |
-| Emulador padrão na origem | Preenche o formulário; o jogo guarda a configuração completa | Fase 4 |
+| Emuladores | Tabela `EMULATORS` (só Yuzu); jogos guardam a ROM e o emulador é resolvido ao abrir | Fase 4 |
+| Atalhos `.url` | Aceitos com lista de protocolos permitidos; tempo de jogo não medido | Fase 4 |
 | Tempo de jogo informado pelo usuário | `games.playtime_offset`, somado às sessões | Fase 4 |
 | Configuração de lançamento manual | Tabela `GAME_LAUNCH_CONFIGS` | D-07 |
 | Sessões e arredondamento | Tabela `PLAY_SESSIONS`; `playtime` derivado dos segundos | D-08 |

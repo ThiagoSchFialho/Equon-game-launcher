@@ -1,6 +1,6 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.14
+**Version:** 0.15
 **Status:** Draft — Phase 4 (manual-game vertical slice)
 **Last updated:** 2026-11-02
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
@@ -145,10 +145,11 @@ Origins are **data, not a fixed enum** (owner decision, Phase 2). An `ORIGINS` t
 
 - Built-in rows created by the first migration: `steam` ("Steam"), `manual` ("PC"), `yuzu` ("Yuzu"), `ps2` ("PlayStation 2"). Built-in origins cannot be deleted.
 - The user can create, rename and delete their own origins (for example "Nintendo 64" for a new emulator). An origin that still has games cannot be deleted. Keys never change after creation.
-- **Only `steam` has an automatic adapter** (discovery, metadata, achievements). Every other origin, built-in or user-created, behaves as a manually added game: the user registers the game and its launch configuration (for an emulator: the emulator executable, with the ROM path as an argument). The user never picks `steam` when adding a game.
+- **Only `steam` has an automatic adapter** (discovery, metadata, achievements). Every other origin, built-in or user-created, behaves as a manually added game: the user registers the game and its launch configuration (an `.exe` or `.url` shortcut; for Yuzu games, the ROM). The user never picks `steam` when adding a game.
 - Games from Epic, GOG or any other PC launcher use `manual`.
 - TypeScript: the origin is a `string` key; built-in keys are constants, and adapter capabilities are keyed by `steam` only.
-- **Emulator defaults (decided in Phase 4):** an origin may store a default executable and argument list (`{rom}` marks the ROM path). They only pre-fill the add-game form; each game keeps its full launch configuration, so changing an origin's emulator later does not change existing games. The built-in `manual` origin is displayed as "Jogo Local" (migration `0002`).
+- **Emulators (decided in Phase 4):** emulators are a separate feature, not origin settings. An `EMULATORS` table stores the executable the user configured per supported emulator (only **Yuzu** for now; Library → "Adicionar emulador"). A Yuzu game (origin `yuzu`) stores only its ROM path; at launch main builds `yuzu.exe -f -g "<rom>"` as an argument array, so changing `yuzu.exe` applies to every Yuzu game. The built-in `manual` origin is displayed as "Jogo Local" (migration `0002`). Details: `DATA_BASE_CONTEXT.md` §3.7 and §3.12.
+- **`.url` shortcuts (decided in Phase 4):** a manual game may point to a Windows internet shortcut. Main reads its `URL=` line and only accepts the schemes `com.epicgames.launcher:`, `steam:`, `uplay:`, `origin2:`, `link2ea:` and `battlenet:` (checked when saving and again when launching), then opens it through Electron's external-URL mechanism. No process is observed, so **no playtime is measured** for these games.
 
 ### 3.6 D-06 — Installation state (Accepted: nullable)
 
@@ -288,7 +289,7 @@ Each game needs five images: a **square cover** (Library), a **portrait cover 60
 - A failed fetch keeps the existing cached art. Validate every download (content type, maximum size, decoded dimensions) before saving.
 - Do not bundle or redistribute fetched images; the cache is personal and local.
 
-**Open sub-decisions:** cache eviction; stored sizes/variants (decide after measuring); the fallback look when a game has no 1920×1080 image; Picking files (decided in Phase 4): an **own controller-friendly file browser**. Main lists drives, a few known folders, folder names and only files with the allowed extensions (`.exe` for executables, `.png`/`.jpg`/`.jpeg`/`.webp` for images); it never returns file contents, and the chosen path is validated again in main when saving. A "Usar janela do Windows" button opens the native dialog for mouse users. Local artwork import: main reads the file (max 20 MB), checks the real type by its magic bytes, decodes it to get the dimensions, checks the kind's proportion (background 16:9, ±5%), copies it into the cache and saves it with `user_selected = 1`.
+**Open sub-decisions:** cache eviction; stored sizes/variants (decide after measuring); the fallback look when a game has no 1920×1080 image; Picking files (decided in Phase 4): an **own controller-friendly file browser**. Main lists drives, a few known folders, folder names and only files with the allowed extensions (`.exe`/`.url` for game executables, `.exe` for emulators, Yuzu ROM formats for ROMs, `.png`/`.jpg`/`.jpeg`/`.webp` for images); it never returns file contents, and the chosen path is validated again in main when saving. A "Usar janela do Windows" button opens the native dialog for mouse users. Local artwork import: main reads the file (max 20 MB), checks the real type by its magic bytes, decodes it to get the dimensions, checks the kind's proportion (background 16:9, ±5%), copies it into the cache and saves it with `user_selected = 1`.
 
 ### 3.14 D-16 — `appdetails` refresh frequency (Accepted: once, on discovery)
 
@@ -432,7 +433,7 @@ docs/
 - Validate every IPC payload and every external API response with explicit schemas; reject unknown shapes.
 - Treat executable paths, arguments, and working directories as untrusted: validate that the path exists and is a file, never build a shell command string, and pass arguments as an array without a shell.
 - Never expose arbitrary filesystem access or command execution to the renderer.
-- Only open external URLs from an allowlist built in the main process (for example `steam://` URLs from a validated App ID).
+- Only open external URLs from an allowlist built in the main process (for example `steam://` URLs from a validated App ID, or the store schemes accepted in `.url` shortcuts, §3.5).
 - Never log API keys or URLs containing secret query parameters; redact in the HTTP client wrapper. `GetSchemaForGame` and `GetPlayerAchievements` put the key in the query string, so URL logging is a real risk.
 - Use timeouts and bounded retries for external requests.
 
@@ -585,6 +586,7 @@ On startup, reconcile sessions left `running` by a previous crash: mark them `in
 - Executables that only start another process and exit (launcher stubs, some Epic/GOG games that require their client, emulator front-ends) end the session immediately, so their time is not captured. Detecting the real game process (e.g. by watching processes under the game folder) is not implemented.
 - If the launcher itself is closed or crashes while a game runs, the game keeps running; on the next start the session is closed at its last heartbeat (at most ~30 s lost, verified by force-killing the launcher).
 - Games that the user starts outside the launcher are not observed.
+- `.url` shortcuts only ask a store launcher to start the game; no process is returned, so their playtime is not measured. Yuzu games are observed through the `yuzu.exe` process the launcher starts.
 - Verified end to end in Phase 4 with a test executable (a 65 s session added 1 minute; a forced kill was recovered as `interrupted` at the last heartbeat). Real Epic/GOG games are validated by the owner and listed in the ROADMAP.
 
 ---
@@ -661,6 +663,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-01 | 0.7 | Accepted D-14 (npm, electron-vite, Vitest, ESLint + Prettier, strict TypeScript); documented the `better-sqlite3` Node/Electron ABI rule and the `node:sqlite` check for the Phase 1 spike. Phase 1 unblocked |
 | 2026-11-01 | 0.8 | Accepted D-15 (artwork). Aligned `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md` and `ROADMAP.md` with all accepted decisions. Recorded the open Home cover type |
 | 2026-11-01 | 0.9 | Added a fifth art type: portrait cover 600×900 for the Home screen. Renamed `cover` to `cover_square`; added `cover_portrait` |
+| 2026-11-02 | 0.15 | Phase 4 owner changes: emulators become a separate feature (`EMULATORS`, Yuzu only, ROM-only games, `-f -g "<rom>"`), replacing emulator defaults on origins; `.url` shortcuts accepted with a scheme allowlist and no playtime measurement |
 | 2026-11-02 | 0.14 | Phase 4 decisions: emulator defaults on origins (pre-fill only), `playtime_offset` for user-entered playtime, manual install state from the executable, own file browser with native-dialog fallback, local artwork import rules, new input actions (X, Y, LT, RT) and text-entry mode |
 | 2026-11-02 | 0.13 | Phase 3 decisions: own focus manager; `previousSection`/`nextSection` actions (LB/RB); `equon-art://` protocol for cached artwork; React Testing Library + jsdom; separate dev user-data folder and seed script |
 | 2026-11-02 | 0.12 | D-08: Steam playtime and last played synced once per launcher start (GetOwnedGames) and overwritten; sessions add on top until the next start (`steam_playtime_baseline`, `steam_synced_at`) |

@@ -110,8 +110,13 @@ com o computador ligado a uma TV.
     Jogo Local, Yuzu e PlayStation 2; o usuário pode criar, renomear e excluir
     as próprias origens (por exemplo, "Nintendo 64" para um emulador
     novo). Só a Steam tem integração automática; jogos de qualquer outra
-    origem são adicionados manualmente. Para um emulador, o executável é
-    o emulador e o caminho da ROM vai nos argumentos.
+    origem são adicionados manualmente, apontando para o `.exe` do jogo ou
+    para um atalho `.url` (atalhos das lojas, como Epic; nesse caso o
+    tempo de jogo não é medido).
+-   **Emuladores:** a Biblioteca tem "Adicionar emulador", onde o usuário
+    escolhe um emulador suportado (por enquanto só o Yuzu) e indica o
+    executável dele. Ao adicionar um jogo com origem Yuzu, o usuário só
+    escolhe a ROM; o launcher abre o jogo direto no emulador.
 
 As integrações devem ser implementadas por adaptadores independentes.
 Não presumir que todas as lojas ofereçam APIs públicas equivalentes.

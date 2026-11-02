@@ -1,6 +1,6 @@
 # CLAUDE.md — Equon Game Launcher
 
-Controller-first game launcher for Windows (Electron + React + TypeScript, embedded SQLite). One local user, one Steam account. Games come from Steam (automatic) and manual entries. There is **no** automatic Epic/GOG integration: those games are added manually. Origins are an extensible table (built-in `steam`, `manual`, `yuzu`, `ps2`; the user can add more, e.g. a new emulator); only `steam` has an automatic adapter.
+Controller-first game launcher for Windows (Electron + React + TypeScript, embedded SQLite). One local user, one Steam account. Games come from Steam (automatic) and manual entries. There is **no** automatic Epic/GOG integration: those games are added manually. Origins are an extensible table (built-in `steam`, `manual`, `yuzu`, `ps2`; the user can add more, e.g. a new emulator); only `steam` has an automatic adapter. Emulators are a separate feature (`EMULATORS`, only Yuzu): Yuzu games store just the ROM and open with `yuzu.exe -f -g "<rom>"`.
 
 ## Language
 
@@ -70,7 +70,7 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 ## Security
 
 - API keys (Steam, SteamGridDB) are encrypted with Electron `safeStorage`, decrypted only in main, never sent to the renderer, never logged. Never log URLs containing keys.
-- Executable paths, arguments and working directories are **untrusted**: validate, pass arguments as an array, never use a shell or build command strings.
+- Executable paths, ROM paths, arguments and working directories are **untrusted**: validate, pass arguments as an array, never use a shell or build command strings. `.url` shortcuts are read in main and only allowlisted store schemes are opened.
 - Only open external URLs built in main from an allowlist.
 - Never commit secrets, databases or artwork cache.
 

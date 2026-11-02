@@ -84,7 +84,9 @@ Packaging (`build:unpack`, `build:win`) exists but the installer is not decided 
 
 ### Manual games
 
-Library → "Adicionar jogo": pick the game's `.exe` (or, for an emulator origin, the ROM), optional arguments, working folder and a 1920×1080 background. The launcher starts the executable directly and adds the time of each observed session to the game. Executables that hand off to another launcher and exit right away are not tracked (see `docs/ARCHITECTURE.md` §11).
+Library → "Adicionar jogo": pick the game's `.exe` or a store `.url` shortcut, optional arguments, working folder and a 1920×1080 background. The launcher starts the executable directly and adds the time of each observed session to the game. Executables that hand off to another launcher and exit right away are not tracked, and `.url` shortcuts are never tracked (see `docs/ARCHITECTURE.md` §11).
+
+Library → "Adicionar emulador": configure `yuzu.exe` once; Yuzu games then only need the ROM.
 
 ### Development data
 
