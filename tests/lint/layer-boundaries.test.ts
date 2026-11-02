@@ -35,7 +35,13 @@ const cases: { file: string; code: string; allowed: boolean }[] = [
   { file: 'src/shared/x.ts', code: "import '../core/domain'", allowed: false },
   { file: 'src/shared/x.ts', code: "import 'zod'", allowed: true },
   { file: 'src/infrastructure/x.ts', code: "import '../main/index'", allowed: false },
-  { file: 'src/infrastructure/x.ts', code: "import 'node:fs'", allowed: true }
+  { file: 'src/infrastructure/x.ts', code: "import 'node:fs'", allowed: true },
+  { file: 'src/infrastructure/http/x.ts', code: "import 'better-sqlite3'", allowed: false },
+  { file: 'src/integrations/steam/x.ts', code: "import 'better-sqlite3'", allowed: false },
+  { file: 'src/main/x.ts', code: "import 'better-sqlite3'", allowed: false },
+  { file: 'src/main/x.ts', code: "import '../renderer/src/App'", allowed: false },
+  { file: 'src/infrastructure/persistence/x.ts', code: "import 'better-sqlite3'", allowed: true },
+  { file: 'src/infrastructure/persistence/x.ts', code: "import '../../main/index'", allowed: false }
 ]
 
 describe('layer boundaries (ESLint)', () => {

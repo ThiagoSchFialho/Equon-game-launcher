@@ -21,6 +21,8 @@ const privilegedPackages = [
   'ws'
 ]
 
+const sqlOnlyInPersistence = 'SQL lives only in src/infrastructure/persistence.'
+
 const forbid = (names, message) => names.map((name) => ({ name, message }))
 const forbidLayers = (layers, message) => ({
   regex: `(^|/)(${layers.join('|')})(/|$)`,
@@ -167,12 +169,42 @@ export default defineConfig(
       'no-restricted-imports': [
         'error',
         {
+          paths: [{ name: 'better-sqlite3', message: sqlOnlyInPersistence }],
           patterns: [
             forbidLayers(
               ['main', 'preload', 'renderer'],
               'adapters implement core ports; only main wires them together.'
             )
           ]
+        }
+      ]
+    }
+  },
+  {
+    // The only place allowed to talk to SQLite (DATA_BASE_CONTEXT.md §1).
+    files: ['src/infrastructure/persistence/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            forbidLayers(
+              ['main', 'preload', 'renderer'],
+              'adapters implement core ports; only main wires them together.'
+            )
+          ]
+        }
+      ]
+    }
+  },
+  {
+    files: ['src/main/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [{ name: 'better-sqlite3', message: sqlOnlyInPersistence }],
+          patterns: [forbidLayers(['renderer'], 'main must not import renderer code.')]
         }
       ]
     }
