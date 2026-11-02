@@ -7,7 +7,7 @@ import { OptionsMenu } from '../components/OptionsMenu'
 import { StateMessage } from '../components/StateMessage'
 import { TopBar } from '../components/TopBar'
 import { useGames } from '../data/games'
-import { useScreenActions } from '../focus/focus-context'
+import { useFocusManager, useScreenActions } from '../focus/focus-context'
 import { FocusScope } from '../focus/FocusProvider'
 import { t } from '../strings'
 import './LibraryScreen.css'
@@ -27,10 +27,18 @@ export function LibraryScreen(): React.JSX.Element {
   const navigation = useNavigation()
   const { games, reload } = useGames()
   const [menuGame, setMenuGame] = useState<GameSummary | null>(null)
+  const focus = useFocusManager()
 
+  // Right stick / Page Up-Down: move a page (two rows) at a time.
+  const page = (direction: 'up' | 'down') => (): void => {
+    focus.handle(direction)
+    focus.handle(direction)
+  }
   useScreenActions({
     previousSection: () => navigation.stepSection(-1),
-    nextSection: () => navigation.stepSection(1)
+    nextSection: () => navigation.stepSection(1),
+    scrollUp: page('up'),
+    scrollDown: page('down')
   })
 
   let content: React.JSX.Element

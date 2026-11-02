@@ -273,6 +273,9 @@ artes independentes; nenhuma é recortada a partir da outra.
     arte (o fundo 1920×1080 usa `cover`; o logotipo usa `contain`).
 -   Usar placeholders consistentes quando uma imagem estiver ausente,
     um por tipo de arte (cada um na proporção do seu tipo). A interface deve funcionar sem nenhuma arte.
+-   Jogos sem fundo 1920×1080: **proposta implementada na Fase 3**, aguardando
+    aprovação: a capa quadrada (ou o placeholder) ocupa o painel da arte
+    principal. Antes da proposta:
 -   Jogos manuais sem fundo 1920×1080: definir o visual de fallback
     (por exemplo, cor de superfície com a capa e o logotipo) antes de
     implementar a tela de detalhes.

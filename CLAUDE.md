@@ -31,8 +31,10 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 - Vitest for tests; ESLint (flat config) + Prettier.
 - SQLite via `better-sqlite3`, hand-written SQL in repositories, no ORM, versioned `.sql` migrations tracked with `PRAGMA user_version`.
 - Persistence lives in `src/infrastructure/persistence` (the only place allowed to import `better-sqlite3`, enforced by lint). Add a schema change as a new `migrations/000N_*.sql` plus an entry in `migrations/index.ts`; never edit a released migration. Repositories implement the sync ports in `src/core/application/ports.ts`; tests use `tests/helpers/db.ts` (in-memory, migrated).
-- Scripts: `npm run dev`, `npm run build`, `npm start` (preview build), `npm test` (Vitest, run once), `npm run lint`, `npm run typecheck`, `npm run format`. Node 24.18.0 (`.nvmrc`), Electron 44.10.1 (exact).
+- Scripts: `npm run dev`, `npm run dev:seed` (dev library with sample games), `npm run build`, `npm start` (preview build), `npm test` (Vitest, run once), `npm run lint`, `npm run typecheck`, `npm run format`. Node 24.18.0 (`.nvmrc`), Electron 44.10.1 (exact).
 - If Electron fails with `electron.app` undefined, `ELECTRON_RUN_AS_NODE=1` is set in the shell (VS Code sets it); unset it for `dev`/`start`.
+- Unpackaged runs use the `equon-game-launcher-dev` data folder; never seed or test against the real one.
+- Renderer: one `FocusManager` (`src/renderer/src/focus`); components use `useFocusable` / `useScreenActions` and semantic actions from `src/renderer/src/input`, never raw buttons or keys. UI text lives in `src/renderer/src/strings.ts` (pt-BR). Artwork is loaded only via `artworkUrl()` (`equon-art://game/<id>/<kind>`). Renderer tests use `// @vitest-environment jsdom`.
 - Sandboxed preload can only load `electron`; it imports constants/types from `src/shared/ipc/contract.ts` (no runtime deps). zod schemas live in `src/shared/ipc/schemas.ts` and are used by main.
 - **Native module rule:** `better-sqlite3` ≥ 13 ships N-API prebuilds, so one binary serves Node (tests) and Electron (app); there are no rebuild scripts. `tests/native/better-sqlite3.test.ts` guards this; if it fails with a load / `NODE_MODULE_VERSION` error, the prebuilds changed and rebuild scripts must come back (`ARCHITECTURE.md` §3.15). Run tests through `npm test`.
 

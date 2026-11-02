@@ -68,6 +68,7 @@ npm run dev      # starts the app with hot reload
 | Script | What it does |
 | --- | --- |
 | `npm run dev` | Start the app in development mode |
+| `npm run dev:seed` | Same, after replacing the dev library with ~40 sample games and generated artwork |
 | `npm run build` | Typecheck and build main, preload and renderer into `out/` |
 | `npm start` | Preview the production build |
 | `npm test` | Run the Vitest suite once |
@@ -80,6 +81,14 @@ Packaging (`build:unpack`, `build:win`) exists but the installer is not decided 
 ### Native module (`better-sqlite3`)
 
 `better-sqlite3` 13 ships N-API prebuilt binaries, so the same binary works in Node (tests) and Electron (app) and **no rebuild is needed**. `tests/native/better-sqlite3.test.ts` checks both runtimes. If it ever fails with a load or `NODE_MODULE_VERSION` error, the package stopped shipping compatible prebuilds; that is a tooling problem, not a code bug (see `docs/ARCHITECTURE.md` §3.15).
+
+### Development data
+
+Unpackaged runs (`npm run dev`, `npm start`) keep their data in `%APPDATA%\equon-game-launcher-dev`, separate from the real library (`%APPDATA%\equon-game-launcher`, used by the packaged app). `npm run dev:seed` only ever writes to the dev folder.
+
+### Controls
+
+Controller (Xbox layout): A confirm, B back, D-pad / left stick move, right stick scroll, LB/RB switch section, ☰ options. Keyboard: arrows, Enter/Space, Esc/Backspace, Page Up/Down, Q/E, M. Mouse: click to open, right click for options. Full table in `docs/DESIGN_SYSTEM.md` §8.
 
 ### Troubleshooting
 

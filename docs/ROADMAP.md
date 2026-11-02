@@ -105,24 +105,26 @@ does not divide by zero; manual flags are preserved.
 
 ### Tasks
 
--   [ ] Build primary navigation and initial Home, Library, and Game
+-   [x] Build primary navigation and initial Home, Library, and Game
     Details screens using `DESIGN_SYSTEM.md`.
--   [ ] Implement visible, predictable controller focus.
--   [ ] Implement the input module: Gamepad API polling, edge
+-   [x] Implement visible, predictable controller focus.
+-   [x] Implement the input module: Gamepad API polling, edge
     detection, dead zones and repeat rate, semantic actions, and a fake
     input source for tests.
--   [ ] Implement placeholders for each artwork type (`cover_square`,
+-   [x] Implement placeholders for each artwork type (`cover_square`,
     `cover_portrait`, `logo`, `background`, `header`) and progressive
     image loading from the local cache.
--   [ ] Support confirm, back, directions, and scrolling.
--   [ ] Preserve mouse and keyboard alternatives.
--   [ ] Implement loading, empty, unavailable, and error states.
--   [ ] Validate 1920×1080 and 1280×720.
--   [ ] Serve cached artwork through the `equon-art://` protocol and
+-   [x] Support confirm, back, directions, and scrolling.
+-   [x] Preserve mouse and keyboard alternatives.
+-   [x] Implement loading, empty, unavailable, and error states.
+-   [x] Validate 1920×1080 and 1280×720 (also 2560×1440).
+-   [ ] Validate on hardware: controller disconnect/reconnect and window
+    focus loss (owner).
+-   [x] Serve cached artwork through the `equon-art://` protocol and
     load game data through validated IPC (`games:list`, `games:get`).
--   [ ] Separate dev user-data folder and a `dev:seed` script with
+-   [x] Separate dev user-data folder and a `dev:seed` script with
     sample games and generated artwork.
--   [ ] Options menu dialog (focus in/out); its actions arrive in
+-   [x] Options menu dialog (focus in/out); its actions arrive in
     Phases 5 and 7. "Uninstall" is a future item, not in the MVP.
 
 **Acceptance:** Main screens are navigable with a controller, focus
