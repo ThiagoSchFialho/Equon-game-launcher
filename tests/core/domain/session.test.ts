@@ -24,3 +24,10 @@ describe('sessionDurationSeconds', () => {
     expect(sessionDurationSeconds('garbage', '2026-11-02T09:00:00Z')).toBe(0)
   })
 })
+
+describe('playtimeMinutes with a Steam baseline', () => {
+  it('adds floored session time on top of the baseline', () => {
+    expect(playtimeMinutes([50, 80], 600)).toBe(602)
+    expect(playtimeMinutes([], 600)).toBe(600)
+  })
+})

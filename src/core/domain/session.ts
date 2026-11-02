@@ -10,8 +10,12 @@ export function sessionDurationSeconds(startedAt: string, endedAt: string): numb
   return Math.floor(ms / 1000)
 }
 
-/** playtime (minutes) = floor(sum of counted session seconds / 60). */
-export function playtimeMinutes(durationsSeconds: readonly number[]): number {
+/**
+ * playtime (minutes) = baseline + floor(sum of counted session seconds / 60).
+ * The baseline is the Steam-reported total at the last sync (0 otherwise);
+ * callers pass only the sessions not already included in it.
+ */
+export function playtimeMinutes(durationsSeconds: readonly number[], baselineMinutes = 0): number {
   const total = durationsSeconds.reduce((sum, s) => sum + Math.max(0, s), 0)
-  return Math.floor(total / 60)
+  return Math.max(0, baselineMinutes) + Math.floor(total / 60)
 }

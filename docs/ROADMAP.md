@@ -90,6 +90,8 @@ D-01 or D-03 is reopened only if they are unacceptable.
     `beated`.
 -   [x] Confirm the single running session per game and the
     `playtime` derivation from completed and interrupted sessions.
+-   [x] Store the Steam playtime baseline and apply a Steam sync result
+    (overwrite `time_last_played`, sessions add on top of the baseline).
 -   [x] Implement data-access functions for games, genres, and
     achievements.
 -   [x] Add tests for constraints, migrations, cascades, transactions,
@@ -200,6 +202,9 @@ matches are not silently merged.
     screenshots, SteamGridDB (square and portrait covers, logo; name search
     with user confirmation for manual games), throttled queue, local cache,
     validation of downloads, and no overwriting of user-selected art.
+-   [ ] Sync Steam playtime and last played once per launcher start
+    with `GetOwnedGames` (after closing interrupted sessions), using the
+    repository support from Phase 2; a failed sync changes nothing.
 -   [ ] Securely store the Steam account ID and the Steam and
     SteamGridDB API keys (encrypted with `safeStorage`).
 -   [ ] Test using fixtures and simulated failures (unreadable library,

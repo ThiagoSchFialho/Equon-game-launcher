@@ -52,6 +52,7 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 - `GAMES.installed`: `1` installed, `0` confirmed not installed, `NULL` unknown. **A failed read must never write `0`.** Absent games become `0` only if `libraryfolders.vdf` and every library were read successfully; otherwise `NULL`.
 - Never overwrite `hidden`, `beated` or user-selected artwork during sync/upserts.
 - `playtime` (minutes) = `floor(sum of completed + interrupted session seconds / 60)`, recomputed in the same transaction that closes the session. Every observed session counts, for every origin. If the launcher dies, `running` sessions become `interrupted` at their last heartbeat (`last_seen_at`). Never negative.
+- Steam games: once per launcher start, `GetOwnedGames` overwrites `time_last_played` and the Steam baseline; then `playtime = steam_playtime_baseline + floor(seconds of counted sessions started since steam_synced_at / 60)`. A failed sync changes nothing. This is the only automatic sync at startup (`DATA_BASE_CONTEXT.md` §3.11).
 - All tables are `STRICT`; booleans and enums always have `CHECK`s.
 - Related writes (session + playtime, achievements + counters) happen in **one transaction**. Repeated syncs with the same data change nothing.
 - `tier` and platinum are pure domain functions; trophy counters are recomputed from `ACHIEVEMENTS`, never incremented blindly. Unknown `global_percent` is `NULL`, never `0`.

@@ -31,7 +31,11 @@ CREATE TABLE games (
   required_age        TEXT,
   origin              TEXT    NOT NULL REFERENCES origins (key) ON UPDATE RESTRICT ON DELETE RESTRICT,
   metadata_fetched_at TEXT,
-  CHECK (origin <> 'steam' OR steam_id IS NOT NULL)
+  -- §3.11 Steam playtime sync: minutes reported by Steam at the last sync and when it happened.
+  steam_playtime_baseline INTEGER CHECK (steam_playtime_baseline >= 0),
+  steam_synced_at         TEXT,
+  CHECK (origin <> 'steam' OR steam_id IS NOT NULL),
+  CHECK ((steam_playtime_baseline IS NULL) = (steam_synced_at IS NULL))
 ) STRICT;
 
 CREATE INDEX games_origin_idx ON games (origin);

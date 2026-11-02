@@ -18,6 +18,8 @@ interface GameRow {
   beated: number
   required_age: string | null
   metadata_fetched_at: string | null
+  steam_playtime_baseline: number | null
+  steam_synced_at: string | null
 }
 
 const toGame = (row: GameRow): Game => ({
@@ -48,8 +50,8 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
   const selectAll = db.prepare<[], GameRow>('SELECT * FROM games ORDER BY title COLLATE NOCASE, id')
 
   // Sync-owned columns only. NULLIF/COALESCE: an empty or missing value never
-  // replaces a stored one. hidden, beated, playtime, time_last_played and
-  // installed are deliberately absent from the update clause.
+  // replaces a stored one. hidden, beated, playtime, time_last_played,
+  // installed and the Steam playtime baseline are deliberately absent.
   const upsertSteam = db.prepare<Record<string, unknown>, GameRow>(`
     INSERT INTO games (origin, steam_id, title, description, developer, release_date, required_age, metadata_fetched_at)
     VALUES ('steam', @steamAppId, @title, NULLIF(@description, ''), NULLIF(@developer, ''),
@@ -68,12 +70,31 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
     WHERE id = @id RETURNING *`)
   const remove = db.prepare<[number]>('DELETE FROM games WHERE id = ?')
 
-  const countedSessions = db.prepare<[number], { duration_seconds: number; ended_at: string }>(`
+  // Sessions not yet included in the Steam baseline: all of them when the game
+  // was never synced, otherwise those started since the sync.
+  const countedSessions = db.prepare<
+    { id: number; since: string | null },
+    { duration_seconds: number; ended_at: string }
+  >(`
     SELECT duration_seconds, ended_at FROM play_sessions
-    WHERE game_id = ? AND status IN (${countedStatuses})`)
+    WHERE game_id = @id AND status IN (${countedStatuses})
+      AND (@since IS NULL OR started_at >= @since)`)
+  // time_last_played only moves forward here.
   const updatePlayStats = db.prepare<Record<string, unknown>, GameRow>(`
-    UPDATE games SET playtime = @playtime, time_last_played = COALESCE(@lastPlayed, time_last_played)
+    UPDATE games SET
+      playtime = @playtime,
+      time_last_played = CASE
+        WHEN @lastPlayed IS NOT NULL AND (time_last_played IS NULL OR @lastPlayed > time_last_played)
+        THEN @lastPlayed ELSE time_last_played END
     WHERE id = @id RETURNING *`)
+  // Steam is the source of truth at sync time: overwrite last played when it reports one.
+  const applySteamSync = db.prepare<Record<string, unknown>, { id: number }>(`
+    UPDATE games SET
+      steam_playtime_baseline = @minutes,
+      steam_synced_at = @syncedAt,
+      time_last_played = COALESCE(@lastPlayed, time_last_played)
+    WHERE steam_id = @steamAppId AND origin = 'steam'
+    RETURNING id`)
 
   const found = (row: GameRow | undefined, id: number): Game => {
     if (!row) throw new NotFoundError('Game', id)
@@ -127,21 +148,40 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
 
     delete: (id) => remove.run(id).changes > 0,
 
-    recomputePlayStats: (id) =>
+    recomputePlayStats: (id) => recomputePlayStats(id),
+
+    applySteamPlayStats: (stats, syncedAt) =>
       db.transaction(() => {
-        const sessions = countedSessions.all(id)
-        const lastPlayed = sessions.reduce<string | null>(
-          (max, s) => (max === null || s.ended_at > max ? s.ended_at : max),
-          null
-        )
-        return found(
-          updatePlayStats.get({
-            id,
-            playtime: playtimeMinutes(sessions.map((s) => s.duration_seconds)),
-            lastPlayed
-          }),
-          id
-        )
+        let updated = 0
+        for (const s of stats) {
+          const row = applySteamSync.get({
+            steamAppId: s.steamAppId,
+            minutes: s.playtimeMinutes,
+            syncedAt,
+            lastPlayed: s.lastPlayed
+          })
+          if (!row) continue
+          recomputePlayStats(row.id)
+          updated++
+        }
+        return updated
       })()
+  }
+
+  function recomputePlayStats(id: number): Game {
+    return db.transaction(() => {
+      const game = selectById.get(id)
+      if (!game) throw new NotFoundError('Game', id)
+      const sessions = countedSessions.all({ id, since: game.steam_synced_at })
+      const lastPlayed = sessions.reduce<string | null>(
+        (max, s) => (max === null || s.ended_at > max ? s.ended_at : max),
+        null
+      )
+      const playtime = playtimeMinutes(
+        sessions.map((s) => s.duration_seconds),
+        game.steam_playtime_baseline ?? 0
+      )
+      return found(updatePlayStats.get({ id, playtime, lastPlayed }), id)
+    })()
   }
 }

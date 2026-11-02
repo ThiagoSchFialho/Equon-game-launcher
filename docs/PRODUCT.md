@@ -145,8 +145,13 @@ limitações, condições de teste e método de inicialização suportado.
     quando o estado do processo puder ser observado.
 -   Tratar encerramento inesperado e desligamento do launcher sem
     corromper o histórico.
--   Distinguir claramente o tempo medido pelo launcher de estatísticas
-    fornecidas por uma loja.
+-   Para jogos Steam, a Steam é a fonte da verdade: a cada abertura do
+    launcher, o tempo total e a última vez jogado são sincronizados com
+    a conta Steam do usuário (inclui o tempo jogado em outros
+    computadores) e sobrescrevem os valores locais. As sessões
+    observadas somam sobre esse valor até a próxima abertura. Sem chave
+    da Steam ou com falha na sincronização, nada é sobrescrito.
+-   Jogos de outras origens usam apenas o tempo medido pelo launcher.
 -   Não prometer capturar perfeitamente todos os processos filhos ou
     jogos iniciados por launchers intermediários na primeira versão.
 -   Para jogos Steam, o início e o fim da sessão são observados pelo

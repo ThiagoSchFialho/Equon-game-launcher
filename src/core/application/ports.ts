@@ -40,6 +40,15 @@ export interface SteamGameUpsert {
   metadataFetchedAt?: string | null
 }
 
+/** One game from a Steam GetOwnedGames response (DATA_BASE_CONTEXT.md §3.11). */
+export interface SteamPlayStats {
+  steamAppId: number
+  /** playtime_forever, minutes. */
+  playtimeMinutes: number
+  /** rtime_last_played as ISO-8601 UTC; null when Steam reports none. */
+  lastPlayed: string | null
+}
+
 export interface GameFlags {
   hidden?: boolean
   beated?: boolean
@@ -54,8 +63,18 @@ export interface GameRepository {
   upsertSteamGame(game: SteamGameUpsert): Game
   setFlags(id: number, flags: GameFlags): Game
   delete(id: number): boolean
-  /** Recomputes playtime and time_last_played from completed and interrupted sessions (D-08). */
+  /**
+   * Recomputes playtime from completed and interrupted sessions (D-08), on top
+   * of the Steam baseline when the game was synced; time_last_played only moves forward.
+   */
   recomputePlayStats(id: number): Game
+  /**
+   * Applies a Steam playtime sync in one transaction: for each steam game
+   * already stored, sets the baseline and sync time, overwrites
+   * time_last_played (when Steam reports one) and recomputes playtime.
+   * Returns how many games were updated. Unknown App IDs are ignored.
+   */
+  applySteamPlayStats(stats: readonly SteamPlayStats[], syncedAt: string): number
 }
 
 export interface GenreRepository {

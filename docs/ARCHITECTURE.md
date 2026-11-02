@@ -1,6 +1,6 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.11
+**Version:** 0.12
 **Status:** Draft — Phase 2 (database and domain)
 **Last updated:** 2026-11-02
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
@@ -59,7 +59,7 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-05 | Game origins | Accepted | Extensible `ORIGINS` table: built-in `steam`, `manual`, `yuzu`, `ps2`; the user can add more. Only `steam` has an automatic adapter (§3.5) |
 | D-06 | Unknown installation state | Accepted | Make `installed` nullable; `NULL` = unknown (§3.6) |
 | D-07 | Manual-game launch configuration storage | Accepted | Dedicated table, not columns on `GAMES` (§3.7) |
-| D-08 | Session model and playtime rounding | Accepted | Add a `PLAY_SESSIONS` table; derive minutes from seconds (§3.8) |
+| D-08 | Session model and playtime rounding | Accepted | Add a `PLAY_SESSIONS` table; derive minutes from seconds; Steam playtime synced at every launcher start (§3.8) |
 | D-09 | Where `tier` and trophy counters are computed | Accepted | Application layer, inside a transaction (§3.9) |
 | D-10 | Enforcing a single `USERS` row | Accepted | `CHECK (id = 1)` at the database level (§3.10) |
 | D-11 | Controller input approach | Accepted | Browser Gamepad API (polled) behind an input abstraction; validate on hardware (§3.11) |
@@ -175,7 +175,7 @@ PLAY_SESSIONS(
 - **Every observed session counts toward playtime**, whatever the origin and however the game was closed (owner decision, Phase 2). A game that is force-closed or crashes is still observed ending, so its session completes normally.
 - **Heartbeat:** while observing a running game, the launcher periodically updates `last_seen_at` (about every 30 s; the final interval is set by measurement in Phase 4). If the launcher itself dies (crash, power loss, Windows shutdown), on the next startup each row still `running` becomes `interrupted` with `ended_at = last_seen_at` and `duration_seconds = last_seen_at − started_at`, in the same transaction that recomputes `playtime`. At most one heartbeat interval is lost.
 - Rounding: rounding each session to whole minutes loses time over many short sessions. **Rule:** `GAMES.playtime = floor(sum of duration_seconds of the game's completed and interrupted sessions / 60)`, recomputed in the same transaction that closes the session (idempotent; see `DATA_BASE_CONTEXT.md` §3.8). Covered by tests; `playtime` never goes negative.
-- Open sub-decision: `PRODUCT.md` asks to distinguish launcher-measured time from store-reported statistics. If store playtime is ever imported, a source indicator will be needed.
+- **Steam playtime (owner decision, Phase 2).** For Steam games, Steam is the source of truth for total playtime and last played, since it covers other computers and time before Equon. Once **per launcher start**, a single `IPlayerService/GetOwnedGames` call (key + SteamID64; validate the current format first) overwrites, for every Steam game already in the database, `time_last_played` and a stored baseline (`steam_playtime_baseline`, `steam_synced_at`). Then `playtime = baseline + floor(seconds of counted sessions started since the sync / 60)`, so sessions in the current run add on top and the next start overwrites again without double counting. Startup order: close interrupted sessions first, then sync. A failed sync changes nothing. This is the only automatic sync at startup; achievements keep the rules in §10. Other origins use launcher time only. Details: `DATA_BASE_CONTEXT.md` §3.11.
 
 ### 3.9 D-09 — `tier` and trophy counters (Accepted: application layer)
 
@@ -650,5 +650,6 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-01 | 0.7 | Accepted D-14 (npm, electron-vite, Vitest, ESLint + Prettier, strict TypeScript); documented the `better-sqlite3` Node/Electron ABI rule and the `node:sqlite` check for the Phase 1 spike. Phase 1 unblocked |
 | 2026-11-01 | 0.8 | Accepted D-15 (artwork). Aligned `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md` and `ROADMAP.md` with all accepted decisions. Recorded the open Home cover type |
 | 2026-11-01 | 0.9 | Added a fifth art type: portrait cover 600×900 for the Home screen. Renamed `cover` to `cover_square`; added `cover_portrait` |
+| 2026-11-02 | 0.12 | D-08: Steam playtime and last played synced once per launcher start (GetOwnedGames) and overwritten; sessions add on top until the next start (`steam_playtime_baseline`, `steam_synced_at`) |
 | 2026-11-02 | 0.11 | Phase 2 decisions: D-05 changed to an extensible `ORIGINS` table (built-in `steam`, `manual`, `yuzu`, `ps2`; user-created origins); D-08 interrupted sessions add time up to their last heartbeat (`last_seen_at`) |
 | 2026-11-01 | 0.10 | Phase 1: recorded spike results (§3.1); better-sqlite3 13 needs no rebuild (N-API prebuilds), rebuild scripts dropped (§3.3, §3.15); electron-vite 6 confirmed maintained (release 2026-10-14) |

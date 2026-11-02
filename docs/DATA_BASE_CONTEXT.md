@@ -68,6 +68,8 @@ Um registro por jogo, de qualquer origem.
 | `required_age` | `TEXT` | Classificação indicativa |
 | `origin` | `TEXT NOT NULL` | FK para `ORIGINS(key)` com `ON DELETE RESTRICT` (D-05) |
 | `metadata_fetched_at` | `TEXT` | Preenchido somente após salvar uma resposta válida de metadados (D-16) |
+| `steam_playtime_baseline` | `INTEGER` | Minutos informados pela Steam na última sincronização de tempo de jogo (3.11); `CHECK (>= 0)`; `NULL` se nunca sincronizado |
+| `steam_synced_at` | `TEXT` | UTC da última sincronização de tempo de jogo com a Steam; preenchido junto com `steam_playtime_baseline` (`CHECK`: os dois nulos ou os dois preenchidos) |
 
 Regras:
 
@@ -76,7 +78,8 @@ Regras:
 - Jogos da Epic, GOG e de outros launchers são cadastrados como `manual`. Jogos de emulador usam a origem do emulador (por exemplo, `yuzu`, `ps2` ou uma origem criada pelo usuário).
 - Só jogos descobertos pelo adaptador da Steam usam `steam`; o usuário nunca escolhe `steam` ao adicionar um jogo.
 - `hidden` e `beated` começam em `0` e só mudam por ação do usuário.
-- `playtime` nunca é negativo. A regra de cálculo está em 3.8.
+- `playtime` nunca é negativo. A regra de cálculo está em 3.8; para jogos Steam sincronizados, ver 3.11.
+- `steam_playtime_baseline` e `steam_synced_at` são internos: a interface mostra só `playtime` e `time_last_played`.
 - Possíveis duplicidades entre um jogo manual e um jogo Steam **não** são mescladas automaticamente: vão para revisão do usuário.
 - `metadata_fetched_at IS NULL` significa que os metadados ainda não foram obtidos (ou a tentativa falhou) e podem ser tentados de novo. Um jogo sem descrição de verdade, mas com `metadata_fetched_at` preenchido, **não** é buscado outra vez.
 
@@ -219,6 +222,8 @@ Regras:
 - **Heartbeat:** enquanto observa um jogo em execução, o launcher atualiza `last_seen_at` periodicamente (cerca de 30 s; o intervalo final é medido na Fase 4).
 - Se o próprio launcher morrer (crash, queda de energia, desligamento do Windows), na inicialização seguinte cada sessão que ficou `running` vira `interrupted`, com `ended_at = last_seen_at` e `duration_seconds = last_seen_at − started_at`, na mesma transação que recalcula `playtime`. Perde-se no máximo um intervalo de heartbeat.
 - **Cálculo de `GAMES.playtime`:** `floor(soma de duration_seconds das sessões 'completed' e 'interrupted' do jogo / 60)`. Assim os segundos que sobram de cada sessão se acumulam em vez de serem perdidos por arredondamento. O recálculo é idempotente.
+- **Jogos Steam já sincronizados (3.11):** `playtime = steam_playtime_baseline + floor(soma de duration_seconds das sessões contadas iniciadas a partir de steam_synced_at / 60)`. As sessões anteriores já estão incluídas no valor da Steam.
+- **`time_last_played`:** o recálculo só o avança (o maior entre o valor atual e o fim da sessão contada mais recente); nunca o volta para trás.
 - Para jogos Steam, o início e o fim têm a precisão limitada pela forma de observar o manifesto; o resultado é "melhor esforço" e as limitações observadas devem ser documentadas.
 
 ### 3.9 `GAME_ARTWORK` (D-15)
@@ -300,7 +305,20 @@ Usado para título, descrição, desenvolvedor, data de lançamento, classifica�
 
 **Frequência (D-16):** consultado **apenas quando o jogo é descoberto ou adicionado**. Sem refresh periódico e sem refresh na abertura. Falha não conta como concluído (`metadata_fetched_at` continua `NULL`) e é tentada de novo em um refresh posterior da biblioteca, com tentativas limitadas. Nunca sobrescrever `hidden`/`beated` nem trocar valores válidos por vazios.
 
-### 4.3 Steam — Web API (conquistas)
+### 3.11 Sincronização do tempo de jogo com a Steam
+
+Decisão do dono do projeto (Fase 2). Para jogos Steam, a Steam é a fonte da verdade do tempo total e da última vez jogado, porque inclui o tempo jogado em outros computadores e antes do Equon.
+
+- **Quando:** uma única vez **a cada abertura do launcher**, com uma chamada a `IPlayerService/GetOwnedGames` (precisa da chave e do SteamID64; validar o formato atual antes de implementar). É a única sincronização automática na abertura; conquistas continuam seguindo a seção 5.
+- **Ordem na abertura:** primeiro fechar as sessões interrompidas (3.8), depois sincronizar com a Steam.
+- **O que faz:** para cada jogo com `origin = 'steam'` já existente no banco e presente na resposta, em **uma transação**: gravar `steam_playtime_baseline` (`playtime_forever`, em minutos) e `steam_synced_at`, **sobrescrever** `time_last_played` com `rtime_last_played` (quando a Steam informa uma data) e recalcular `playtime` pela regra de 3.8.
+- **Enquanto o launcher está aberto:** cada sessão observada soma sobre a base da Steam. Na próxima abertura a Steam já contabilizou essas sessões e o valor é sobrescrito de novo, sem contagem dupla.
+- **Falhas:** sem chave, sem internet, perfil privado ou resposta inválida → **não alterar nada**; as sessões continuam somando sobre a última sincronização boa.
+- Jogos que a Steam ainda não contabilizou (por exemplo, jogados com a Steam em modo offline) podem ter o tempo reduzido temporariamente: o valor da Steam sempre sobrescreve. Aceito pelo dono do projeto.
+- Não cria jogos (jogos comprados e não instalados continuam fora do MVP) e não toca em `hidden`/`beated`.
+- Jogos de outras origens usam apenas o tempo medido pelo launcher.
+
+### 4.3 Steam — Web API (conquistas e tempo de jogo)
 
 Endpoints candidatos (validar formato e limites atuais antes de implementar):
 
@@ -322,7 +340,7 @@ API REST v2 com chave pessoal gratuita. Fornece capa quadrada e logo (e, para jo
 2. **Metadados e artes:** buscados na descoberta ou adição do jogo (D-15, D-16).
 3. **Conquistas — após fechar um jogo:** sincronizar **somente aquele jogo**, e só se o fechamento foi observado e o jogo suporta conquistas.
 4. **Conquistas — sincronização completa:** apenas quando o usuário pedir explicitamente, em segundo plano, com progresso e resultado por jogo.
-5. **Nunca:** sincronização periódica, ou de toda a biblioteca automaticamente (inclusive na abertura).
+5. **Nunca:** sincronização periódica de conquistas, ou de todas as conquistas da biblioteca automaticamente (inclusive na abertura). A única exceção automática na abertura é o tempo de jogo da Steam (3.11), feito com uma única requisição.
 6. **Sincronização de um jogo:** buscar definições, estado pessoal e percentuais globais; validar e normalizar; então, em **uma transação**: upsert por `(game_id, api_name)`, recálculo de `tier` onde o percentual mudou e recálculo dos contadores de `USERS` a partir de `ACHIEVEMENTS`. Se qualquer busca for inválida ou incompleta, **não alterar nada**: manter os últimos dados bons, marcar como desatualizado na interface e registrar o erro.
 7. Uma requisição que falhou **nunca** define `unlocked = 0` nem apaga linhas.
 8. Repetir uma sincronização com os mesmos dados não deve alterar nada (idempotência).
@@ -354,6 +372,7 @@ API REST v2 com chave pessoal gratuita. Fornece capa quadrada e logo (e, para jo
 | Configuração de lançamento manual | Tabela `GAME_LAUNCH_CONFIGS` | D-07 |
 | Sessões e arredondamento | Tabela `PLAY_SESSIONS`; `playtime` derivado dos segundos | D-08 |
 | Sessões interrompidas | Somam tempo até o último heartbeat (`last_seen_at`) | D-08 |
+| Tempo de jogo da Steam | Sincronizado a cada abertura; sobrescreve `playtime`/`time_last_played` dos jogos Steam e as sessões somam até a próxima abertura | D-08, 3.11 |
 | Tabelas `STRICT` | Sim, em todas as tabelas | Fase 2 |
 | Gêneros duplicados | Nome normalizado + `UNIQUE COLLATE NOCASE` | Fase 2 |
 | Onde calcular tier e contadores | Camada de aplicação, em transação | D-09 |
@@ -367,11 +386,10 @@ API REST v2 com chave pessoal gratuita. Fornece capa quadrada e logo (e, para jo
 
 1. Validar a estrutura atual e os limites da Steam Web API para conquistas.
 2. Onde guardar as preferências (idioma, caminho da Steam, etc.): tabela de configurações ou arquivo de configuração.
-3. Como distinguir tempo medido pelo launcher de estatísticas de lojas, se algum dia houver importação.
-4. Política de limpeza do cache de artes e variantes de tamanho.
-5. Estado de instalação de jogos manuais.
-6. Se haverá uma ação manual de "atualizar metadados" de um jogo.
-7. Guardar o executável do emulador na origem (proposta para a Fase 4).
+3. Política de limpeza do cache de artes e variantes de tamanho.
+4. Estado de instalação de jogos manuais.
+5. Se haverá uma ação manual de "atualizar metadados" de um jogo.
+6. Guardar o executável do emulador na origem (proposta para a Fase 4).
 
 ---
 
