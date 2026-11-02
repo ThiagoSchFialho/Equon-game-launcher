@@ -1,0 +1,54 @@
+.home__carousel {
+  --card-width: 26.625rem;
+  --card-gap: var(--space-12);
+  padding: calc(var(--space-16) + var(--space-12)) 0 0 13.625rem;
+  overflow: hidden;
+  height: 100%;
+}
+
+.home__track {
+  display: flex;
+  gap: var(--card-gap);
+  /* Pad vertically so the focus ring is never clipped by overflow. */
+  padding: var(--space-2) 0;
+  transform: translateX(calc(var(--index) * -1 * (var(--card-width) + var(--card-gap))));
+  transition: transform var(--motion-screen) var(--motion-easing);
+}
+
+.home__slot {
+  flex: 0 0 var(--card-width);
+  transition: opacity var(--motion-screen) var(--motion-easing);
+}
+
+/* Cards already passed fade out so they don't compete with the focused one. */
+.home__slot[data-before='true'] {
+  opacity: 0.25;
+}
+
+.home__focused-info {
+  width: var(--card-width);
+  padding-top: var(--space-6);
+}
+
+.home__title {
+  margin: 0;
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home__playtime {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-meta);
+}
+
+.home__playtime img {
+  height: 1.375rem;
+  width: auto;
+}

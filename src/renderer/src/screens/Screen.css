@@ -1,0 +1,11 @@
+/* Shared screen frame: optional top bar, content, footer hints. */
+.screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.screen__main {
+  flex: 1;
+  min-height: 0;
+}

@@ -1,0 +1,31 @@
+.state-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  height: 100%;
+  padding: var(--space-12);
+  text-align: center;
+}
+
+.state-message__icon {
+  height: 4rem;
+  width: auto;
+  opacity: 0.8;
+}
+
+.state-message__text {
+  margin: 0;
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+}
+
+.state-message[data-tone='error'] .state-message__text {
+  color: var(--color-danger);
+}
+
+.state-message__hint {
+  margin: 0 0 var(--space-4);
+  color: var(--color-text-secondary);
+}

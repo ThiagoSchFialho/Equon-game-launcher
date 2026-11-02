@@ -16,7 +16,7 @@ export function useInput(dispatch: (action: Action) => void): void {
 
     const poll = (now: number): void => {
       if (document.hasFocus()) {
-        for (const action of mapper.update(navigator.getGamepads(), now)) dispatch(action)
+        for (const action of mapper.update(navigator.getGamepads?.() ?? [], now)) dispatch(action)
       } else {
         mapper.reset()
       }

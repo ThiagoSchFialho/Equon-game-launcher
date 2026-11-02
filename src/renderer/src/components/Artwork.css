@@ -1,0 +1,63 @@
+.artwork {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.artwork--cover_square {
+  aspect-ratio: 1 / 1;
+}
+.artwork--cover_portrait {
+  aspect-ratio: 2 / 3;
+}
+.artwork--background {
+  aspect-ratio: 16 / 9;
+}
+.artwork--header {
+  aspect-ratio: 460 / 215;
+}
+
+.artwork__placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  background: linear-gradient(160deg, var(--color-surface-raised), var(--color-surface));
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
+}
+
+.artwork__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity var(--motion-panel) var(--motion-easing);
+}
+
+.artwork[data-state='loaded'] .artwork__image {
+  opacity: 1;
+}
+
+/* Logos keep their proportions over any background. */
+.artwork--logo {
+  background: none;
+}
+.artwork--logo .artwork__image {
+  object-fit: contain;
+  object-position: left center;
+}
+.artwork--logo .artwork__placeholder {
+  background: none;
+  place-items: center start;
+  padding: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-display);
+  font-weight: var(--font-weight-bold);
+  text-align: left;
+}

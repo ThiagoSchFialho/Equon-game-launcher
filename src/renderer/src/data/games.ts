@@ -1,0 +1,75 @@
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import type { GameDetails, GameSummary } from '../../../shared/ipc/contract'
+
+export type Loadable<T> = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: T }
+
+export interface GamesState {
+  games: Loadable<GameSummary[]>
+  reload(): void
+}
+
+export const GamesContext = createContext<GamesState | null>(null)
+
+/** Loads the visible library once; screens share it through GamesContext. */
+export function useGamesLoader(): GamesState {
+  const [games, setGames] = useState<Loadable<GameSummary[]>>({ status: 'loading' })
+  const [attempt, setAttempt] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    window.equon.games.list().then(
+      (data) => !cancelled && setGames({ status: 'ready', data }),
+      () => !cancelled && setGames({ status: 'error' })
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [attempt])
+
+  const reload = useCallback(() => {
+    setGames({ status: 'loading' })
+    setAttempt((n) => n + 1)
+  }, [])
+
+  return { games, reload }
+}
+
+export function useGames(): GamesState {
+  const state = useContext(GamesContext)
+  if (!state) throw new Error('useGames must be used inside the games provider')
+  return state
+}
+
+export function useGameDetails(id: number): {
+  details: Loadable<GameDetails | null>
+  reload(): void
+} {
+  const [details, setDetails] = useState<Loadable<GameDetails | null>>({ status: 'loading' })
+  const [attempt, setAttempt] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    window.equon.games.get(id).then(
+      (data) => !cancelled && setDetails({ status: 'ready', data }),
+      () => !cancelled && setDetails({ status: 'error' })
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [id, attempt])
+
+  const reload = useCallback(() => {
+    setDetails({ status: 'loading' })
+    setAttempt((n) => n + 1)
+  }, [])
+
+  return { details, reload }
+}
+
+/** Home: most recently played first; falls back to the library order when nothing was played. */
+export function homeGames(games: readonly GameSummary[], limit = 12): GameSummary[] {
+  const played = games
+    .filter((g) => g.timeLastPlayed !== null)
+    .sort((a, b) => (b.timeLastPlayed as string).localeCompare(a.timeLastPlayed as string))
+  return (played.length > 0 ? played : games).slice(0, limit)
+}

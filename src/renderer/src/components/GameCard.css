@@ -1,0 +1,24 @@
+.game-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  border-radius: var(--radius-card);
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-gap);
+  transition:
+    outline-color var(--motion-focus) var(--motion-easing),
+    transform var(--motion-focus) var(--motion-easing);
+}
+
+.game-card__art {
+  border-radius: var(--radius-card);
+  box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 0.35);
+}
+
+.game-card:hover {
+  transform: translateY(-0.125rem);
+}
+
+.game-card[data-focused='true'] {
+  outline-color: var(--color-focus);
+}

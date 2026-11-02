@@ -1,0 +1,80 @@
+@font-face {
+  font-family: 'Montserrat';
+  font-weight: 400;
+  src: url('../assets/fonts/Montserrat-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Montserrat';
+  font-weight: 500;
+  src: url('../assets/fonts/Montserrat-Medium.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Montserrat';
+  font-weight: 600;
+  src: url('../assets/fonts/Montserrat-SemiBold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Montserrat';
+  font-weight: 700;
+  src: url('../assets/fonts/Montserrat-Bold.ttf') format('truetype');
+}
+
+/*
+ * One composition for every 16:9 size: the root font size follows the window
+ * so that 1rem = 16px at 1920×1080 (100vw / 120) and the layout never
+ * overflows vertically on wider-than-16:9 windows (100vh / 67.5).
+ */
+html {
+  font-size: min(calc(100vw / 120), calc(100vh / 67.5));
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: default;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* Keyboard/controller focus is drawn by the focus manager (data-focused), not :focus. */
+:focus {
+  outline: none;
+}
+
+img {
+  display: block;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

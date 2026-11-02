@@ -45,7 +45,8 @@ export class FocusManager {
   private remembered = new Map<string, string>()
   private handlers: HandlerEntry[] = []
   private nextHandlerKey = 0
-  private lastRect: Rect | null = null
+  /** Where the focused element was when it disappeared, to re-home focus in the same scope. */
+  private lost: { scope: string; rect: Rect } | null = null
   private listeners = new Set<() => void>()
   private ensureQueued = false
   focusedId: string | null = null
@@ -76,7 +77,7 @@ export class FocusManager {
   unregister(id: string): void {
     const entry = this.entries.get(id)
     if (!entry) return
-    if (this.focusedId === id) this.lastRect = rectOf(entry.el)
+    if (this.focusedId === id) this.lost = { scope: entry.scope, rect: rectOf(entry.el) }
     this.entries.delete(id)
     this.queueEnsure()
   }
@@ -197,10 +198,10 @@ export class FocusManager {
     const remembered = this.remembered.get(scope)
     const target =
       (remembered && this.entries.get(remembered)?.scope === scope ? remembered : null) ??
-      (this.lastRect && !current ? this.nearest(inScope, this.lastRect) : null) ??
+      (this.lost?.scope === scope ? this.nearest(inScope, this.lost.rect) : null) ??
       inScope.find((e) => e.autoFocus)?.id ??
       this.firstInDocumentOrder(inScope)
-    this.lastRect = null
+    this.lost = null
     this.focus(target)
   }
 

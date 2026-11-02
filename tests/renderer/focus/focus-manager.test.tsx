@@ -246,3 +246,40 @@ describe('focus manager', () => {
     expect(menu).not.toHaveBeenCalled()
   })
 })
+
+describe('focus manager across screens', () => {
+  it('uses autoFocus on a new screen instead of the position of the previous screen', async () => {
+    const manager = new FocusManager()
+    function App({ screen }: { screen: 'a' | 'b' }): React.JSX.Element {
+      return screen === 'a' ? (
+        <FocusScope id="screen:a">
+          <Item id="a1" x={0} />
+          <Item id="a2" x={3} />
+        </FocusScope>
+      ) : (
+        <FocusScope id="screen:b">
+          <Item id="b1" x={0} />
+          <Item id="b2" x={1} autoFocus />
+          <Item id="b3" x={3} />
+        </FocusScope>
+      )
+    }
+    const { rerender } = render(
+      <FocusProvider manager={manager}>
+        <App screen="a" />
+      </FocusProvider>
+    )
+    await flush()
+    act(() => void manager.handle('right'))
+    expect(focusedText()).toBe('a2')
+
+    rerender(
+      <FocusProvider manager={manager}>
+        <App screen="b" />
+      </FocusProvider>
+    )
+    await flush()
+    // b3 sits where a2 was, but b2 is the screen's autoFocus element.
+    expect(focusedText()).toBe('b2')
+  })
+})

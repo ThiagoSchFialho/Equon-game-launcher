@@ -1,0 +1,155 @@
+.game {
+  --info-width: 30.375rem;
+  display: grid;
+  grid-template-columns: var(--info-width) 1fr;
+  grid-template-rows: 1fr auto;
+  height: 100%;
+}
+
+.game__info {
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-8) var(--space-12) 0 var(--space-16);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.game__back {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  align-self: flex-start;
+  padding: var(--space-1) var(--space-2) var(--space-1) 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-card-title);
+  border-radius: var(--radius-button);
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-gap);
+}
+
+.game__back img {
+  height: 1.875rem;
+  width: auto;
+  padding-right: var(--space-4);
+  border-right: 1px solid var(--color-border);
+}
+
+.game__back[data-focused='true'] {
+  outline-color: var(--color-focus);
+}
+
+.game__logo {
+  height: 11.25rem;
+  margin: var(--space-16) 0 var(--space-12);
+}
+
+.game__genres {
+  margin: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+}
+
+.game__byline {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-meta);
+}
+
+.game__about {
+  margin-top: var(--space-12);
+}
+
+.game__about h2 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+}
+
+.game__about p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Dominant art; without a 1920×1080 image the square cover fills the panel (proposed fallback). */
+.game__hero {
+  grid-row: 1;
+  grid-column: 2;
+  aspect-ratio: auto;
+  height: 100%;
+  border-bottom-left-radius: var(--radius-panel);
+}
+
+.game__bar {
+  grid-row: 2;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: var(--info-width) 1fr auto;
+  align-items: center;
+  padding: var(--space-12) var(--space-12) var(--space-12) var(--space-16);
+}
+
+.game__actions {
+  position: relative;
+  display: flex;
+  gap: var(--space-6);
+}
+
+.game__play-note {
+  position: absolute;
+  top: 100%;
+  margin: var(--space-3) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-meta);
+  white-space: nowrap;
+}
+
+.game__stats {
+  display: flex;
+  padding-left: 0.5rem;
+}
+
+.game__stat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: 0 var(--space-10);
+}
+
+.game__stat:first-child {
+  padding-left: 0;
+}
+
+.game__stat + .game__stat {
+  border-left: 1px solid var(--color-border);
+}
+
+.game__stat img {
+  height: 2.5rem;
+  width: auto;
+}
+
+.game__stat-label {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body);
+}
+
+.game__stat-value {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-bold);
+}
+
+.game__rating {
+  height: 6.25rem;
+  width: auto;
+}
