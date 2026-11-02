@@ -173,7 +173,7 @@ todos os espaços.
 -   Painéis: raio inicial de 12--16 px.
 -   Botões: raio consistente com a linguagem dos cards.
 -   Contornos de foco devem permanecer nítidos mesmo em fundos claros.
--   Contorno de foco: `color.focus`, 3 px, com 4 px de afastamento do
+-   Contorno de foco: `color.focus`, 2 px, com 4 px de afastamento do
     elemento (Fase 3).
 -   Sombras são discretas e funcionais; não usar sombras pesadas em
     todos os elementos.
