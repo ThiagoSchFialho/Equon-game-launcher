@@ -7,6 +7,7 @@ import {
 import {
   createAchievementRepository,
   createArtworkRepository,
+  createEmulatorRepository,
   createGameRepository,
   createGenreRepository,
   createLaunchConfigRepository,
@@ -26,6 +27,7 @@ beforeEach(() => {
     genres: createGenreRepository(db),
     achievements: createAchievementRepository(db),
     configs: createLaunchConfigRepository(db),
+    emulators: createEmulatorRepository(db),
     inspector: { stateOf: () => 'file' }
   }
 })

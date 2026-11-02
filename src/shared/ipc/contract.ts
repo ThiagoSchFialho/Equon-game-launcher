@@ -16,7 +16,9 @@ export const IpcChannel = {
   originsCreate: 'origins:create',
   originsRename: 'origins:rename',
   originsRemove: 'origins:remove',
-  originsSetDefaults: 'origins:set-defaults',
+  emulatorsList: 'emulators:list',
+  emulatorsSet: 'emulators:set',
+  emulatorsRemove: 'emulators:remove',
   filesList: 'files:list',
   filesPickNative: 'files:pick-native'
 } as const
@@ -93,17 +95,32 @@ export interface GameDetails extends GameSummary {
   achievements: AchievementSummary | null
   /** Non-Steam game the user can edit and remove. */
   editable: boolean
-  /** Play can be offered: launch configured and installed = 1. */
+  /** Play can be offered (launchIssue is null). */
   launchable: boolean
+  /** Why Play is unavailable, or null. */
+  launchIssue: LaunchIssue | null
+  /** False for .url shortcuts: no process is observed, so no playtime is measured. */
+  tracksTime: boolean
 }
+
+export type LaunchIssue =
+  'steam' | 'not-installed' | 'install-unknown' | 'no-config' | 'emulator-missing'
 
 export interface OriginInfo {
   key: string
   name: string
   builtin: boolean
-  defaultExecutablePath: string | null
-  /** `{rom}` marks where the ROM path goes. */
-  defaultArguments: string[] | null
+}
+
+/** A supported emulator and the executable configured for it (§3.12). */
+export interface EmulatorInfo {
+  key: string
+  name: string
+  /** Origin of the games it runs. */
+  origin: string
+  romExtensions: string[]
+  /** null = not configured. */
+  executablePath: string | null
 }
 
 /** Add/edit form of a non-Steam game. Paths are untrusted and re-validated in main. */
@@ -118,7 +135,10 @@ export interface ManualGameForm {
   /** Minutes played elsewhere. */
   playtimeOffset: number
   origin: string
+  /** .exe or .url; empty for emulator games. */
   executablePath: string
+  /** ROM of an emulator game (Yuzu); null otherwise. */
+  romPath: string | null
   arguments: string[]
   workingDirectory: string | null
   /** A new background image to import; null keeps the current one. */
@@ -131,7 +151,7 @@ export interface EditableGame {
   hasBackground: boolean
 }
 
-export type PickKind = 'executable' | 'rom' | 'image' | 'directory'
+export type PickKind = 'executable' | 'emulator' | 'rom' | 'image' | 'directory'
 
 export interface BrowserEntry {
   name: string
@@ -169,11 +189,11 @@ export interface EquonApi {
     create(name: string): Promise<Result<OriginInfo>>
     rename(key: string, name: string): Promise<Result<OriginInfo>>
     remove(key: string): Promise<Result<null>>
-    setDefaults(
-      key: string,
-      executablePath: string | null,
-      args: string[] | null
-    ): Promise<Result<OriginInfo>>
+  }
+  emulators: {
+    list(): Promise<EmulatorInfo[]>
+    set(key: string, executablePath: string): Promise<Result<EmulatorInfo>>
+    remove(key: string): Promise<Result<null>>
   }
   files: {
     /** null lists the starting view (drives and known folders). */

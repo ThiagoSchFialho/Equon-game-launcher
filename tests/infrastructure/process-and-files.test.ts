@@ -33,7 +33,6 @@ describe('process launcher', () => {
     const out = join(dir, 'args.json')
     const script = `require('fs').writeFileSync(process.argv[1], JSON.stringify({args: process.argv.slice(2), cwd: process.cwd()}))`
     const child = await createProcessLauncher().launch({
-      gameId: 1,
       executablePath: process.execPath,
       arguments: ['-e', script, out, 'a b', '&& echo injected', '"quoted"'],
       workingDirectory: dir
@@ -49,7 +48,6 @@ describe('process launcher', () => {
   it('rejects when the executable does not exist', async () => {
     await expect(
       createProcessLauncher().launch({
-        gameId: 1,
         executablePath: join(dir, 'missing.exe'),
         arguments: [],
         workingDirectory: dir
@@ -74,14 +72,23 @@ describe('file browser', () => {
   beforeEach(() => {
     mkdirSync(join(dir, 'Games'))
     mkdirSync(join(dir, '$Recycle.Bin'))
-    for (const name of ['b.exe', 'A.EXE', 'readme.txt', 'cover.png', 'game.iso', '.hidden.exe']) {
+    for (const name of [
+      'b.exe',
+      'A.EXE',
+      'readme.txt',
+      'cover.png',
+      'game.iso',
+      'zelda.nsp',
+      'Epic.url',
+      '.hidden.exe'
+    ]) {
       writeFileSync(join(dir, name), '')
     }
   })
 
   it('lists folders first, then only the allowed files', () => {
     const listing = listDirectory(dir, 'executable')
-    expect(listing.entries.map((e) => e.name)).toEqual(['Games', 'A.EXE', 'b.exe'])
+    expect(listing.entries.map((e) => e.name)).toEqual(['Games', 'A.EXE', 'b.exe', 'Epic.url'])
     expect(listing.parent).not.toBeNull()
     expect(listing.truncated).toBe(false)
   })
@@ -89,7 +96,12 @@ describe('file browser', () => {
   it('filters by kind', () => {
     expect(listDirectory(dir, 'image').entries.map((e) => e.name)).toEqual(['Games', 'cover.png'])
     expect(listDirectory(dir, 'directory').entries.map((e) => e.name)).toEqual(['Games'])
-    expect(listDirectory(dir, 'rom').entries.map((e) => e.name)).toContain('game.iso')
+    expect(listDirectory(dir, 'rom').entries.map((e) => e.name)).toEqual(['Games', 'zelda.nsp'])
+    expect(listDirectory(dir, 'emulator').entries.map((e) => e.name)).toEqual([
+      'Games',
+      'A.EXE',
+      'b.exe'
+    ])
   })
 
   it('has no parent at a drive root and lists existing drives', () => {
@@ -104,7 +116,10 @@ describe('file browser', () => {
     expect(matchesPickKind('C:\\g\\Game.EXE', 'executable')).toBe(true)
     expect(matchesPickKind('C:\\g\\run.bat', 'executable')).toBe(false)
     expect(matchesPickKind('C:\\g\\x.webp', 'image')).toBe(true)
-    expect(matchesPickKind('C:\\g\\x.anything', 'rom')).toBe(true)
+    expect(matchesPickKind('C:\\g\\x.url', 'executable')).toBe(true)
+    expect(matchesPickKind('C:\\g\\x.url', 'emulator')).toBe(false)
+    expect(matchesPickKind('C:\\g\\x.XCI', 'rom')).toBe(true)
+    expect(matchesPickKind('C:\\g\\x.iso', 'rom')).toBe(false)
   })
 })
 

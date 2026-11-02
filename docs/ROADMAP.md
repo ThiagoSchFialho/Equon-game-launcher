@@ -155,9 +155,9 @@ displays.
     own origins (create, rename, delete unused), e.g. for a new emulator.
 -   [x] User-entered playtime (`playtime_offset`); manual install state
     from the executable.
--   [ ] "Adicionar emulador" (Yuzu only): configure `yuzu.exe`; Yuzu
+-   [x] "Adicionar emulador" (Yuzu only): configure `yuzu.exe`; Yuzu
     games pick only the ROM and open with `-f -g "<rom>"`.
--   [ ] Accept `.url` shortcuts (store schemes allowlist; no playtime).
+-   [x] Accept `.url` shortcuts (store schemes allowlist; no playtime).
 -   [ ] Validate with real games from other launchers (e.g. Epic Games
     Store), which are added manually with `origin = manual`. Document
     games that fail to start from their `.exe` directly because they

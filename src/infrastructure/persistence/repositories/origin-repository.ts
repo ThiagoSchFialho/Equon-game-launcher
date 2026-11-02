@@ -14,19 +14,14 @@ interface OriginRow {
   key: string
   name: string
   builtin: number
-  default_executable_path: string | null
-  default_arguments: string | null
 }
 
-const COLUMNS = 'key, name, builtin, default_executable_path, default_arguments'
+const COLUMNS = 'key, name, builtin'
 
 const toOrigin = (row: OriginRow): Origin => ({
   key: row.key,
   name: row.name,
-  builtin: toBool(row.builtin),
-  defaultExecutablePath: row.default_executable_path,
-  defaultArguments:
-    row.default_arguments === null ? null : (JSON.parse(row.default_arguments) as string[])
+  builtin: toBool(row.builtin)
 })
 
 export function createOriginRepository(db: SqliteDatabase): OriginRepository {
@@ -47,9 +42,6 @@ export function createOriginRepository(db: SqliteDatabase): OriginRepository {
   )
   const gameCount = db.prepare<[string], { n: number }>(
     'SELECT count(*) AS n FROM games WHERE origin = ?'
-  )
-  const updateDefaults = db.prepare<[string | null, string | null, string], OriginRow>(
-    `UPDATE origins SET default_executable_path = ?, default_arguments = ? WHERE key = ? RETURNING ${COLUMNS}`
   )
   const remove = db.prepare<[string]>('DELETE FROM origins WHERE key = ?')
 
@@ -91,16 +83,6 @@ export function createOriginRepository(db: SqliteDatabase): OriginRepository {
         if (toBool(row.builtin)) throw new BuiltinOriginError(key)
         if ((gameCount.get(key) as { n: number }).n > 0) throw new OriginInUseError(key)
         remove.run(key)
-      })(),
-
-    setDefaults: (key, executablePath, args) => {
-      const row = updateDefaults.get(
-        executablePath,
-        executablePath === null || args === null ? null : JSON.stringify(args),
-        key
-      )
-      if (!row) throw new NotFoundError('Origin', key)
-      return toOrigin(row)
-    }
+      })()
   }
 }

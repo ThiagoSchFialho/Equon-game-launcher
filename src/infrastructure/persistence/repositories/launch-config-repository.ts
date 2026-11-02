@@ -4,7 +4,8 @@ import type { SqliteDatabase } from '../database'
 
 interface LaunchConfigRow {
   game_id: number
-  executable_path: string
+  executable_path: string | null
+  rom_path: string | null
   arguments: string | null
   working_directory: string | null
 }
@@ -12,6 +13,7 @@ interface LaunchConfigRow {
 const toConfig = (row: LaunchConfigRow): LaunchConfig => ({
   gameId: row.game_id,
   executablePath: row.executable_path,
+  romPath: row.rom_path,
   arguments: row.arguments === null ? [] : (JSON.parse(row.arguments) as string[]),
   workingDirectory: row.working_directory
 })
@@ -21,10 +23,11 @@ export function createLaunchConfigRepository(db: SqliteDatabase): LaunchConfigRe
     'SELECT * FROM game_launch_configs WHERE game_id = ?'
   )
   const upsert = db.prepare<Record<string, unknown>>(`
-    INSERT INTO game_launch_configs (game_id, executable_path, arguments, working_directory)
-    VALUES (@gameId, @executablePath, @arguments, @workingDirectory)
+    INSERT INTO game_launch_configs (game_id, executable_path, rom_path, arguments, working_directory)
+    VALUES (@gameId, @executablePath, @romPath, @arguments, @workingDirectory)
     ON CONFLICT (game_id) DO UPDATE SET
       executable_path = excluded.executable_path,
+      rom_path = excluded.rom_path,
       arguments = excluded.arguments,
       working_directory = excluded.working_directory`)
 
@@ -37,6 +40,7 @@ export function createLaunchConfigRepository(db: SqliteDatabase): LaunchConfigRe
       upsert.run({
         gameId: config.gameId,
         executablePath: config.executablePath,
+        romPath: config.romPath,
         // No arguments is stored as NULL (DATA_BASE_CONTEXT.md §3.7).
         arguments: config.arguments.length > 0 ? JSON.stringify(config.arguments) : null,
         workingDirectory: config.workingDirectory

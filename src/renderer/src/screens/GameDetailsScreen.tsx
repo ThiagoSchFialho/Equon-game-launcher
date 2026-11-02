@@ -90,11 +90,20 @@ function Stat({
 function playNote(game: GameDetails, running: boolean, launchError: string | null): string | null {
   if (launchError) return launchError
   if (running) return t.game.runningNote
-  if (game.launchable) return null
-  if (!game.editable) return t.game.steamSoon
-  if (game.installed === null) return t.game.installUnknown
-  if (game.installed === false) return t.game.notInstalled
-  return t.game.noConfig
+  switch (game.launchIssue) {
+    case null:
+      return game.tracksTime ? null : t.game.untracked
+    case 'steam':
+      return t.game.steamSoon
+    case 'install-unknown':
+      return t.game.installUnknown
+    case 'not-installed':
+      return t.game.notInstalled
+    case 'emulator-missing':
+      return t.game.emulatorMissing
+    case 'no-config':
+      return t.game.noConfig
+  }
 }
 
 function Details({

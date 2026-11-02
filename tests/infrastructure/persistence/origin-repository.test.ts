@@ -21,12 +21,11 @@ beforeEach(() => {
 
 describe('OriginRepository', () => {
   it('lists the built-in origins by name', () => {
-    const none = { defaultExecutablePath: null, defaultArguments: null }
     expect(origins.list()).toEqual([
-      { key: 'manual', name: 'Jogo Local', builtin: true, ...none },
-      { key: 'ps2', name: 'PlayStation 2', builtin: true, ...none },
-      { key: 'steam', name: 'Steam', builtin: true, ...none },
-      { key: 'yuzu', name: 'Yuzu', builtin: true, ...none }
+      { key: 'manual', name: 'Jogo Local', builtin: true },
+      { key: 'ps2', name: 'PlayStation 2', builtin: true },
+      { key: 'steam', name: 'Steam', builtin: true },
+      { key: 'yuzu', name: 'Yuzu', builtin: true }
     ])
   })
 
@@ -34,9 +33,7 @@ describe('OriginRepository', () => {
     expect(origins.create('  Nintendo   64 ')).toEqual({
       key: 'nintendo-64',
       name: 'Nintendo 64',
-      builtin: false,
-      defaultExecutablePath: null,
-      defaultArguments: null
+      builtin: false
     })
   })
 
@@ -70,20 +67,5 @@ describe('OriginRepository', () => {
 
     origins.delete(n64.key)
     expect(origins.list().map((o) => o.key)).not.toContain(n64.key)
-  })
-
-  it('stores and clears emulator defaults', () => {
-    const n64 = origins.create('Nintendo 64')
-    expect(origins.setDefaults(n64.key, 'C:/Emu/emu.exe', ['--fullscreen', '{rom}'])).toMatchObject(
-      {
-        defaultExecutablePath: 'C:/Emu/emu.exe',
-        defaultArguments: ['--fullscreen', '{rom}']
-      }
-    )
-    expect(origins.setDefaults(n64.key, null, null)).toMatchObject({
-      defaultExecutablePath: null,
-      defaultArguments: null
-    })
-    expect(() => origins.setDefaults('missing', null, null)).toThrow(NotFoundError)
   })
 })

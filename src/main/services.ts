@@ -1,9 +1,12 @@
-import { nativeImage, type BrowserWindow } from 'electron'
+import { nativeImage, shell, type BrowserWindow } from 'electron'
 import { createGameRunner, recoverInterruptedSessions } from '../core/application'
+import { isAllowedShortcutUrl } from '../core/domain'
+import { readShortcutUrl } from '../infrastructure/filesystem/shortcut-reader'
 import { createFileInspector } from '../infrastructure/filesystem/file-inspector'
 import {
   createAchievementRepository,
   createArtworkRepository,
+  createEmulatorRepository,
   createGameRepository,
   createGenreRepository,
   createLaunchConfigRepository,
@@ -41,6 +44,7 @@ export function createServices(
   const sessions = createSessionRepository(db)
   const origins = createOriginRepository(db)
   const artwork = createArtworkRepository(db)
+  const emulators = createEmulatorRepository(db)
   const uow = createUnitOfWork(db)
   const inspector = createFileInspector()
 
@@ -50,8 +54,18 @@ export function createServices(
     games,
     configs,
     sessions,
+    emulators,
     uow,
     launcher: createProcessLauncher(),
+    shortcuts: {
+      readUrl: readShortcutUrl,
+      // Re-checked here: only allowlisted store URLs ever reach the OS (ARCHITECTURE.md §7).
+      openUrl: async (url) => {
+        if (!isAllowedShortcutUrl(url)) throw new Error('URL not allowed')
+        await shell.openExternal(url)
+      }
+    },
+    inspector,
     clock: { now: () => new Date() },
     repeat: (ms, tick) => {
       const timer = setInterval(tick, ms)
@@ -70,18 +84,21 @@ export function createServices(
       genres: createGenreRepository(db),
       achievements: createAchievementRepository(db),
       configs,
+      emulators,
       inspector
     },
     service: createManualGameService({
       games,
       configs,
       origins,
+      emulators,
       artwork,
       uow,
       inspector,
       runner,
       artworkCacheDir,
-      decodeImage
+      decodeImage,
+      readShortcut: readShortcutUrl
     }),
     runner,
     window

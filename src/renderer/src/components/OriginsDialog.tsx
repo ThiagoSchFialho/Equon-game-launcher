@@ -1,23 +1,17 @@
 import { useState } from 'react'
 import type { OriginInfo, Result } from '../../../shared/ipc/contract'
-import { formatArguments, parseArguments } from '../../../shared/text-format'
 import { errorMessage, t } from '../strings'
 import { ChoiceDialog, type ChoiceItem } from './Dialog'
-import { FileBrowserDialog } from './FileBrowserDialog'
 import { OnScreenKeyboard } from './OnScreenKeyboard'
 
 type Step =
   | { kind: 'list' }
   | { kind: 'actions'; origin: OriginInfo }
   | { kind: 'name'; origin: OriginInfo | null }
-  | { kind: 'emulator'; origin: OriginInfo }
-  | { kind: 'emulatorArgs'; origin: OriginInfo; executablePath: string }
-
-const fileName = (path: string): string => path.split(/[\\/]/).pop() ?? path
 
 /**
  * Manage origins (DATA_BASE_CONTEXT.md §3.10): create, rename, delete unused
- * user origins, and set an emulator that pre-fills new games of the origin.
+ * user origins. Emulators are configured on their own screen (§3.12).
  */
 export function OriginsDialog({
   origins,
@@ -65,64 +59,10 @@ export function OriginsDialog({
     )
   }
 
-  if (step.kind === 'emulator') {
-    return (
-      <FileBrowserDialog
-        kind="executable"
-        onClose={() => setStep({ kind: 'actions', origin: step.origin })}
-        onPick={(executablePath) =>
-          setStep({ kind: 'emulatorArgs', origin: step.origin, executablePath })
-        }
-      />
-    )
-  }
-
-  if (step.kind === 'emulatorArgs') {
-    return (
-      <OnScreenKeyboard
-        title={t.origins.emulatorArgs}
-        initialValue={formatArguments(step.origin.defaultArguments ?? ['{rom}'])}
-        mode="symbols"
-        onCancel={() => setStep({ kind: 'actions', origin: step.origin })}
-        onDone={(line) => {
-          void run(
-            window.equon.origins.setDefaults(
-              step.origin.key,
-              step.executablePath,
-              parseArguments(line)
-            )
-          ).then(back)
-        }}
-      />
-    )
-  }
-
   if (step.kind === 'actions') {
     const { origin } = step
     const items: ChoiceItem[] = [
       { id: 'rename', label: t.origins.rename, onConfirm: () => setStep({ kind: 'name', origin }) },
-      ...(origin.key !== 'steam'
-        ? [
-            {
-              id: 'emulator',
-              label: t.origins.setEmulator,
-              detail: origin.defaultExecutablePath
-                ? fileName(origin.defaultExecutablePath)
-                : undefined,
-              onConfirm: () => setStep({ kind: 'emulator', origin })
-            }
-          ]
-        : []),
-      ...(origin.defaultExecutablePath
-        ? [
-            {
-              id: 'clear-emulator',
-              label: t.origins.clearEmulator,
-              onConfirm: () =>
-                void run(window.equon.origins.setDefaults(origin.key, null, null)).then(back)
-            }
-          ]
-        : []),
       { id: 'close', label: t.origins.close, onConfirm: back },
       ...(!origin.builtin
         ? [
@@ -152,11 +92,7 @@ export function OriginsDialog({
     ...origins.map((origin) => ({
       id: origin.key,
       label: origin.name,
-      detail: origin.defaultExecutablePath
-        ? t.origins.emulator(fileName(origin.defaultExecutablePath))
-        : origin.builtin
-          ? t.origins.builtin
-          : undefined,
+      detail: origin.builtin ? t.origins.builtin : undefined,
       onConfirm: () => setStep({ kind: 'actions', origin })
     })),
     {

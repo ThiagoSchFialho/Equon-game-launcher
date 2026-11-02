@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from '../../src/renderer/src/App'
 import type { EquonApi, ManualGameForm } from '../../src/shared/ipc/contract'
-import { details, installFakeApi, summary } from './fake-api'
+import { details, installFakeApi, summary, yuzu } from './fake-api'
 
 afterEach(cleanup)
 
@@ -77,7 +77,9 @@ describe('play from game details', () => {
     press('Escape')
     await click('Missing')
     expect(
-      await screen.findByText('Executável não encontrado. Edite o jogo para corrigir o caminho.')
+      await screen.findByText(
+        'Arquivo do jogo não encontrado. Edite o jogo para corrigir o caminho.'
+      )
     ).toBeTruthy()
 
     press('Escape')
@@ -153,6 +155,7 @@ describe('add game form', () => {
       playtimeOffset: 90,
       origin: 'manual',
       executablePath: 'C:\\Games\\hq.exe',
+      romPath: null,
       arguments: [],
       workingDirectory: null,
       backgroundPath: null
@@ -202,61 +205,132 @@ describe('add game form', () => {
     expect(await screen.findByText('1 jogo')).toBeTruthy()
   })
 
-  it('pre-fills the emulator of the chosen origin and applies the ROM', async () => {
+  it('asks only for the ROM when the origin is Yuzu', async () => {
     const create = vi.fn<EquonApi['games']['create']>(async () => ({ ok: true, data: { id: 1 } }))
     installFakeApi([summary(1, 'A')], {
       games: { create },
-      origins: {
-        list: async () => [
-          {
-            key: 'manual',
-            name: 'Jogo Local',
-            builtin: true,
-            defaultExecutablePath: null,
-            defaultArguments: null
-          },
-          {
-            key: 'ps2',
-            name: 'PlayStation 2',
-            builtin: true,
-            defaultExecutablePath: 'C:\\PCSX2\\pcsx2.exe',
-            defaultArguments: ['-fullscreen', '{rom}']
-          }
-        ]
-      },
-      files: {
-        list: async () => ({
-          ok: true,
-          data: {
-            path: 'D:\\ROMs',
-            parent: null,
-            entries: [{ name: 'Game.iso', path: 'D:\\ROMs\\Game.iso', type: 'file' }],
-            truncated: false
-          }
-        })
-      }
+      emulators: { list: async () => [yuzu('C:\\Yuzu\\yuzu.exe')] },
+      files: { list: listing('D:\\Switch', 'Zelda.nsp') }
     })
     render(<App />)
     await screen.findByText('12h 22m')
     press('e')
     await click('Adicionar jogo')
     await click(/Título do jogo/)
-    type('Shadow')
+    type('Zelda')
     press('Enter')
     await click('Origem')
-    await clickText('PlayStation 2')
-    expect(await screen.findByText('C:\\PCSX2\\pcsx2.exe')).toBeTruthy()
+    await clickText('Yuzu')
+    expect(screen.queryByLabelText(/Executável/)).toBeNull()
+    expect(screen.queryByLabelText('Argumentos')).toBeNull()
     await click(/ROM/)
-    await clickText('Game.iso')
+    await clickText('Zelda.nsp')
+    expect(
+      await screen.findByText('Será iniciado com: yuzu.exe -f -g "D:\\Switch\\Zelda.nsp"')
+    ).toBeTruthy()
     await click(/Adicionar jogo/)
     await waitFor(() => expect(create).toHaveBeenCalledOnce())
     expect(create.mock.calls[0][0]).toMatchObject({
-      origin: 'ps2',
-      executablePath: 'C:\\PCSX2\\pcsx2.exe',
-      arguments: ['-fullscreen', 'D:\\ROMs\\Game.iso']
+      origin: 'yuzu',
+      executablePath: '',
+      romPath: 'D:\\Switch\\Zelda.nsp',
+      arguments: [],
+      workingDirectory: null
+    })
+  })
+
+  it('warns when Yuzu is not configured', async () => {
+    installFakeApi([summary(1, 'A')])
+    render(<App />)
+    await screen.findByText('12h 22m')
+    press('e')
+    await click('Adicionar jogo')
+    await click('Origem')
+    await clickText('Yuzu')
+    expect(
+      await screen.findByText(
+        'Yuzu ainda não foi configurado. Use “Adicionar emulador” na Biblioteca.'
+      )
+    ).toBeTruthy()
+  })
+
+  it('hides arguments and folder for .url shortcuts', async () => {
+    const create = vi.fn<EquonApi['games']['create']>(async () => ({ ok: true, data: { id: 1 } }))
+    installFakeApi([summary(1, 'A')], {
+      games: { create },
+      files: { list: listing('C:\\Atalhos', 'Fortnite.url') }
+    })
+    render(<App />)
+    await screen.findByText('12h 22m')
+    press('e')
+    await click('Adicionar jogo')
+    await click(/Título do jogo/)
+    type('Fortnite')
+    press('Enter')
+    await click(/Executável/)
+    await clickText('Fortnite.url')
+    expect(await screen.findByText(/Atalhos .url abrem pela loja/)).toBeTruthy()
+    expect(screen.queryByLabelText('Argumentos')).toBeNull()
+    expect(screen.queryByLabelText('Pasta de trabalho')).toBeNull()
+    await click(/Adicionar jogo/)
+    await waitFor(() => expect(create).toHaveBeenCalledOnce())
+    expect(create.mock.calls[0][0]).toMatchObject({
+      executablePath: 'C:\\Atalhos\\Fortnite.url',
+      romPath: null,
+      arguments: [],
+      workingDirectory: null
     })
   })
 })
+
+describe('add emulator', () => {
+  it('configures, changes and removes the Yuzu executable from the Library', async () => {
+    let current: string | null = null
+    const set = vi.fn<EquonApi['emulators']['set']>(async (_key, path) => {
+      current = path
+      return { ok: true, data: yuzu(path) }
+    })
+    const remove = vi.fn<EquonApi['emulators']['remove']>(async () => {
+      current = null
+      return { ok: true, data: null }
+    })
+    installFakeApi([summary(1, 'A')], {
+      emulators: { list: async () => [yuzu(current)], set, remove },
+      files: { list: listing('C:\\Yuzu', 'yuzu.exe') }
+    })
+    render(<App />)
+    await screen.findByText('12h 22m')
+    press('e')
+    await click('Adicionar emulador')
+    expect(await screen.findByText('Não configurado — escolha o yuzu.exe')).toBeTruthy()
+    await click('Yuzu')
+    await clickText('yuzu.exe')
+    expect(set).toHaveBeenCalledWith('yuzu', 'C:\\Yuzu\\yuzu.exe')
+    expect(await screen.findByText('C:\\Yuzu\\yuzu.exe')).toBeTruthy()
+
+    await click('Yuzu')
+    expect(await screen.findByText('A troca vale para todos os jogos deste emulador.')).toBeTruthy()
+    await clickText('Remover emulador')
+    expect(remove).toHaveBeenCalledWith('yuzu')
+    expect(await screen.findByText('Não configurado — escolha o yuzu.exe')).toBeTruthy()
+
+    press('Escape')
+    expect(await screen.findByText('1 jogo')).toBeTruthy()
+  })
+})
+
+/** A file-browser folder with one compatible file. */
+function listing(path: string, name: string): EquonApi['files']['list'] {
+  return async () => ({
+    ok: true,
+    data: {
+      path,
+      parent: null,
+      entries: [{ name, path: `${path}\\${name}`, type: 'file' }],
+      truncated: false
+    }
+  })
+}
 
 describe('on-screen keyboard controller actions', () => {
   it('erases, adds spaces, toggles capitals and finishes', async () => {

@@ -20,7 +20,8 @@ export const t = {
     retry: 'Tentar novamente',
     empty: 'Nenhum jogo na biblioteca ainda.',
     emptyHint: 'Jogos da Steam e jogos adicionados manualmente aparecerão aqui.',
-    addGame: 'Adicionar jogo'
+    addGame: 'Adicionar jogo',
+    addEmulator: 'Adicionar emulador'
   },
   home: {
     empty: 'Nenhum jogo para mostrar ainda.',
@@ -30,8 +31,10 @@ export const t = {
     play: 'Jogar',
     running: 'Em execução',
     steamSoon: 'Iniciar jogos da Steam estará disponível em breve.',
-    notInstalled: 'Executável não encontrado. Edite o jogo para corrigir o caminho.',
-    installUnknown: 'Não foi possível verificar o executável (disco desconectado?).',
+    notInstalled: 'Arquivo do jogo não encontrado. Edite o jogo para corrigir o caminho.',
+    installUnknown: 'Não foi possível verificar o arquivo do jogo (disco desconectado?).',
+    emulatorMissing: 'Configure o Yuzu em Biblioteca › Adicionar emulador.',
+    untracked: 'Atalho .url: o tempo de jogo não é medido.',
     noConfig: 'Configure o executável editando o jogo.',
     runningNote: 'O tempo desta sessão será somado quando o jogo fechar.',
     more: 'Mais opções',
@@ -49,7 +52,9 @@ export const t = {
   launchErrors: {
     'not-found': 'Este jogo não pode ser iniciado.',
     'no-config': 'Configure o executável editando o jogo.',
-    'not-installed': 'Executável não encontrado. Edite o jogo para corrigir o caminho.',
+    'not-installed': 'Arquivo do jogo não encontrado. Edite o jogo para corrigir o caminho.',
+    'emulator-missing': 'Configure o Yuzu em Biblioteca › Adicionar emulador.',
+    'shortcut-invalid': 'O atalho .url não aponta para uma loja suportada. Edite o jogo.',
     'already-running': 'O jogo já está em execução.',
     'start-failed': 'Não foi possível iniciar o jogo. Verifique o executável e os argumentos.'
   } as Record<string, string>,
@@ -99,8 +104,8 @@ export const t = {
       developer: 'Digite o nome do desenvolvedor…',
       releaseDate: 'DD-MM-AAAA',
       playtime: 'Tempo total de jogo (em minutos)',
-      rom: 'Escolha o arquivo do jogo para o emulador…',
-      executable: 'Escolha o arquivo .exe do jogo…',
+      rom: 'Escolha a ROM do jogo (.nsp, .xci…)…',
+      executable: 'Escolha o .exe do jogo ou um atalho .url…',
       arguments: 'Opcional, ex.: -fullscreen "D:\\Jogos\\jogo.iso"',
       workingDirectory: 'Opcional (padrão: pasta do executável)'
     },
@@ -118,6 +123,12 @@ export const t = {
       current: 'Imagem atual'
     },
     manageOrigins: 'Gerenciar origens…',
+    emulatorCommand: (emulator: string, rom: string) =>
+      `Será iniciado com: ${emulator} -f -g "${rom}"`,
+    emulatorMissing: (emulator: string) =>
+      `${emulator} ainda não foi configurado. Use “Adicionar emulador” na Biblioteca.`,
+    shortcutNote:
+      'Atalhos .url abrem pela loja; argumentos não se aplicam e o tempo de jogo não é medido.',
     discard: {
       title: 'Descartar alterações?',
       message: 'O que foi preenchido neste formulário será perdido.',
@@ -134,6 +145,10 @@ export const t = {
     invalid: 'Valor inválido.',
     'not-absolute': 'Use um caminho completo (ex.: C:\\Jogos\\jogo.exe).',
     'not-exe': 'Escolha um arquivo .exe.',
+    'not-rom': 'Este arquivo não é uma ROM suportada pelo emulador.',
+    'shortcut-invalid': 'Não foi possível ler o endereço deste atalho .url.',
+    'shortcut-scheme':
+      'Este atalho não abre uma loja suportada (Epic, Steam, Ubisoft, EA, Battle.net).',
     missing: 'Arquivo ou pasta não encontrado.',
     'not-file': 'Isto é uma pasta, não um arquivo.',
     unreadable: 'Não foi possível ler este caminho (disco desconectado ou sem permissão).',
@@ -166,6 +181,7 @@ export const t = {
   files: {
     titles: {
       executable: 'Escolher executável',
+      emulator: 'Escolher executável do emulador',
       rom: 'Escolher ROM',
       image: 'Escolher imagem',
       directory: 'Escolher pasta'
@@ -184,13 +200,20 @@ export const t = {
     add: 'Nova origem',
     newName: 'Nome da origem',
     rename: 'Renomear',
-    setEmulator: 'Definir emulador padrão',
-    emulatorArgs: 'Argumentos do emulador ({rom} = caminho da ROM)',
-    clearEmulator: 'Remover emulador padrão',
     remove: 'Excluir origem',
     close: 'Fechar',
-    emulator: (name: string) => `Emulador: ${name}`,
     builtin: 'De fábrica'
+  },
+  emulators: {
+    title: 'Adicionar emulador',
+    subtitle: 'Escolha o emulador e indique onde está o executável dele.',
+    notConfigured: (exe: string) => `Não configurado — escolha o ${exe}`,
+    loading: 'Carregando emuladores…',
+    error: 'Não foi possível carregar os emuladores.',
+    change: 'Trocar executável',
+    remove: 'Remover emulador',
+    close: 'Fechar',
+    changeNote: 'A troca vale para todos os jogos deste emulador.'
   },
   achievements: {
     soon: 'A área de conquistas chegará em breve.'

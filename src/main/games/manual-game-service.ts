@@ -8,7 +8,9 @@ import {
   OriginInUseError,
   saveManualGame,
   validateManualGame,
+  isAbsoluteWindowsPath,
   type ArtworkRepository,
+  type EmulatorRepository,
   type FileInspector,
   type GameRepository,
   type GameRunner,
@@ -16,7 +18,15 @@ import {
   type OriginRepository,
   type UnitOfWork
 } from '../../core/application'
-import { BuiltinOrigin, toUtcIso, type Origin } from '../../core/domain'
+import {
+  BuiltinOrigin,
+  EMULATOR_KEYS,
+  EMULATORS,
+  toUtcIso,
+  type EmulatorConfig,
+  type EmulatorKey,
+  type Origin
+} from '../../core/domain'
 import {
   ArtworkImportFailure,
   prepareArtwork,
@@ -25,12 +35,19 @@ import {
   type PreparedArtwork
 } from '../../infrastructure/artwork/import-artwork'
 import { matchesPickKind } from '../../infrastructure/filesystem/file-browser'
-import type { AppError, ManualGameForm, OriginInfo, Result } from '../../shared/ipc/contract'
+import type {
+  AppError,
+  EmulatorInfo,
+  ManualGameForm,
+  OriginInfo,
+  Result
+} from '../../shared/ipc/contract'
 
 export interface ManualGameServiceDeps {
   games: GameRepository
   configs: LaunchConfigRepository
   origins: OriginRepository
+  emulators: EmulatorRepository
   artwork: ArtworkRepository
   uow: UnitOfWork
   inspector: FileInspector
@@ -38,6 +55,8 @@ export interface ManualGameServiceDeps {
   artworkCacheDir: string
   /** Full image decode returning the real size (Electron nativeImage in main). */
   decodeImage: (bytes: Buffer) => { width: number; height: number } | null
+  /** URL= target of a .url shortcut, or null. */
+  readShortcut: (path: string) => string | null
 }
 
 const ok = <T>(data: T): Result<T> => ({ ok: true, data })
@@ -77,11 +96,9 @@ export interface ManualGameService {
   createOrigin(name: string): Promise<Result<OriginInfo>>
   renameOrigin(key: string, name: string): Promise<Result<OriginInfo>>
   removeOrigin(key: string): Promise<Result<null>>
-  setOriginDefaults(
-    key: string,
-    executablePath: string | null,
-    args: string[] | null
-  ): Promise<Result<OriginInfo>>
+  listEmulators(): EmulatorInfo[]
+  setEmulator(key: string, executablePath: string): Promise<Result<EmulatorInfo>>
+  removeEmulator(key: string): Promise<Result<null>>
 }
 
 export function createManualGameService(deps: ManualGameServiceDeps): ManualGameService {
@@ -117,11 +134,25 @@ export function createManualGameService(deps: ManualGameServiceDeps): ManualGame
         if (!existing || existing.origin === BuiltinOrigin.steam)
           throw new NotFoundError('Game', id)
       }
-      const { executablePath, arguments: args, workingDirectory, backgroundPath, ...fields } = form
+      const {
+        executablePath,
+        romPath,
+        arguments: args,
+        workingDirectory,
+        backgroundPath,
+        ...fields
+      } = form
       const input = validateManualGame(
-        { ...fields, launch: { executablePath, arguments: args, workingDirectory } },
-        deps.inspector,
-        originExists
+        {
+          ...fields,
+          launch: {
+            executablePath: executablePath || null,
+            romPath,
+            arguments: args,
+            workingDirectory
+          }
+        },
+        { inspector: deps.inspector, originExists, readShortcut: deps.readShortcut }
       )
       const background = prepareBackground(backgroundPath)
       const game = saveManualGame(deps, input, id)
@@ -158,23 +189,40 @@ export function createManualGameService(deps: ManualGameServiceDeps): ManualGame
         return null
       }),
 
-    setOriginDefaults: (key: string, executablePath: string | null, args: string[] | null) => {
-      if (key === BuiltinOrigin.steam) return Promise.resolve(failure('invalid', 'origin'))
-      if (executablePath !== null) {
-        const check = validateEmulator(executablePath, deps.inspector)
-        if (check) return Promise.resolve(check)
-      }
-      return asResult(() =>
-        toOriginInfo(
-          deps.origins.setDefaults(key, executablePath, executablePath ? (args ?? []) : null)
-        )
-      )
+    listEmulators: () => EMULATOR_KEYS.map((key) => toEmulatorInfo(key, deps.emulators.get(key))),
+
+    setEmulator: (key: string, executablePath: string) => {
+      if (!isEmulatorKey(key)) return Promise.resolve(failure('not-found'))
+      const check = validateEmulator(executablePath, deps.inspector)
+      if (check) return Promise.resolve(check)
+      return asResult(() => toEmulatorInfo(key, deps.emulators.set(key, executablePath.trim())))
+    },
+
+    removeEmulator: (key: string): Promise<Result<null>> => {
+      if (!isEmulatorKey(key)) return Promise.resolve(failure('not-found'))
+      deps.emulators.remove(key)
+      return Promise.resolve(ok(null))
     }
   }
 }
 
+const isEmulatorKey = (key: string): key is EmulatorKey =>
+  (EMULATOR_KEYS as readonly string[]).includes(key)
+
+function toEmulatorInfo(key: EmulatorKey, config: EmulatorConfig | null): EmulatorInfo {
+  const emulator = EMULATORS[key]
+  return {
+    key,
+    name: emulator.name,
+    origin: emulator.origin,
+    romExtensions: [...emulator.romExtensions],
+    executablePath: config?.executablePath ?? null
+  }
+}
+
 function validateEmulator(path: string, inspector: FileInspector): Result<never> | null {
-  if (!matchesPickKind(path, 'executable')) return failure('not-exe', 'executablePath')
+  if (!isAbsoluteWindowsPath(path)) return failure('not-absolute', 'executablePath')
+  if (!matchesPickKind(path, 'emulator')) return failure('not-exe', 'executablePath')
   const state = inspector.stateOf(path)
   if (state === 'missing') return failure('missing', 'executablePath')
   if (state !== 'file')

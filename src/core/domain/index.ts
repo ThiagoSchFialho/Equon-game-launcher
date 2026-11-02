@@ -1,6 +1,7 @@
 // Domain: entities and pure rules. Must not import Electron, Node I/O, network or SQL.
 export * from './achievement'
 export * from './artwork'
+export * from './emulator'
 export * from './game'
 export * from './genre'
 export * from './launch'

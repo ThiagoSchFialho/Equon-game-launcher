@@ -9,10 +9,10 @@ import type { ProcessLauncher, RunningProcess } from '../../core/application'
  */
 export function createProcessLauncher(): ProcessLauncher {
   return {
-    launch: (config) =>
+    launch: (command) =>
       new Promise<RunningProcess>((resolve, reject) => {
-        const child = spawn(config.executablePath, config.arguments, {
-          cwd: config.workingDirectory ?? dirname(config.executablePath),
+        const child = spawn(command.executablePath, command.arguments, {
+          cwd: command.workingDirectory ?? dirname(command.executablePath),
           shell: false,
           stdio: 'ignore',
           windowsHide: false

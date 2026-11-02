@@ -27,9 +27,12 @@ const api: EquonApi = {
     list: () => ipcRenderer.invoke(IpcChannel.originsList),
     create: (name) => ipcRenderer.invoke(IpcChannel.originsCreate, name),
     rename: (key, name) => ipcRenderer.invoke(IpcChannel.originsRename, key, name),
-    remove: (key) => ipcRenderer.invoke(IpcChannel.originsRemove, key),
-    setDefaults: (key, exe, args) =>
-      ipcRenderer.invoke(IpcChannel.originsSetDefaults, key, exe, args)
+    remove: (key) => ipcRenderer.invoke(IpcChannel.originsRemove, key)
+  },
+  emulators: {
+    list: () => ipcRenderer.invoke(IpcChannel.emulatorsList),
+    set: (key, path) => ipcRenderer.invoke(IpcChannel.emulatorsSet, key, path),
+    remove: (key) => ipcRenderer.invoke(IpcChannel.emulatorsRemove, key)
   },
   files: {
     list: (path, kind) => ipcRenderer.invoke(IpcChannel.filesList, path, kind),

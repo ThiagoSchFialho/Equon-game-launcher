@@ -48,15 +48,3 @@ export function toIsoDate(year: number, month: number, day: number): string {
   const safeDay = Math.min(day, daysInMonth(year, month))
   return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(safeDay).padStart(2, '0')}`
 }
-
-export const ROM_PLACEHOLDER = '{rom}'
-
-/**
- * Fills an origin's default emulator arguments with the chosen ROM path
- * (DATA_BASE_CONTEXT.md §3.10): every `{rom}` is replaced; without a
- * placeholder the ROM is appended.
- */
-export function applyRomToArguments(template: readonly string[], romPath: string): string[] {
-  if (!template.some((arg) => arg.includes(ROM_PLACEHOLDER))) return [...template, romPath]
-  return template.map((arg) => arg.split(ROM_PLACEHOLDER).join(romPath))
-}

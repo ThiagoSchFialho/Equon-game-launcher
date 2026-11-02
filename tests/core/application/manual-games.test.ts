@@ -5,8 +5,8 @@ import {
   refreshManualInstallStates,
   saveManualGame,
   validateManualGame,
-  type FileInspector,
   type FileState,
+  type ManualGameChecks,
   type ManualGameInput
 } from '../../../src/core/application'
 import {
@@ -18,8 +18,14 @@ import {
 import { createTestDb } from '../../helpers/db'
 
 const files = new Map<string, FileState>()
-const inspector: FileInspector = { stateOf: (path) => files.get(path) ?? 'missing' }
-const originExists = (key: string): boolean => ['manual', 'ps2', 'steam'].includes(key)
+const shortcuts = new Map<string, string | null>()
+const checks: ManualGameChecks = {
+  inspector: { stateOf: (path) => files.get(path) ?? 'missing' },
+  originExists: (key) => ['manual', 'ps2', 'steam', 'yuzu'].includes(key),
+  readShortcut: (path) => shortcuts.get(path) ?? null
+}
+
+const EXE = 'C:\\Games\\HQ\\hq.exe'
 
 const input = (overrides: Partial<ManualGameInput> = {}): ManualGameInput => ({
   origin: 'manual',
@@ -29,13 +35,17 @@ const input = (overrides: Partial<ManualGameInput> = {}): ManualGameInput => ({
   releaseDate: '2020-05-01',
   requiredAge: '12',
   playtimeOffset: 120,
-  launch: { executablePath: 'C:\\Games\\HQ\\hq.exe', arguments: ['-w'], workingDirectory: null },
+  launch: { executablePath: EXE, romPath: null, arguments: ['-w'], workingDirectory: null },
   ...overrides
 })
 
-const codeOf = (fn: () => unknown): string => {
+const launch = (extra: Partial<ManualGameInput['launch']>): Partial<ManualGameInput> => ({
+  launch: { executablePath: EXE, romPath: null, arguments: [], workingDirectory: null, ...extra }
+})
+
+const codeOf = (value: ManualGameInput): string => {
   try {
-    fn()
+    validateManualGame(value, checks)
   } catch (error) {
     if (error instanceof ManualGameValidationError) return `${error.field}:${error.code}`
     throw error
@@ -45,13 +55,14 @@ const codeOf = (fn: () => unknown): string => {
 
 beforeEach(() => {
   files.clear()
-  files.set('C:\\Games\\HQ\\hq.exe', 'file')
+  shortcuts.clear()
+  files.set(EXE, 'file')
   files.set('C:\\Games\\HQ', 'directory')
 })
 
-describe('validateManualGame', () => {
+describe('validateManualGame: fields', () => {
   it('normalizes text fields', () => {
-    expect(validateManualGame(input(), inspector, originExists)).toMatchObject({
+    expect(validateManualGame(input(), checks)).toMatchObject({
       title: 'Hollow Quest',
       description: null,
       developer: 'Studio'
@@ -68,57 +79,98 @@ describe('validateManualGame', () => {
     [{ playtimeOffset: -1 }, 'playtimeOffset:invalid'],
     [{ playtimeOffset: 1.5 }, 'playtimeOffset:invalid']
   ] as [Partial<ManualGameInput>, string][])('rejects %o with %s', (overrides, code) => {
-    expect(codeOf(() => validateManualGame(input(overrides), inspector, originExists))).toBe(code)
+    expect(codeOf(input(overrides))).toBe(code)
   })
+})
 
+describe('validateManualGame: executables', () => {
   it.each([
+    [null, 'executablePath:required'],
     ['relative\\game.exe', 'executablePath:not-absolute'],
     ['C:\\Games\\HQ\\run.bat', 'executablePath:not-exe'],
     ['C:\\Games\\HQ\\gone.exe', 'executablePath:missing']
   ])('rejects executable %s', (executablePath, code) => {
-    const launch = { executablePath, arguments: [], workingDirectory: null }
-    expect(codeOf(() => validateManualGame(input({ launch }), inspector, originExists))).toBe(code)
+    expect(codeOf(input(launch({ executablePath })))).toBe(code)
   })
 
   it('distinguishes a folder named .exe and an unreadable path', () => {
     files.set('D:\\odd.exe', 'directory')
     files.set('E:\\offline.exe', 'unreadable')
-    const at = (executablePath: string): ManualGameInput =>
-      input({ launch: { executablePath, arguments: [], workingDirectory: null } })
-    expect(codeOf(() => validateManualGame(at('D:\\odd.exe'), inspector, originExists))).toBe(
-      'executablePath:not-file'
-    )
-    expect(codeOf(() => validateManualGame(at('E:\\offline.exe'), inspector, originExists))).toBe(
+    expect(codeOf(input(launch({ executablePath: 'D:\\odd.exe' })))).toBe('executablePath:not-file')
+    expect(codeOf(input(launch({ executablePath: 'E:\\offline.exe' })))).toBe(
       'executablePath:unreadable'
     )
   })
 
   it('validates arguments and the working directory', () => {
-    const launch = (extra: Partial<ManualGameInput['launch']>): Partial<ManualGameInput> => ({
-      launch: {
-        executablePath: 'C:\\Games\\HQ\\hq.exe',
-        arguments: [],
-        workingDirectory: null,
-        ...extra
-      }
-    })
+    expect(codeOf(input(launch({ arguments: ['a\0b'] })))).toBe('arguments:invalid')
+    expect(codeOf(input(launch({ workingDirectory: 'C:\\Nope' })))).toBe('workingDirectory:missing')
     expect(
-      codeOf(() =>
-        validateManualGame(input(launch({ arguments: ['a\0b'] })), inspector, originExists)
-      )
-    ).toBe('arguments:invalid')
-    expect(
-      codeOf(() =>
-        validateManualGame(input(launch({ workingDirectory: 'C:\\Nope' })), inspector, originExists)
-      )
-    ).toBe('workingDirectory:missing')
+      validateManualGame(input(launch({ workingDirectory: 'C:\\Games\\HQ' })), checks).launch
+        .workingDirectory
+    ).toBe('C:\\Games\\HQ')
+  })
+})
+
+describe('validateManualGame: .url shortcuts', () => {
+  const URL_FILE = 'C:\\Games\\Fortnite.url'
+
+  it('accepts a shortcut to an allowlisted store URL and drops arguments and folder', () => {
+    files.set(URL_FILE, 'file')
+    shortcuts.set(URL_FILE, 'com.epicgames.launcher://apps/Fortnite?action=launch')
     expect(
       validateManualGame(
-        input(launch({ workingDirectory: 'C:\\Games\\HQ' })),
-        inspector,
-        originExists
-      ).launch.workingDirectory
-    ).toBe('C:\\Games\\HQ')
+        input(
+          launch({ executablePath: URL_FILE, arguments: ['-x'], workingDirectory: 'C:\\Games\\HQ' })
+        ),
+        checks
+      ).launch
+    ).toEqual({ executablePath: URL_FILE, romPath: null, arguments: [], workingDirectory: null })
+  })
+
+  it('rejects unreadable shortcuts and URLs outside the allowlist', () => {
+    files.set(URL_FILE, 'file')
+    expect(codeOf(input(launch({ executablePath: URL_FILE })))).toBe(
+      'executablePath:shortcut-invalid'
+    )
+    for (const url of [
+      'https://example.com',
+      'file:///C:/Windows/system32/cmd.exe',
+      'javascript:alert(1)'
+    ]) {
+      shortcuts.set(URL_FILE, url)
+      expect(codeOf(input(launch({ executablePath: URL_FILE }))), url).toBe(
+        'executablePath:shortcut-scheme'
+      )
+    }
+  })
+})
+
+describe('validateManualGame: Yuzu ROMs', () => {
+  const ROM = 'D:\\Switch\\Zelda.nsp'
+  const yuzu = (romPath: string | null): ManualGameInput =>
+    input({
+      origin: 'yuzu',
+      launch: { executablePath: EXE, romPath, arguments: ['-x'], workingDirectory: null }
+    })
+
+  it('keeps only the ROM for emulator games', () => {
+    files.set(ROM, 'file')
+    expect(validateManualGame(yuzu(ROM), checks).launch).toEqual({
+      executablePath: null,
+      romPath: ROM,
+      arguments: [],
+      workingDirectory: null
+    })
+  })
+
+  it.each([
+    [null, 'romPath:required'],
+    ['Zelda.nsp', 'romPath:not-absolute'],
+    ['D:\\Switch\\Zelda.iso', 'romPath:not-rom'],
+    ['D:\\Switch\\Gone.xci', 'romPath:missing']
+  ])('rejects ROM %s', (romPath, code) => {
+    expect(codeOf(yuzu(romPath))).toBe(code)
   })
 })
 
@@ -144,36 +196,75 @@ describe('saveManualGame and install states', () => {
   })
 
   it('creates a game with its launch config, installed, with the offset as playtime', () => {
-    const game = saveManualGame(deps(), validateManualGame(input(), inspector, originExists))
+    const game = saveManualGame(deps(), validateManualGame(input(), checks))
     expect(game).toMatchObject({ title: 'Hollow Quest', installed: true, playtime: 120 })
     expect(createLaunchConfigRepository(db).get(game.id)).toMatchObject({
-      executablePath: 'C:\\Games\\HQ\\hq.exe',
+      executablePath: EXE,
+      romPath: null,
       arguments: ['-w']
     })
   })
 
-  it('updates an existing game and its config', () => {
-    const created = saveManualGame(deps(), validateManualGame(input(), inspector, originExists))
+  it('updates an existing game and its config, including switching to a ROM', () => {
+    const created = saveManualGame(deps(), validateManualGame(input(), checks))
+    files.set('D:\\Switch\\Zelda.nsp', 'file')
     const updated = saveManualGame(
       deps(),
-      validateManualGame(input({ title: 'Renamed', playtimeOffset: 5 }), inspector, originExists),
+      validateManualGame(
+        input({
+          title: 'Renamed',
+          origin: 'yuzu',
+          playtimeOffset: 5,
+          launch: {
+            executablePath: null,
+            romPath: 'D:\\Switch\\Zelda.nsp',
+            arguments: [],
+            workingDirectory: null
+          }
+        }),
+        checks
+      ),
       created.id
     )
     expect(updated).toMatchObject({ id: created.id, title: 'Renamed', playtime: 5 })
+    expect(createLaunchConfigRepository(db).get(created.id)).toMatchObject({
+      executablePath: null,
+      romPath: 'D:\\Switch\\Zelda.nsp'
+    })
   })
 
-  it('refreshes install states without writing 0 on unreadable paths', () => {
+  it('refreshes install states from the executable or ROM, never writing 0 on unreadable paths', () => {
     const d = deps()
-    const a = saveManualGame(d, validateManualGame(input(), inspector, originExists))
-    files.set('C:\\Games\\HQ\\hq.exe', 'unreadable')
-    expect(refreshManualInstallStates(d, inspector)).toBe(1)
+    const a = saveManualGame(d, validateManualGame(input(), checks))
+    files.set(EXE, 'unreadable')
+    expect(refreshManualInstallStates(d, checks.inspector)).toBe(1)
     expect(d.games.getById(a.id)?.installed).toBeNull()
-    files.delete('C:\\Games\\HQ\\hq.exe')
-    refreshManualInstallStates(d, inspector)
+    files.delete(EXE)
+    refreshManualInstallStates(d, checks.inspector)
     expect(d.games.getById(a.id)?.installed).toBe(false)
-    files.set('C:\\Games\\HQ\\hq.exe', 'file')
-    refreshManualInstallStates(d, inspector)
+    files.set(EXE, 'file')
+    refreshManualInstallStates(d, checks.inspector)
     expect(d.games.getById(a.id)?.installed).toBe(true)
-    expect(refreshManualInstallStates(d, inspector)).toBe(0)
+    expect(refreshManualInstallStates(d, checks.inspector)).toBe(0)
+
+    files.set('D:\\Switch\\Zelda.nsp', 'file')
+    const rom = saveManualGame(
+      d,
+      validateManualGame(
+        input({
+          origin: 'yuzu',
+          launch: {
+            executablePath: null,
+            romPath: 'D:\\Switch\\Zelda.nsp',
+            arguments: [],
+            workingDirectory: null
+          }
+        }),
+        checks
+      )
+    )
+    files.delete('D:\\Switch\\Zelda.nsp')
+    refreshManualInstallStates(d, checks.inspector)
+    expect(d.games.getById(rom.id)?.installed).toBe(false)
   })
 })

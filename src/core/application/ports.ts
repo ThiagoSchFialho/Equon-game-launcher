@@ -1,6 +1,8 @@
 import type {
   Achievement,
   ArtworkKind,
+  EmulatorConfig,
+  EmulatorKey,
   Game,
   GameArtwork,
   Genre,
@@ -28,8 +30,14 @@ export interface OriginRepository {
   rename(key: OriginKey, name: string): Origin
   /** Fails for built-in origins and for origins that still have games. */
   delete(key: OriginKey): void
-  /** Emulator defaults that pre-fill the add-game form; null clears them. */
-  setDefaults(key: OriginKey, executablePath: string | null, args: string[] | null): Origin
+}
+
+/** Executables the user configured for supported emulators (DATA_BASE_CONTEXT.md §3.12). */
+export interface EmulatorRepository {
+  list(): EmulatorConfig[]
+  get(key: EmulatorKey): EmulatorConfig | null
+  set(key: EmulatorKey, executablePath: string): EmulatorConfig
+  remove(key: EmulatorKey): boolean
 }
 
 export interface NewGame {
@@ -177,6 +185,14 @@ export interface Clock {
   now(): Date
 }
 
+/** A resolved process to start: never a command string, never a shell. */
+export interface ProcessCommand {
+  executablePath: string
+  arguments: string[]
+  /** null = the executable's folder. */
+  workingDirectory: string | null
+}
+
 /** A started game process; `exited` resolves when it ends (any exit code). */
 export interface RunningProcess {
   pid: number
@@ -185,7 +201,15 @@ export interface RunningProcess {
 
 export interface ProcessLauncher {
   /** Starts the executable without a shell; rejects if it cannot be started. */
-  launch(config: LaunchConfig): Promise<RunningProcess>
+  launch(command: ProcessCommand): Promise<RunningProcess>
+}
+
+/** Windows .url shortcuts: read the target, open an allowlisted store URL. */
+export interface ShortcutLauncher {
+  /** The URL= target, or null when the file cannot be read or has none. */
+  readUrl(path: string): string | null
+  /** Opens the URL through the OS (main re-checks the allowlist). */
+  openUrl(url: string): Promise<void>
 }
 
 /** Result of checking a path from a launch configuration (never throws). */

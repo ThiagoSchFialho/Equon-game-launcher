@@ -1,6 +1,10 @@
 import {
   BuiltinOrigin,
+  emulatorForOrigin,
   isAllowedExecutableName,
+  isAllowedShortcutUrl,
+  isRomFor,
+  isShortcutName,
   normalizeName,
   type Game,
   type LaunchConfig
@@ -8,6 +12,7 @@ import {
 import { ManualGameValidationError } from './errors'
 import type {
   FileInspector,
+  FileState,
   GameRepository,
   LaunchConfigRepository,
   ManualGameFields,
@@ -19,6 +24,14 @@ export const REQUIRED_AGES = ['L', '10', '12', '14', '16', '18'] as const
 
 export interface ManualGameInput extends ManualGameFields {
   launch: Omit<LaunchConfig, 'gameId'>
+}
+
+/** What validation needs from the outside world. */
+export interface ManualGameChecks {
+  inspector: FileInspector
+  originExists: (key: string) => boolean
+  /** The URL= target of a .url shortcut, or null. */
+  readShortcut: (path: string) => string | null
 }
 
 const MAX_TEXT = 4000
@@ -47,21 +60,30 @@ function isValidIsoDate(value: string): boolean {
   return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value)
 }
 
+function requireFile(field: string, state: FileState): void {
+  if (state === 'missing') fail(field, 'missing')
+  if (state === 'directory') fail(field, 'not-file')
+  if (state === 'unreadable') fail(field, 'unreadable')
+}
+
 /**
  * Validates and normalizes a manual game before saving. Launch paths are
- * untrusted (ARCHITECTURE.md §7): the executable must be an existing .exe
- * file and the working directory, if any, an existing folder.
+ * untrusted (ARCHITECTURE.md §7):
+ * - emulator origins (Yuzu) need an existing ROM of a supported format;
+ * - other games need an existing .exe, or a .url shortcut whose target is an
+ *   allowlisted store URL (arguments and folder do not apply to shortcuts).
  */
 export function validateManualGame(
   input: ManualGameInput,
-  inspector: FileInspector,
-  originExists: (key: string) => boolean
+  checks: ManualGameChecks
 ): ManualGameInput {
   const title = normalizeName(input.title)
   if (title === '') fail('title', 'required')
   if (title.length > MAX_TITLE) fail('title', 'too-long')
 
-  if (input.origin === BuiltinOrigin.steam || !originExists(input.origin)) fail('origin', 'invalid')
+  if (input.origin === BuiltinOrigin.steam || !checks.originExists(input.origin)) {
+    fail('origin', 'invalid')
+  }
 
   const releaseDate = input.releaseDate?.trim() || null
   if (releaseDate !== null && !isValidIsoDate(releaseDate)) fail('releaseDate', 'invalid')
@@ -81,13 +103,45 @@ export function validateManualGame(
     fail('playtimeOffset', 'invalid')
   }
 
-  const executablePath = input.launch.executablePath.trim()
+  const fields = {
+    origin: input.origin,
+    title,
+    description: optionalText(input.description, 'description'),
+    developer: optionalText(input.developer, 'developer'),
+    releaseDate,
+    requiredAge: input.requiredAge,
+    playtimeOffset: input.playtimeOffset
+  }
+
+  const emulator = emulatorForOrigin(input.origin)
+  if (emulator) {
+    const romPath = input.launch.romPath?.trim() ?? ''
+    if (romPath === '') fail('romPath', 'required')
+    if (!isAbsoluteWindowsPath(romPath)) fail('romPath', 'not-absolute')
+    if (!isRomFor(emulator, romPath)) fail('romPath', 'not-rom')
+    requireFile('romPath', checks.inspector.stateOf(romPath))
+    return {
+      ...fields,
+      launch: { executablePath: null, romPath, arguments: [], workingDirectory: null }
+    }
+  }
+
+  const executablePath = input.launch.executablePath?.trim() ?? ''
+  if (executablePath === '') fail('executablePath', 'required')
   if (!isAbsoluteWindowsPath(executablePath)) fail('executablePath', 'not-absolute')
-  if (!isAllowedExecutableName(executablePath)) fail('executablePath', 'not-exe')
-  const exeState = inspector.stateOf(executablePath)
-  if (exeState === 'missing') fail('executablePath', 'missing')
-  if (exeState === 'directory') fail('executablePath', 'not-file')
-  if (exeState === 'unreadable') fail('executablePath', 'unreadable')
+  const shortcut = isShortcutName(executablePath)
+  if (!shortcut && !isAllowedExecutableName(executablePath)) fail('executablePath', 'not-exe')
+  requireFile('executablePath', checks.inspector.stateOf(executablePath))
+
+  if (shortcut) {
+    const url = checks.readShortcut(executablePath)
+    if (url === null) fail('executablePath', 'shortcut-invalid')
+    if (!isAllowedShortcutUrl(url as string)) fail('executablePath', 'shortcut-scheme')
+    return {
+      ...fields,
+      launch: { executablePath, romPath: null, arguments: [], workingDirectory: null }
+    }
+  }
 
   const args = input.launch.arguments
   if (args.length > MAX_ARGUMENTS) fail('arguments', 'too-many')
@@ -96,18 +150,13 @@ export function validateManualGame(
   const workingDirectory = input.launch.workingDirectory?.trim() || null
   if (workingDirectory !== null) {
     if (!isAbsoluteWindowsPath(workingDirectory)) fail('workingDirectory', 'not-absolute')
-    if (inspector.stateOf(workingDirectory) !== 'directory') fail('workingDirectory', 'missing')
+    if (checks.inspector.stateOf(workingDirectory) !== 'directory')
+      fail('workingDirectory', 'missing')
   }
 
   return {
-    origin: input.origin,
-    title,
-    description: optionalText(input.description, 'description'),
-    developer: optionalText(input.developer, 'developer'),
-    releaseDate,
-    requiredAge: input.requiredAge,
-    playtimeOffset: input.playtimeOffset,
-    launch: { executablePath, arguments: [...args], workingDirectory }
+    ...fields,
+    launch: { executablePath, romPath: null, arguments: [...args], workingDirectory }
   }
 }
 
@@ -123,15 +172,15 @@ export function saveManualGame(deps: ManualGameDeps, input: ManualGameInput, id?
   return deps.uow.transaction(() => {
     const game = id === undefined ? deps.games.create(fields) : deps.games.updateManual(id, fields)
     deps.configs.save({ gameId: game.id, ...launch })
-    // The executable was just checked, so the game is installed.
+    // The file was just checked, so the game is installed.
     deps.games.setInstalled(game.id, true)
     return deps.games.recomputePlayStats(game.id)
   })
 }
 
 /**
- * Refreshes `installed` for non-Steam games from their executable
- * (DATA_BASE_CONTEXT.md §3.2): file → 1, missing → 0, unreadable → NULL.
+ * Refreshes `installed` for non-Steam games from the executable, shortcut or
+ * ROM (DATA_BASE_CONTEXT.md §3.2): file → 1, missing → 0, unreadable → NULL.
  * A failed read never writes 0. Returns how many games changed.
  */
 export function refreshManualInstallStates(
@@ -142,8 +191,9 @@ export function refreshManualInstallStates(
   for (const game of deps.games.list()) {
     if (game.origin === BuiltinOrigin.steam) continue
     const config = deps.configs.get(game.id)
-    if (!config) continue
-    const state = inspector.stateOf(config.executablePath)
+    const target = config?.romPath ?? config?.executablePath
+    if (!target) continue
+    const state = inspector.stateOf(target)
     const installed = state === 'file' ? true : state === 'unreadable' ? null : false
     if (installed !== game.installed) {
       deps.games.setInstalled(game.id, installed)

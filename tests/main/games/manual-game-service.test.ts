@@ -4,8 +4,10 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { LaunchError, type GameRunner } from '../../../src/core/application'
 import { createFileInspector } from '../../../src/infrastructure/filesystem/file-inspector'
+import { readShortcutUrl } from '../../../src/infrastructure/filesystem/shortcut-reader'
 import {
   createArtworkRepository,
+  createEmulatorRepository,
   createGameRepository,
   createLaunchConfigRepository,
   createOriginRepository,
@@ -36,6 +38,7 @@ const form = (overrides: Partial<ManualGameForm> = {}): ManualGameForm => ({
   playtimeOffset: 0,
   origin: 'manual',
   executablePath: join(dir, 'game.exe'),
+  romPath: null,
   arguments: [],
   workingDirectory: null,
   backgroundPath: null,
@@ -59,12 +62,14 @@ beforeEach(() => {
     games: createGameRepository(db),
     configs: createLaunchConfigRepository(db),
     origins: createOriginRepository(db),
+    emulators: createEmulatorRepository(db),
     artwork: createArtworkRepository(db),
     uow: createUnitOfWork(db),
     inspector: createFileInspector(),
     runner,
     artworkCacheDir: join(dir, 'cache'),
-    decodeImage: () => decoded
+    decodeImage: () => decoded,
+    readShortcut: readShortcutUrl
   })
 })
 
@@ -138,25 +143,78 @@ describe('manual game service', () => {
     expect(await service.launch(1)).toEqual({ ok: true, data: null })
   })
 
-  it('manages origins and their emulator defaults', async () => {
+  it('manages origins', async () => {
     const created = await service.createOrigin('Nintendo 64')
     expect(created).toMatchObject({ ok: true, data: { key: 'nintendo-64' } })
     expect(await service.createOrigin('nintendo 64')).toEqual({
       ok: false,
       error: { code: 'duplicate-name', field: 'name' }
     })
-    expect(
-      await service.setOriginDefaults('nintendo-64', join(dir, 'game.exe'), ['{rom}'])
-    ).toMatchObject({ ok: true, data: { defaultArguments: ['{rom}'] } })
-    expect(await service.setOriginDefaults('nintendo-64', join(dir, 'nope.exe'), null)).toEqual({
-      ok: false,
-      error: { code: 'missing', field: 'executablePath' }
-    })
-    expect(await service.setOriginDefaults('steam', null, null)).toMatchObject({ ok: false })
     expect(await service.removeOrigin('ps2')).toEqual({
       ok: false,
       error: { code: 'builtin-origin' }
     })
     expect(await service.removeOrigin('nintendo-64')).toEqual({ ok: true, data: null })
+  })
+
+  it('configures the Yuzu executable', async () => {
+    expect(service.listEmulators()).toEqual([
+      {
+        key: 'yuzu',
+        name: 'Yuzu',
+        origin: 'yuzu',
+        romExtensions: ['.nsp', '.xci', '.nca', '.nro', '.nso'],
+        executablePath: null
+      }
+    ])
+    writeFileSync(join(dir, 'yuzu.exe'), '')
+    expect(await service.setEmulator('yuzu', join(dir, 'yuzu.exe'))).toMatchObject({
+      ok: true,
+      data: { executablePath: join(dir, 'yuzu.exe') }
+    })
+    expect(await service.setEmulator('yuzu', join(dir, 'nope.exe'))).toEqual({
+      ok: false,
+      error: { code: 'missing', field: 'executablePath' }
+    })
+    writeFileSync(join(dir, 'yuzu.url'), '[InternetShortcut]\nURL=steam://x')
+    expect(await service.setEmulator('yuzu', join(dir, 'yuzu.url'))).toMatchObject({
+      ok: false,
+      error: { code: 'not-exe' }
+    })
+    expect(await service.setEmulator('pcsx2', join(dir, 'yuzu.exe'))).toMatchObject({ ok: false })
+    expect(await service.removeEmulator('yuzu')).toEqual({ ok: true, data: null })
+    expect(service.listEmulators()[0].executablePath).toBeNull()
+  })
+
+  it('creates Yuzu games from a ROM', async () => {
+    writeFileSync(join(dir, 'Zelda.nsp'), '')
+    const result = await service.create(
+      form({ origin: 'yuzu', executablePath: '', romPath: join(dir, 'Zelda.nsp') })
+    )
+    expect(result.ok).toBe(true)
+    const id = result.ok ? result.data.id : 0
+    expect(createLaunchConfigRepository(db).get(id)).toMatchObject({
+      executablePath: null,
+      romPath: join(dir, 'Zelda.nsp')
+    })
+    expect(
+      await service.create(form({ origin: 'yuzu', executablePath: '', romPath: null }))
+    ).toEqual({
+      ok: false,
+      error: { code: 'required', field: 'romPath' }
+    })
+  })
+
+  it('accepts .url shortcuts to store URLs only', async () => {
+    writeFileSync(
+      join(dir, 'Epic.url'),
+      '[InternetShortcut]\r\nURL=com.epicgames.launcher://apps/x?action=launch\r\n'
+    )
+    writeFileSync(join(dir, 'Web.url'), '[InternetShortcut]\r\nURL=https://example.com\r\n')
+    expect((await service.create(form({ executablePath: join(dir, 'Epic.url') }))).ok).toBe(true)
+    expect(await service.create(form({ executablePath: join(dir, 'Web.url') }))).toEqual({
+      ok: false,
+      error: { code: 'shortcut-scheme', field: 'executablePath' }
+    })
   })
 })

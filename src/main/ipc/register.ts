@@ -6,6 +6,10 @@ import {
   appInfoSchema,
   browserListingSchema,
   editableGameSchema,
+  emulatorInfoSchema,
+  emulatorListSchema,
+  emulatorsRemoveArgs,
+  emulatorsSetArgs,
   filesListArgs,
   filesPickNativeArgs,
   gameDetailsResultSchema,
@@ -22,7 +26,6 @@ import {
   originsCreateArgs,
   originsRemoveArgs,
   originsRenameArgs,
-  originsSetDefaultsArgs,
   resultSchema,
   runningIdsSchema
 } from '../../shared/ipc/schemas'
@@ -126,10 +129,25 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
       service.removeOrigin(key)
     )
   )
+
+  // Emulators
   ipcMain.handle(
-    IpcChannel.originsSetDefaults,
-    createValidatedHandler(originsSetDefaultsArgs, originResult, trusted, (key, exe, args) =>
-      service.setOriginDefaults(key, exe, args)
+    IpcChannel.emulatorsList,
+    createValidatedHandler(noArgs, emulatorListSchema, trusted, () => service.listEmulators())
+  )
+  ipcMain.handle(
+    IpcChannel.emulatorsSet,
+    createValidatedHandler(
+      emulatorsSetArgs,
+      resultSchema(emulatorInfoSchema),
+      trusted,
+      (key, path) => service.setEmulator(key, path)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.emulatorsRemove,
+    createValidatedHandler(emulatorsRemoveArgs, nullResult, trusted, (key) =>
+      service.removeEmulator(key)
     )
   )
 

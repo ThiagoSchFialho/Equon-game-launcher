@@ -1,12 +1,25 @@
-import { BuiltinOrigin, toUtcIso } from '../domain'
+import {
+  BuiltinOrigin,
+  EMULATORS,
+  emulatorForOrigin,
+  isAllowedShortcutUrl,
+  isShortcutName,
+  toUtcIso,
+  type Game,
+  type LaunchConfig
+} from '../domain'
 import { LaunchError } from './errors'
 import type {
   Clock,
+  EmulatorRepository,
+  FileInspector,
   GameRepository,
   LaunchConfigRepository,
+  ProcessCommand,
   ProcessLauncher,
   Repeat,
   SessionRepository,
+  ShortcutLauncher,
   UnitOfWork
 } from './ports'
 
@@ -14,8 +27,11 @@ export interface GameRunnerDeps {
   games: GameRepository
   configs: LaunchConfigRepository
   sessions: SessionRepository
+  emulators: EmulatorRepository
   uow: UnitOfWork
   launcher: ProcessLauncher
+  shortcuts: ShortcutLauncher
+  inspector: FileInspector
   clock: Clock
   repeat: Repeat
   /** Heartbeat interval (DATA_BASE_CONTEXT.md §3.8); about 30 s. */
@@ -31,12 +47,57 @@ export interface GameRunner {
   runningGameIds(): number[]
 }
 
+/** What starting a game means: a process to observe, or a store URL to open. */
+export type LaunchPlan = { kind: 'process'; command: ProcessCommand } | { kind: 'url'; url: string }
+
+/**
+ * Resolves how to start a non-Steam game (DATA_BASE_CONTEXT.md §3.7, §3.12):
+ * Yuzu games run the configured emulator with the ROM; .url shortcuts open an
+ * allowlisted store URL; anything else runs its executable.
+ */
+export function resolveLaunchPlan(
+  game: Game,
+  config: LaunchConfig,
+  deps: Pick<GameRunnerDeps, 'emulators' | 'shortcuts' | 'inspector'>
+): LaunchPlan {
+  if (config.romPath !== null) {
+    const emulator = emulatorForOrigin(game.origin) ?? EMULATORS.yuzu
+    const configured = deps.emulators.get(emulator.key)
+    if (!configured || deps.inspector.stateOf(configured.executablePath) !== 'file') {
+      throw new LaunchError('emulator-missing')
+    }
+    return {
+      kind: 'process',
+      command: {
+        executablePath: configured.executablePath,
+        arguments: emulator.argumentsFor(config.romPath),
+        workingDirectory: null
+      }
+    }
+  }
+  const executablePath = config.executablePath as string
+  if (isShortcutName(executablePath)) {
+    const url = deps.shortcuts.readUrl(executablePath)
+    if (url === null || !isAllowedShortcutUrl(url)) throw new LaunchError('shortcut-invalid')
+    return { kind: 'url', url }
+  }
+  return {
+    kind: 'process',
+    command: {
+      executablePath,
+      arguments: config.arguments,
+      workingDirectory: config.workingDirectory
+    }
+  }
+}
+
 /**
  * Starts manual games and tracks their sessions (D-08): a running session
  * is inserted once the process has started, refreshed by a heartbeat while
  * it runs, and completed in the same transaction that recomputes playtime
  * when the process exits. Only the process the launcher started is observed;
- * games that hand off to another launcher end their session early.
+ * games that hand off to another launcher end their session early, and .url
+ * shortcuts are opened without any session (no process to observe).
  */
 export function createGameRunner(deps: GameRunnerDeps): GameRunner {
   const running = new Map<number, number>() // gameId → sessionId
@@ -55,15 +116,25 @@ export function createGameRunner(deps: GameRunnerDeps): GameRunner {
       if (!config) throw new LaunchError('no-config')
       if (game.installed !== true) throw new LaunchError('not-installed')
 
+      const plan = resolveLaunchPlan(game, config, deps)
+      const detail = (error: unknown): string =>
+        error instanceof Error ? error.message : String(error)
+
+      if (plan.kind === 'url') {
+        try {
+          await deps.shortcuts.openUrl(plan.url)
+        } catch (error) {
+          throw new LaunchError('start-failed', detail(error))
+        }
+        return
+      }
+
       let child
       starting.add(gameId)
       try {
-        child = await deps.launcher.launch(config)
+        child = await deps.launcher.launch(plan.command)
       } catch (error) {
-        throw new LaunchError(
-          'start-failed',
-          error instanceof Error ? error.message : String(error)
-        )
+        throw new LaunchError('start-failed', detail(error))
       } finally {
         starting.delete(gameId)
       }

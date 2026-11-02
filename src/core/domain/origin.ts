@@ -16,10 +16,6 @@ export interface Origin {
   key: OriginKey
   name: string
   builtin: boolean
-  /** Emulator that pre-fills the add-game form (DATA_BASE_CONTEXT.md §3.10). */
-  defaultExecutablePath: string | null
-  /** Default arguments; `{rom}` marks the ROM path. */
-  defaultArguments: string[] | null
 }
 
 export const normalizeOriginName = normalizeName

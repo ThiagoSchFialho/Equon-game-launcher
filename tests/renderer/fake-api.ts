@@ -1,5 +1,11 @@
 import { vi } from 'vitest'
-import type { EquonApi, GameDetails, GameSummary, OriginInfo } from '../../src/shared/ipc/contract'
+import type {
+  EmulatorInfo,
+  EquonApi,
+  GameDetails,
+  GameSummary,
+  OriginInfo
+} from '../../src/shared/ipc/contract'
 
 export const summary = (
   id: number,
@@ -28,32 +34,32 @@ export const details = (game: GameSummary, extra: Partial<GameDetails> = {}): Ga
   achievements: { total: 50, unlocked: 16, platinum: false },
   editable: game.origin !== 'steam',
   launchable: game.origin !== 'steam' && game.installed === true,
+  launchIssue:
+    game.origin === 'steam'
+      ? 'steam'
+      : game.installed === true
+        ? null
+        : game.installed === false
+          ? 'not-installed'
+          : 'install-unknown',
+  tracksTime: true,
   ...extra
 })
 
 export const origins: OriginInfo[] = [
-  {
-    key: 'manual',
-    name: 'Jogo Local',
-    builtin: true,
-    defaultExecutablePath: null,
-    defaultArguments: null
-  },
-  {
-    key: 'ps2',
-    name: 'PlayStation 2',
-    builtin: true,
-    defaultExecutablePath: null,
-    defaultArguments: null
-  },
-  {
-    key: 'steam',
-    name: 'Steam',
-    builtin: true,
-    defaultExecutablePath: null,
-    defaultArguments: null
-  }
+  { key: 'manual', name: 'Jogo Local', builtin: true },
+  { key: 'ps2', name: 'PlayStation 2', builtin: true },
+  { key: 'steam', name: 'Steam', builtin: true },
+  { key: 'yuzu', name: 'Yuzu', builtin: true }
 ]
+
+export const yuzu = (executablePath: string | null = null): EmulatorInfo => ({
+  key: 'yuzu',
+  name: 'Yuzu',
+  origin: 'yuzu',
+  romExtensions: ['.nsp', '.xci', '.nca', '.nro', '.nso'],
+  executablePath
+})
 
 /** Installs a complete fake `window.equon`; pass overrides per test. */
 export function installFakeApi(
@@ -61,6 +67,7 @@ export function installFakeApi(
   overrides: {
     games?: Partial<EquonApi['games']>
     origins?: Partial<EquonApi['origins']>
+    emulators?: Partial<EquonApi['emulators']>
     files?: Partial<EquonApi['files']>
   } = {}
 ): EquonApi {
@@ -90,8 +97,13 @@ export function installFakeApi(
       create: vi.fn(),
       rename: vi.fn(),
       remove: vi.fn(),
-      setDefaults: vi.fn(),
       ...overrides.origins
+    },
+    emulators: {
+      list: async () => [yuzu()],
+      set: async (_key, path) => ({ ok: true, data: yuzu(path) }),
+      remove: async () => ({ ok: true, data: null }),
+      ...overrides.emulators
     },
     files: {
       list: async () => ({

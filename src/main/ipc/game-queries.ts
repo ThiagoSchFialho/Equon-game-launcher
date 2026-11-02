@@ -2,14 +2,22 @@ import {
   refreshManualInstallStates,
   type AchievementRepository,
   type ArtworkRepository,
+  type EmulatorRepository,
   type FileInspector,
   type GameRepository,
   type GenreRepository,
   type LaunchConfigRepository,
   type OriginRepository
 } from '../../core/application'
-import { BuiltinOrigin, type Game } from '../../core/domain'
-import type { EditableGame, GameDetails, GameSummary } from '../../shared/ipc/contract'
+import {
+  BuiltinOrigin,
+  EMULATORS,
+  emulatorForOrigin,
+  isShortcutName,
+  type Game,
+  type LaunchConfig
+} from '../../core/domain'
+import type { EditableGame, GameDetails, GameSummary, LaunchIssue } from '../../shared/ipc/contract'
 
 export interface GameQueryDeps {
   games: GameRepository
@@ -18,7 +26,29 @@ export interface GameQueryDeps {
   genres: GenreRepository
   achievements: AchievementRepository
   configs: LaunchConfigRepository
+  emulators: EmulatorRepository
   inspector: FileInspector
+}
+
+/** Why Play cannot be offered for a game, or null (DATA_BASE_CONTEXT.md §3.2, §3.12). */
+function launchIssueOf(
+  deps: GameQueryDeps,
+  game: Game,
+  config: LaunchConfig | null
+): LaunchIssue | null {
+  // Steam launching arrives in Phase 6.
+  if (game.origin === BuiltinOrigin.steam) return 'steam'
+  if (!config) return 'no-config'
+  if (game.installed === null) return 'install-unknown'
+  if (game.installed === false) return 'not-installed'
+  if (config.romPath !== null) {
+    const emulator = emulatorForOrigin(game.origin) ?? EMULATORS.yuzu
+    const configured = deps.emulators.get(emulator.key)
+    if (!configured || deps.inspector.stateOf(configured.executablePath) !== 'file') {
+      return 'emulator-missing'
+    }
+  }
+  return null
 }
 
 function toSummary(
@@ -61,7 +91,8 @@ export function getGameDetails(deps: GameQueryDeps, id: number): GameDetails | n
   const game = deps.games.getById(id)
   if (!game) return null
   const progress = deps.achievements.progress(id)
-  const editable = game.origin !== BuiltinOrigin.steam
+  const config = deps.configs.get(id)
+  const launchIssue = launchIssueOf(deps, game, config)
   return {
     ...toSummary(game, originNameMap(deps), deps.artwork.listKinds()),
     description: game.description,
@@ -73,9 +104,11 @@ export function getGameDetails(deps: GameQueryDeps, id: number): GameDetails | n
       progress.total > 0
         ? { total: progress.total, unlocked: progress.unlocked, platinum: progress.platinum }
         : null,
-    editable,
-    // Steam launching arrives in Phase 6.
-    launchable: editable && game.installed === true && deps.configs.get(id) !== null
+    editable: game.origin !== BuiltinOrigin.steam,
+    launchable: launchIssue === null,
+    launchIssue,
+    // .url shortcuts hand the game to a store launcher: no process to observe.
+    tracksTime: !(config?.executablePath && isShortcutName(config.executablePath))
   }
 }
 
@@ -95,6 +128,7 @@ export function getEditableGame(deps: GameQueryDeps, id: number): EditableGame |
       playtimeOffset: game.playtimeOffset,
       origin: game.origin,
       executablePath: config?.executablePath ?? '',
+      romPath: config?.romPath ?? null,
       arguments: config?.arguments ?? [],
       workingDirectory: config?.workingDirectory ?? null,
       backgroundPath: null

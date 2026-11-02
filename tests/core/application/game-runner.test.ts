@@ -4,10 +4,11 @@ import {
   createGameRunner,
   recoverInterruptedSessions,
   type GameRunner,
+  type ProcessCommand,
   type RunningProcess
 } from '../../../src/core/application'
-import type { LaunchConfig } from '../../../src/core/domain'
 import {
+  createEmulatorRepository,
   createGameRepository,
   createLaunchConfigRepository,
   createSessionRepository,
@@ -20,9 +21,12 @@ let db: SqliteDatabase
 let clock: Date
 let ticks: (() => void)[]
 let exitProcess: () => void
-let launched: LaunchConfig[]
+let launched: ProcessCommand[]
+let opened: string[]
+let shortcutTargets: Map<string, string | null>
+let existing: Set<string>
 let runningChanges: number[][]
-let launchImpl: (config: LaunchConfig) => Promise<RunningProcess>
+let launchImpl: (command: ProcessCommand) => Promise<RunningProcess>
 let runner: GameRunner
 
 const games = (): ReturnType<typeof createGameRepository> => createGameRepository(db)
@@ -33,6 +37,7 @@ function addManualGame(installed: boolean | null = true): number {
   createLaunchConfigRepository(db).save({
     gameId: game.id,
     executablePath: 'C:/Games/game.exe',
+    romPath: null,
     arguments: ['-windowed'],
     workingDirectory: null
   })
@@ -44,9 +49,12 @@ beforeEach(() => {
   clock = new Date('2026-11-02T10:00:00Z')
   ticks = []
   launched = []
+  opened = []
+  shortcutTargets = new Map()
+  existing = new Set()
   runningChanges = []
-  launchImpl = async (config) => {
-    launched.push(config)
+  launchImpl = async (command) => {
+    launched.push(command)
     return { pid: 4242, exited: new Promise<void>((r) => (exitProcess = r)) }
   }
   runner = createGameRunner({
@@ -54,7 +62,15 @@ beforeEach(() => {
     configs: createLaunchConfigRepository(db),
     sessions: createSessionRepository(db),
     uow: createUnitOfWork(db),
-    launcher: { launch: (config) => launchImpl(config) },
+    launcher: { launch: (command) => launchImpl(command) },
+    emulators: createEmulatorRepository(db),
+    shortcuts: {
+      readUrl: (path) => shortcutTargets.get(path) ?? null,
+      openUrl: async (url) => {
+        opened.push(url)
+      }
+    },
+    inspector: { stateOf: (path) => (existing.has(path) ? 'file' : 'missing') },
     clock: { now: () => clock },
     repeat: (_ms, tick) => {
       ticks.push(tick)
@@ -153,7 +169,15 @@ describe('game runner', () => {
         }
       },
       uow: createUnitOfWork(db),
-      launcher: { launch: (config) => launchImpl(config) },
+      launcher: { launch: (command) => launchImpl(command) },
+      emulators: createEmulatorRepository(db),
+      shortcuts: {
+        readUrl: (path) => shortcutTargets.get(path) ?? null,
+        openUrl: async (url) => {
+          opened.push(url)
+        }
+      },
+      inspector: { stateOf: (path) => (existing.has(path) ? 'file' : 'missing') },
       clock: { now: () => clock },
       repeat: () => () => {},
       heartbeatMs: 30_000,
@@ -200,5 +224,59 @@ describe('recoverInterruptedSessions', () => {
         uow: createUnitOfWork(db)
       })
     ).toEqual([])
+  })
+})
+
+describe('game runner: emulators and shortcuts', () => {
+  const addGame = (
+    origin: string,
+    executablePath: string | null,
+    romPath: string | null
+  ): number => {
+    const game = games().create({ origin, title: 'G', installed: true })
+    createLaunchConfigRepository(db).save({
+      gameId: game.id,
+      executablePath,
+      romPath,
+      arguments: [],
+      workingDirectory: null
+    })
+    return game.id
+  }
+
+  it('starts Yuzu games with the configured emulator and the ROM, and tracks them', async () => {
+    const id = addGame('yuzu', null, 'D:/Switch/Zelda.nsp')
+    await expect(runner.launch(id)).rejects.toMatchObject({ code: 'emulator-missing' })
+
+    createEmulatorRepository(db).set('yuzu', 'C:/Yuzu/yuzu.exe')
+    await expect(runner.launch(id)).rejects.toMatchObject({ code: 'emulator-missing' })
+
+    existing.add('C:/Yuzu/yuzu.exe')
+    await runner.launch(id)
+    expect(launched.at(-1)).toEqual({
+      executablePath: 'C:/Yuzu/yuzu.exe',
+      arguments: ['-f', '-g', 'D:/Switch/Zelda.nsp'],
+      workingDirectory: null
+    })
+    expect(runner.runningGameIds()).toEqual([id])
+  })
+
+  it('opens allowlisted .url shortcuts without a session', async () => {
+    const id = addGame('manual', 'C:/Games/Epic.url', null)
+    shortcutTargets.set('C:/Games/Epic.url', 'com.epicgames.launcher://apps/x?action=launch')
+    await runner.launch(id)
+    expect(opened).toEqual(['com.epicgames.launcher://apps/x?action=launch'])
+    expect(launched).toEqual([])
+    expect(runner.runningGameIds()).toEqual([])
+    expect(createSessionRepository(db).listRunning()).toEqual([])
+  })
+
+  it('refuses shortcuts whose target changed to a forbidden URL', async () => {
+    const id = addGame('manual', 'C:/Games/Bad.url', null)
+    shortcutTargets.set('C:/Games/Bad.url', 'https://example.com')
+    await expect(runner.launch(id)).rejects.toMatchObject({ code: 'shortcut-invalid' })
+    shortcutTargets.set('C:/Games/Bad.url', null)
+    await expect(runner.launch(id)).rejects.toMatchObject({ code: 'shortcut-invalid' })
+    expect(opened).toEqual([])
   })
 })

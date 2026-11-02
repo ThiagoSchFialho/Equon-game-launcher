@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { ManualGameForm, OriginInfo, PickKind } from '../../../shared/ipc/contract'
-import {
-  ROM_PLACEHOLDER,
-  applyRomToArguments,
-  formatArguments,
-  isoToDisplayDate,
-  parseArguments
-} from '../../../shared/text-format'
+import type {
+  EmulatorInfo,
+  ManualGameForm,
+  OriginInfo,
+  PickKind
+} from '../../../shared/ipc/contract'
+import { formatArguments, isoToDisplayDate, parseArguments } from '../../../shared/text-format'
 import { currentSection, useNavigation } from '../app/navigation'
 import { Artwork } from '../components/Artwork'
 import { Button } from '../components/Button'
@@ -33,6 +32,7 @@ interface FormState {
   /** Digits only; minutes played elsewhere. */
   playtime: string
   origin: string
+  /** ROM of an emulator game; executable fields are unused then. */
   rom: string | null
   executablePath: string
   argumentsText: string
@@ -125,6 +125,7 @@ const ERROR_ROW: Record<string, keyof FormState> = {
   origin: 'origin',
   requiredAge: 'requiredAge',
   executablePath: 'executablePath',
+  romPath: 'rom',
   arguments: 'argumentsText',
   workingDirectory: 'workingDirectory',
   backgroundPath: 'backgroundPath'
@@ -132,6 +133,8 @@ const ERROR_ROW: Record<string, keyof FormState> = {
 
 const fileName = (path: string | null): string | null =>
   path ? (path.split(/[\\/]/).pop() ?? path) : null
+
+const isShortcut = (path: string): boolean => path.trim().toLowerCase().endsWith('.url')
 
 const HINTS: Hint[] = [
   { button: 'A', label: t.hints.select },
@@ -143,6 +146,7 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
   const navigation = useNavigation()
   const { reload: reloadGames } = useGames()
   const [origins, setOrigins] = useState<OriginInfo[] | null>(null)
+  const [emulators, setEmulators] = useState<EmulatorInfo[] | null>(null)
   // Add form starts empty; the edit form waits for the stored values.
   const [initial, setInitial] = useState<FormState | null>(id === null ? EMPTY : null)
   const [hasBackground, setHasBackground] = useState(false)
@@ -158,6 +162,7 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
 
   useEffect(() => {
     loadOrigins()
+    window.equon.emulators.list().then(setEmulators, () => setLoadFailed(true))
     if (id === null) return
     window.equon.games.getEditable(id).then(
       (game) => {
@@ -172,7 +177,7 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
           releaseDate: game.form.releaseDate,
           playtime: game.form.playtimeOffset > 0 ? String(game.form.playtimeOffset) : '',
           origin: game.form.origin,
-          rom: null,
+          rom: game.form.romPath,
           executablePath: game.form.executablePath,
           argumentsText: formatArguments(game.form.arguments),
           workingDirectory: game.form.workingDirectory,
@@ -189,8 +194,9 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
 
   const userOrigins = useMemo(() => (origins ?? []).filter((o) => o.key !== 'steam'), [origins])
   const selectedOrigin = userOrigins.find((o) => o.key === form.origin)
-  // New games of an origin with an emulator only need the ROM (§3.10).
-  const showRom = id === null && Boolean(selectedOrigin?.defaultExecutablePath)
+  // Emulator games only need the ROM; the emulator and its arguments come from §3.12.
+  const emulator = (emulators ?? []).find((e) => e.origin === form.origin) ?? null
+  const shortcut = !emulator && isShortcut(form.executablePath)
   const dirty = initial !== null && JSON.stringify(initial) !== JSON.stringify(form)
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]): void => {
@@ -199,20 +205,7 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
   }
 
   const chooseOrigin = (origin: OriginInfo): void => {
-    setForm((f) => {
-      const previous = userOrigins.find((o) => o.key === f.origin)
-      const usesPreviousDefaults =
-        f.executablePath === '' || f.executablePath === (previous?.defaultExecutablePath ?? '')
-      if (id !== null || !usesPreviousDefaults) return { ...f, origin: origin.key }
-      return {
-        ...f,
-        origin: origin.key,
-        executablePath: origin.defaultExecutablePath ?? '',
-        argumentsText: origin.defaultExecutablePath
-          ? formatArguments(origin.defaultArguments ?? [ROM_PLACEHOLDER])
-          : ''
-      }
-    })
+    set('origin', origin.key)
     setOverlay(null)
   }
 
@@ -224,11 +217,10 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
   const submit = async (): Promise<void> => {
     const local: Partial<Record<keyof FormState, string>> = {}
     if (form.title.trim() === '') local.title = errorMessage('required')
-    if (form.executablePath.trim() === '') local.executablePath = errorMessage('required')
-    let args = parseArguments(form.argumentsText)
-    if (showRom) {
-      if (form.rom) args = applyRomToArguments(args, form.rom)
-      else local.rom = errorMessage('required')
+    if (emulator) {
+      if (!form.rom) local.rom = errorMessage('required')
+    } else if (form.executablePath.trim() === '') {
+      local.executablePath = errorMessage('required')
     }
     if (Object.keys(local).length > 0) {
       setErrors(local)
@@ -242,9 +234,10 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
       requiredAge: form.requiredAge,
       playtimeOffset: form.playtime === '' ? 0 : Number(form.playtime),
       origin: form.origin,
-      executablePath: form.executablePath,
-      arguments: args,
-      workingDirectory: form.workingDirectory,
+      executablePath: emulator ? '' : form.executablePath,
+      romPath: emulator ? form.rom : null,
+      arguments: emulator || shortcut ? [] : parseArguments(form.argumentsText),
+      workingDirectory: emulator || shortcut ? null : form.workingDirectory,
       backgroundPath: form.backgroundPath
     }
     setSaving(true)
@@ -273,7 +266,7 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
       </FormFrame>
     )
   }
-  if (origins === null || initial === null) {
+  if (origins === null || emulators === null || initial === null) {
     return (
       <FormFrame>
         <StateMessage message={t.form.loading} />
@@ -327,38 +320,60 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
               error={errors.origin}
               onConfirm={() => setOverlay({ kind: 'origin' })}
             />
-            {showRom && (
-              <FormRow
-                id="rom"
-                label={t.form.fields.rom}
-                required
-                placeholder={t.form.placeholders.rom}
-                value={form.rom}
-                icon="browse"
-                error={errors.rom}
-                onConfirm={() => setOverlay({ kind: 'file', field: 'rom' })}
-              />
+            {emulator ? (
+              <>
+                <FormRow
+                  id="rom"
+                  label={t.form.fields.rom}
+                  required
+                  placeholder={t.form.placeholders.rom}
+                  value={form.rom}
+                  icon="browse"
+                  error={errors.rom}
+                  onConfirm={() => setOverlay({ kind: 'file', field: 'rom' })}
+                />
+                <p
+                  className="game-form__note"
+                  data-tone={emulator.executablePath ? undefined : 'warning'}
+                >
+                  {emulator.executablePath
+                    ? t.form.emulatorCommand(
+                        fileName(emulator.executablePath) ?? '',
+                        form.rom ?? t.form.fields.rom
+                      )
+                    : t.form.emulatorMissing(emulator.name)}
+                </p>
+              </>
+            ) : (
+              <>
+                <FormRow
+                  id="executablePath"
+                  label={t.form.fields.executable}
+                  required
+                  placeholder={t.form.placeholders.executable}
+                  value={form.executablePath}
+                  icon="browse"
+                  error={errors.executablePath}
+                  onConfirm={() => setOverlay({ kind: 'file', field: 'executablePath' })}
+                />
+                {shortcut ? (
+                  <p className="game-form__note">{t.form.shortcutNote}</p>
+                ) : (
+                  <>
+                    {textRow('argumentsText')}
+                    <FormRow
+                      id="workingDirectory"
+                      label={t.form.fields.workingDirectory}
+                      placeholder={t.form.placeholders.workingDirectory}
+                      value={form.workingDirectory}
+                      icon="browse"
+                      error={errors.workingDirectory}
+                      onConfirm={() => setOverlay({ kind: 'file', field: 'workingDirectory' })}
+                    />
+                  </>
+                )}
+              </>
             )}
-            <FormRow
-              id="executablePath"
-              label={t.form.fields.executable}
-              required
-              placeholder={t.form.placeholders.executable}
-              value={form.executablePath}
-              icon="browse"
-              error={errors.executablePath}
-              onConfirm={() => setOverlay({ kind: 'file', field: 'executablePath' })}
-            />
-            {textRow('argumentsText')}
-            <FormRow
-              id="workingDirectory"
-              label={t.form.fields.workingDirectory}
-              placeholder={t.form.placeholders.workingDirectory}
-              value={form.workingDirectory}
-              icon="browse"
-              error={errors.workingDirectory}
-              onConfirm={() => setOverlay({ kind: 'file', field: 'workingDirectory' })}
-            />
             <FormRow
               id="requiredAge"
               label={t.form.fields.requiredAge}

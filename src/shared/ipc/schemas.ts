@@ -3,6 +3,7 @@ import {
   ARTWORK_KINDS,
   type AppInfo,
   type BrowserListing,
+  type EmulatorInfo,
   type EditableGame,
   type GameDetails,
   type GameSummary,
@@ -29,6 +30,7 @@ export const manualGameFormSchema = z.strictObject({
   playtimeOffset: z.number().int().nonnegative().max(10_000_000),
   origin: originKey,
   executablePath: z.string().max(1024),
+  romPath: path.nullable(),
   arguments: z.array(text).max(64),
   workingDirectory: path.nullable(),
   backgroundPath: path.nullable()
@@ -42,13 +44,10 @@ export const noArgs = z.tuple([])
 export const originsCreateArgs = z.tuple([z.string().max(100)])
 export const originsRenameArgs = z.tuple([originKey, z.string().max(100)])
 export const originsRemoveArgs = z.tuple([originKey])
-export const originsSetDefaultsArgs = z.tuple([
-  originKey,
-  path.nullable(),
-  z.array(text).max(64).nullable()
-])
+export const emulatorsSetArgs = z.tuple([originKey, path])
+export const emulatorsRemoveArgs = z.tuple([originKey])
 
-export const pickKindSchema = z.enum(['executable', 'rom', 'image', 'directory'])
+export const pickKindSchema = z.enum(['executable', 'emulator', 'rom', 'image', 'directory'])
 export const filesListArgs = z.tuple([path.nullable(), pickKindSchema])
 export const filesPickNativeArgs = z.tuple([pickKindSchema])
 
@@ -91,7 +90,11 @@ export const gameDetailsSchema = z.strictObject({
     })
     .nullable(),
   editable: z.boolean(),
-  launchable: z.boolean()
+  launchable: z.boolean(),
+  launchIssue: z
+    .enum(['steam', 'not-installed', 'install-unknown', 'no-config', 'emulator-missing'])
+    .nullable(),
+  tracksTime: z.boolean()
 }) satisfies z.ZodType<GameDetails>
 
 export const gameDetailsResultSchema = gameDetailsSchema.nullable()
@@ -111,12 +114,20 @@ export const editableGameSchema = z
 export const originInfoSchema = z.strictObject({
   key: originKey,
   name: z.string().min(1),
-  builtin: z.boolean(),
-  defaultExecutablePath: z.string().nullable(),
-  defaultArguments: z.array(z.string()).nullable()
+  builtin: z.boolean()
 }) satisfies z.ZodType<OriginInfo>
 
 export const originListSchema = z.array(originInfoSchema)
+
+export const emulatorInfoSchema = z.strictObject({
+  key: originKey,
+  name: z.string().min(1),
+  origin: originKey,
+  romExtensions: z.array(z.string()),
+  executablePath: z.string().nullable()
+}) satisfies z.ZodType<EmulatorInfo>
+
+export const emulatorListSchema = z.array(emulatorInfoSchema)
 
 export const runningIdsSchema = z.array(id)
 

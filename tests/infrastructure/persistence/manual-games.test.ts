@@ -47,8 +47,56 @@ describe('migration 0002', () => {
     expect(() => db.prepare('UPDATE games SET playtime_offset = -1 WHERE id = ?').run(id)).toThrow(
       /CHECK/
     )
+  })
+})
+
+describe('migration 0003', () => {
+  it('keeps existing launch configs and adds rom_path', () => {
+    const fresh = openDatabase(':memory:')
+    migrate(fresh, migrations.slice(0, 2))
+    const id = Number(
+      fresh.prepare("INSERT INTO games (title, origin) VALUES ('A', 'manual')").run()
+        .lastInsertRowid
+    )
+    fresh
+      .prepare(
+        "INSERT INTO game_launch_configs (game_id, executable_path, arguments) VALUES (?, 'C:/a.exe', ?)"
+      )
+      .run(id, '["-w"]')
+    migrate(fresh, migrations)
+    expect(fresh.prepare('SELECT * FROM game_launch_configs').get()).toEqual({
+      game_id: id,
+      executable_path: 'C:/a.exe',
+      rom_path: null,
+      arguments: '["-w"]',
+      working_directory: null
+    })
+    expect(fresh.prepare("SELECT name FROM pragma_table_info('origins')").all()).toEqual([
+      { name: 'key' },
+      { name: 'name' },
+      { name: 'builtin' }
+    ])
+  })
+
+  it('requires exactly one of executable_path and rom_path, and cascades', () => {
+    const id = games.create({ origin: 'yuzu', title: 'Zelda' }).id
+    const insert = (exe: string | null, rom: string | null): unknown =>
+      db
+        .prepare(
+          'INSERT INTO game_launch_configs (game_id, executable_path, rom_path) VALUES (?, ?, ?)'
+        )
+        .run(id, exe, rom)
+    expect(() => insert(null, null)).toThrow(/CHECK/)
+    expect(() => insert('C:/a.exe', 'D:/z.nsp')).toThrow(/CHECK/)
+    insert(null, 'D:/z.nsp')
+    games.delete(id)
+    expect(count(db, 'game_launch_configs')).toBe(0)
+  })
+
+  it('only accepts supported emulators', () => {
+    db.prepare("INSERT INTO emulators (key, executable_path) VALUES ('yuzu', 'C:/yuzu.exe')").run()
     expect(() =>
-      db.prepare("UPDATE origins SET default_arguments = '\"x\"' WHERE key = 'ps2'").run()
+      db.prepare("INSERT INTO emulators (key, executable_path) VALUES ('pcsx2', 'C:/p.exe')").run()
     ).toThrow(/CHECK/)
   })
 })
@@ -117,6 +165,7 @@ describe('LaunchConfigRepository', () => {
     configs.save({
       gameId: id,
       executablePath: 'C:/G/g.exe',
+      romPath: null,
       arguments: [],
       workingDirectory: null
     })
@@ -126,12 +175,29 @@ describe('LaunchConfigRepository', () => {
     configs.save({
       gameId: id,
       executablePath: 'C:/Emu/emu.exe',
+      romPath: null,
+      arguments: ['--fs', 'D:/ROMs/a b.iso'],
+      workingDirectory: 'C:/Emu'
+    })
+    configs.save({
+      gameId: id,
+      executablePath: null,
+      romPath: 'D:/z.nsp',
+      arguments: [],
+      workingDirectory: null
+    })
+    expect(configs.get(id)).toMatchObject({ executablePath: null, romPath: 'D:/z.nsp' })
+    configs.save({
+      gameId: id,
+      executablePath: 'C:/Emu/emu.exe',
+      romPath: null,
       arguments: ['--fs', 'D:/ROMs/a b.iso'],
       workingDirectory: 'C:/Emu'
     })
     expect(configs.get(id)).toEqual({
       gameId: id,
       executablePath: 'C:/Emu/emu.exe',
+      romPath: null,
       arguments: ['--fs', 'D:/ROMs/a b.iso'],
       workingDirectory: 'C:/Emu'
     })
@@ -139,7 +205,13 @@ describe('LaunchConfigRepository', () => {
 
   it('is removed with its game', () => {
     const { id } = games.create({ origin: 'manual', title: 'A' })
-    configs.save({ gameId: id, executablePath: 'C:/g.exe', arguments: [], workingDirectory: null })
+    configs.save({
+      gameId: id,
+      executablePath: 'C:/g.exe',
+      romPath: null,
+      arguments: [],
+      workingDirectory: null
+    })
     games.delete(id)
     expect(count(db, 'game_launch_configs')).toBe(0)
   })

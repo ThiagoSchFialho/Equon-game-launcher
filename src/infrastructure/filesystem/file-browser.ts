@@ -1,14 +1,17 @@
 import { existsSync, readdirSync } from 'node:fs'
 import { dirname, extname, join, parse, resolve } from 'node:path'
+import { EMULATORS } from '../../core/domain'
 
 /** What the user is picking; decides which files are listed. */
-export type PickKind = 'executable' | 'rom' | 'image' | 'directory'
+export type PickKind = 'executable' | 'emulator' | 'rom' | 'image' | 'directory'
 
 export const PICK_EXTENSIONS: Record<PickKind, readonly string[] | null> = {
-  executable: ['.exe'],
+  // Games: a native executable or a store .url shortcut.
+  executable: ['.exe', '.url'],
+  emulator: ['.exe'],
+  // Yuzu is the only supported emulator (DATA_BASE_CONTEXT.md §3.12).
+  rom: EMULATORS.yuzu.romExtensions,
   image: ['.png', '.jpg', '.jpeg', '.webp'],
-  // ROM formats vary per emulator: any file can be picked.
-  rom: null,
   directory: []
 }
 

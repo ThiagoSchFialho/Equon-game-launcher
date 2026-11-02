@@ -10,6 +10,8 @@ export type Route =
   | ScreenRoute
   /** Add (id null) or edit form; `previous` is where Cancel/back returns. */
   | { name: 'gameForm'; id: number | null; previous: ScreenRoute }
+  /** Emulator setup (§3.12), opened from the Library. */
+  | { name: 'emulators'; previous: ScreenRoute }
 
 export interface Navigation {
   route: Route
@@ -17,6 +19,7 @@ export interface Navigation {
   goToSection(section: Section): void
   openGame(id: number): void
   openGameForm(id: number | null): void
+  openEmulators(): void
   /** Go back one screen; no-op at a top-level section. */
   back(): void
   /** LB/RB: move to the neighbouring section without wrapping around. */
@@ -33,7 +36,9 @@ export function useNavigation(): Navigation {
 
 export function currentSection(route: Route): Section {
   if (route.name === 'game') return route.from
-  if (route.name === 'gameForm') return currentSection(route.previous)
+  if (route.name === 'gameForm' || route.name === 'emulators') {
+    return currentSection(route.previous)
+  }
   return route.name
 }
 
@@ -46,11 +51,21 @@ export function stepSection(section: Section, delta: -1 | 1): Section {
 /** Route after "back". */
 export function previousRoute(route: Route): Route {
   if (route.name === 'game') return { name: route.from }
-  if (route.name === 'gameForm') return route.previous
+  if (route.name === 'gameForm' || route.name === 'emulators') return route.previous
   return route
 }
 
-/** Route that opens the form from `route` (the form itself is never a "previous"). */
+/** The screen a sub-screen returns to (sub-screens are never a "previous"). */
+function screenOf(route: Route): ScreenRoute {
+  return route.name === 'gameForm' || route.name === 'emulators' ? route.previous : route
+}
+
+/** Route that opens the add/edit form from `route`. */
 export function formRoute(route: Route, id: number | null): Route {
-  return { name: 'gameForm', id, previous: route.name === 'gameForm' ? route.previous : route }
+  return { name: 'gameForm', id, previous: screenOf(route) }
+}
+
+/** Route that opens the emulator setup from `route`. */
+export function emulatorsRoute(route: Route): Route {
+  return { name: 'emulators', previous: screenOf(route) }
 }

@@ -96,6 +96,14 @@ export function LibraryScreen(): React.JSX.Element {
           {/* Search, origin filter and sort (Phase 5) go on the left of this bar. */}
           <div className="library__toolbar">
             <Button
+              id="library:add-emulator"
+              label={t.library.addEmulator}
+              onConfirm={() => navigation.openEmulators()}
+            >
+              <span aria-hidden>+</span>
+              {t.library.addEmulator}
+            </Button>
+            <Button
               id="library:add"
               variant="primary"
               label={t.library.addGame}

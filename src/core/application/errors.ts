@@ -31,7 +31,13 @@ export class OriginInUseError extends Error {
 }
 
 export type LaunchErrorCode =
-  'not-found' | 'no-config' | 'not-installed' | 'already-running' | 'start-failed'
+  | 'not-found'
+  | 'no-config'
+  | 'not-installed'
+  | 'already-running'
+  | 'start-failed'
+  | 'emulator-missing'
+  | 'shortcut-invalid'
 
 export class LaunchError extends Error {
   constructor(
