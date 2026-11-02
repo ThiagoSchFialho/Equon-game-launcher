@@ -580,6 +580,13 @@ For Steam, use `appdetails`: check the success flag, validate optional fields, n
 
 On startup, reconcile sessions left `running` by a previous crash: mark them `interrupted`, close them at their last heartbeat and add their time (D-08).
 
+**Manual-game process observation (Phase 4, measured).** The launcher spawns the executable directly (no shell, arguments as an array) and observes **only that process**: the session starts on the OS "spawn" event, a heartbeat updates `last_seen_at` every 30 s, and the session completes when that process exits. Known limits:
+
+- Executables that only start another process and exit (launcher stubs, some Epic/GOG games that require their client, emulator front-ends) end the session immediately, so their time is not captured. Detecting the real game process (e.g. by watching processes under the game folder) is not implemented.
+- If the launcher itself is closed or crashes while a game runs, the game keeps running; on the next start the session is closed at its last heartbeat (at most ~30 s lost, verified by force-killing the launcher).
+- Games that the user starts outside the launcher are not observed.
+- Verified end to end in Phase 4 with a test executable (a 65 s session added 1 minute; a forced kill was recovered as `interrupted` at the last heartbeat). Real Epic/GOG games are validated by the owner and listed in the ROADMAP.
+
 ---
 
 ## 12. UI architecture and performance
@@ -622,7 +629,7 @@ Routine tests must not call live Steam endpoints; keep a separate real-world ver
 
 - Steam discovery and launch methods can change.
 - Some manually added games (e.g. from Epic) may require their official client to start; direct `.exe` launch may fail for them.
-- Process observation can miss child processes and intermediary launchers; session time is best-effort for Steam games.
+- Process observation can miss child processes and intermediary launchers (see "Manual-game process observation" in §11); session time is best-effort for Steam games.
 - Steam `StateFlags` are not an official, documented contract and could change; fixtures and a graceful "unknown" state limit the damage.
 - Electron's size and memory use are unmeasured (D-01).
 - Gamepad behavior varies by controller and by window focus; needs hardware validation.

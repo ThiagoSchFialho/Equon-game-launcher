@@ -135,25 +135,25 @@ displays.
 
 ### Tasks
 
--   [ ] Store executable path, optional arguments, and working directory
+-   [x] Store executable path, optional arguments, and working directory
     in `GAME_LAUNCH_CONFIGS` (D-07); validate them as untrusted input.
--   [ ] Add, edit, and remove a manual game.
--   [ ] Show it in Library and Game Details.
--   [ ] Launch it with useful validation and errors.
--   [ ] Observe the process where feasible.
--   [ ] Record each session in `PLAY_SESSIONS`, update `last_seen_at`
+-   [x] Add, edit, and remove a manual game.
+-   [x] Show it in Library and Game Details.
+-   [x] Launch it with useful validation and errors.
+-   [x] Observe the process where feasible.
+-   [x] Record each session in `PLAY_SESSIONS`, update `last_seen_at`
     periodically (heartbeat) and derive `playtime` (minutes) from the
     completed and interrupted sessions' seconds in one transaction.
--   [ ] Let the user choose a local background image (1920×1080) for a
+-   [x] Let the user choose a local background image (1920×1080) for a
     manual game; covers come from SteamGridDB in Phase 6.
--   [ ] Own controller-friendly file browser for executables, ROMs and
+-   [x] Own controller-friendly file browser for executables, ROMs and
     images, with a "Usar janela do Windows" fallback (decided).
--   [ ] On-screen keyboard and the add/edit game form (mockups "add game").
--   [ ] On startup, mark sessions left `running` as `interrupted`,
+-   [x] On-screen keyboard and the add/edit game form (mockups "add game").
+-   [x] On startup, mark sessions left `running` as `interrupted`,
     closed at their last heartbeat, and add their time (D-08).
--   [ ] Let the user pick the origin of a manual game and manage their
+-   [x] Let the user pick the origin of a manual game and manage their
     own origins (create, rename, delete unused), e.g. for a new emulator.
--   [ ] Emulator defaults on origins that pre-fill the form (decided);
+-   [x] Emulator defaults on origins that pre-fill the form (decided);
     user-entered playtime (`playtime_offset`); manual install state
     from the executable.
 -   [ ] Validate with real games from other launchers (e.g. Epic Games

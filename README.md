@@ -82,6 +82,10 @@ Packaging (`build:unpack`, `build:win`) exists but the installer is not decided 
 
 `better-sqlite3` 13 ships N-API prebuilt binaries, so the same binary works in Node (tests) and Electron (app) and **no rebuild is needed**. `tests/native/better-sqlite3.test.ts` checks both runtimes. If it ever fails with a load or `NODE_MODULE_VERSION` error, the package stopped shipping compatible prebuilds; that is a tooling problem, not a code bug (see `docs/ARCHITECTURE.md` §3.15).
 
+### Manual games
+
+Library → "Adicionar jogo": pick the game's `.exe` (or, for an emulator origin, the ROM), optional arguments, working folder and a 1920×1080 background. The launcher starts the executable directly and adds the time of each observed session to the game. Executables that hand off to another launcher and exit right away are not tracked (see `docs/ARCHITECTURE.md` §11).
+
 ### Development data
 
 Unpackaged runs (`npm run dev`, `npm start`) keep their data in `%APPDATA%\equon-game-launcher-dev`, separate from the real library (`%APPDATA%\equon-game-launcher`, used by the packaged app). `npm run dev:seed` only ever writes to the dev folder.
