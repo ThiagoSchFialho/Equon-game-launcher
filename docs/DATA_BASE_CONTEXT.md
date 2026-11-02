@@ -14,7 +14,7 @@ Quando este documento e o código divergirem, atualize o documento no mesmo comm
 - Aplicativo desktop para Windows, com **um único usuário local** e **uma única conta Steam**.
 - Banco: **SQLite embutido** (D-02). Não existe servidor de banco. O arquivo fica na pasta de dados do aplicativo.
 - Driver: `better-sqlite3`. Acesso por **repositórios** com SQL escrito à mão; sem ORM (D-03). SQL existe apenas em `infrastructure/persistence`.
-- Migrações: arquivos `.sql` versionados (`0001_init.sql`, ...), aplicados em ordem por um executor pequeno que registra a versão em `PRAGMA user_version`. Cada migração roda em transação.
+- Migrações: arquivos `.sql` versionados em `src/infrastructure/persistence/migrations/` (`0001_init.sql`, ...), embutidos no bundle e listados em `migrations/index.ts`. Um executor pequeno os aplica em ordem e registra a versão em `PRAGMA user_version`. Cada migração roda em transação junto com a atualização da versão; as chaves estrangeiras são desligadas fora da transação e `foreign_key_check` precisa passar antes do commit.
 - **Obrigatório:** executar `PRAGMA foreign_keys = ON` em **toda** conexão. Sem isso o SQLite ignora as chaves estrangeiras e os `ON DELETE CASCADE` não funcionam.
 - O estado de desbloqueio das conquistas fica em `ACHIEVEMENTS`. **Não** criar `USER_ACHIEVEMENTS` nem perfis múltiplos.
 - Fontes Steam usadas: arquivos locais da Steam (instalação), `appdetails` (metadados), Steam Web API (conquistas) e SteamGridDB (artes). Epic Games e GOG **não** têm integração automática; esses jogos são adicionados manualmente (`origin = 'manual'`). Jogos de emuladores (Yuzu, PlayStation 2 e origens criadas pelo usuário) também são adicionados manualmente, cada um com a sua origem (ver 3.10).
@@ -182,7 +182,7 @@ Configuração de lançamento de jogos **manuais**.
 | --- | --- | --- |
 | `game_id` | `INTEGER PRIMARY KEY` | FK para `GAMES(id)` com `ON DELETE CASCADE` |
 | `executable_path` | `TEXT NOT NULL` | Caminho do executável |
-| `arguments` | `TEXT` | Lista JSON de argumentos (texto); `NULL` = sem argumentos |
+| `arguments` | `TEXT` | Lista JSON de argumentos (texto); `NULL` = sem argumentos; `CHECK (json_type(arguments) = 'array')` |
 | `working_directory` | `TEXT` | Diretório de trabalho; `NULL` = padrão |
 
 Regras:
@@ -266,7 +266,7 @@ Origens possíveis de um jogo. É uma tabela, não uma lista fixa, para que o us
 
 | Coluna | Tipo | Regras |
 | --- | --- | --- |
-| `key` | `TEXT PRIMARY KEY` | Identificador estável, minúsculo (`steam`, `manual`, `yuzu`, `ps2`, `nintendo-64`). Nunca muda depois de criado |
+| `key` | `TEXT PRIMARY KEY` | Identificador estável: só letras minúsculas, dígitos e hífen (`steam`, `manual`, `yuzu`, `ps2`, `nintendo-64`), verificado por `CHECK`. Nunca muda depois de criado |
 | `name` | `TEXT NOT NULL UNIQUE COLLATE NOCASE` | Nome exibido; editável |
 | `builtin` | `INTEGER NOT NULL DEFAULT 0` | `CHECK (builtin IN (0,1))`; origens de fábrica não podem ser excluídas |
 
@@ -335,7 +335,7 @@ API REST v2 com chave pessoal gratuita. Fornece capa quadrada e logo (e, para jo
 - Excluir um jogo remove, em cascata, conquistas, ligações de gênero, configuração de lançamento, sessões e artes. Os arquivos de arte no cache devem ser removidos pela aplicação.
 - Gêneros órfãos podem permanecer; limpeza é opcional e nunca urgente.
 - Toda mudança de schema exige migração versionada. Alterações que o SQLite não faz no lugar usam o padrão criar-copiar-renomear, com chaves estrangeiras desligadas fora da transação.
-- Fazer cópia do arquivo do banco antes de aplicar migrações (estratégia de recuperação a verificar na Fase 8).
+- Fazer cópia do arquivo do banco antes de aplicar migrações: quando há migração pendente em um banco existente, o launcher grava `equon.sqlite.v<versão>.bak` com `VACUUM INTO` (estratégia de recuperação a verificar na Fase 8).
 - Testes de banco devem cobrir: migrações, restrições, upserts (preservando `hidden`/`beated`), cascatas, transações, chaves estrangeiras realmente ativas e ordenações com `NULL`.
 
 ---

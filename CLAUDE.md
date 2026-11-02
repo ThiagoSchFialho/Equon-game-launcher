@@ -30,6 +30,7 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 - electron-vite (separate main / preload / renderer builds); strict TypeScript.
 - Vitest for tests; ESLint (flat config) + Prettier.
 - SQLite via `better-sqlite3`, hand-written SQL in repositories, no ORM, versioned `.sql` migrations tracked with `PRAGMA user_version`.
+- Persistence lives in `src/infrastructure/persistence` (the only place allowed to import `better-sqlite3`, enforced by lint). Add a schema change as a new `migrations/000N_*.sql` plus an entry in `migrations/index.ts`; never edit a released migration. Repositories implement the sync ports in `src/core/application/ports.ts`; tests use `tests/helpers/db.ts` (in-memory, migrated).
 - Scripts: `npm run dev`, `npm run build`, `npm start` (preview build), `npm test` (Vitest, run once), `npm run lint`, `npm run typecheck`, `npm run format`. Node 24.18.0 (`.nvmrc`), Electron 44.10.1 (exact).
 - If Electron fails with `electron.app` undefined, `ELECTRON_RUN_AS_NODE=1` is set in the shell (VS Code sets it); unset it for `dev`/`start`.
 - Sandboxed preload can only load `electron`; it imports constants/types from `src/shared/ipc/contract.ts` (no runtime deps). zod schemas live in `src/shared/ipc/schemas.ts` and are used by main.

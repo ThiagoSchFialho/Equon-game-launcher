@@ -70,29 +70,29 @@ D-01 or D-03 is reopened only if they are unacceptable.
 
 ### Tasks
 
--   [ ] Add database connection (with `PRAGMA foreign_keys = ON` on every
+-   [x] Add database connection (with `PRAGMA foreign_keys = ON` on every
     connection) and versioned SQL migrations.
--   [ ] Implement the schema from `DATA_BASE_CONTEXT.md`, including
+-   [x] Implement the schema from `DATA_BASE_CONTEXT.md`, including
     `GAME_LAUNCH_CONFIGS`, `PLAY_SESSIONS`, `GAME_ARTWORK`, nullable
     `installed`, `metadata_fetched_at`, the single-row `USERS` rule and
     encrypted key columns.
--   [ ] Create `GAME_ARTWORK` with the five kinds: `cover_square`,
+-   [x] Create `GAME_ARTWORK` with the five kinds: `cover_square`,
     `cover_portrait`, `logo`, `background` and `header`.
--   [ ] Create the extensible `ORIGINS` table with the built-in origins
+-   [x] Create the extensible `ORIGINS` table with the built-in origins
     (`steam`, `manual`, `yuzu`, `ps2`) and a repository to list, create,
     rename and delete user origins (D-05).
--   [ ] Confirm `GAMES.origin` (foreign key to `ORIGINS`), non-negative
+-   [x] Confirm `GAMES.origin` (foreign key to `ORIGINS`), non-negative
     `playtime`, and uniqueness of non-null Steam IDs.
--   [ ] Confirm `UNIQUE (game_id, api_name)` and achievement FK cascade.
--   [ ] Confirm `GAME_GENRES` composite PK and cascading FKs.
--   [ ] Confirm foreign keys are actually enforced (tests must fail if
+-   [x] Confirm `UNIQUE (game_id, api_name)` and achievement FK cascade.
+-   [x] Confirm `GAME_GENRES` composite PK and cascading FKs.
+-   [x] Confirm foreign keys are actually enforced (tests must fail if
     the pragma is missing) and that upserts never touch `hidden` or
     `beated`.
--   [ ] Confirm the single running session per game and the
+-   [x] Confirm the single running session per game and the
     `playtime` derivation from completed and interrupted sessions.
--   [ ] Implement data-access functions for games, genres, and
+-   [x] Implement data-access functions for games, genres, and
     achievements.
--   [ ] Add tests for constraints, migrations, cascades, transactions,
+-   [x] Add tests for constraints, migrations, cascades, transactions,
     and progress calculation.
 
 **Acceptance:** Games and genres can be saved/read; duplicate
