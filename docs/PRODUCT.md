@@ -113,7 +113,7 @@ com o computador ligado a uma TV.
     origem são adicionados manualmente, apontando para o `.exe` do jogo ou
     para um atalho `.url` (atalhos das lojas, como Epic; nesse caso o
     tempo de jogo não é medido).
--   **Emuladores:** a Biblioteca tem "Adicionar emulador", onde o usuário
+-   **Emuladores:** a Biblioteca tem "Emuladores", onde o usuário
     escolhe um emulador suportado (por enquanto só o Yuzu) e indica o
     executável dele. Ao adicionar um jogo com origem Yuzu, o usuário só
     escolhe a ROM; o launcher abre o jogo direto no emulador.

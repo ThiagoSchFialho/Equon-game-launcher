@@ -155,7 +155,7 @@ displays.
     own origins (create, rename, delete unused), e.g. for a new emulator.
 -   [x] User-entered playtime (`playtime_offset`); manual install state
     from the executable.
--   [x] "Adicionar emulador" (Yuzu only): configure `yuzu.exe`; Yuzu
+-   [x] "Emuladores" (Yuzu only): configure `yuzu.exe`; Yuzu
     games pick only the ROM and open with `-f -g "<rom>"`.
 -   [x] Accept `.url` shortcuts (store schemes allowlist; no playtime).
 -   [ ] Validate with real games from other launchers (e.g. Epic Games

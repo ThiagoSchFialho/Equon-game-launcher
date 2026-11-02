@@ -22,7 +22,7 @@ const HINTS: Hint[] = [
 ]
 
 /**
- * "Adicionar emulador" (DATA_BASE_CONTEXT.md §3.12): choose a supported
+ * "Emuladores" (DATA_BASE_CONTEXT.md §3.12): choose a supported
  * emulator and point it to its executable. The path serves every game of the
  * emulator's origin, so changing it here applies to all of them.
  */

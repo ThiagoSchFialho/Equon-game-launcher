@@ -21,7 +21,7 @@ export const t = {
     empty: 'Nenhum jogo na biblioteca ainda.',
     emptyHint: 'Jogos da Steam e jogos adicionados manualmente aparecerão aqui.',
     addGame: 'Adicionar jogo',
-    addEmulator: 'Adicionar emulador'
+    emulators: 'Emuladores'
   },
   home: {
     empty: 'Nenhum jogo para mostrar ainda.',
@@ -33,7 +33,7 @@ export const t = {
     steamSoon: 'Iniciar jogos da Steam estará disponível em breve.',
     notInstalled: 'Arquivo do jogo não encontrado. Edite o jogo para corrigir o caminho.',
     installUnknown: 'Não foi possível verificar o arquivo do jogo (disco desconectado?).',
-    emulatorMissing: 'Configure o Yuzu em Biblioteca › Adicionar emulador.',
+    emulatorMissing: 'Configure o Yuzu em Biblioteca › Emuladores.',
     untracked: 'Atalho .url: o tempo de jogo não é medido.',
     noConfig: 'Configure o executável editando o jogo.',
     runningNote: 'O tempo desta sessão será somado quando o jogo fechar.',
@@ -53,7 +53,7 @@ export const t = {
     'not-found': 'Este jogo não pode ser iniciado.',
     'no-config': 'Configure o executável editando o jogo.',
     'not-installed': 'Arquivo do jogo não encontrado. Edite o jogo para corrigir o caminho.',
-    'emulator-missing': 'Configure o Yuzu em Biblioteca › Adicionar emulador.',
+    'emulator-missing': 'Configure o Yuzu em Biblioteca › Emuladores.',
     'shortcut-invalid': 'O atalho .url não aponta para uma loja suportada. Edite o jogo.',
     'already-running': 'O jogo já está em execução.',
     'start-failed': 'Não foi possível iniciar o jogo. Verifique o executável e os argumentos.'
@@ -126,7 +126,7 @@ export const t = {
     emulatorCommand: (emulator: string, rom: string) =>
       `Será iniciado com: ${emulator} -f -g "${rom}"`,
     emulatorMissing: (emulator: string) =>
-      `${emulator} ainda não foi configurado. Use “Adicionar emulador” na Biblioteca.`,
+      `${emulator} ainda não foi configurado. Use “Emuladores” na Biblioteca.`,
     shortcutNote:
       'Atalhos .url abrem pela loja; argumentos não se aplicam e o tempo de jogo não é medido.',
     discard: {
@@ -205,7 +205,7 @@ export const t = {
     builtin: 'De fábrica'
   },
   emulators: {
-    title: 'Adicionar emulador',
+    title: 'Emuladores',
     subtitle: 'Escolha o emulador e indique onde está o executável dele.',
     notConfigured: (exe: string) => `Não configurado — escolha o ${exe}`,
     loading: 'Carregando emuladores…',

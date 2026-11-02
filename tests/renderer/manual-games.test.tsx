@@ -248,9 +248,7 @@ describe('add game form', () => {
     await click('Origem')
     await clickText('Yuzu')
     expect(
-      await screen.findByText(
-        'Yuzu ainda não foi configurado. Use “Adicionar emulador” na Biblioteca.'
-      )
+      await screen.findByText('Yuzu ainda não foi configurado. Use “Emuladores” na Biblioteca.')
     ).toBeTruthy()
   })
 
@@ -301,7 +299,7 @@ describe('add emulator', () => {
     render(<App />)
     await screen.findByText('12h 22m')
     press('e')
-    await click('Adicionar emulador')
+    await click('Emuladores')
     expect(await screen.findByText('Não configurado — escolha o yuzu.exe')).toBeTruthy()
     await click('Yuzu')
     await clickText('yuzu.exe')
