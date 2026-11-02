@@ -107,7 +107,7 @@ com o computador ligado a uma TV.
     jogos podem só abrir pelo cliente oficial; esse caso deve ser
     validado com jogos reais.
 -   **Origens:** cada jogo tem uma origem. De fábrica existem Steam,
-    PC, Yuzu e PlayStation 2; o usuário pode criar, renomear e excluir
+    Jogo Local, Yuzu e PlayStation 2; o usuário pode criar, renomear e excluir
     as próprias origens (por exemplo, "Nintendo 64" para um emulador
     novo). Só a Steam tem integração automática; jogos de qualquer outra
     origem são adicionados manualmente. Para um emulador, o executável é
@@ -151,7 +151,8 @@ limitações, condições de teste e método de inicialização suportado.
     computadores) e sobrescrevem os valores locais. As sessões
     observadas somam sobre esse valor até a próxima abertura. Sem chave
     da Steam ou com falha na sincronização, nada é sobrescrito.
--   Jogos de outras origens usam apenas o tempo medido pelo launcher.
+-   Jogos de outras origens usam o tempo medido pelo launcher somado ao
+    tempo informado pelo usuário ao cadastrar ou editar o jogo.
 -   Não prometer capturar perfeitamente todos os processos filhos ou
     jogos iniciados por launchers intermediários na primeira versão.
 -   Para jogos Steam, o início e o fim da sessão são observados pelo

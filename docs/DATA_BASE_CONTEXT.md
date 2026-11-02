@@ -1,6 +1,6 @@
 # Equon Game Launcher — Contexto do Banco de Dados
 
-**Versão:** 0.3
+**Versão:** 0.4
 **Status:** Rascunho — alinhado às decisões D-01 a D-17 do `ARCHITECTURE.md`
 **Idioma:** português
 **Finalidade:** descrever o modelo de dados, as regras de integridade e as decisões que a IA de programação e as pessoas devem respeitar ao criar migrações, repositórios e casos de uso.
@@ -70,6 +70,7 @@ Um registro por jogo, de qualquer origem.
 | `metadata_fetched_at` | `TEXT` | Preenchido somente após salvar uma resposta válida de metadados (D-16) |
 | `steam_playtime_baseline` | `INTEGER` | Minutos informados pela Steam na última sincronização de tempo de jogo (3.11); `CHECK (>= 0)`; `NULL` se nunca sincronizado |
 | `steam_synced_at` | `TEXT` | UTC da última sincronização de tempo de jogo com a Steam; preenchido junto com `steam_playtime_baseline` (`CHECK`: os dois nulos ou os dois preenchidos) |
+| `playtime_offset` | `INTEGER NOT NULL DEFAULT 0` | Minutos informados pelo usuário ao cadastrar/editar um jogo que não é da Steam (tempo jogado fora do launcher); `CHECK (>= 0)`. Migração `0002` |
 
 Regras:
 
@@ -79,7 +80,7 @@ Regras:
 - Só jogos descobertos pelo adaptador da Steam usam `steam`; o usuário nunca escolhe `steam` ao adicionar um jogo.
 - `hidden` e `beated` começam em `0` e só mudam por ação do usuário.
 - `playtime` nunca é negativo. A regra de cálculo está em 3.8; para jogos Steam sincronizados, ver 3.11.
-- `steam_playtime_baseline` e `steam_synced_at` são internos: a interface mostra só `playtime` e `time_last_played`.
+- `steam_playtime_baseline`, `steam_synced_at` e `playtime_offset` são internos: a interface mostra só `playtime` e `time_last_played`.
 - Possíveis duplicidades entre um jogo manual e um jogo Steam **não** são mescladas automaticamente: vão para revisão do usuário.
 - `metadata_fetched_at IS NULL` significa que os metadados ainda não foram obtidos (ou a tentativa falhou) e podem ser tentados de novo. Um jogo sem descrição de verdade, mas com `metadata_fetched_at` preenchido, **não** é buscado outra vez.
 
@@ -95,7 +96,14 @@ Regras de gravação em `GAMES.installed`:
 - Uma leitura que falhou **nunca** pode gravar `0`.
 - Estados transitórios (rodando, instalando, atualizando, pausado, atualização necessária, arquivos corrompidos) **não são gravados**; são lidos ao vivo e exibidos na interface.
 - A varredura local só enxerga jogos com manifesto (instalados ou em instalação). Jogos comprados e não instalados exigiriam `GetOwnedGames` (precisa de chave) e não fazem parte do MVP.
-- Não reutilizar o método da Steam para jogos manuais; o estado de instalação deles será definido na Fase 4.
+- Não reutilizar o método da Steam para jogos manuais.
+
+**Jogos de outras origens (decidido na Fase 4):** o estado vem da existência do executável da configuração de lançamento (3.7), conferida no processo principal sempre que a biblioteca ou o jogo é carregado:
+
+- o arquivo existe → `1`;
+- não existe (`ENOENT`) → `0`;
+- erro de leitura (por exemplo, disco externo desconectado ou sem permissão) → `NULL`. Uma leitura que falhou nunca grava `0`.
+- O botão Jogar só fica disponível com `1`.
 
 ### 3.3 `USERS`
 
@@ -222,6 +230,7 @@ Regras:
 - **Heartbeat:** enquanto observa um jogo em execução, o launcher atualiza `last_seen_at` periodicamente (cerca de 30 s; o intervalo final é medido na Fase 4).
 - Se o próprio launcher morrer (crash, queda de energia, desligamento do Windows), na inicialização seguinte cada sessão que ficou `running` vira `interrupted`, com `ended_at = last_seen_at` e `duration_seconds = last_seen_at − started_at`, na mesma transação que recalcula `playtime`. Perde-se no máximo um intervalo de heartbeat.
 - **Cálculo de `GAMES.playtime`:** `floor(soma de duration_seconds das sessões 'completed' e 'interrupted' do jogo / 60)`. Assim os segundos que sobram de cada sessão se acumulam em vez de serem perdidos por arredondamento. O recálculo é idempotente.
+- **Jogos de outras origens:** `playtime = playtime_offset + floor(soma de duration_seconds das sessões contadas / 60)`. O `playtime_offset` é o tempo informado pelo usuário no formulário (Fase 4).
 - **Jogos Steam já sincronizados (3.11):** `playtime = steam_playtime_baseline + floor(soma de duration_seconds das sessões contadas iniciadas a partir de steam_synced_at / 60)`. As sessões anteriores já estão incluídas no valor da Steam.
 - **`time_last_played`:** o recálculo só o avança (o maior entre o valor atual e o fim da sessão contada mais recente); nunca o volta para trás.
 - Para jogos Steam, o início e o fim têm a precisão limitada pela forma de observar o manifesto; o resultado é "melhor esforço" e as limitações observadas devem ser documentadas.
@@ -274,13 +283,15 @@ Origens possíveis de um jogo. É uma tabela, não uma lista fixa, para que o us
 | `key` | `TEXT PRIMARY KEY` | Identificador estável: só letras minúsculas, dígitos e hífen (`steam`, `manual`, `yuzu`, `ps2`, `nintendo-64`), verificado por `CHECK`. Nunca muda depois de criado |
 | `name` | `TEXT NOT NULL UNIQUE COLLATE NOCASE` | Nome exibido; editável |
 | `builtin` | `INTEGER NOT NULL DEFAULT 0` | `CHECK (builtin IN (0,1))`; origens de fábrica não podem ser excluídas |
+| `default_executable_path` | `TEXT` | Emulador padrão da origem (opcional). Migração `0002` |
+| `default_arguments` | `TEXT` | Lista JSON de argumentos padrão; o texto `{rom}` marca onde entra o caminho da ROM. `CHECK (json_type(default_arguments) = 'array')`. Migração `0002` |
 
 Linhas criadas pela migração inicial:
 
 | `key` | `name` | Observação |
 | --- | --- | --- |
 | `steam` | Steam | Única origem com adaptador automático (descoberta, metadados, conquistas) |
-| `manual` | PC | Jogos de PC de qualquer launcher (Epic, GOG, ...) |
+| `manual` | Jogo Local | Jogos de PC de qualquer launcher (Epic, GOG, ...). Nome alterado de "PC" para "Jogo Local" pela migração `0002` |
 | `yuzu` | Yuzu | Jogos de Nintendo Switch pelo emulador |
 | `ps2` | PlayStation 2 | Jogos de PlayStation 2 pelo emulador |
 
@@ -289,7 +300,7 @@ Regras:
 - O usuário pode criar, renomear e excluir as próprias origens. A `key` de uma origem nova é gerada a partir do nome (minúsculas, hífens) e não muda se o nome mudar.
 - Uma origem com jogos não pode ser excluída (`ON DELETE RESTRICT`); origens `builtin` nunca são excluídas.
 - Toda origem diferente de `steam` funciona como jogo manual: o usuário cadastra o jogo e a configuração de lançamento (3.7).
-- Proposta para a Fase 4 (fora do schema por enquanto): guardar o executável do emulador na origem, para que cada jogo só informe a ROM.
+- **Emulador padrão (decidido na Fase 4):** uma origem pode guardar um executável e argumentos padrão. Ao cadastrar um jogo dessa origem, o formulário vem preenchido e o usuário só escolhe a ROM; `{rom}` nos argumentos é substituído pelo caminho escolhido (ou a ROM é acrescentada ao final se não houver `{rom}`). O jogo guarda a **configuração completa** em `GAME_LAUNCH_CONFIGS`: trocar o emulador da origem depois não altera jogos já cadastrados.
 
 ---
 
@@ -369,6 +380,9 @@ API REST v2 com chave pessoal gratuita. Fornece capa quadrada e logo (e, para jo
 | Guarda das chaves de API | Criptografadas com `safeStorage` (`BLOB`) | D-04 |
 | Origens | Tabela `ORIGINS` extensível; de fábrica: `steam`, `manual`, `yuzu`, `ps2` | D-05 |
 | Estado de instalação desconhecido | `installed` nulo (`NULL` = desconhecido) | D-06 |
+| Estado de instalação de jogos manuais | Existência do executável; erro de leitura → `NULL` | Fase 4 |
+| Emulador padrão na origem | Preenche o formulário; o jogo guarda a configuração completa | Fase 4 |
+| Tempo de jogo informado pelo usuário | `games.playtime_offset`, somado às sessões | Fase 4 |
 | Configuração de lançamento manual | Tabela `GAME_LAUNCH_CONFIGS` | D-07 |
 | Sessões e arredondamento | Tabela `PLAY_SESSIONS`; `playtime` derivado dos segundos | D-08 |
 | Sessões interrompidas | Somam tempo até o último heartbeat (`last_seen_at`) | D-08 |
@@ -387,9 +401,7 @@ API REST v2 com chave pessoal gratuita. Fornece capa quadrada e logo (e, para jo
 1. Validar a estrutura atual e os limites da Steam Web API para conquistas.
 2. Onde guardar as preferências (idioma, caminho da Steam, etc.): tabela de configurações ou arquivo de configuração.
 3. Política de limpeza do cache de artes e variantes de tamanho.
-4. Estado de instalação de jogos manuais.
-5. Se haverá uma ação manual de "atualizar metadados" de um jogo.
-6. Guardar o executável do emulador na origem (proposta para a Fase 4).
+4. Se haverá uma ação manual de "atualizar metadados" de um jogo.
 
 ---
 

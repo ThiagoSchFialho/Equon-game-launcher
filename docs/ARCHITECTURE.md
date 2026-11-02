@@ -1,7 +1,7 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.13
-**Status:** Draft — Phase 3 (UI shell and controller navigation)
+**Version:** 0.14
+**Status:** Draft — Phase 4 (manual-game vertical slice)
 **Last updated:** 2026-11-02
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
 **Purpose:** Define technical boundaries, record architecture decisions, and list what is still unresolved before implementation starts.
@@ -148,7 +148,7 @@ Origins are **data, not a fixed enum** (owner decision, Phase 2). An `ORIGINS` t
 - **Only `steam` has an automatic adapter** (discovery, metadata, achievements). Every other origin, built-in or user-created, behaves as a manually added game: the user registers the game and its launch configuration (for an emulator: the emulator executable, with the ROM path as an argument). The user never picks `steam` when adding a game.
 - Games from Epic, GOG or any other PC launcher use `manual`.
 - TypeScript: the origin is a `string` key; built-in keys are constants, and adapter capabilities are keyed by `steam` only.
-- Proposed for Phase 4 (not in the schema yet): store an emulator's executable once on its origin so each game only needs the ROM path.
+- **Emulator defaults (decided in Phase 4):** an origin may store a default executable and argument list (`{rom}` marks the ROM path). They only pre-fill the add-game form; each game keeps its full launch configuration, so changing an origin's emulator later does not change existing games. The built-in `manual` origin is displayed as "Jogo Local" (migration `0002`).
 
 ### 3.6 D-06 — Installation state (Accepted: nullable)
 
@@ -175,6 +175,7 @@ PLAY_SESSIONS(
 - **Every observed session counts toward playtime**, whatever the origin and however the game was closed (owner decision, Phase 2). A game that is force-closed or crashes is still observed ending, so its session completes normally.
 - **Heartbeat:** while observing a running game, the launcher periodically updates `last_seen_at` (about every 30 s; the final interval is set by measurement in Phase 4). If the launcher itself dies (crash, power loss, Windows shutdown), on the next startup each row still `running` becomes `interrupted` with `ended_at = last_seen_at` and `duration_seconds = last_seen_at − started_at`, in the same transaction that recomputes `playtime`. At most one heartbeat interval is lost.
 - Rounding: rounding each session to whole minutes loses time over many short sessions. **Rule:** `GAMES.playtime = floor(sum of duration_seconds of the game's completed and interrupted sessions / 60)`, recomputed in the same transaction that closes the session (idempotent; see `DATA_BASE_CONTEXT.md` §3.8). Covered by tests; `playtime` never goes negative.
+- **User-entered playtime (Phase 4).** For non-Steam games, the add/edit form accepts the time already played elsewhere; it is stored in `games.playtime_offset` and `playtime = playtime_offset + floor(seconds of counted sessions / 60)`.
 - **Steam playtime (owner decision, Phase 2).** For Steam games, Steam is the source of truth for total playtime and last played, since it covers other computers and time before Equon. Once **per launcher start**, a single `IPlayerService/GetOwnedGames` call (key + SteamID64; validate the current format first) overwrites, for every Steam game already in the database, `time_last_played` and a stored baseline (`steam_playtime_baseline`, `steam_synced_at`). Then `playtime = baseline + floor(seconds of counted sessions started since the sync / 60)`, so sessions in the current run add on top and the next start overwrites again without double counting. Startup order: close interrupted sessions first, then sync. A failed sync changes nothing. This is the only automatic sync at startup; achievements keep the rules in §10. Other origins use launcher time only. Details: `DATA_BASE_CONTEXT.md` §3.11.
 
 ### 3.9 D-09 — `tier` and trophy counters (Accepted: application layer)
@@ -197,6 +198,8 @@ So a small input module in `renderer/input/`:
 - Emits **semantic actions** (`confirm`, `back`, `up/down/left/right`, `scroll`, `menu`, `previousSection`/`nextSection` for LB/RB). Screens and components depend only on these actions, never on raw button indices. The mapping table lives in `DESIGN_SYSTEM.md` §8.
 - Maps keyboard and mouse to the same actions.
 - Accepts a fake source so input can be unit-tested.
+- Phase 4 adds `secondary` (X), `tertiary` (Y), `leftTrigger` (LT) and `rightTrigger` (RT), used by the on-screen keyboard (backspace, space, shift, done). While a text field is being edited, physical-keyboard characters, Backspace and Enter go to the text instead of being mapped to actions.
+- A focusable may consume directions itself (`onDirection`), e.g. the date picker uses up/down to change values.
 
 Validate on real hardware: a pad only appears after the first button press or movement; behavior when the window loses focus (e.g. while a game runs); disconnect and reconnect; layouts that do not report the `standard` mapping; dead-zone and repeat-rate tuning. Spatial navigation (decided in Phase 3): an **own focus manager** (no dependency), one per app, that picks the nearest focusable element in the pressed direction, remembers focus per screen and restores it when a dialog closes. The rules in `DESIGN_SYSTEM.md` §8 apply.
 
@@ -285,7 +288,7 @@ Each game needs five images: a **square cover** (Library), a **portrait cover 60
 - A failed fetch keeps the existing cached art. Validate every download (content type, maximum size, decoded dimensions) before saving.
 - Do not bundle or redistribute fetched images; the cache is personal and local.
 
-**Open sub-decisions:** cache eviction; stored sizes/variants (decide after measuring); the fallback look when a game has no 1920×1080 image; and the native file dialog used to pick executables and images, which is not navigable with a controller (conflicts with `PRODUCT.md` §6.6 for the add-game flow; may need a custom controller-friendly file browser).
+**Open sub-decisions:** cache eviction; stored sizes/variants (decide after measuring); the fallback look when a game has no 1920×1080 image; Picking files (decided in Phase 4): an **own controller-friendly file browser**. Main lists drives, a few known folders, folder names and only files with the allowed extensions (`.exe` for executables, `.png`/`.jpg`/`.jpeg`/`.webp` for images); it never returns file contents, and the chosen path is validated again in main when saving. A "Usar janela do Windows" button opens the native dialog for mouse users. Local artwork import: main reads the file (max 20 MB), checks the real type by its magic bytes, decodes it to get the dimensions, checks the kind's proportion (background 16:9, ±5%), copies it into the cache and saves it with `user_selected = 1`.
 
 ### 3.14 D-16 — `appdetails` refresh frequency (Accepted: once, on discovery)
 
@@ -463,7 +466,7 @@ A discovery result always carries warnings and errors, so partial failure is vis
 | --- | --- | --- |
 | Discovery | `libraryfolders.vdf` + manifests (D-12) | User adds games |
 | Metadata and genres | `appdetails` | None |
-| Installation state | Manifest `StateFlags`, tri-state (D-12) | To be defined; do not reuse Steam logic |
+| Installation state | Manifest `StateFlags`, tri-state (D-12) | Executable exists → 1, missing → 0, read error → unknown (Phase 4) |
 | Launch | `steam://rungameid/<appid>` (D-17) | Executable + args + working dir |
 | Session observation | Best-effort: manifest `AppRunning`, process polling as fallback | Reliable for direct child processes |
 | Achievements | Steam Web API | Not supported |
@@ -651,6 +654,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-01 | 0.7 | Accepted D-14 (npm, electron-vite, Vitest, ESLint + Prettier, strict TypeScript); documented the `better-sqlite3` Node/Electron ABI rule and the `node:sqlite` check for the Phase 1 spike. Phase 1 unblocked |
 | 2026-11-01 | 0.8 | Accepted D-15 (artwork). Aligned `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md` and `ROADMAP.md` with all accepted decisions. Recorded the open Home cover type |
 | 2026-11-01 | 0.9 | Added a fifth art type: portrait cover 600×900 for the Home screen. Renamed `cover` to `cover_square`; added `cover_portrait` |
+| 2026-11-02 | 0.14 | Phase 4 decisions: emulator defaults on origins (pre-fill only), `playtime_offset` for user-entered playtime, manual install state from the executable, own file browser with native-dialog fallback, local artwork import rules, new input actions (X, Y, LT, RT) and text-entry mode |
 | 2026-11-02 | 0.13 | Phase 3 decisions: own focus manager; `previousSection`/`nextSection` actions (LB/RB); `equon-art://` protocol for cached artwork; React Testing Library + jsdom; separate dev user-data folder and seed script |
 | 2026-11-02 | 0.12 | D-08: Steam playtime and last played synced once per launcher start (GetOwnedGames) and overwritten; sessions add on top until the next start (`steam_playtime_baseline`, `steam_synced_at`) |
 | 2026-11-02 | 0.11 | Phase 2 decisions: D-05 changed to an extensible `ORIGINS` table (built-in `steam`, `manual`, `yuzu`, `ps2`; user-created origins); D-08 interrupted sessions add time up to their last heartbeat (`last_seen_at`) |

@@ -144,15 +144,18 @@ displays.
 -   [ ] Record each session in `PLAY_SESSIONS`, update `last_seen_at`
     periodically (heartbeat) and derive `playtime` (minutes) from the
     completed and interrupted sessions' seconds in one transaction.
--   [ ] Let the user choose local artwork files for a manual game.
--   [ ] Decide how executables and images are picked with a controller
-    (the native file dialog is not controller-navigable).
+-   [ ] Let the user choose a local background image (1920×1080) for a
+    manual game; covers come from SteamGridDB in Phase 6.
+-   [ ] Own controller-friendly file browser for executables, ROMs and
+    images, with a "Usar janela do Windows" fallback (decided).
+-   [ ] On-screen keyboard and the add/edit game form (mockups "add game").
 -   [ ] On startup, mark sessions left `running` as `interrupted`,
     closed at their last heartbeat, and add their time (D-08).
 -   [ ] Let the user pick the origin of a manual game and manage their
     own origins (create, rename, delete unused), e.g. for a new emulator.
--   [ ] Decide whether an emulator origin stores its executable so each
-    game only needs the ROM path.
+-   [ ] Emulator defaults on origins that pre-fill the form (decided);
+    user-entered playtime (`playtime_offset`); manual install state
+    from the executable.
 -   [ ] Validate with real games from other launchers (e.g. Epic Games
     Store), which are added manually with `origin = manual`. Document
     games that fail to start from their `.exe` directly because they

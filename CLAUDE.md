@@ -22,7 +22,7 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 
 - Phases 0–3 are complete (Phase 1 spike results: `docs/ARCHITECTURE.md` §3.1). **Work only on the phase the owner names** (next: Phase 4 — manual-game vertical slice). Do not start the next phase on your own.
 - Before non-trivial work, propose a short plan and wait for approval.
-- Open decisions: D-13 (installer, Phase 8), where to persist preferences, whether an emulator origin stores its executable (Phase 4). If a task depends on an open item, ask instead of deciding.
+- Open decisions: D-13 (installer, Phase 8), where to persist preferences. If a task depends on an open item, ask instead of deciding.
 
 ## Stack and tooling (accepted)
 
@@ -53,7 +53,7 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 - Booleans are `INTEGER` 0/1; timestamps are ISO-8601 UTC `TEXT`; SteamID64 is `TEXT` (exceeds JS safe integers); App IDs are `INTEGER`.
 - `GAMES.installed`: `1` installed, `0` confirmed not installed, `NULL` unknown. **A failed read must never write `0`.** Absent games become `0` only if `libraryfolders.vdf` and every library were read successfully; otherwise `NULL`.
 - Never overwrite `hidden`, `beated` or user-selected artwork during sync/upserts.
-- `playtime` (minutes) = `floor(sum of completed + interrupted session seconds / 60)`, recomputed in the same transaction that closes the session. Every observed session counts, for every origin. If the launcher dies, `running` sessions become `interrupted` at their last heartbeat (`last_seen_at`). Never negative.
+- `playtime` (minutes) = `floor(sum of completed + interrupted session seconds / 60)`, recomputed in the same transaction that closes the session. Every observed session counts, for every origin. Non-Steam games add the user-entered `playtime_offset`. If the launcher dies, `running` sessions become `interrupted` at their last heartbeat (`last_seen_at`). Never negative.
 - Steam games: once per launcher start, `GetOwnedGames` overwrites `time_last_played` and the Steam baseline; then `playtime = steam_playtime_baseline + floor(seconds of counted sessions started since steam_synced_at / 60)`. A failed sync changes nothing. This is the only automatic sync at startup (`DATA_BASE_CONTEXT.md` §3.11).
 - All tables are `STRICT`; booleans and enums always have `CHECK`s.
 - Related writes (session + playtime, achievements + counters) happen in **one transaction**. Repeated syncs with the same data change nothing.

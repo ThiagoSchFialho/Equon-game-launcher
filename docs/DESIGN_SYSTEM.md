@@ -320,7 +320,10 @@ comportamento para escalonamento de interface e DPI do Windows.
     | Analógico direito | `scroll` | Page Up / Page Down |
     | LB / RB | `previousSection` / `nextSection` | Q / E |
     | ☰ (Menu) | `menu` | M, tecla de menu de contexto |
-    | X / Y | filtro / busca (Fase 5) | — |
+    | X / Y | `secondary` / `tertiary`: no teclado virtual, apagar / espaço; na Biblioteca, filtro / busca (Fase 5) | — |
+    | LT / RT | `leftTrigger` / `rightTrigger`: no teclado virtual, maiúsculas / pronto | — |
+
+    Ao editar um campo de texto, o teclado físico digita normalmente (letras, Backspace, Enter) em vez de acionar atalhos.
 
     O mouse foca ao passar e confirma ao clicar.
 -   Não capturar entradas globais que impeçam o uso normal de campos de
