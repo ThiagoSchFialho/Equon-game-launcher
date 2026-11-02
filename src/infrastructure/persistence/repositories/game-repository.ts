@@ -20,6 +20,7 @@ interface GameRow {
   metadata_fetched_at: string | null
   steam_playtime_baseline: number | null
   steam_synced_at: string | null
+  playtime_offset: number
 }
 
 const toGame = (row: GameRow): Game => ({
@@ -34,6 +35,7 @@ const toGame = (row: GameRow): Game => ({
   hidden: toBool(row.hidden),
   installed: toNullableBool(row.installed),
   playtime: row.playtime,
+  playtimeOffset: row.playtime_offset,
   beated: toBool(row.beated),
   requiredAge: row.required_age,
   metadataFetchedAt: row.metadata_fetched_at
@@ -43,8 +45,10 @@ const countedStatuses = COUNTED_SESSION_STATUSES.map((s) => `'${s}'`).join(', ')
 
 export function createGameRepository(db: SqliteDatabase): GameRepository {
   const insert = db.prepare<Record<string, unknown>, GameRow>(`
-    INSERT INTO games (origin, steam_id, title, description, developer, release_date, required_age, installed)
-    VALUES (@origin, @steamAppId, @title, @description, @developer, @releaseDate, @requiredAge, @installed)
+    INSERT INTO games
+      (origin, steam_id, title, description, developer, release_date, required_age, installed, playtime_offset)
+    VALUES
+      (@origin, @steamAppId, @title, @description, @developer, @releaseDate, @requiredAge, @installed, @playtimeOffset)
     RETURNING *`)
   const selectById = db.prepare<[number], GameRow>('SELECT * FROM games WHERE id = ?')
   const selectAll = db.prepare<[], GameRow>('SELECT * FROM games ORDER BY title COLLATE NOCASE, id')
@@ -68,6 +72,16 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
   const updateFlags = db.prepare<Record<string, unknown>, GameRow>(`
     UPDATE games SET hidden = COALESCE(@hidden, hidden), beated = COALESCE(@beated, beated)
     WHERE id = @id RETURNING *`)
+  // User-editable fields only; flags, playtime and Steam data are left alone.
+  const updateManual = db.prepare<Record<string, unknown>, GameRow>(`
+    UPDATE games SET
+      origin = @origin, title = @title, description = @description, developer = @developer,
+      release_date = @releaseDate, required_age = @requiredAge, playtime_offset = @playtimeOffset
+    WHERE id = @id AND origin <> 'steam'
+    RETURNING *`)
+  const updateInstalled = db.prepare<[number | null, number]>(
+    'UPDATE games SET installed = ? WHERE id = ?'
+  )
   const remove = db.prepare<[number]>('DELETE FROM games WHERE id = ?')
 
   // Sessions not yet included in the Steam baseline: all of them when the game
@@ -112,7 +126,8 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
           developer: game.developer ?? null,
           releaseDate: game.releaseDate ?? null,
           requiredAge: game.requiredAge ?? null,
-          installed: toNullableBit(game.installed)
+          installed: toNullableBit(game.installed),
+          playtimeOffset: game.playtimeOffset ?? 0
         }) as GameRow
       ),
 
@@ -145,6 +160,17 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
         }),
         id
       ),
+
+    updateManual: (id, fields) =>
+      db.transaction(() => {
+        found(updateManual.get({ id, ...fields }), id)
+        // The offset may have changed: playtime is derived from it.
+        return recomputePlayStats(id)
+      })(),
+
+    setInstalled: (id, installed) => {
+      updateInstalled.run(toNullableBit(installed), id)
+    },
 
     delete: (id) => remove.run(id).changes > 0,
 
@@ -179,7 +205,8 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
       )
       const playtime = playtimeMinutes(
         sessions.map((s) => s.duration_seconds),
-        game.steam_playtime_baseline ?? 0
+        // Steam games use the synced baseline; others the user-entered offset.
+        game.steam_playtime_baseline ?? game.playtime_offset
       )
       return found(updatePlayStats.get({ id, playtime, lastPlayed }), id)
     })()

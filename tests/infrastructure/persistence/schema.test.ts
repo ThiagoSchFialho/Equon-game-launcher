@@ -26,7 +26,7 @@ describe('origins', () => {
   it('seeds the built-in origins', () => {
     const rows = db.prepare('SELECT key, name, builtin FROM origins ORDER BY key').all()
     expect(rows).toEqual([
-      { key: 'manual', name: 'PC', builtin: 1 },
+      { key: 'manual', name: 'Jogo Local', builtin: 1 },
       { key: 'ps2', name: 'PlayStation 2', builtin: 1 },
       { key: 'steam', name: 'Steam', builtin: 1 },
       { key: 'yuzu', name: 'Yuzu', builtin: 1 }

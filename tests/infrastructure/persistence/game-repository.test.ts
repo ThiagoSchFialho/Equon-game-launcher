@@ -27,6 +27,7 @@ describe('GameRepository basics', () => {
       hidden: false,
       installed: null,
       playtime: 0,
+      playtimeOffset: 0,
       beated: false,
       requiredAge: null,
       metadataFetchedAt: null

@@ -16,8 +16,10 @@ export interface Game {
   timeLastPlayed: string | null
   hidden: boolean
   installed: InstallState
-  /** Minutes measured by the launcher (D-08). */
+  /** Minutes: measured sessions plus the Steam baseline or the user-entered offset (D-08). */
   playtime: number
+  /** Minutes the user entered for a non-Steam game (time played elsewhere). */
+  playtimeOffset: number
   beated: boolean
   requiredAge: string | null
   /** ISO-8601 UTC; null = metadata not fetched yet or last fetch failed (D-16). */

@@ -5,8 +5,10 @@ import type {
   GameArtwork,
   Genre,
   InstallState,
+  LaunchConfig,
   Origin,
   OriginKey,
+  PlaySession,
   Tier
 } from '../domain'
 
@@ -26,6 +28,8 @@ export interface OriginRepository {
   rename(key: OriginKey, name: string): Origin
   /** Fails for built-in origins and for origins that still have games. */
   delete(key: OriginKey): void
+  /** Emulator defaults that pre-fill the add-game form; null clears them. */
+  setDefaults(key: OriginKey, executablePath: string | null, args: string[] | null): Origin
 }
 
 export interface NewGame {
@@ -37,6 +41,18 @@ export interface NewGame {
   releaseDate?: string | null
   requiredAge?: string | null
   installed?: InstallState
+  playtimeOffset?: number
+}
+
+/** Fields the user edits on a non-Steam game. */
+export interface ManualGameFields {
+  origin: OriginKey
+  title: string
+  description: string | null
+  developer: string | null
+  releaseDate: string | null
+  requiredAge: string | null
+  playtimeOffset: number
 }
 
 /** Data the Steam adapter owns. Missing or empty values never replace stored ones. */
@@ -72,6 +88,10 @@ export interface GameRepository {
   /** Never touches hidden, beated, playtime, time_last_played or installed. */
   upsertSteamGame(game: SteamGameUpsert): Game
   setFlags(id: number, flags: GameFlags): Game
+  /** Updates the user-editable fields of a non-Steam game (not flags or playtime itself). */
+  updateManual(id: number, fields: ManualGameFields): Game
+  /** Writes the install state; callers never pass false after a failed read. */
+  setInstalled(id: number, installed: InstallState): void
   delete(id: number): boolean
   /**
    * Recomputes playtime from completed and interrupted sessions (D-08), on top
@@ -85,6 +105,23 @@ export interface GameRepository {
    * Returns how many games were updated. Unknown App IDs are ignored.
    */
   applySteamPlayStats(stats: readonly SteamPlayStats[], syncedAt: string): number
+}
+
+export interface LaunchConfigRepository {
+  get(gameId: number): LaunchConfig | null
+  save(config: LaunchConfig): void
+}
+
+export interface SessionRepository {
+  /** Inserts a running session (last_seen_at = started_at); one running session per game. */
+  start(gameId: number, startedAt: string): PlaySession
+  /** Heartbeat while the game is observed. */
+  touch(sessionId: number, at: string): void
+  /** Closes a running session as completed at `endedAt`. */
+  complete(sessionId: number, endedAt: string): PlaySession
+  listRunning(): PlaySession[]
+  /** Closes a running session as interrupted at its last heartbeat. */
+  interrupt(sessionId: number): PlaySession
 }
 
 export interface GenreRepository {
@@ -135,6 +172,24 @@ export interface ArtworkRepository {
    */
   save(artwork: GameArtwork): boolean
 }
+
+export interface Clock {
+  now(): Date
+}
+
+/** A started game process; `exited` resolves when it ends (any exit code). */
+export interface RunningProcess {
+  pid: number
+  exited: Promise<void>
+}
+
+export interface ProcessLauncher {
+  /** Starts the executable without a shell; rejects if it cannot be started. */
+  launch(config: LaunchConfig): Promise<RunningProcess>
+}
+
+/** Repeating timer (heartbeats); returns a function that stops it. */
+export type Repeat = (intervalMs: number, tick: () => void) => () => void
 
 export interface TrophyCounters {
   platine: number

@@ -1,5 +1,17 @@
 export type SessionStatus = 'running' | 'completed' | 'interrupted'
 
+export interface PlaySession {
+  id: number
+  gameId: number
+  /** ISO-8601 UTC */
+  startedAt: string
+  /** Last launcher heartbeat while the game was observed. */
+  lastSeenAt: string
+  endedAt: string | null
+  durationSeconds: number | null
+  status: SessionStatus
+}
+
 /** Statuses whose duration counts toward playtime (D-08). */
 export const COUNTED_SESSION_STATUSES: readonly SessionStatus[] = ['completed', 'interrupted']
 

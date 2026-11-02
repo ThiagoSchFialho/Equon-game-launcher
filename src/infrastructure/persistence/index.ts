@@ -7,6 +7,8 @@ export { createAchievementRepository } from './repositories/achievement-reposito
 export { createArtworkRepository } from './repositories/artwork-repository'
 export { createGameRepository } from './repositories/game-repository'
 export { createGenreRepository } from './repositories/genre-repository'
+export { createLaunchConfigRepository } from './repositories/launch-config-repository'
 export { createOriginRepository } from './repositories/origin-repository'
+export { createSessionRepository } from './repositories/session-repository'
 export { createUnitOfWork } from './repositories/unit-of-work'
 export { createUserRepository } from './repositories/user-repository'
