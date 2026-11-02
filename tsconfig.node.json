@@ -14,6 +14,11 @@
   "compilerOptions": {
     "composite": true,
     "noImplicitAny": true,
-    "types": ["electron-vite/node"]
-  }
+    "types": [
+      "electron-vite/node"
+    ]
+  },
+  "exclude": [
+    "tests/renderer/**/*"
+  ]
 }

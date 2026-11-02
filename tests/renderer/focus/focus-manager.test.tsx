@@ -1,0 +1,248 @@
+// @vitest-environment jsdom
+import { act, cleanup, render, screen } from '@testing-library/react'
+import { useState } from 'react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { FocusManager } from '../../../src/renderer/src/focus/focus-manager'
+import { FocusProvider, FocusScope } from '../../../src/renderer/src/focus/FocusProvider'
+import { useFocusable, useScreenActions } from '../../../src/renderer/src/focus/focus-context'
+
+// jsdom has no layout: give each element a rect from its data attributes.
+beforeEach(() => {
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+    this: HTMLElement
+  ) {
+    const x = Number(this.dataset.x ?? 0) * 110
+    const y = Number(this.dataset.y ?? 0) * 110
+    return {
+      left: x,
+      top: y,
+      width: 100,
+      height: 100,
+      right: x + 100,
+      bottom: y + 100,
+      x,
+      y
+    } as DOMRect
+  })
+})
+
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+})
+
+function Item({
+  id,
+  x,
+  y = 0,
+  onConfirm,
+  onMenu,
+  autoFocus
+}: {
+  id: string
+  x: number
+  y?: number
+  onConfirm?: () => void
+  onMenu?: () => void
+  autoFocus?: boolean
+}): React.JSX.Element {
+  const { setElement, focused, mouse } = useFocusable<HTMLButtonElement>(id, {
+    onConfirm,
+    onMenu,
+    autoFocus
+  })
+  return (
+    <button ref={setElement} data-x={x} data-y={y} data-focused={focused} {...mouse}>
+      {id}
+    </button>
+  )
+}
+
+const flush = (): Promise<void> => act(async () => {})
+const focusedText = (): string | null =>
+  document.querySelector('[data-focused="true"]')?.textContent ?? null
+
+describe('focus manager', () => {
+  it('focuses the first element, moves spatially and confirms', async () => {
+    const manager = new FocusManager()
+    const confirm = vi.fn()
+    render(
+      <FocusProvider manager={manager}>
+        <FocusScope id="screen">
+          <Item id="a" x={0} />
+          <Item id="b" x={1} onConfirm={confirm} />
+          <Item id="c" x={0} y={1} />
+        </FocusScope>
+      </FocusProvider>
+    )
+    await flush()
+    expect(focusedText()).toBe('a')
+
+    act(() => void manager.handle('right'))
+    expect(focusedText()).toBe('b')
+    act(() => void manager.handle('confirm'))
+    expect(confirm).toHaveBeenCalledOnce()
+
+    act(() => void manager.handle('left'))
+    act(() => void manager.handle('down'))
+    expect(focusedText()).toBe('c')
+    // No wrap-around at the edges.
+    expect(manager.handle('down')).toBe(false)
+    expect(focusedText()).toBe('c')
+  })
+
+  it('honours autoFocus', async () => {
+    const manager = new FocusManager()
+    render(
+      <FocusProvider manager={manager}>
+        <FocusScope id="screen">
+          <Item id="a" x={0} />
+          <Item id="b" x={1} autoFocus />
+        </FocusScope>
+      </FocusProvider>
+    )
+    await flush()
+    expect(focusedText()).toBe('b')
+  })
+
+  it('traps focus in an open dialog and restores it on close', async () => {
+    const manager = new FocusManager()
+    function Screen(): React.JSX.Element {
+      const [open, setOpen] = useState(false)
+      return (
+        <FocusScope id="screen">
+          <Item id="a" x={0} />
+          <Item id="opener" x={1} onConfirm={() => setOpen(true)} />
+          {open && <Dialog onClose={() => setOpen(false)} />}
+        </FocusScope>
+      )
+    }
+    function Dialog({ onClose }: { onClose: () => void }): React.JSX.Element {
+      useScreenActions({ back: onClose }, true)
+      return (
+        <FocusScope id="dialog">
+          <Item id="first" x={5} y={5} />
+          <Item id="close" x={5} y={6} onConfirm={onClose} />
+        </FocusScope>
+      )
+    }
+    render(
+      <FocusProvider manager={manager}>
+        <Screen />
+      </FocusProvider>
+    )
+    await flush()
+    act(() => void manager.handle('right'))
+    expect(focusedText()).toBe('opener')
+
+    act(() => void manager.handle('confirm'))
+    await flush()
+    expect(focusedText()).toBe('first')
+    // Spatial moves stay inside the dialog even though "a" is to the left.
+    expect(manager.handle('left')).toBe(false)
+    act(() => void manager.handle('down'))
+    expect(focusedText()).toBe('close')
+
+    act(() => void manager.handle('back'))
+    await flush()
+    expect(focusedText()).toBe('opener')
+  })
+
+  it('re-homes focus to the nearest element when the focused one disappears', async () => {
+    const manager = new FocusManager()
+    function List(): React.JSX.Element {
+      const [items, setItems] = useState(['a', 'b', 'c'])
+      return (
+        <FocusScope id="screen">
+          {items.map((id, i) => (
+            <Item
+              key={id}
+              id={id}
+              x={i}
+              onConfirm={() => setItems((all) => all.filter((x) => x !== id))}
+            />
+          ))}
+        </FocusScope>
+      )
+    }
+    render(
+      <FocusProvider manager={manager}>
+        <List />
+      </FocusProvider>
+    )
+    await flush()
+    act(() => void manager.handle('right'))
+    expect(focusedText()).toBe('b')
+    act(() => void manager.handle('confirm'))
+    await flush()
+    expect(screen.queryByText('b')).toBeNull()
+    expect(focusedText()).not.toBeNull()
+  })
+
+  it('routes screen actions to the top layer; a modal layer blocks those below', async () => {
+    const manager = new FocusManager()
+    const screenBack = vi.fn()
+    const screenNext = vi.fn()
+    const dialogBack = vi.fn()
+    function Screen({ dialog }: { dialog: boolean }): React.JSX.Element {
+      useScreenActions({ back: screenBack, nextSection: screenNext })
+      return (
+        <FocusScope id="screen">
+          <Item id="a" x={0} />
+          {dialog && <Dialog />}
+        </FocusScope>
+      )
+    }
+    function Dialog(): React.JSX.Element {
+      useScreenActions({ back: dialogBack }, true)
+      return (
+        <FocusScope id="dialog">
+          <Item id="d" x={3} />
+        </FocusScope>
+      )
+    }
+    const { rerender } = render(
+      <FocusProvider manager={manager}>
+        <Screen dialog={false} />
+      </FocusProvider>
+    )
+    await flush()
+    manager.handle('nextSection')
+    expect(screenNext).toHaveBeenCalledOnce()
+
+    rerender(
+      <FocusProvider manager={manager}>
+        <Screen dialog />
+      </FocusProvider>
+    )
+    await flush()
+    manager.handle('back')
+    manager.handle('nextSection')
+    expect(dialogBack).toHaveBeenCalledOnce()
+    expect(screenBack).not.toHaveBeenCalled()
+    expect(screenNext).toHaveBeenCalledOnce()
+  })
+
+  it('supports mouse: click focuses and confirms, right click opens the menu', async () => {
+    const manager = new FocusManager()
+    const confirm = vi.fn()
+    const menu = vi.fn()
+    render(
+      <FocusProvider manager={manager}>
+        <FocusScope id="screen">
+          <Item id="a" x={0} />
+          <Item id="b" x={1} onConfirm={confirm} onMenu={menu} />
+        </FocusScope>
+      </FocusProvider>
+    )
+    await flush()
+    act(() => screen.getByText('b').click())
+    expect(focusedText()).toBe('b')
+    expect(confirm).toHaveBeenCalledOnce()
+    act(() => {
+      screen.getByText('a').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }))
+    })
+    expect(focusedText()).toBe('a')
+    expect(menu).not.toHaveBeenCalled()
+  })
+})
