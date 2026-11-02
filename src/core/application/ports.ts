@@ -1,4 +1,14 @@
-import type { Achievement, Game, Genre, InstallState, Origin, OriginKey, Tier } from '../domain'
+import type {
+  Achievement,
+  ArtworkKind,
+  Game,
+  GameArtwork,
+  Genre,
+  InstallState,
+  Origin,
+  OriginKey,
+  Tier
+} from '../domain'
 
 // Ports implemented by infrastructure. They are synchronous because the
 // SQLite driver is (ARCHITECTURE.md §12); revisit if persistence moves to a worker.
@@ -112,6 +122,18 @@ export interface AchievementRepository {
   /** global_percent descending (least rare first), unknown last, then display name and api name. */
   listLocked(gameId: number): Achievement[]
   progress(gameId: number): AchievementProgress
+}
+
+export interface ArtworkRepository {
+  get(gameId: number, kind: ArtworkKind): GameArtwork | null
+  /** Kinds with cached artwork, per game id. */
+  listKinds(): Map<number, ArtworkKind[]>
+  /**
+   * Inserts or replaces the artwork of (game, kind). An automatic save
+   * (userSelected = false) never replaces art the user selected.
+   * Returns false when the existing user-selected art was kept.
+   */
+  save(artwork: GameArtwork): boolean
 }
 
 export interface TrophyCounters {

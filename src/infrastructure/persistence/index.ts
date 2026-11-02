@@ -4,6 +4,7 @@ export { migrate, schemaVersion, latestVersion, type MigrationResult } from './m
 export { migrations } from './migrations'
 export { openAppDatabase, type AppDatabase } from './open-app-database'
 export { createAchievementRepository } from './repositories/achievement-repository'
+export { createArtworkRepository } from './repositories/artwork-repository'
 export { createGameRepository } from './repositories/game-repository'
 export { createGenreRepository } from './repositories/genre-repository'
 export { createOriginRepository } from './repositories/origin-repository'

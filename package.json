@@ -17,6 +17,7 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
+    "dev:seed": "electron-vite dev -- --seed",
     "build": "npm run typecheck && electron-vite build",
     "postinstall": "install-electron",
     "build:unpack": "npm run build && electron-builder --dir",

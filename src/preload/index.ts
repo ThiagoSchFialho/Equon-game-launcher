@@ -5,6 +5,10 @@ import { IpcChannel, type EquonApi } from '../shared/ipc/contract'
 const api: EquonApi = {
   app: {
     getInfo: () => ipcRenderer.invoke(IpcChannel.appGetInfo)
+  },
+  games: {
+    list: () => ipcRenderer.invoke(IpcChannel.gamesList),
+    get: (id) => ipcRenderer.invoke(IpcChannel.gamesGet, id)
   }
 }
 
