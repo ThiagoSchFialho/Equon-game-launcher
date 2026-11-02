@@ -29,3 +29,25 @@ export class OriginInUseError extends Error {
     super(`Origin "${key}" still has games`)
   }
 }
+
+export type LaunchErrorCode =
+  'not-found' | 'no-config' | 'not-installed' | 'already-running' | 'start-failed'
+
+export class LaunchError extends Error {
+  constructor(
+    readonly code: LaunchErrorCode,
+    detail?: string
+  ) {
+    super(detail ? `Launch failed (${code}): ${detail}` : `Launch failed (${code})`)
+  }
+}
+
+/** A field of a manual game that failed validation. */
+export class ManualGameValidationError extends Error {
+  constructor(
+    readonly field: string,
+    readonly code: string
+  ) {
+    super(`Invalid ${field}: ${code}`)
+  }
+}

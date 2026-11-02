@@ -1,0 +1,204 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  LaunchError,
+  createGameRunner,
+  recoverInterruptedSessions,
+  type GameRunner,
+  type RunningProcess
+} from '../../../src/core/application'
+import type { LaunchConfig } from '../../../src/core/domain'
+import {
+  createGameRepository,
+  createLaunchConfigRepository,
+  createSessionRepository,
+  createUnitOfWork,
+  type SqliteDatabase
+} from '../../../src/infrastructure/persistence'
+import { createTestDb } from '../../helpers/db'
+
+let db: SqliteDatabase
+let clock: Date
+let ticks: (() => void)[]
+let exitProcess: () => void
+let launched: LaunchConfig[]
+let runningChanges: number[][]
+let launchImpl: (config: LaunchConfig) => Promise<RunningProcess>
+let runner: GameRunner
+
+const games = (): ReturnType<typeof createGameRepository> => createGameRepository(db)
+const flush = (): Promise<void> => new Promise((r) => setTimeout(r, 0))
+
+function addManualGame(installed: boolean | null = true): number {
+  const game = games().create({ origin: 'manual', title: 'Game', installed })
+  createLaunchConfigRepository(db).save({
+    gameId: game.id,
+    executablePath: 'C:/Games/game.exe',
+    arguments: ['-windowed'],
+    workingDirectory: null
+  })
+  return game.id
+}
+
+beforeEach(() => {
+  db = createTestDb()
+  clock = new Date('2026-11-02T10:00:00Z')
+  ticks = []
+  launched = []
+  runningChanges = []
+  launchImpl = async (config) => {
+    launched.push(config)
+    return { pid: 4242, exited: new Promise<void>((r) => (exitProcess = r)) }
+  }
+  runner = createGameRunner({
+    games: games(),
+    configs: createLaunchConfigRepository(db),
+    sessions: createSessionRepository(db),
+    uow: createUnitOfWork(db),
+    launcher: { launch: (config) => launchImpl(config) },
+    clock: { now: () => clock },
+    repeat: (_ms, tick) => {
+      ticks.push(tick)
+      return () => (ticks = ticks.filter((t) => t !== tick))
+    },
+    heartbeatMs: 30_000,
+    onRunningChanged: (ids) => runningChanges.push(ids)
+  })
+})
+
+describe('game runner', () => {
+  it('launches, heartbeats and records the session when the process exits', async () => {
+    const id = addManualGame()
+    await runner.launch(id)
+
+    expect(launched[0]).toMatchObject({
+      executablePath: 'C:/Games/game.exe',
+      arguments: ['-windowed']
+    })
+    expect(runner.runningGameIds()).toEqual([id])
+    expect(runningChanges.at(-1)).toEqual([id])
+
+    clock = new Date('2026-11-02T10:00:30Z')
+    ticks.forEach((tick) => tick())
+    expect(createSessionRepository(db).listRunning()[0].lastSeenAt).toBe('2026-11-02T10:00:30Z')
+
+    clock = new Date('2026-11-02T11:30:20Z')
+    exitProcess()
+    await flush()
+
+    expect(runner.runningGameIds()).toEqual([])
+    expect(runningChanges.at(-1)).toEqual([])
+    expect(ticks).toHaveLength(0)
+    expect(games().getById(id)).toMatchObject({
+      playtime: 90,
+      timeLastPlayed: '2026-11-02T11:30:20Z'
+    })
+  })
+
+  it('accumulates seconds across sessions without double counting', async () => {
+    const id = addManualGame()
+    for (const [start, end] of [
+      ['2026-11-02T10:00:00Z', '2026-11-02T10:00:40Z'],
+      ['2026-11-02T12:00:00Z', '2026-11-02T12:00:40Z']
+    ]) {
+      clock = new Date(start)
+      await runner.launch(id)
+      clock = new Date(end)
+      exitProcess()
+      await flush()
+    }
+    expect(games().getById(id)?.playtime).toBe(1) // 80 s
+  })
+
+  it('refuses games that cannot be launched', async () => {
+    const steam = games().upsertSteamGame({ steamAppId: 620, title: 'Portal 2' })
+    const noConfig = games().create({ origin: 'manual', title: 'No config' })
+    const notInstalled = addManualGame(false)
+
+    await expect(runner.launch(9999)).rejects.toMatchObject({ code: 'not-found' })
+    await expect(runner.launch(steam.id)).rejects.toMatchObject({ code: 'not-found' })
+    await expect(runner.launch(noConfig.id)).rejects.toMatchObject({ code: 'no-config' })
+    await expect(runner.launch(notInstalled)).rejects.toMatchObject({ code: 'not-installed' })
+    expect(launched).toEqual([])
+  })
+
+  it('refuses a second launch while the game runs or is starting', async () => {
+    const id = addManualGame()
+    const first = runner.launch(id)
+    await expect(runner.launch(id)).rejects.toMatchObject({ code: 'already-running' })
+    await first
+    await expect(runner.launch(id)).rejects.toBeInstanceOf(LaunchError)
+    expect(launched).toHaveLength(1)
+  })
+
+  it('records nothing when the process cannot start', async () => {
+    const id = addManualGame()
+    launchImpl = async () => {
+      throw new Error('ENOENT')
+    }
+    await expect(runner.launch(id)).rejects.toMatchObject({ code: 'start-failed' })
+    expect(createSessionRepository(db).listRunning()).toEqual([])
+    expect(runner.runningGameIds()).toEqual([])
+  })
+
+  it('reports a failure to close the session and frees the game', async () => {
+    const onError = vi.fn()
+    const sessions = createSessionRepository(db)
+    runner = createGameRunner({
+      games: games(),
+      configs: createLaunchConfigRepository(db),
+      sessions: {
+        ...sessions,
+        complete: () => {
+          throw new Error('disk full')
+        }
+      },
+      uow: createUnitOfWork(db),
+      launcher: { launch: (config) => launchImpl(config) },
+      clock: { now: () => clock },
+      repeat: () => () => {},
+      heartbeatMs: 30_000,
+      onRunningChanged: () => {},
+      onError
+    })
+    const id = addManualGame()
+    await runner.launch(id)
+    exitProcess()
+    await flush()
+    expect(onError).toHaveBeenCalledOnce()
+    expect(runner.runningGameIds()).toEqual([])
+    // The session stays running and is recovered on the next start.
+    expect(sessions.listRunning()).toHaveLength(1)
+  })
+})
+
+describe('recoverInterruptedSessions', () => {
+  it('closes running sessions at their last heartbeat and adds the time', () => {
+    const id = addManualGame()
+    const other = addManualGame()
+    const sessions = createSessionRepository(db)
+    const a = sessions.start(id, '2026-11-02T10:00:00Z')
+    sessions.touch(a.id, '2026-11-02T10:45:00Z')
+    sessions.start(other, '2026-11-02T09:00:00Z')
+
+    const affected = recoverInterruptedSessions({
+      games: games(),
+      sessions,
+      uow: createUnitOfWork(db)
+    })
+
+    expect(affected.sort()).toEqual([id, other].sort())
+    expect(sessions.listRunning()).toEqual([])
+    expect(games().getById(id)?.playtime).toBe(45)
+    expect(games().getById(other)?.playtime).toBe(0)
+  })
+
+  it('does nothing when no session was left running', () => {
+    expect(
+      recoverInterruptedSessions({
+        games: games(),
+        sessions: createSessionRepository(db),
+        uow: createUnitOfWork(db)
+      })
+    ).toEqual([])
+  })
+})

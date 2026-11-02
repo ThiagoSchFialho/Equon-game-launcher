@@ -1,3 +1,5 @@
 // Application: use cases and port interfaces. Same import restrictions as the domain.
 export * from './errors'
+export * from './game-runner'
+export * from './manual-games'
 export * from './ports'

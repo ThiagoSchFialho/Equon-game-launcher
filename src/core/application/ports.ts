@@ -188,6 +188,13 @@ export interface ProcessLauncher {
   launch(config: LaunchConfig): Promise<RunningProcess>
 }
 
+/** Result of checking a path from a launch configuration (never throws). */
+export type FileState = 'file' | 'directory' | 'missing' | 'unreadable'
+
+export interface FileInspector {
+  stateOf(path: string): FileState
+}
+
 /** Repeating timer (heartbeats); returns a function that stops it. */
 export type Repeat = (intervalMs: number, tick: () => void) => () => void
 
