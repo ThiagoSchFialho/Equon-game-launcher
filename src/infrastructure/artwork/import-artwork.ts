@@ -58,12 +58,60 @@ export interface ImportedArtwork {
   height: number
 }
 
+export interface PreparedArtwork {
+  bytes: Buffer
+  type: ImageType
+  width: number
+  height: number
+}
+
 /**
- * Validates a user-chosen image and copies it into the artwork cache as
- * `<gameId>/<kind>.<type>` (ARCHITECTURE.md §3.13). `decode` must fully
- * decode the image and return its real size (main uses Electron's
- * nativeImage), or null when it cannot.
+ * Validates a user-chosen image without writing anything
+ * (ARCHITECTURE.md §3.13): size limit, real type, full decode and proportion.
+ * `decode` must decode the image and return its real size (main uses
+ * Electron's nativeImage), or null when it cannot.
  */
+export function prepareArtwork(
+  sourcePath: string,
+  kind: ArtworkKind,
+  decode: (bytes: Buffer) => { width: number; height: number } | null
+): PreparedArtwork {
+  let bytes: Buffer
+  try {
+    if (statSync(sourcePath).size > MAX_ARTWORK_BYTES) throw new ArtworkImportFailure('too-large')
+    bytes = readFileSync(sourcePath)
+  } catch (error) {
+    if (error instanceof ArtworkImportFailure) throw error
+    throw new ArtworkImportFailure('unreadable')
+  }
+  const type = detectImageType(bytes)
+  if (!type) throw new ArtworkImportFailure('unsupported-type')
+  const size = decode(bytes)
+  if (!size || size.width <= 0 || size.height <= 0) throw new ArtworkImportFailure('undecodable')
+  if (!hasExpectedProportion(kind, size.width, size.height)) {
+    throw new ArtworkImportFailure('wrong-proportion')
+  }
+  return { bytes, type, width: size.width, height: size.height }
+}
+
+/** Writes prepared artwork as `<gameId>/<kind>.<type>`, replacing other formats of that kind. */
+export function writeArtwork(
+  cacheDir: string,
+  gameId: number,
+  kind: ArtworkKind,
+  artwork: PreparedArtwork
+): ImportedArtwork {
+  const folder = join(cacheDir, String(gameId))
+  mkdirSync(folder, { recursive: true })
+  for (const other of ['png', 'jpg', 'webp']) {
+    if (other !== artwork.type) rmSync(join(folder, `${kind}.${other}`), { force: true })
+  }
+  const localPath = `${gameId}/${kind}.${artwork.type}`
+  writeFileSync(join(cacheDir, localPath), artwork.bytes)
+  return { localPath, width: artwork.width, height: artwork.height }
+}
+
+/** prepareArtwork + writeArtwork. */
 export function importArtwork(options: {
   sourcePath: string
   cacheDir: string
@@ -71,32 +119,8 @@ export function importArtwork(options: {
   kind: ArtworkKind
   decode: (bytes: Buffer) => { width: number; height: number } | null
 }): ImportedArtwork {
-  let bytes: Buffer
-  try {
-    if (statSync(options.sourcePath).size > MAX_ARTWORK_BYTES) {
-      throw new ArtworkImportFailure('too-large')
-    }
-    bytes = readFileSync(options.sourcePath)
-  } catch (error) {
-    if (error instanceof ArtworkImportFailure) throw error
-    throw new ArtworkImportFailure('unreadable')
-  }
-  const type = detectImageType(bytes)
-  if (!type) throw new ArtworkImportFailure('unsupported-type')
-  const size = options.decode(bytes)
-  if (!size || size.width <= 0 || size.height <= 0) throw new ArtworkImportFailure('undecodable')
-  if (!hasExpectedProportion(options.kind, size.width, size.height)) {
-    throw new ArtworkImportFailure('wrong-proportion')
-  }
-
-  const folder = join(options.cacheDir, String(options.gameId))
-  mkdirSync(folder, { recursive: true })
-  for (const other of ['png', 'jpg', 'webp']) {
-    if (other !== type) rmSync(join(folder, `${options.kind}.${other}`), { force: true })
-  }
-  const localPath = `${options.gameId}/${options.kind}.${type}`
-  writeFileSync(join(options.cacheDir, localPath), bytes)
-  return { localPath, width: size.width, height: size.height }
+  const prepared = prepareArtwork(options.sourcePath, options.kind, options.decode)
+  return writeArtwork(options.cacheDir, options.gameId, options.kind, prepared)
 }
 
 /** Deletes a game's cached artwork folder (after the game row is removed). */

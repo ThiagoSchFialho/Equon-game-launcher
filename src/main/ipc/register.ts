@@ -1,39 +1,152 @@
-import { app, ipcMain } from 'electron'
+import { app, ipcMain, type BrowserWindow } from 'electron'
+import type { GameRunner } from '../../core/application'
 import { IpcChannel } from '../../shared/ipc/contract'
 import {
   appGetInfoArgs,
   appInfoSchema,
+  browserListingSchema,
+  editableGameSchema,
+  filesListArgs,
+  filesPickNativeArgs,
   gameDetailsResultSchema,
+  gameIdArgs,
+  gamesCreateArgs,
   gamesGetArgs,
   gamesListArgs,
-  gameSummaryListSchema
+  gameSummaryListSchema,
+  gamesUpdateArgs,
+  nativePickResultSchema,
+  noArgs,
+  originInfoSchema,
+  originListSchema,
+  originsCreateArgs,
+  originsRemoveArgs,
+  originsRenameArgs,
+  originsSetDefaultsArgs,
+  resultSchema,
+  runningIdsSchema
 } from '../../shared/ipc/schemas'
+import { z } from 'zod'
+import { listFiles, pickNative } from '../files/file-service'
+import type { ManualGameService } from '../games/manual-game-service'
 import { isAppUrl, type AppOrigin } from '../security/navigation'
-import { getGameDetails, listGameSummaries, type GameQueryDeps } from './game-queries'
+import {
+  getEditableGame,
+  getGameDetails,
+  listGameSummaries,
+  type GameQueryDeps
+} from './game-queries'
 import { createValidatedHandler } from './validated-handler'
 
-export function registerIpcHandlers(origin: AppOrigin, deps: GameQueryDeps): void {
-  const isTrustedSender = (url: string): boolean => isAppUrl(url, origin)
+export interface IpcDeps {
+  queries: GameQueryDeps
+  service: ManualGameService
+  runner: GameRunner
+  window: () => BrowserWindow | null
+}
+
+const idResult = resultSchema(z.strictObject({ id: z.number().int().positive() }))
+const nullResult = resultSchema(z.null())
+const originResult = resultSchema(originInfoSchema)
+
+export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
+  const trusted = (url: string): boolean => isAppUrl(url, origin)
+  const { queries, service } = deps
 
   ipcMain.handle(
     IpcChannel.appGetInfo,
-    createValidatedHandler(appGetInfoArgs, appInfoSchema, isTrustedSender, () => ({
+    createValidatedHandler(appGetInfoArgs, appInfoSchema, trusted, () => ({
       name: app.getName(),
       version: app.getVersion()
     }))
   )
 
+  // Games
   ipcMain.handle(
     IpcChannel.gamesList,
-    createValidatedHandler(gamesListArgs, gameSummaryListSchema, isTrustedSender, () =>
-      listGameSummaries(deps)
+    createValidatedHandler(gamesListArgs, gameSummaryListSchema, trusted, () =>
+      listGameSummaries(queries)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.gamesGet,
+    createValidatedHandler(gamesGetArgs, gameDetailsResultSchema, trusted, (id) =>
+      getGameDetails(queries, id)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.gamesGetEditable,
+    createValidatedHandler(gameIdArgs, editableGameSchema, trusted, (id) =>
+      getEditableGame(queries, id)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.gamesCreate,
+    createValidatedHandler(gamesCreateArgs, idResult, trusted, (form) => service.create(form))
+  )
+  ipcMain.handle(
+    IpcChannel.gamesUpdate,
+    createValidatedHandler(gamesUpdateArgs, idResult, trusted, (id, form) =>
+      service.update(id, form)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.gamesRemove,
+    createValidatedHandler(gameIdArgs, nullResult, trusted, (id) => service.remove(id))
+  )
+  ipcMain.handle(
+    IpcChannel.gamesLaunch,
+    createValidatedHandler(gameIdArgs, nullResult, trusted, (id) => service.launch(id))
+  )
+  ipcMain.handle(
+    IpcChannel.gamesRunning,
+    createValidatedHandler(noArgs, runningIdsSchema, trusted, () => deps.runner.runningGameIds())
+  )
+
+  // Origins
+  ipcMain.handle(
+    IpcChannel.originsList,
+    createValidatedHandler(noArgs, originListSchema, trusted, () => queries.origins.list())
+  )
+  ipcMain.handle(
+    IpcChannel.originsCreate,
+    createValidatedHandler(originsCreateArgs, originResult, trusted, (name) =>
+      service.createOrigin(name)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.originsRename,
+    createValidatedHandler(originsRenameArgs, originResult, trusted, (key, name) =>
+      service.renameOrigin(key, name)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.originsRemove,
+    createValidatedHandler(originsRemoveArgs, nullResult, trusted, (key) =>
+      service.removeOrigin(key)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.originsSetDefaults,
+    createValidatedHandler(originsSetDefaultsArgs, originResult, trusted, (key, exe, args) =>
+      service.setOriginDefaults(key, exe, args)
     )
   )
 
+  // Files
   ipcMain.handle(
-    IpcChannel.gamesGet,
-    createValidatedHandler(gamesGetArgs, gameDetailsResultSchema, isTrustedSender, (id) =>
-      getGameDetails(deps, id)
+    IpcChannel.filesList,
+    createValidatedHandler(
+      filesListArgs,
+      resultSchema(browserListingSchema),
+      trusted,
+      (path, kind) => listFiles(path, kind)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.filesPickNative,
+    createValidatedHandler(filesPickNativeArgs, nativePickResultSchema, trusted, (kind) =>
+      pickNative(deps.window(), kind)
     )
   )
 }

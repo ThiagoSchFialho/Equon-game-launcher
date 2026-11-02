@@ -3,17 +3,14 @@ import { join } from 'path'
 import { pathToFileURL } from 'url'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import {
-  createAchievementRepository,
   createArtworkRepository,
-  createGameRepository,
-  createGenreRepository,
-  createOriginRepository,
   openAppDatabase,
   type SqliteDatabase
 } from '../infrastructure/persistence'
 import { handleArtworkProtocol, registerArtworkScheme } from './artwork/artwork-protocol'
 import { registerIpcHandlers } from './ipc/register'
 import { hardenApp } from './security/harden'
+import { createServices } from './services'
 import type { AppOrigin } from './security/navigation'
 
 // Unpackaged runs (dev, preview) use their own data folder so they never
@@ -32,8 +29,10 @@ const appOrigin: AppOrigin = {
   rendererFileUrl: pathToFileURL(rendererFile).href
 }
 
+let mainWindow: BrowserWindow | null = null
+
 function createWindow(): void {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1280,
     height: 720,
     show: false,
@@ -48,14 +47,16 @@ function createWindow(): void {
     }
   })
 
-  mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
+  const window = mainWindow
+  window.on('ready-to-show', () => window.show())
+  window.on('closed', () => {
+    mainWindow = null
   })
 
   if (devServerUrl !== undefined) {
-    mainWindow.loadURL(devServerUrl)
+    window.loadURL(devServerUrl)
   } else {
-    mainWindow.loadFile(rendererFile)
+    window.loadFile(rendererFile)
   }
 }
 
@@ -86,16 +87,12 @@ app.whenReady().then(async () => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  const artwork = createArtworkRepository(db)
   hardenApp(appOrigin)
-  handleArtworkProtocol(artwork, artworkCacheDir)
-  registerIpcHandlers(appOrigin, {
-    games: createGameRepository(db),
-    origins: createOriginRepository(db),
-    artwork,
-    genres: createGenreRepository(db),
-    achievements: createAchievementRepository(db)
-  })
+  handleArtworkProtocol(createArtworkRepository(db), artworkCacheDir)
+  registerIpcHandlers(
+    appOrigin,
+    createServices(db, artworkCacheDir, () => mainWindow)
+  )
   createWindow()
 })
 

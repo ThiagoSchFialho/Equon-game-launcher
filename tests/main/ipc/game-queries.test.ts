@@ -9,6 +9,7 @@ import {
   createArtworkRepository,
   createGameRepository,
   createGenreRepository,
+  createLaunchConfigRepository,
   createOriginRepository
 } from '../../../src/infrastructure/persistence'
 import { gameDetailsSchema, gameSummaryListSchema } from '../../../src/shared/ipc/schemas'
@@ -23,7 +24,9 @@ beforeEach(() => {
     origins: createOriginRepository(db),
     artwork: createArtworkRepository(db),
     genres: createGenreRepository(db),
-    achievements: createAchievementRepository(db)
+    achievements: createAchievementRepository(db),
+    configs: createLaunchConfigRepository(db),
+    inspector: { stateOf: () => 'file' }
   }
 })
 

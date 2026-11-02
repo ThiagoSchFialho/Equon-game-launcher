@@ -2,42 +2,13 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../../src/renderer/src/App'
-import type { EquonApi, GameDetails, GameSummary } from '../../src/shared/ipc/contract'
-
-const summary = (id: number, title: string, extra: Partial<GameSummary> = {}): GameSummary => ({
-  id,
-  title,
-  origin: 'manual',
-  originName: 'PC',
-  installed: true,
-  playtime: 742,
-  timeLastPlayed: `2026-11-0${id}T10:00:00Z`,
-  beated: false,
-  artwork: [],
-  ...extra
-})
+import type { EquonApi } from '../../src/shared/ipc/contract'
+import { installFakeApi, summary } from './fake-api'
 
 const games = [summary(1, 'Ember Knights'), summary(2, 'Tidebound')]
 
-const details = (game: GameSummary): GameDetails => ({
-  ...game,
-  description: 'Uma descrição.',
-  developer: 'Estúdio A',
-  releaseDate: '2020-05-01',
-  requiredAge: '14',
-  genres: ['Ação'],
-  achievements: { total: 50, unlocked: 16, platinum: false }
-})
-
 function installApi(api: Partial<EquonApi['games']> = {}): void {
-  const equon: EquonApi = {
-    app: { getInfo: async () => ({ name: 'equon', version: '0.1.0' }) },
-    games: {
-      list: api.list ?? (async () => games),
-      get: api.get ?? (async (id) => details(games.find((g) => g.id === id) as GameSummary))
-    }
-  }
-  Object.defineProperty(window, 'equon', { value: equon, configurable: true })
+  installFakeApi(games, { games: api })
 }
 
 const press = (key: string): void => {
