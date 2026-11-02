@@ -1,7 +1,7 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.12
-**Status:** Draft — Phase 2 (database and domain)
+**Version:** 0.13
+**Status:** Draft — Phase 3 (UI shell and controller navigation)
 **Last updated:** 2026-11-02
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
 **Purpose:** Define technical boundaries, record architecture decisions, and list what is still unresolved before implementation starts.
@@ -194,11 +194,11 @@ Use the standard Gamepad API available in the renderer. Important detail: the br
 So a small input module in `renderer/input/`:
 
 - Polls the pads, detects press/release edges, applies dead zones, and repeats held directions at a controlled rate.
-- Emits **semantic actions** (`confirm`, `back`, `up/down/left/right`, `scroll`, `menu`). Screens and components depend only on these actions, never on raw button indices.
+- Emits **semantic actions** (`confirm`, `back`, `up/down/left/right`, `scroll`, `menu`, `previousSection`/`nextSection` for LB/RB). Screens and components depend only on these actions, never on raw button indices. The mapping table lives in `DESIGN_SYSTEM.md` §8.
 - Maps keyboard and mouse to the same actions.
 - Accepts a fake source so input can be unit-tested.
 
-Validate on real hardware: a pad only appears after the first button press or movement; behavior when the window loses focus (e.g. while a game runs); disconnect and reconnect; layouts that do not report the `standard` mapping; dead-zone and repeat-rate tuning. Still to decide: spatial navigation (own focus manager vs. a library); the rules in `DESIGN_SYSTEM.md` §8 apply either way.
+Validate on real hardware: a pad only appears after the first button press or movement; behavior when the window loses focus (e.g. while a game runs); disconnect and reconnect; layouts that do not report the `standard` mapping; dead-zone and repeat-rate tuning. Spatial navigation (decided in Phase 3): an **own focus manager** (no dependency), one per app, that picks the nearest focusable element in the pressed direction, remembers focus per screen and restores it when a dialog closes. The rules in `DESIGN_SYSTEM.md` §8 apply.
 
 ### 3.12 D-12 — Steam discovery, installation state and running state (Accepted)
 
@@ -279,7 +279,7 @@ Each game needs five images: a **square cover** (Library), a **portrait cover 60
 **Rules**
 - The SteamGridDB key is per user, set in Settings, encrypted with `safeStorage` (D-04), and never sent to the renderer or logged. Do not embed a shared key in the app; a proxy server contradicts the no-server requirement.
 - Fetch lazily when a game is added or discovered, through a throttled queue with bounded retries. Never block the UI. The app must be fully usable with placeholders and with no key configured (Steam games still get `header_image` and screenshots).
-- Cache on disk in the app data folder, one file per game per kind. Never hotlink remote images at runtime. Serve cached files to the renderer through a controlled mechanism, not arbitrary file paths.
+- Cache on disk in the app data folder, one file per game per kind. Never hotlink remote images at runtime. Serve cached files to the renderer through a controlled mechanism, not arbitrary file paths: a privileged `equon-art://<gameId>/<kind>` protocol handled in main, which looks up `GAME_ARTWORK`, resolves `local_path` inside the artwork cache folder (rejecting anything outside it) and serves the file. The CSP allows that scheme for images only.
 - Persistence: table `GAME_ARTWORK`, with kinds `cover_square`, `cover_portrait`, `logo`, `background` and `header`; defined in `DATA_BASE_CONTEXT.md` §3.9.
 - Artwork the user selected is never overwritten by an automatic fetch (same principle as `hidden` / `beated`). Refresh only on an explicit action or when art is missing.
 - A failed fetch keeps the existing cached art. Validate every download (content type, maximum size, decoded dimensions) before saving.
@@ -311,7 +311,8 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 | Runtime versions | Pin the Node version (`.nvmrc` and `engines`) and the exact Electron version. |
 | Build tool | **electron-vite**: separate builds for main, preload and renderer, matching §6. Before adopting, check that the project is actively maintained; fallback: the Electron Forge Vite template. Packaging (installer) stays a separate decision (D-13). |
 | Language | TypeScript with `strict: true`; `tsc --noEmit` as the typecheck script. |
-| Tests | **Vitest** for domain, application, persistence and adapter tests. React Testing Library for renderer components once the UI exists. Playwright in Electron mode for a smoke test later (not in Phase 1). |
+| Tests | **Vitest** for domain, application, persistence and adapter tests. React Testing Library + jsdom for renderer components (added in Phase 3). Playwright in Electron mode for a smoke test later (not in Phase 1). |
+| Dev data | `npm run dev` uses a separate user-data folder (`equon-game-launcher-dev`) so development never touches the real library. `npm run dev:seed` fills it with sample games and locally generated artwork. |
 | Lint / format | **ESLint** (flat config, `typescript-eslint`, React hooks plugin) and **Prettier**. |
 | Scripts | `dev`, `build`, `test`, `lint`, `typecheck`, `format`. |
 | Git hooks | None for now, to avoid unjustified dependencies. |
@@ -650,6 +651,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-01 | 0.7 | Accepted D-14 (npm, electron-vite, Vitest, ESLint + Prettier, strict TypeScript); documented the `better-sqlite3` Node/Electron ABI rule and the `node:sqlite` check for the Phase 1 spike. Phase 1 unblocked |
 | 2026-11-01 | 0.8 | Accepted D-15 (artwork). Aligned `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md` and `ROADMAP.md` with all accepted decisions. Recorded the open Home cover type |
 | 2026-11-01 | 0.9 | Added a fifth art type: portrait cover 600×900 for the Home screen. Renamed `cover` to `cover_square`; added `cover_portrait` |
+| 2026-11-02 | 0.13 | Phase 3 decisions: own focus manager; `previousSection`/`nextSection` actions (LB/RB); `equon-art://` protocol for cached artwork; React Testing Library + jsdom; separate dev user-data folder and seed script |
 | 2026-11-02 | 0.12 | D-08: Steam playtime and last played synced once per launcher start (GetOwnedGames) and overwritten; sessions add on top until the next start (`steam_playtime_baseline`, `steam_synced_at`) |
 | 2026-11-02 | 0.11 | Phase 2 decisions: D-05 changed to an extensible `ORIGINS` table (built-in `steam`, `manual`, `yuzu`, `ps2`; user-created origins); D-08 interrupted sessions add time up to their last heartbeat (`last_seen_at`) |
 | 2026-11-01 | 0.10 | Phase 1: recorded spike results (§3.1); better-sqlite3 13 needs no rebuild (N-API prebuilds), rebuild scripts dropped (§3.3, §3.15); electron-vite 6 confirmed maintained (release 2026-10-14) |

@@ -381,6 +381,8 @@ O MVP poderá ser considerado funcional quando:
 -   Suporte a Linux/macOS.
 -   Temas externos e extensões.
 -   Controle remoto por celular.
+-   Desinstalar jogos pelo launcher (item futuro; aparece nos mockups do
+    menu de opções, mas não faz parte do MVP).
 
 ## 11. Riscos e perguntas em aberto
 

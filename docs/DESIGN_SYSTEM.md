@@ -1,6 +1,6 @@
 # Game Launcher --- Design System
 
-**Versão:** 0.2\
+**Versão:** 0.3\
 **Status:** Direção visual inicial; valores sujeitos a prototipagem; tipos de arte alinhados a `ARCHITECTURE.md` (D-15)\
 **Plataforma:** Windows, foco em monitor/TV 16:9\
 **Direção:** híbrida e autoral, cinematográfica, editorial e
@@ -109,7 +109,25 @@ de iluminação.
   `color.warning`          `#E7B86A`      Avisos
 
   `color.danger`           `#F07C7C`      Erros e ações destrutivas
+
+  `color.footer`           `#080A0D`      Rodapé com as dicas de botões
+
+  `color.success-bg`       `#268E60`      Fundo de mensagens de sucesso
+
+  `color.warning-bg`       `#F29700`      Fundo de avisos
+
+  `color.danger-bg`        `#BD4545`      Fundo de erros
+
+  `color.btn-a`            `#87BE5C`      Ícone do botão A nas dicas
+
+  `color.btn-b`            `#EC4049`      Ícone do botão B nas dicas
+
+  `color.btn-x`            `#6092FD`      Ícone do botão X nas dicas
+
+  `color.btn-y`            `#F2BD65`      Ícone do botão Y nas dicas
   -----------------------------------------------------------------------
+
+Os tokens de rodapé, fundos de estado e botões vêm de `design/colors.png` (Fase 3).
 
 Regras: - Não usar o acento em todos os elementos; reservar para
 seleção, ações importantes e detalhes. - Não depender apenas da cor para
@@ -120,9 +138,9 @@ elas.
 
 ### Tipografia
 
-Usar uma família sans-serif legível e disponível no pacote ou no
-sistema, com uma alternativa segura. A família definitiva será escolhida
-no protótipo após avaliar caracteres, pesos e renderização em Windows.
+Família: **Montserrat** (SIL Open Font License), embutida no aplicativo a
+partir de `design/fonts/montserrat` (com `OFL.txt`). Alternativa segura:
+`Segoe UI`, `sans-serif`. Usar apenas os pesos necessários.
 
 Escala inicial para 1920×1080: - Título de destaque: 36--48 px. - Título
 de tela: 28--36 px. - Título de card: 18--22 px. - Corpo: 16--18 px. -
@@ -131,6 +149,11 @@ fique ilegível à distância.
 
 Os valores devem usar tokens escaláveis e ser validados também em
 1280×720. Não usar tipografia retrô decorativa para textos longos.
+
+**Escala:** medidas são definidas para 1920×1080 em `rem`; o tamanho de
+fonte da raiz acompanha a janela (`min(100vw / 1920, 100vh / 1080)`),
+então a mesma composição funciona em 1280×720 e 2560×1440 sem valores
+separados por resolução.
 
 ### Espaçamento
 
@@ -284,7 +307,19 @@ comportamento para escalonamento de interface e DPI do Windows.
 -   A ordem de foco deve refletir a hierarquia visual, não apenas a
     ordem do DOM quando isso causar navegação confusa.
 -   Botões de voltar e confirmar devem ser consistentes, com mapeamento
-    documentado.
+    documentado:
+
+    | Controle (layout Xbox) | Ação semântica | Teclado |
+    | --- | --- | --- |
+    | A | `confirm` | Enter, Espaço |
+    | B | `back` | Esc, Backspace |
+    | D-pad / analógico esquerdo | `up` / `down` / `left` / `right` | Setas |
+    | Analógico direito | `scroll` | Page Up / Page Down |
+    | LB / RB | `previousSection` / `nextSection` | Q / E |
+    | ☰ (Menu) | `menu` | M, tecla de menu de contexto |
+    | X / Y | filtro / busca (Fase 5) | — |
+
+    O mouse foca ao passar e confirma ao clicar.
 -   Não capturar entradas globais que impeçam o uso normal de campos de
     texto ou do sistema.
 -   Testar com pelo menos um controle comum e validar comportamento para
@@ -346,6 +381,14 @@ inteiramente operável por controle, teclado e mouse.
 -   O tier da conquista deve ser reconhecível visualmente sem depender
     exclusivamente da cor.
 
+### Classificação indicativa
+
+A tela de detalhes mostra a classificação a partir de
+`GAMES.required_age`, com as imagens de `design/clasificação indicativa`:
+`L`, `10`, `12`, `14`, `16` e `18` usam a imagem correspondente. Qualquer
+outro valor, inclusive vazio ou desconhecido, usa `pendente.png`. Nunca
+inferir uma classificação que a fonte não informou.
+
 ### Estado platinado
 
 -   Quando todas as conquistas conhecidas estiverem desbloqueadas e
@@ -387,7 +430,6 @@ código.
 ## 12. Decisões ainda abertas
 
 -   Nome e identidade de marca.
--   Família tipográfica final.
 -   Logo e sistema de ícones próprios.
 -   Layout definitivo da Home e da biblioteca.
 -   Proporções e tamanhos finais dos cards.
@@ -396,6 +438,7 @@ código.
     executáveis e imagens.
 -   Configurações de movimento e acessibilidade expostas ao usuário.
 -   Se haverá temas adicionais no futuro.
+-   Ação "Desinstalar" no menu de opções do jogo (item futuro; fora do MVP).
 
 ## 13. Instruções para implementação por IA
 

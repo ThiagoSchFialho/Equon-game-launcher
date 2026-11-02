@@ -118,6 +118,12 @@ does not divide by zero; manual flags are preserved.
 -   [ ] Preserve mouse and keyboard alternatives.
 -   [ ] Implement loading, empty, unavailable, and error states.
 -   [ ] Validate 1920×1080 and 1280×720.
+-   [ ] Serve cached artwork through the `equon-art://` protocol and
+    load game data through validated IPC (`games:list`, `games:get`).
+-   [ ] Separate dev user-data folder and a `dev:seed` script with
+    sample games and generated artwork.
+-   [ ] Options menu dialog (focus in/out); its actions arrive in
+    Phases 5 and 7. "Uninstall" is a future item, not in the MVP.
 
 **Acceptance:** Main screens are navigable with a controller, focus
 remains visible after updates, and layouts work on conventional 16:9
