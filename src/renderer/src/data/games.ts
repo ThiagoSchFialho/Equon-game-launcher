@@ -43,6 +43,8 @@ export function useGames(): GamesState {
 export function useGameDetails(id: number): {
   details: Loadable<GameDetails | null>
   reload(): void
+  /** Fetches again but keeps showing the current data (e.g. after a session ends). */
+  refresh(): void
 } {
   const [details, setDetails] = useState<Loadable<GameDetails | null>>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
@@ -62,8 +64,9 @@ export function useGameDetails(id: number): {
     setDetails({ status: 'loading' })
     setAttempt((n) => n + 1)
   }, [])
+  const refresh = useCallback(() => setAttempt((n) => n + 1), [])
 
-  return { details, reload }
+  return { details, reload, refresh }
 }
 
 /** Home: most recently played first; falls back to the library order when nothing was played. */

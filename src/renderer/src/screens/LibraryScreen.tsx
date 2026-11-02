@@ -3,7 +3,8 @@ import type { GameSummary } from '../../../shared/ipc/contract'
 import { useNavigation } from '../app/navigation'
 import { Footer, type Hint } from '../components/Footer'
 import { GameCard } from '../components/GameCard'
-import { OptionsMenu } from '../components/OptionsMenu'
+import { Button } from '../components/Button'
+import { GameOptionsLayer } from '../components/GameOptionsLayer'
 import { StateMessage } from '../components/StateMessage'
 import { TopBar } from '../components/TopBar'
 import { useGames } from '../data/games'
@@ -53,7 +54,17 @@ export function LibraryScreen(): React.JSX.Element {
       />
     )
   } else if (games.data.length === 0) {
-    content = <StateMessage message={t.library.empty} hint={t.library.emptyHint} />
+    content = (
+      <StateMessage
+        message={t.library.empty}
+        hint={t.library.emptyHint}
+        action={{
+          id: 'library:add-empty',
+          label: t.library.addGame,
+          onConfirm: () => navigation.openGameForm(null)
+        }}
+      />
+    )
   } else {
     content = (
       <div className="library__grid">
@@ -82,17 +93,23 @@ export function LibraryScreen(): React.JSX.Element {
               <span className="library__count">{t.library.count(games.data.length)}</span>
             )}
           </header>
+          {/* Search, origin filter and sort (Phase 5) go on the left of this bar. */}
+          <div className="library__toolbar">
+            <Button
+              id="library:add"
+              variant="primary"
+              label={t.library.addGame}
+              onConfirm={() => navigation.openGameForm(null)}
+            >
+              <span aria-hidden>+</span>
+              {t.library.addGame}
+            </Button>
+          </div>
           <div className="library__scroll">{content}</div>
         </main>
         <Footer hints={menuGame ? MENU_HINTS : HINTS} />
       </div>
-      {menuGame && (
-        <OptionsMenu
-          title={menuGame.title}
-          beated={menuGame.beated}
-          onClose={() => setMenuGame(null)}
-        />
-      )}
+      {menuGame && <GameOptionsLayer game={menuGame} onClose={() => setMenuGame(null)} />}
     </FocusScope>
   )
 }

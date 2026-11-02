@@ -25,8 +25,12 @@ export const DEFAULT_GAMEPAD_OPTIONS: GamepadMapperOptions = {
 const BUTTONS: readonly [number, Action][] = [
   [0, 'confirm'], // A
   [1, 'back'], // B
+  [2, 'secondary'], // X
+  [3, 'tertiary'], // Y
   [4, 'previousSection'], // LB
   [5, 'nextSection'], // RB
+  [6, 'leftTrigger'], // LT
+  [7, 'rightTrigger'], // RT
   [9, 'menu'], // Start / ☰
   [12, 'up'],
   [13, 'down'],

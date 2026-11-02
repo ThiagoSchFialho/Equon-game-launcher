@@ -14,6 +14,14 @@ export type Action =
   | 'menu'
   | 'previousSection'
   | 'nextSection'
+  /** X: backspace on the on-screen keyboard; filter in the Library (Phase 5). */
+  | 'secondary'
+  /** Y: space on the on-screen keyboard; search in the Library (Phase 5). */
+  | 'tertiary'
+  /** LT: shift on the on-screen keyboard. */
+  | 'leftTrigger'
+  /** RT: done on the on-screen keyboard. */
+  | 'rightTrigger'
 
 export type Direction = 'up' | 'down' | 'left' | 'right'
 
@@ -27,5 +35,6 @@ export const REPEATING_ACTIONS: ReadonlySet<Action> = new Set([
   'left',
   'right',
   'scrollUp',
-  'scrollDown'
+  'scrollDown',
+  'secondary'
 ])

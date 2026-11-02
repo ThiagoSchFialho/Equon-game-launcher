@@ -35,7 +35,7 @@ describe('App navigation', () => {
     expect(await screen.findByText('Sobre o jogo')).toBeTruthy()
     expect(screen.getByText('16 / 50')).toBeTruthy()
     expect(screen.getByAltText('Classificação indicativa: 14')).toBeTruthy()
-    expect(screen.getByLabelText('Jogar').getAttribute('aria-disabled')).toBe('true')
+    expect(screen.getByLabelText('Jogar').getAttribute('aria-disabled')).toBe('false')
 
     press('Escape')
     expect(await screen.findByText('12h 22m')).toBeTruthy()

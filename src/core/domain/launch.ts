@@ -7,17 +7,6 @@ export interface LaunchConfig {
   workingDirectory: string | null
 }
 
-export const ROM_PLACEHOLDER = '{rom}'
-
-/**
- * Fills an origin's default arguments with the chosen ROM path: every
- * `{rom}` is replaced; without a placeholder the ROM is appended.
- */
-export function applyRomToArguments(template: readonly string[], romPath: string): string[] {
-  if (!template.some((arg) => arg.includes(ROM_PLACEHOLDER))) return [...template, romPath]
-  return template.map((arg) => arg.split(ROM_PLACEHOLDER).join(romPath))
-}
-
 /** Only native executables: .bat/.cmd would need a shell (ARCHITECTURE.md §7). */
 export function isAllowedExecutableName(path: string): boolean {
   return /\.exe$/i.test(path.trim())

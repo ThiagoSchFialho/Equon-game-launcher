@@ -1,10 +1,12 @@
-import { isDirection, type Action } from '../input/actions'
+import { isDirection, type Action, type Direction } from '../input/actions'
 import { centerDistance, findNext, type Rect } from './spatial'
 
 export interface FocusableOptions {
   onConfirm?: () => void
   onMenu?: () => void
   onFocus?: () => void
+  /** Consumes a direction itself (e.g. up/down change a value); return true when used. */
+  onDirection?: (direction: Direction) => boolean
   /** Preferred element when its scope gets focus for the first time. */
   autoFocus?: boolean
   /**
@@ -152,6 +154,7 @@ export class FocusManager {
 
     if (isDirection(action)) {
       if (!current) return false
+      if (current.onDirection?.(action)) return true
       const candidates = this.scopeEntries(current.scope)
         .filter((e) => e.id !== current.id)
         .map((e) => ({ id: e.id, rect: rectOf(e.el) }))

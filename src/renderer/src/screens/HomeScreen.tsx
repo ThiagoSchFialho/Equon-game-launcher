@@ -4,7 +4,7 @@ import homeClockIcon from '../assets/icons/home-clock.svg'
 import { useNavigation } from '../app/navigation'
 import { Footer, type Hint } from '../components/Footer'
 import { GameCard } from '../components/GameCard'
-import { OptionsMenu } from '../components/OptionsMenu'
+import { GameOptionsLayer } from '../components/GameOptionsLayer'
 import { StateMessage } from '../components/StateMessage'
 import { TopBar } from '../components/TopBar'
 import { formatPlaytime } from '../data/format'
@@ -111,13 +111,7 @@ export function HomeScreen(): React.JSX.Element {
         <main className="screen__main">{content}</main>
         <Footer hints={menuGame ? MENU_HINTS : HINTS} />
       </div>
-      {menuGame && (
-        <OptionsMenu
-          title={menuGame.title}
-          beated={menuGame.beated}
-          onClose={() => setMenuGame(null)}
-        />
-      )}
+      {menuGame && <GameOptionsLayer game={menuGame} onClose={() => setMenuGame(null)} />}
     </FocusScope>
   )
 }

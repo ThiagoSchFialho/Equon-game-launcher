@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { applyRomToArguments, isAllowedExecutableName } from '../../../src/core/domain'
+import { isAllowedExecutableName } from '../../../src/core/domain'
+import { applyRomToArguments } from '../../../src/shared/text-format'
 
 describe('applyRomToArguments', () => {
   it('replaces every {rom} placeholder', () => {

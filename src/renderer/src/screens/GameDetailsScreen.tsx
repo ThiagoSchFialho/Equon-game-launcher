@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { GameDetails } from '../../../shared/ipc/contract'
 import backIcon from '../assets/icons/game-page-back.svg'
 import calendarIcon from '../assets/icons/game-page-calendar.svg'
@@ -16,6 +16,7 @@ import ratingPending from '../assets/ratings/pendente.png'
 import { useNavigation, type Section } from '../app/navigation'
 import { Artwork } from '../components/Artwork'
 import { Button } from '../components/Button'
+import { ConfirmDialog } from '../components/Dialog'
 import { Footer, type Hint } from '../components/Footer'
 import { OptionsMenu } from '../components/OptionsMenu'
 import { StateMessage } from '../components/StateMessage'
@@ -26,7 +27,8 @@ import {
   releaseYear,
   type AgeRatingKey
 } from '../data/format'
-import { useGameDetails } from '../data/games'
+import { useGameDetails, useGames } from '../data/games'
+import { useRunning } from '../data/running'
 import { useFocusable, useScreenActions } from '../focus/focus-context'
 import { FocusScope } from '../focus/FocusProvider'
 import { t } from '../strings'
@@ -84,15 +86,41 @@ function Stat({
   )
 }
 
+/** Why Play is unavailable, or what is happening (DATA_BASE_CONTEXT.md §3.2). */
+function playNote(game: GameDetails, running: boolean, launchError: string | null): string | null {
+  if (launchError) return launchError
+  if (running) return t.game.runningNote
+  if (game.launchable) return null
+  if (!game.editable) return t.game.steamSoon
+  if (game.installed === null) return t.game.installUnknown
+  if (game.installed === false) return t.game.notInstalled
+  return t.game.noConfig
+}
+
 function Details({
   game,
   from,
+  running,
   onOpenMenu
 }: {
   game: GameDetails
   from: Section
+  running: boolean
   onOpenMenu: () => void
 }): React.JSX.Element {
+  const [launching, setLaunching] = useState(false)
+  const [launchError, setLaunchError] = useState<string | null>(null)
+  const onPlay = (): void => {
+    setLaunching(true)
+    setLaunchError(null)
+    void window.equon.games.launch(game.id).then((result) => {
+      setLaunching(false)
+      if (!result.ok) {
+        setLaunchError(t.launchErrors[result.error.code] ?? t.launchErrors['start-failed'])
+      }
+    })
+  }
+  const note = playNote(game, running, launchError)
   const year = releaseYear(game.releaseDate)
   const rating = ageRatingKey(game.requiredAge)
   const byline = [year, game.developer].filter(Boolean).join(' • ')
@@ -129,15 +157,29 @@ function Details({
 
       <div className="game__bar">
         <div className="game__actions">
-          {/* Launching arrives in Phases 4 and 6; the button shows the unavailable state. */}
-          <Button id="game:play" variant="primary" label={t.game.play} unavailable autoFocus>
+          <Button
+            id="game:play"
+            variant="primary"
+            label={running ? t.game.running : t.game.play}
+            unavailable={!game.launchable || running || launching}
+            autoFocus
+            onConfirm={onPlay}
+          >
             <img src={playIcon} alt="" />
-            {t.game.play}
+            {running ? t.game.running : t.game.play}
           </Button>
           <Button id="game:more" variant="icon" label={t.game.more} onConfirm={onOpenMenu}>
             <img src={moreIcon} alt="" />
           </Button>
-          <p className="game__play-note">{t.game.playSoon}</p>
+          {note && (
+            <p
+              className="game__play-note"
+              data-tone={launchError ? 'error' : undefined}
+              role={launchError ? 'alert' : undefined}
+            >
+              {note}
+            </p>
+          )}
         </div>
         <div className="game__stats">
           <Stat
@@ -172,10 +214,32 @@ function Details({
 
 export function GameDetailsScreen({ id, from }: { id: number; from: Section }): React.JSX.Element {
   const navigation = useNavigation()
-  const { details, reload } = useGameDetails(id)
-  const [menuOpen, setMenuOpen] = useState(false)
+  const { reload: reloadGames } = useGames()
+  const { details, reload, refresh } = useGameDetails(id)
+  const [overlay, setOverlay] = useState<'menu' | 'remove' | null>(null)
+  const [removeError, setRemoveError] = useState<string | null>(null)
+  const running = useRunning().ids.includes(id)
 
-  useScreenActions({ back: navigation.back, menu: () => setMenuOpen(true) })
+  // When this game stops, playtime and last session change.
+  const wasRunning = useRef(running)
+  useEffect(() => {
+    if (wasRunning.current && !running) refresh()
+    wasRunning.current = running
+  }, [running, refresh])
+
+  useScreenActions({ back: navigation.back, menu: () => setOverlay('menu') })
+
+  const remove = (): void => {
+    void window.equon.games.remove(id).then((result) => {
+      if (!result.ok) {
+        setRemoveError(t.remove.failed)
+        setOverlay(null)
+        return
+      }
+      reloadGames()
+      navigation.back()
+    })
+  }
 
   let content: React.JSX.Element
   if (details.status === 'loading') {
@@ -196,20 +260,45 @@ export function GameDetailsScreen({ id, from }: { id: number; from: Section }): 
       />
     )
   } else {
-    content = <Details game={details.data} from={from} onOpenMenu={() => setMenuOpen(true)} />
+    content = (
+      <Details
+        game={details.data}
+        from={from}
+        running={running}
+        onOpenMenu={() => setOverlay('menu')}
+      />
+    )
   }
 
   return (
     <FocusScope id={`screen:game:${id}`}>
       <div className="screen">
         <main className="screen__main">{content}</main>
-        <Footer hints={menuOpen ? MENU_HINTS : HINTS} />
+        {removeError && (
+          <p className="game__remove-error" role="alert">
+            {removeError}
+          </p>
+        )}
+        <Footer hints={overlay ? MENU_HINTS : HINTS} />
       </div>
-      {menuOpen && details.status === 'ready' && details.data && (
+      {overlay === 'menu' && details.status === 'ready' && details.data && (
         <OptionsMenu
           title={details.data.title}
           beated={details.data.beated}
-          onClose={() => setMenuOpen(false)}
+          onClose={() => setOverlay(null)}
+          onEdit={details.data.editable ? () => navigation.openGameForm(id) : undefined}
+          onRemove={details.data.editable && !running ? () => setOverlay('remove') : undefined}
+        />
+      )}
+      {overlay === 'remove' && details.status === 'ready' && details.data && (
+        <ConfirmDialog
+          title={t.remove.title(details.data.title)}
+          message={t.remove.message}
+          confirmLabel={t.remove.confirm}
+          cancelLabel={t.remove.cancel}
+          destructive
+          onCancel={() => setOverlay(null)}
+          onConfirm={remove}
         />
       )}
     </FocusScope>

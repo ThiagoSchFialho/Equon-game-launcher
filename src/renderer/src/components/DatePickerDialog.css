@@ -1,0 +1,64 @@
+.date-picker {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-6);
+  padding: var(--space-8);
+}
+
+.date-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  outline: var(--focus-ring-width) solid transparent;
+  transition: outline-color var(--motion-focus) var(--motion-easing);
+  cursor: pointer;
+}
+
+.date-column[data-focused='true'] {
+  outline-color: var(--color-focus);
+}
+
+.date-column__label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-meta);
+  text-transform: uppercase;
+}
+
+.date-column__value {
+  font-size: var(--font-size-display);
+  font-weight: var(--font-weight-semibold);
+}
+
+.date-column__arrow {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-meta);
+  padding: var(--space-1) var(--space-4);
+}
+
+.date-picker__actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-3);
+  flex: 0 0 12rem;
+}
+
+.date-action {
+  height: 3.5rem;
+  border-radius: var(--radius-button);
+  background: var(--color-surface-raised);
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-medium);
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-gap);
+  transition: outline-color var(--motion-focus) var(--motion-easing);
+}
+
+.date-action[data-focused='true'] {
+  outline-color: var(--color-focus);
+}

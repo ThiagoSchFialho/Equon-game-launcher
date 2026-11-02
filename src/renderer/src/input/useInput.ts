@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import type { Action } from './actions'
 import { createGamepadMapper } from './gamepad'
 import { keyToAction } from './keyboard'
+import { getTextCapture } from './text-capture'
 
 /**
  * Feeds semantic actions to `dispatch`: the Gamepad API is polled every
@@ -26,6 +27,12 @@ export function useInput(dispatch: (action: Action) => void): void {
 
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.ctrlKey || event.altKey || event.metaKey) return
+      // While a text field is edited, typing goes to the text, not to shortcuts.
+      const capture = getTextCapture()
+      if (capture?.(event.key)) {
+        event.preventDefault()
+        return
+      }
       const action = keyToAction(event.key, event.repeat)
       if (!action) return
       event.preventDefault()
