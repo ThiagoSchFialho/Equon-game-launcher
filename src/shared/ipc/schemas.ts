@@ -39,6 +39,12 @@ export const manualGameFormSchema = z.strictObject({
 export const gamesCreateArgs = z.tuple([manualGameFormSchema])
 export const gamesUpdateArgs = z.tuple([id, manualGameFormSchema])
 export const gameIdArgs = z.tuple([id])
+export const gamesSetFlagsArgs = z.tuple([
+  id,
+  z
+    .strictObject({ hidden: z.boolean().optional(), beated: z.boolean().optional() })
+    .refine((flags) => flags.hidden !== undefined || flags.beated !== undefined)
+])
 export const noArgs = z.tuple([])
 
 export const originsCreateArgs = z.tuple([z.string().max(100)])
@@ -68,6 +74,7 @@ const gameSummaryShape = {
   playtime: z.number().int().nonnegative(),
   timeLastPlayed: z.string().nullable(),
   beated: z.boolean(),
+  hidden: z.boolean(),
   artwork: z.array(artworkKindSchema)
 }
 

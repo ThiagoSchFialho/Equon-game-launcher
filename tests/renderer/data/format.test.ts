@@ -5,9 +5,7 @@ import {
   formatPlaytime,
   releaseYear
 } from '../../../src/renderer/src/data/format'
-import { homeGames } from '../../../src/renderer/src/data/games'
 import { stepSection } from '../../../src/renderer/src/app/navigation'
-import type { GameSummary } from '../../../src/shared/ipc/contract'
 
 describe('formatPlaytime', () => {
   it.each([
@@ -74,29 +72,5 @@ describe('stepSection', () => {
     expect(stepSection('library', 1)).toBe('achievements')
     expect(stepSection('achievements', 1)).toBe('achievements')
     expect(stepSection('home', -1)).toBe('home')
-  })
-})
-
-describe('homeGames', () => {
-  const game = (id: number, timeLastPlayed: string | null): GameSummary => ({
-    id,
-    title: `G${id}`,
-    origin: 'manual',
-    originName: 'PC',
-    installed: true,
-    playtime: 0,
-    timeLastPlayed,
-    beated: false,
-    artwork: []
-  })
-
-  it('lists played games, most recent first', () => {
-    const list = [game(1, '2026-10-01T10:00:00Z'), game(2, null), game(3, '2026-11-01T10:00:00Z')]
-    expect(homeGames(list).map((g) => g.id)).toEqual([3, 1])
-  })
-
-  it('falls back to the library order when nothing was played, with a limit', () => {
-    const list = Array.from({ length: 20 }, (_, i) => game(i + 1, null))
-    expect(homeGames(list, 5).map((g) => g.id)).toEqual([1, 2, 3, 4, 5])
   })
 })

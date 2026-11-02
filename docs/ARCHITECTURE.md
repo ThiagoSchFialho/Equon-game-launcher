@@ -1,7 +1,7 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.15
-**Status:** Draft — Phase 4 (manual-game vertical slice)
+**Version:** 0.16
+**Status:** Draft — Phase 5 (library organization)
 **Last updated:** 2026-11-02
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
 **Purpose:** Define technical boundaries, record architecture decisions, and list what is still unresolved before implementation starts.
@@ -441,25 +441,23 @@ docs/
 
 ## 8. Integration adapter contract
 
-Illustrative shape (not final):
+Defined in Phase 5 in `src/core/application/discovery.ts` (pure, tested with fake adapters; the Steam adapter implements it in Phase 6):
 
 ```ts
-interface SourceAdapter {
-  id: 'steam';   // the only automatic adapter; other origins are manual (D-05)
-  capabilities: {
-    discovery: boolean;
-    metadata: boolean;
-    installationState: boolean;
-    launch: boolean;
-    sessionObservation: 'reliable' | 'best-effort' | 'none';
-    achievements: boolean;
-  };
-  discover?(): Promise<DiscoveryResult>;   // games + warnings + errors
-  // other operations are present only when the capability is true
+interface IntegrationAdapter {
+  readonly source: OriginKey;              // 'steam', the only automatic adapter (D-05)
+  readonly capabilities: { installState; launch; playtime; achievements; metadata };
+  discover(): Promise<DiscoveryResult>;
 }
+type DiscoveryResult =
+  | { status: 'complete'; games: DiscoveredGame[] }   // every location read
+  | { status: 'partial'; games: DiscoveredGame[]; reason: string }
+  | { status: 'failed'; reason: string };
 ```
 
-A discovery result always carries warnings and errors, so partial failure is visible instead of thrown away.
+- `runDiscovery(adapter)` turns a throwing adapter into a `failed` result, so one integration never breaks the rest.
+- `planDiscovery(source, result, existingGames, externalIdOf)` returns upserts, install-state changes and duplicate candidates. `failed` changes nothing; known games absent from a `complete` scan become `installed = 0`, from a `partial` scan `NULL` (DATA_BASE_CONTEXT.md §3.2).
+- Duplicate candidates are discovered games whose normalized title (`titleMatchKey`: case, accents, ™/®/© and punctuation ignored) matches a game of another origin. They are only reported for the review step; nothing is merged automatically.
 
 ### MVP capability matrix (to be confirmed by validation)
 
@@ -565,7 +563,11 @@ Per-game sync steps: fetch definitions, player state and global percentages → 
 5. Valid changes are persisted transactionally.
 6. The UI shows results and partial failures.
 
-A failed scan must not mark every game from that source as uninstalled.
+A failed scan must not mark every game from that source as uninstalled. The planning part is implemented by the Phase 5 discovery contract (§8); the refresh action, progress and the review step arrive with the Steam adapter in Phase 6.
+
+### Library view (Phase 5)
+
+Search, filters and sorting are pure functions in `src/shared/library-view.ts`, applied in the renderer to the summaries it already holds (`games:list` returns every game with its `hidden` flag). The view state lives in an app-level React context: it survives navigation and resets on restart, so no preference is persisted (the open question about where to persist preferences stays open). Home uses the fixed `homeGames` rule: installed, not hidden, most recent session first. Manual flags are written through `games:set-flags` (validated `{ hidden?, beated? }`, every origin).
 
 ### Metadata and genres
 

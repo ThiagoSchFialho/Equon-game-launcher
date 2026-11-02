@@ -50,11 +50,20 @@ apenas um banner.
 Regiões possíveis: - Navegação principal. - Continuar jogando. - Lista
 de jogos recentes. - Atalho claro para a biblioteca completa.
 
+Mostra apenas jogos instalados e não ocultos, pela última sessão (mais
+recente primeiro). A regra é fixa; o usuário não altera a ordem nem os
+filtros do Início.
+
 ### Biblioteca
 
 -   Densidade equilibrada: cards grandes o suficiente para reconhecer a
     arte, com quantidade suficiente para navegar pela coleção.
 -   Busca, filtro e ordenação acessíveis sem abandonar o contexto.
+-   Barra: campo de busca, "Origem" e "Ordenar" à esquerda;
+    "Emuladores" e "Adicionar jogo" à direita. Y abre a busca (teclado
+    virtual) e X abre o diálogo de filtros (instalação e jogos
+    ocultos). Jogos ocultos, quando mostrados, aparecem esmaecidos com o
+    selo "Oculto".
 -   O card precisa comunicar título e foco; origem e estado de
     instalação podem aparecer como informação secundária.
 -   A biblioteca deve continuar utilizável com capas ausentes ou
@@ -320,7 +329,7 @@ comportamento para escalonamento de interface e DPI do Windows.
     | Analógico direito | `scroll` | Page Up / Page Down |
     | LB / RB | `previousSection` / `nextSection` | Q / E |
     | ☰ (Menu) | `menu` | M, tecla de menu de contexto |
-    | X / Y | `secondary` / `tertiary`: no teclado virtual, apagar / espaço; na Biblioteca, filtro / busca (Fase 5) | — |
+    | X / Y | `secondary` / `tertiary`: no teclado virtual, apagar / espaço; na Biblioteca, filtros / busca | — |
     | LT / RT | `leftTrigger` / `rightTrigger`: no teclado virtual, maiúsculas / pronto | — |
 
     Ao editar um campo de texto, o teclado físico digita normalmente (letras, Backspace, Enter) em vez de acionar atalhos.

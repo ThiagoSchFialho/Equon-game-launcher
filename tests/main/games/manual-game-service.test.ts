@@ -138,6 +138,17 @@ describe('manual game service', () => {
     expect(await service.remove(steam.id)).toEqual({ ok: false, error: { code: 'not-found' } })
   })
 
+  it('sets hidden and beated for any origin, keeping the other flag', async () => {
+    const steam = createGameRepository(db).upsertSteamGame({ steamAppId: 620, title: 'Portal 2' })
+    expect(await service.setFlags(steam.id, { hidden: true })).toEqual({ ok: true, data: null })
+    expect(await service.setFlags(steam.id, { beated: true })).toEqual({ ok: true, data: null })
+    expect(createGameRepository(db).getById(steam.id)).toMatchObject({ hidden: true, beated: true })
+    expect(await service.setFlags(9999, { hidden: true })).toEqual({
+      ok: false,
+      error: { code: 'not-found' }
+    })
+  })
+
   it('maps launch errors to codes', async () => {
     expect(await service.launch(404)).toEqual({ ok: false, error: { code: 'not-found' } })
     expect(await service.launch(1)).toEqual({ ok: true, data: null })

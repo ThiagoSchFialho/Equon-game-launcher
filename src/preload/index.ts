@@ -15,6 +15,7 @@ const api: EquonApi = {
     remove: (id) => ipcRenderer.invoke(IpcChannel.gamesRemove, id),
     launch: (id) => ipcRenderer.invoke(IpcChannel.gamesLaunch, id),
     running: () => ipcRenderer.invoke(IpcChannel.gamesRunning),
+    setFlags: (id, flags) => ipcRenderer.invoke(IpcChannel.gamesSetFlags, id, flags),
     onRunningChanged: (listener) => {
       const handler = (_event: IpcRendererEvent, ids: unknown): void => {
         if (Array.isArray(ids) && ids.every((id) => Number.isInteger(id))) listener(ids)

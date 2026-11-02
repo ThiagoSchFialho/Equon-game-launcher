@@ -1,6 +1,7 @@
 import type { GameSummary } from '../../../shared/ipc/contract'
 import type { FocusableOptions } from '../focus/focus-manager'
 import { useFocusable } from '../focus/focus-context'
+import { t } from '../strings'
 import { Artwork } from './Artwork'
 import './GameCard.css'
 
@@ -20,6 +21,7 @@ export function GameCard({ game, variant, ...focusOptions }: Props): React.JSX.E
       ref={setElement}
       className={`game-card game-card--${variant}`}
       data-focused={focused}
+      data-hidden={game.hidden}
       aria-label={game.title}
       tabIndex={-1}
       {...mouse}
@@ -31,6 +33,7 @@ export function GameCard({ game, variant, ...focusOptions }: Props): React.JSX.E
         title={game.title}
         className="game-card__art"
       />
+      {game.hidden && <span className="game-card__badge">{t.library.hiddenBadge}</span>}
     </button>
   )
 }

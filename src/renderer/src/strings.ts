@@ -10,21 +10,50 @@ export const t = {
     options: 'Opções',
     open: 'Abrir',
     select: 'Selecionar',
-    back: 'Voltar'
+    back: 'Voltar',
+    filter: 'Filtrar',
+    search: 'Buscar'
   },
   library: {
     title: 'Biblioteca',
     count: (n: number) => (n === 1 ? '1 jogo' : `${n} jogos`),
+    countOf: (shown: number, total: number) => `${shown} de ${total} jogos`,
     loading: 'Carregando biblioteca…',
     error: 'Não foi possível carregar a biblioteca.',
     retry: 'Tentar novamente',
     empty: 'Nenhum jogo na biblioteca ainda.',
     emptyHint: 'Jogos da Steam e jogos adicionados manualmente aparecerão aqui.',
     addGame: 'Adicionar jogo',
-    emulators: 'Emuladores'
+    emulators: 'Emuladores',
+    search: 'Buscar',
+    searchTitle: 'Buscar jogo',
+    searchPlaceholder: 'Digite o nome do jogo',
+    origin: 'Origem',
+    allOrigins: 'Todas',
+    sort: 'Ordenar',
+    sorts: { title: 'Título', recent: 'Recentes', playtime: 'Tempo de jogo' } as Record<
+      string,
+      string
+    >,
+    filters: 'Filtros',
+    install: 'Instalação',
+    installs: { all: 'Todos', installed: 'Instalados', missing: 'Não encontrados' } as Record<
+      string,
+      string
+    >,
+    hiddenGames: 'Jogos ocultos',
+    showHidden: 'Mostrar',
+    hideHidden: 'Não mostrar',
+    clearFilters: 'Limpar filtros',
+    close: 'Fechar',
+    noMatches: 'Nenhum jogo corresponde à busca e aos filtros.',
+    allHidden: 'Todos os jogos estão ocultos.',
+    allHiddenHint: 'Use Filtrar (X) › Jogos ocultos para vê-los.',
+    hiddenBadge: 'Oculto'
   },
   home: {
-    empty: 'Nenhum jogo para mostrar ainda.',
+    empty: 'Nenhum jogo instalado para mostrar.',
+    emptyHint: 'Jogos instalados e não ocultos aparecem aqui, começando pelo último jogado.',
     openLibrary: 'Abrir biblioteca'
   },
   game: {
@@ -63,6 +92,8 @@ export const t = {
     markBeaten: 'Marcar como zerado',
     unmarkBeaten: 'Desmarcar como zerado',
     hide: 'Ocultar jogo',
+    unhide: 'Mostrar jogo',
+    flagFailed: 'Não foi possível salvar a alteração.',
     edit: 'Editar jogo',
     remove: 'Remover jogo',
     close: 'Fechar',

@@ -8,9 +8,10 @@ import { GameOptionsLayer } from '../components/GameOptionsLayer'
 import { StateMessage } from '../components/StateMessage'
 import { TopBar } from '../components/TopBar'
 import { formatPlaytime } from '../data/format'
-import { homeGames, useGames } from '../data/games'
+import { useGames } from '../data/games'
 import { useScreenActions } from '../focus/focus-context'
 import { FocusScope } from '../focus/FocusProvider'
+import { homeGames } from '../../../shared/library-view'
 import { t } from '../strings'
 import './HomeScreen.css'
 
@@ -88,11 +89,11 @@ export function HomeScreen(): React.JSX.Element {
         action={{ id: 'home:retry', label: t.library.retry, onConfirm: reload }}
       />
     )
-  } else if (games.data.length === 0) {
+  } else if (homeGames(games.data).length === 0) {
     content = (
       <StateMessage
         message={t.home.empty}
-        hint={t.library.emptyHint}
+        hint={t.home.emptyHint}
         action={{
           id: 'home:open-library',
           label: t.home.openLibrary,

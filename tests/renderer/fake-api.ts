@@ -20,6 +20,7 @@ export const summary = (
   playtime: 742,
   timeLastPlayed: `2026-11-0${id}T10:00:00Z`,
   beated: false,
+  hidden: false,
   artwork: [],
   ...extra
 })
@@ -86,6 +87,7 @@ export function installFakeApi(
       remove: async () => ({ ok: true, data: null }),
       launch: async () => ({ ok: true, data: null }),
       running: async () => [],
+      setFlags: async () => ({ ok: true, data: null }),
       onRunningChanged: (listener) => {
         runningListeners.add(listener)
         return () => runningListeners.delete(listener)

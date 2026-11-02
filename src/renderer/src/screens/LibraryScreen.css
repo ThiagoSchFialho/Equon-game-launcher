@@ -27,9 +27,15 @@
 
 .library__toolbar {
   display: flex;
-  justify-content: flex-end;
-  gap: var(--space-4);
+  align-items: center;
+  gap: var(--space-6);
   padding: 0 var(--space-12) var(--space-6);
+}
+
+.library__toolbar-actions {
+  display: flex;
+  gap: var(--space-4);
+  margin-left: auto;
 }
 
 .library__toolbar .button {

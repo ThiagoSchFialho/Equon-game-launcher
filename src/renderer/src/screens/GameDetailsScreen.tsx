@@ -223,7 +223,7 @@ function Details({
 
 export function GameDetailsScreen({ id, from }: { id: number; from: Section }): React.JSX.Element {
   const navigation = useNavigation()
-  const { reload: reloadGames } = useGames()
+  const { reload: reloadGames, refresh: refreshGames } = useGames()
   const { details, reload, refresh } = useGameDetails(id)
   const [overlay, setOverlay] = useState<'menu' | 'remove' | null>(null)
   const [removeError, setRemoveError] = useState<string | null>(null)
@@ -294,6 +294,14 @@ export function GameDetailsScreen({ id, from }: { id: number; from: Section }): 
         <OptionsMenu
           title={details.data.title}
           beated={details.data.beated}
+          hidden={details.data.hidden}
+          onFlags={(flags) => {
+            void window.equon.games.setFlags(id, flags).finally(() => {
+              refresh()
+              refreshGames()
+              setOverlay(null)
+            })
+          }}
           onClose={() => setOverlay(null)}
           onEdit={details.data.editable ? () => navigation.openGameForm(id) : undefined}
           onRemove={details.data.editable && !running ? () => setOverlay('remove') : undefined}

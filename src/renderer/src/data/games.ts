@@ -6,6 +6,8 @@ export type Loadable<T> = { status: 'loading' } | { status: 'error' } | { status
 export interface GamesState {
   games: Loadable<GameSummary[]>
   reload(): void
+  /** Fetches again but keeps showing the current list, so focus stays in place. */
+  refresh(): void
 }
 
 export const GamesContext = createContext<GamesState | null>(null)
@@ -31,7 +33,9 @@ export function useGamesLoader(): GamesState {
     setAttempt((n) => n + 1)
   }, [])
 
-  return { games, reload }
+  const refresh = useCallback(() => setAttempt((n) => n + 1), [])
+
+  return { games, reload, refresh }
 }
 
 export function useGames(): GamesState {
@@ -67,12 +71,4 @@ export function useGameDetails(id: number): {
   const refresh = useCallback(() => setAttempt((n) => n + 1), [])
 
   return { details, reload, refresh }
-}
-
-/** Home: most recently played first; falls back to the library order when nothing was played. */
-export function homeGames(games: readonly GameSummary[], limit = 12): GameSummary[] {
-  const played = games
-    .filter((g) => g.timeLastPlayed !== null)
-    .sort((a, b) => (b.timeLastPlayed as string).localeCompare(a.timeLastPlayed as string))
-  return (played.length > 0 ? played : games).slice(0, limit)
 }

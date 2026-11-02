@@ -17,6 +17,7 @@ import {
   gamesCreateArgs,
   gamesGetArgs,
   gamesListArgs,
+  gamesSetFlagsArgs,
   gameSummaryListSchema,
   gamesUpdateArgs,
   nativePickResultSchema,
@@ -100,6 +101,12 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
   ipcMain.handle(
     IpcChannel.gamesLaunch,
     createValidatedHandler(gameIdArgs, nullResult, trusted, (id) => service.launch(id))
+  )
+  ipcMain.handle(
+    IpcChannel.gamesSetFlags,
+    createValidatedHandler(gamesSetFlagsArgs, nullResult, trusted, (id, flags) =>
+      service.setFlags(id, flags)
+    )
   )
   ipcMain.handle(
     IpcChannel.gamesRunning,

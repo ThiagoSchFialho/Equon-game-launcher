@@ -74,7 +74,9 @@ describe('play from game details', () => {
       )
     ).toBeTruthy()
 
+    // Not installed: only in the Library, never on Home.
     press('Escape')
+    press('e')
     await click('Missing')
     expect(
       await screen.findByText(
@@ -171,7 +173,7 @@ describe('add game form', () => {
     }))
     installFakeApi([], { games: { create } })
     render(<App />)
-    await screen.findByText('Nenhum jogo para mostrar ainda.')
+    await screen.findByText('Nenhum jogo instalado para mostrar.')
     press('Enter') // empty Home → Library
     const [addButton] = await screen.findAllByLabelText('Adicionar jogo')
     act(() => addButton.click())

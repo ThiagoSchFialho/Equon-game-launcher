@@ -137,10 +137,21 @@ limitações, condições de teste e método de inicialização suportado.
 
 ### 6.4 Busca, filtros e ordenação
 
--   Busca por título.
+-   Busca por título (teclado virtual; ignora maiúsculas, acentos e
+    pontuação).
 -   Filtro por origem, incluindo as origens criadas pelo usuário.
--   Filtro por estado de instalação quando confiável.
+-   Filtro por estado de instalação quando confiável (Todos /
+    Instalados / Não encontrados; o estado desconhecido só aparece em
+    "Todos").
 -   Ordenação alfabética, por atividade recente e por tempo de jogo.
+-   Padrão da Biblioteca: ordem alfabética, todos os jogos exceto os
+    ocultos. Um filtro permite mostrar os ocultos.
+-   Busca, filtros e ordenação são mantidos ao navegar entre telas e
+    voltam ao padrão quando o aplicativo é reiniciado.
+-   Início (regra fixa, não configurável): apenas jogos instalados e não
+    ocultos, pela última sessão, do mais recente para o mais antigo.
+-   Marcar como zerado e ocultar/mostrar ficam no menu de opções do
+    jogo, para qualquer origem.
 -   Arquitetura preparada para filtros adicionais sem reconstruir a
     tela.
 

@@ -12,6 +12,7 @@ import {
   type ArtworkRepository,
   type EmulatorRepository,
   type FileInspector,
+  type GameFlags,
   type GameRepository,
   type GameRunner,
   type LaunchConfigRepository,
@@ -93,6 +94,7 @@ export interface ManualGameService {
   update(id: number, form: ManualGameForm): Promise<Result<{ id: number }>>
   remove(id: number): Promise<Result<null>>
   launch(id: number): Promise<Result<null>>
+  setFlags(id: number, flags: GameFlags): Promise<Result<null>>
   createOrigin(name: string): Promise<Result<OriginInfo>>
   renameOrigin(key: string, name: string): Promise<Result<OriginInfo>>
   removeOrigin(key: string): Promise<Result<null>>
@@ -177,6 +179,12 @@ export function createManualGameService(deps: ManualGameServiceDeps): ManualGame
     launch: (id: number): Promise<Result<null>> =>
       asResult(async () => {
         await deps.runner.launch(id)
+        return null
+      }),
+
+    setFlags: (id: number, flags: GameFlags): Promise<Result<null>> =>
+      asResult(() => {
+        deps.games.setFlags(id, flags)
         return null
       }),
 

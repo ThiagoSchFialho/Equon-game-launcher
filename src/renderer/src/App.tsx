@@ -9,7 +9,9 @@ import {
   type Navigation,
   type Route
 } from './app/navigation'
+import { DEFAULT_LIBRARY_VIEW, type LibraryView } from '../../shared/library-view'
 import { GamesContext, useGamesLoader } from './data/games'
+import { LibraryViewContext, type LibraryViewState } from './data/library-view'
 import { RunningContext, useRunningLoader } from './data/running'
 import { FocusManager } from './focus/focus-manager'
 import { FocusProvider } from './focus/FocusProvider'
@@ -43,6 +45,12 @@ function App(): React.JSX.Element {
   const [manager] = useState(() => new FocusManager())
   const [route, setRoute] = useState<Route>({ name: 'home' })
   const games = useGamesLoader()
+  // Survives navigation, resets on restart (PRODUCT.md §6.4).
+  const [libraryView, setLibraryView] = useState<LibraryView>(DEFAULT_LIBRARY_VIEW)
+  const libraryViewState = useMemo<LibraryViewState>(
+    () => ({ view: libraryView, setView: setLibraryView }),
+    [libraryView]
+  )
   // A game that stops has new playtime and last-played values.
   const running = useRunningLoader(games.reload)
 
@@ -78,7 +86,9 @@ function App(): React.JSX.Element {
       <NavigationContext.Provider value={navigation}>
         <GamesContext.Provider value={games}>
           <RunningContext.Provider value={running}>
-            <CurrentScreen route={route} />
+            <LibraryViewContext.Provider value={libraryViewState}>
+              <CurrentScreen route={route} />
+            </LibraryViewContext.Provider>
           </RunningContext.Provider>
         </GamesContext.Provider>
       </NavigationContext.Provider>

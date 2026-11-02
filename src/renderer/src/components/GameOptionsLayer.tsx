@@ -8,8 +8,8 @@ import { ConfirmDialog } from './Dialog'
 import { OptionsMenu } from './OptionsMenu'
 
 /**
- * Options menu for a game card (Home, Library): edit and remove for
- * non-Steam games, with a confirmation before removing.
+ * Options menu for a game card (Home, Library): zerado/oculto for every
+ * game; edit and remove for non-Steam games, with a confirmation before removing.
  */
 export function GameOptionsLayer({
   game,
@@ -19,7 +19,7 @@ export function GameOptionsLayer({
   onClose: () => void
 }): React.JSX.Element {
   const navigation = useNavigation()
-  const { reload } = useGames()
+  const { reload, refresh } = useGames()
   const running = useRunning().ids.includes(game.id)
   const [confirming, setConfirming] = useState(false)
   const editable = game.origin !== 'steam'
@@ -46,6 +46,14 @@ export function GameOptionsLayer({
     <OptionsMenu
       title={game.title}
       beated={game.beated}
+      hidden={game.hidden}
+      onFlags={(flags) => {
+        // The list reloads either way; a failure leaves the flag as it was.
+        void window.equon.games.setFlags(game.id, flags).finally(() => {
+          refresh()
+          onClose()
+        })
+      }}
       onClose={onClose}
       onEdit={editable ? () => navigation.openGameForm(game.id) : undefined}
       onRemove={editable && !running ? () => setConfirming(true) : undefined}

@@ -65,6 +65,7 @@ function toSummary(
     playtime: game.playtime,
     timeLastPlayed: game.timeLastPlayed,
     beated: game.beated,
+    hidden: game.hidden,
     artwork: artworkKinds.get(game.id) ?? []
   }
 }
@@ -73,17 +74,14 @@ const originNameMap = (deps: GameQueryDeps): Map<string, string> =>
   new Map(deps.origins.list().map((o) => [o.key, o.name]))
 
 /**
- * Visible games only; hidden games are excluded until the Library filter
- * exists (Phase 5). Manual install states are re-checked first (§3.2).
+ * Every game, hidden ones included: Home and Library decide what to show.
+ * Manual install states are re-checked first (§3.2).
  */
 export function listGameSummaries(deps: GameQueryDeps): GameSummary[] {
   refreshManualInstallStates(deps, deps.inspector)
   const names = originNameMap(deps)
   const kinds = deps.artwork.listKinds()
-  return deps.games
-    .list()
-    .filter((g) => !g.hidden)
-    .map((g) => toSummary(g, names, kinds))
+  return deps.games.list().map((g) => toSummary(g, names, kinds))
 }
 
 export function getGameDetails(deps: GameQueryDeps, id: number): GameDetails | null {

@@ -33,7 +33,7 @@ beforeEach(() => {
 })
 
 describe('game queries', () => {
-  it('lists visible games with origin names and artwork kinds, matching the IPC schema', () => {
+  it('lists every game, hidden ones flagged, with origin names and artwork kinds, matching the IPC schema', () => {
     const shown = deps.games.create({ origin: 'ps2', title: 'Shown' })
     const hidden = deps.games.create({ origin: 'manual', title: 'Hidden' })
     deps.games.setFlags(hidden.id, { hidden: true })
@@ -51,19 +51,34 @@ describe('game queries', () => {
 
     const list = listGameSummaries(deps)
 
-    expect(list).toEqual([
-      {
-        id: shown.id,
-        title: 'Shown',
-        origin: 'ps2',
-        originName: 'PlayStation 2',
-        installed: null,
-        playtime: 0,
-        timeLastPlayed: null,
-        beated: false,
-        artwork: ['cover_square']
-      }
-    ])
+    expect(list).toEqual(
+      [
+        {
+          id: shown.id,
+          title: 'Shown',
+          origin: 'ps2',
+          originName: 'PlayStation 2',
+          installed: null,
+          playtime: 0,
+          timeLastPlayed: null,
+          beated: false,
+          hidden: false,
+          artwork: ['cover_square']
+        },
+        {
+          id: hidden.id,
+          title: 'Hidden',
+          origin: 'manual',
+          originName: 'Jogo Local',
+          installed: null,
+          playtime: 0,
+          timeLastPlayed: null,
+          beated: false,
+          hidden: true,
+          artwork: []
+        }
+      ].sort((a, b) => a.title.localeCompare(b.title))
+    )
     expect(gameSummaryListSchema.safeParse(list).success).toBe(true)
   })
 

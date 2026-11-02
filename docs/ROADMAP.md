@@ -177,18 +177,27 @@ titles; no automatic Epic/GOG integration is planned.
 
 ### Tasks
 
--   [ ] Define a normalized discovery contract for integrations.
--   [ ] Add search by title.
--   [ ] Add filters by origin and known installation state.
--   [ ] Add sorting by title, recent activity, and playtime.
--   [ ] Add manual controls for `hidden` and `beated`.
--   [ ] Add refresh, empty, partial-failure, and duplicate-review
-    states.
--   [ ] Keep the UI responsive during scans.
+-   [x] Define a normalized discovery contract for integrations
+    (`core/application/discovery.ts`: adapter, capabilities,
+    complete / partial / failed results, a plan that never writes "not
+    installed" on a failed read and only lists duplicate candidates).
+-   [x] Add search by title (on-screen keyboard; ignores case, accents
+    and punctuation).
+-   [x] Add filters by origin and known installation state, plus showing
+    hidden games (X opens the filters dialog).
+-   [x] Add sorting by title (default), recent activity, and playtime.
+-   [x] Add manual controls for `hidden` and `beated` (game options
+    menu, every origin).
+-   [x] Library empty and "no results" states.
+-   [x] Home shows only installed, non-hidden games, most recent session
+    first (fixed rule).
+
+The refresh button, scan progress, partial-failure and duplicate-review
+screens moved to Phase 6: they need a real automatic source.
 
 **Acceptance:** Search, filters, and sorting work together; manual flags
-persist; failed scans do not erase existing data; ambiguous duplicate
-matches are not silently merged.
+persist; the view survives navigation and resets on restart; the
+discovery plan never erases data on failure and never merges duplicates.
 
 ## Phase 6 --- Steam library and metadata
 
@@ -220,6 +229,11 @@ matches are not silently merged.
     repository support from Phase 2; a failed sync changes nothing.
 -   [ ] Securely store the Steam account ID and the Steam and
     SteamGridDB API keys (encrypted with `safeStorage`).
+-   [ ] Implement the Steam adapter on the Phase 5 discovery contract
+    and wire it to the repositories.
+-   [ ] Add the "Atualizar biblioteca" action, scan progress (UI stays
+    responsive during scans), partial-failure state and the
+    duplicate-review step (candidates are never merged silently).
 -   [ ] Test using fixtures and simulated failures (unreadable library,
     missing `libraryfolders.vdf`, download in progress, running game,
     corrupt files, network errors).

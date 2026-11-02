@@ -1,0 +1,49 @@
+.toolbar-field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  height: 3.125rem;
+  padding: 0 var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  white-space: nowrap;
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-gap);
+  transition: outline-color var(--motion-focus) var(--motion-easing);
+}
+
+.toolbar-field[data-focused='true'] {
+  outline-color: var(--color-focus);
+}
+
+.toolbar-field--search {
+  width: 22.5rem;
+}
+
+.toolbar-field__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+.toolbar-field__text[data-empty='true'],
+.toolbar-field__label {
+  color: var(--color-text-secondary);
+}
+
+.toolbar-field__search {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.toolbar-field__chevron {
+  width: 1rem;
+  height: 1rem;
+}

@@ -12,6 +12,7 @@ export const IpcChannel = {
   gamesRemove: 'games:remove',
   gamesLaunch: 'games:launch',
   gamesRunning: 'games:running',
+  gamesSetFlags: 'games:set-flags',
   originsList: 'origins:list',
   originsCreate: 'origins:create',
   originsRename: 'origins:rename',
@@ -62,7 +63,7 @@ export interface AppError {
 
 export type Result<T> = { ok: true; data: T } | { ok: false; error: AppError }
 
-/** A visible (not hidden) game, as shown in Home and Library. */
+/** A game as shown in Home and Library (hidden ones included; the views filter them). */
 export interface GameSummary {
   id: number
   title: string
@@ -74,6 +75,7 @@ export interface GameSummary {
   /** ISO-8601 UTC */
   timeLastPlayed: string | null
   beated: boolean
+  hidden: boolean
   /** Kinds with cached artwork. */
   artwork: ArtworkKind[]
 }
@@ -105,6 +107,11 @@ export interface GameDetails extends GameSummary {
 
 export type LaunchIssue =
   'steam' | 'not-installed' | 'install-unknown' | 'no-config' | 'emulator-missing'
+
+export interface GameFlagsInput {
+  hidden?: boolean
+  beated?: boolean
+}
 
 export interface OriginInfo {
   key: string
@@ -181,6 +188,8 @@ export interface EquonApi {
     remove(id: number): Promise<Result<null>>
     launch(id: number): Promise<Result<null>>
     running(): Promise<number[]>
+    /** Manual flags; works for every origin and is never touched by sync. */
+    setFlags(id: number, flags: GameFlagsInput): Promise<Result<null>>
     /** Subscribes to running-game changes; returns the unsubscribe function. */
     onRunningChanged(listener: (runningGameIds: number[]) => void): () => void
   }
