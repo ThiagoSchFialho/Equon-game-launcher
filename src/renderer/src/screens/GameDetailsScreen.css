@@ -79,7 +79,7 @@
   overflow: hidden;
 }
 
-/* Dominant art; without a 1920×1080 image the square cover fills the panel (proposed fallback). */
+/* Dominant art; without a 1920×1080 image the placeholder shows the game name. */
 .game__hero {
   grid-row: 1;
   grid-column: 2;

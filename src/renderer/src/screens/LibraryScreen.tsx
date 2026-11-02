@@ -62,6 +62,7 @@ export function LibraryScreen(): React.JSX.Element {
             key={game.id}
             game={game}
             variant="square"
+            scroll="center"
             onConfirm={() => navigation.openGame(game.id)}
             onMenu={() => setMenuGame(game)}
           />

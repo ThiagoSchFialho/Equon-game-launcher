@@ -7,8 +7,12 @@ export interface FocusableOptions {
   onFocus?: () => void
   /** Preferred element when its scope gets focus for the first time. */
   autoFocus?: boolean
-  /** "none" when the container positions the element itself (e.g. a transform carousel). */
-  scroll?: 'nearest' | 'none'
+  /**
+   * How a scroll container brings the element into view: "nearest" (default),
+   * "center" (keeps it mid-screen, e.g. the Library grid) or "none" when the
+   * container positions it itself (e.g. a transform carousel).
+   */
+  scroll?: 'nearest' | 'center' | 'none'
 }
 
 interface Entry extends FocusableOptions {
@@ -27,6 +31,9 @@ interface HandlerEntry {
   /** A modal layer (dialog) stops actions from reaching the layers below. */
   modal: boolean
 }
+
+const prefersReducedMotion = (): boolean =>
+  typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
 
 const rectOf = (el: HTMLElement): Rect => {
   const r = el.getBoundingClientRect()
@@ -113,7 +120,13 @@ export class FocusManager {
     const changed = this.focusedId !== id
     this.focusedId = id
     this.remembered.set(entry.scope, id)
-    if (entry.scroll !== 'none') entry.el.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+    if (entry.scroll !== 'none') {
+      entry.el.scrollIntoView?.({
+        block: entry.scroll === 'center' ? 'center' : 'nearest',
+        inline: 'nearest',
+        behavior: prefersReducedMotion() ? 'auto' : 'smooth'
+      })
+    }
     if (changed) {
       entry.onFocus?.()
       this.notify()

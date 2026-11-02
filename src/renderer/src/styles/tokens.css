@@ -12,7 +12,7 @@
   --color-text-secondary: #a7afbc;
   --color-border: #343b48;
   --color-accent: #d7a85b;
-  --color-focus: #f4d28c;
+  --color-focus: #f3f4f6;
   --color-success: #78c6a3;
   --color-warning: #e7b86a;
   --color-danger: #f07c7c;
@@ -55,7 +55,7 @@
   --radius-button: 0.625rem;
 
   /* Focus ring */
-  --focus-ring-width: 0.25rem;
+  --focus-ring-width: 0.1875rem; /* 3px */
   --focus-ring-gap: 0.25rem;
 
   /* Motion (§5) */

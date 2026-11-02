@@ -102,7 +102,8 @@ de iluminação.
 
   `color.accent`           `#D7A85B`      Acento quente, referência retrô
 
-  `color.focus`            `#F4D28C`      Foco de navegação
+  `color.focus`            `#F3F4F6`      Foco de navegação (branco;
+                                          decisão da Fase 3)
 
   `color.success`          `#78C6A3`      Confirmação e sucesso
 
@@ -172,6 +173,8 @@ todos os espaços.
 -   Painéis: raio inicial de 12--16 px.
 -   Botões: raio consistente com a linguagem dos cards.
 -   Contornos de foco devem permanecer nítidos mesmo em fundos claros.
+-   Contorno de foco: `color.focus`, 3 px, com 4 px de afastamento do
+    elemento (Fase 3).
 -   Sombras são discretas e funcionais; não usar sombras pesadas em
     todos os elementos.
 -   O contorno de foco não deve ser cortado por containers com
@@ -273,12 +276,9 @@ artes independentes; nenhuma é recortada a partir da outra.
     arte (o fundo 1920×1080 usa `cover`; o logotipo usa `contain`).
 -   Usar placeholders consistentes quando uma imagem estiver ausente,
     um por tipo de arte (cada um na proporção do seu tipo). A interface deve funcionar sem nenhuma arte.
--   Jogos sem fundo 1920×1080: **proposta implementada na Fase 3**, aguardando
-    aprovação: a capa quadrada (ou o placeholder) ocupa o painel da arte
-    principal. Antes da proposta:
--   Jogos manuais sem fundo 1920×1080: definir o visual de fallback
-    (por exemplo, cor de superfície com a capa e o logotipo) antes de
-    implementar a tela de detalhes.
+-   Jogos sem fundo 1920×1080 (decidido na Fase 3): o painel da arte
+    principal mostra o mesmo placeholder dos outros tipos, cinza com o
+    nome do jogo.
 -   Usar sempre as imagens do cache local; nunca carregar uma imagem
     remota em tempo de execução.
 -   Carregar imagens progressivamente e limitar resolução/tamanho quando
@@ -436,7 +436,6 @@ código.
 -   Logo e sistema de ícones próprios.
 -   Layout definitivo da Home e da biblioteca.
 -   Proporções e tamanhos finais dos cards.
--   Visual de fallback quando não houver imagem 1920×1080.
 -   Navegador de arquivos acessível por controle para escolher
     executáveis e imagens.
 -   Configurações de movimento e acessibilidade expostas ao usuário.

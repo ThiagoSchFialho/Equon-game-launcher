@@ -34,7 +34,7 @@ export function Artwork({
     <div className={`artwork artwork--${kind} ${className}`} data-state={hasImage ? state : 'none'}>
       {(!hasImage || state !== 'loaded') && (
         <div className="artwork__placeholder" aria-hidden={hasImage}>
-          {!hasImage && kind !== 'background' && <span>{title}</span>}
+          {!hasImage && <span>{title}</span>}
         </div>
       )}
       {hasImage && (

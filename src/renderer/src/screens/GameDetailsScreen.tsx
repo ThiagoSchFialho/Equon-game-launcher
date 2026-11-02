@@ -120,7 +120,7 @@ function Details({
 
       <Artwork
         gameId={game.id}
-        kind={game.artwork.includes('background') ? 'background' : 'cover_square'}
+        kind="background"
         available={game.artwork}
         title={game.title}
         className="game__hero"
