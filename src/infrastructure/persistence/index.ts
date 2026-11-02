@@ -2,6 +2,7 @@
 export { openDatabase, type SqliteDatabase } from './database'
 export { migrate, schemaVersion, latestVersion, type MigrationResult } from './migrate'
 export { migrations } from './migrations'
+export { openAppDatabase, type AppDatabase } from './open-app-database'
 export { createAchievementRepository } from './repositories/achievement-repository'
 export { createGameRepository } from './repositories/game-repository'
 export { createGenreRepository } from './repositories/genre-repository'

@@ -1,7 +1,8 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, dialog } from 'electron'
 import { join } from 'path'
 import { pathToFileURL } from 'url'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { openAppDatabase, type SqliteDatabase } from '../infrastructure/persistence'
 import { registerIpcHandlers } from './ipc/register'
 import { hardenApp } from './security/harden'
 import type { AppOrigin } from './security/navigation'
@@ -41,8 +42,19 @@ function createWindow(): void {
   }
 }
 
+let db: SqliteDatabase | undefined
+
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.equon.launcher')
+
+  // The database is required; without it the launcher cannot work.
+  try {
+    db = openAppDatabase(join(app.getPath('userData'), 'equon.sqlite')).db
+  } catch (error) {
+    dialog.showErrorBox('Equon', `Could not open the local database.\n\n${String(error)}`)
+    app.quit()
+    return
+  }
 
   // F12 toggles DevTools in development; reload shortcuts are ignored in production.
   app.on('browser-window-created', (_, window) => {
@@ -56,4 +68,8 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   app.quit()
+})
+
+app.on('will-quit', () => {
+  db?.close()
 })
