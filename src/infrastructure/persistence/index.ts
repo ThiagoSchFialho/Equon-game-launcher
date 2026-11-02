@@ -1,0 +1,10 @@
+// Persistence: SQLite connection, migrations and repositories. The only place with SQL.
+export { openDatabase, type SqliteDatabase } from './database'
+export { migrate, schemaVersion, latestVersion, type MigrationResult } from './migrate'
+export { migrations } from './migrations'
+export { createAchievementRepository } from './repositories/achievement-repository'
+export { createGameRepository } from './repositories/game-repository'
+export { createGenreRepository } from './repositories/genre-repository'
+export { createOriginRepository } from './repositories/origin-repository'
+export { createUnitOfWork } from './repositories/unit-of-work'
+export { createUserRepository } from './repositories/user-repository'
