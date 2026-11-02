@@ -30,7 +30,7 @@ architecture decisions are confirmed.
 -   [x] Define approved `origin` values and how unknown installation
     state is represented (D-05, D-06).
 -   [x] Record decisions in `ARCHITECTURE.md`.
--   [ ] Set up Git and `.gitignore` (a starter `.gitignore` is provided).
+-   [x] Set up Git and `.gitignore` (a starter `.gitignore` is provided).
 
 **Acceptance:** Key technical decisions and unresolved questions are
 documented. No production feature code is written just to avoid making a
@@ -118,8 +118,8 @@ does not divide by zero; manual flags are preserved.
 -   [x] Preserve mouse and keyboard alternatives.
 -   [x] Implement loading, empty, unavailable, and error states.
 -   [x] Validate 1920×1080 and 1280×720 (also 2560×1440).
--   [ ] Validate on hardware: controller disconnect/reconnect and window
-    focus loss (owner).
+-   [x] Validate on hardware: controller disconnect/reconnect and window
+    focus loss (verified by the owner).
 -   [x] Serve cached artwork through the `equon-art://` protocol and
     load game data through validated IPC (`games:list`, `games:get`).
 -   [x] Separate dev user-data folder and a `dev:seed` script with
