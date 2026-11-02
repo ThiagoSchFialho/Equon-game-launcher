@@ -59,6 +59,18 @@ describe('applyLibraryView', () => {
     expect(ids({ install: 'missing' })).toEqual([2])
   })
 
+  it('lists only beaten games on request', () => {
+    const list = [
+      game(1, 'A', { beated: true }),
+      game(2, 'B'),
+      game(3, 'C', { beated: true, hidden: true })
+    ]
+    const view = { ...DEFAULT_LIBRARY_VIEW, beatenOnly: true }
+    expect(applyLibraryView(list, view).map((g) => g.id)).toEqual([1])
+    expect(applyLibraryView(list, { ...view, showHidden: true }).map((g) => g.id)).toEqual([1, 3])
+    expect(isFiltered(view)).toBe(true)
+  })
+
   it('shows hidden games only on request, combined with the other filters', () => {
     expect(ids({ showHidden: true })).toContain(4)
     expect(ids({ showHidden: true, sort: 'playtime', install: 'installed' })).toEqual([4, 1, 5, 6])
@@ -98,8 +110,8 @@ describe('homeGames', () => {
     expect(homeGames(list).map((g) => g.id)).toEqual([3, 1, 2])
   })
 
-  it('applies the limit', () => {
-    const list = Array.from({ length: 20 }, (_, i) => game(i + 1, `G${i + 10}`))
-    expect(homeGames(list, 5)).toHaveLength(5)
+  it('has no limit', () => {
+    const list = Array.from({ length: 40 }, (_, i) => game(i + 1, 'G' + String(i)))
+    expect(homeGames(list)).toHaveLength(40)
   })
 })

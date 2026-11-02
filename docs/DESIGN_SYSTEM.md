@@ -50,7 +50,7 @@ apenas um banner.
 Regiões possíveis: - Navegação principal. - Continuar jogando. - Lista
 de jogos recentes. - Atalho claro para a biblioteca completa.
 
-Mostra apenas jogos instalados e não ocultos, pela última sessão (mais
+Mostra todos os jogos instalados e não ocultos (sem limite), pela última sessão (mais
 recente primeiro). A regra é fixa; o usuário não altera a ordem nem os
 filtros do Início.
 
@@ -61,8 +61,9 @@ filtros do Início.
 -   Busca, filtro e ordenação acessíveis sem abandonar o contexto.
 -   Barra: campo de busca, "Origem" e "Ordenar" à esquerda;
     "Emuladores" e "Adicionar jogo" à direita. Y abre a busca (teclado
-    virtual) e X abre o diálogo de filtros (instalação e jogos
-    ocultos). Jogos ocultos, quando mostrados, aparecem esmaecidos com o
+    virtual) e X (controle ou teclado) abre o diálogo de filtros
+    (instalação, jogos ocultos e só jogos zerados). "Limpar filtros"
+    fica ao lado de "Ordenar" e no diálogo; mantém a ordenação. Jogos ocultos, quando mostrados, aparecem esmaecidos com o
     selo "Oculto".
 -   O card precisa comunicar título e foco; origem e estado de
     instalação podem aparecer como informação secundária.
@@ -329,7 +330,7 @@ comportamento para escalonamento de interface e DPI do Windows.
     | Analógico direito | `scroll` | Page Up / Page Down |
     | LB / RB | `previousSection` / `nextSection` | Q / E |
     | ☰ (Menu) | `menu` | M, tecla de menu de contexto |
-    | X / Y | `secondary` / `tertiary`: no teclado virtual, apagar / espaço; na Biblioteca, filtros / busca | — |
+    | X / Y | `secondary` / `tertiary`: no teclado virtual, apagar / espaço; na Biblioteca, filtros / busca | X (filtros na Biblioteca) |
     | LT / RT | `leftTrigger` / `rightTrigger`: no teclado virtual, maiúsculas / pronto | — |
 
     Ao editar um campo de texto, o teclado físico digita normalmente (letras, Backspace, Enter) em vez de acionar atalhos.

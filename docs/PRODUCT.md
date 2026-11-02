@@ -145,11 +145,12 @@ limitações, condições de teste e método de inicialização suportado.
     "Todos").
 -   Ordenação alfabética, por atividade recente e por tempo de jogo.
 -   Padrão da Biblioteca: ordem alfabética, todos os jogos exceto os
-    ocultos. Um filtro permite mostrar os ocultos.
+    ocultos. Filtros permitem mostrar os ocultos e listar só os jogos
+    zerados; "Limpar filtros" fica ao lado da ordenação.
 -   Busca, filtros e ordenação são mantidos ao navegar entre telas e
     voltam ao padrão quando o aplicativo é reiniciado.
--   Início (regra fixa, não configurável): apenas jogos instalados e não
-    ocultos, pela última sessão, do mais recente para o mais antigo.
+-   Início (regra fixa, não configurável): todos os jogos instalados e
+    não ocultos, sem limite de quantidade, pela última sessão, do mais recente para o mais antigo.
 -   Marcar como zerado e ocultar/mostrar ficam no menu de opções do
     jogo, para qualquer origem.
 -   Arquitetura preparada para filtros adicionais sem reconstruir a

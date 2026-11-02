@@ -182,6 +182,14 @@ export function LibraryScreen(): React.JSX.Element {
               value={t.library.sorts[view.sort]}
               onConfirm={() => setOverlay({ kind: 'sort' })}
             />
+            <Button
+              id="library:clear-filters"
+              label={t.library.clearFilters}
+              unavailable={!filtered}
+              onConfirm={clearFilters}
+            >
+              {t.library.clearFilters}
+            </Button>
             <div className="library__toolbar-actions">
               <Button
                 id="library:emulators"
@@ -272,6 +280,12 @@ export function LibraryScreen(): React.JSX.Element {
               label: t.library.hiddenGames,
               detail: view.showHidden ? t.library.showHidden : t.library.hideHidden,
               onConfirm: () => setView((v) => ({ ...v, showHidden: !v.showHidden }))
+            },
+            {
+              id: 'beaten',
+              label: t.library.beatenGames,
+              detail: view.beatenOnly ? t.library.beatenOnly : t.library.beatenAll,
+              onConfirm: () => setView((v) => ({ ...v, beatenOnly: !v.beatenOnly }))
             },
             {
               id: 'clear',

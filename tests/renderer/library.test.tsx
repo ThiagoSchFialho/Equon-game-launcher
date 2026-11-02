@@ -120,6 +120,23 @@ describe('library organization', () => {
     expect(screen.getByLabelText('Ordenar: Recentes')).toBeTruthy()
   })
 
+  it('opens the filters with the X key and lists only beaten games', async () => {
+    installFakeApi([...games, summary(5, 'Hades', { beated: true })])
+    await openLibrary()
+    expect(screen.getByLabelText('Limpar filtros').getAttribute('aria-disabled')).toBe('true')
+    press('x')
+    expect(await screen.findByRole('dialog', { name: 'Filtros' })).toBeTruthy()
+    await clickText('Jogos zerados')
+    expect(await screen.findByText('Só zerados')).toBeTruthy()
+    press('Escape')
+    await waitFor(() => expect(cards()).toEqual(['Hades']))
+
+    // The toolbar button clears the filters too.
+    await click('Limpar filtros')
+    await waitFor(() => expect(cards()).toHaveLength(4))
+    expect(screen.getByLabelText('Limpar filtros').getAttribute('aria-disabled')).toBe('true')
+  })
+
   it('offers to show hidden games when every game is hidden', async () => {
     installFakeApi([summary(1, 'Doom', { hidden: true })])
     await openLibrary()

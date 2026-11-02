@@ -67,7 +67,8 @@ describe('keyboard mapping', () => {
     expect(keyToAction('Enter', false)).toBe('confirm')
     expect(keyToAction('Escape', false)).toBe('back')
     expect(keyToAction('q', false)).toBe('previousSection')
-    expect(keyToAction('x', false)).toBeNull()
+    expect(keyToAction('x', false)).toBe('secondary')
+    expect(keyToAction('z', false)).toBeNull()
   })
 
   it('lets OS auto-repeat through only for repeating actions', () => {

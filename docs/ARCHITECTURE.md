@@ -567,7 +567,7 @@ A failed scan must not mark every game from that source as uninstalled. The plan
 
 ### Library view (Phase 5)
 
-Search, filters and sorting are pure functions in `src/shared/library-view.ts`, applied in the renderer to the summaries it already holds (`games:list` returns every game with its `hidden` flag). The view state lives in an app-level React context: it survives navigation and resets on restart, so no preference is persisted (the open question about where to persist preferences stays open). Home uses the fixed `homeGames` rule: installed, not hidden, most recent session first. Manual flags are written through `games:set-flags` (validated `{ hidden?, beated? }`, every origin).
+Search, filters and sorting are pure functions in `src/shared/library-view.ts`, applied in the renderer to the summaries it already holds (`games:list` returns every game with its `hidden` flag). The view state lives in an app-level React context: it survives navigation and resets on restart, so no preference is persisted (the open question about where to persist preferences stays open). Home uses the fixed `homeGames` rule: every installed, non-hidden game (no limit), most recent session first. Manual flags are written through `games:set-flags` (validated `{ hidden?, beated? }`, every origin).
 
 ### Metadata and genres
 

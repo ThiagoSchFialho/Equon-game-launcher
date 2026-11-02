@@ -17,7 +17,10 @@ const KEYS: Record<string, Action> = {
   q: 'previousSection',
   Q: 'previousSection',
   e: 'nextSection',
-  E: 'nextSection'
+  E: 'nextSection',
+  // Library filters; while a text field is edited, the key types instead.
+  x: 'secondary',
+  X: 'secondary'
 }
 
 /** Maps a key event to an action; OS auto-repeat only counts for repeating actions. */

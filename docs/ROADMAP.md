@@ -184,13 +184,14 @@ titles; no automatic Epic/GOG integration is planned.
 -   [x] Add search by title (on-screen keyboard; ignores case, accents
     and punctuation).
 -   [x] Add filters by origin and known installation state, plus showing
-    hidden games (X opens the filters dialog).
+    hidden games and only beaten games (X, gamepad or keyboard, opens the
+    filters dialog; "Limpar filtros" next to sorting).
 -   [x] Add sorting by title (default), recent activity, and playtime.
 -   [x] Add manual controls for `hidden` and `beated` (game options
     menu, every origin).
 -   [x] Library empty and "no results" states.
--   [x] Home shows only installed, non-hidden games, most recent session
-    first (fixed rule).
+-   [x] Home shows every installed, non-hidden game (no limit), most
+    recent session first (fixed rule).
 
 The refresh button, scan progress, partial-failure and duplicate-review
 screens moved to Phase 6: they need a real automatic source.
