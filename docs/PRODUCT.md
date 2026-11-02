@@ -1,6 +1,6 @@
 # Game Launcher --- Product Requirements Document
 
-**Versão:** 0.2\
+**Versão:** 0.3\
 **Status:** Em revisão; alinhado às decisões técnicas registradas em `ARCHITECTURE.md`\
 **Plataforma-alvo:** Windows\
 **Público inicial:** usuário de PC que quer uma experiência de
@@ -106,6 +106,12 @@ com o computador ligado a uma TV.
     Games Store, da GOG e de qualquer outro launcher. Alguns desses
     jogos podem só abrir pelo cliente oficial; esse caso deve ser
     validado com jogos reais.
+-   **Origens:** cada jogo tem uma origem. De fábrica existem Steam,
+    PC, Yuzu e PlayStation 2; o usuário pode criar, renomear e excluir
+    as próprias origens (por exemplo, "Nintendo 64" para um emulador
+    novo). Só a Steam tem integração automática; jogos de qualquer outra
+    origem são adicionados manualmente. Para um emulador, o executável é
+    o emulador e o caminho da ROM vai nos argumentos.
 
 As integrações devem ser implementadas por adaptadores independentes.
 Não presumir que todas as lojas ofereçam APIs públicas equivalentes.
@@ -127,7 +133,7 @@ limitações, condições de teste e método de inicialização suportado.
 ### 6.4 Busca, filtros e ordenação
 
 -   Busca por título.
--   Filtro por origem.
+-   Filtro por origem, incluindo as origens criadas pelo usuário.
 -   Filtro por estado de instalação quando confiável.
 -   Ordenação alfabética, por atividade recente e por tempo de jogo.
 -   Arquitetura preparada para filtros adicionais sem reconstruir a
@@ -146,8 +152,11 @@ limitações, condições de teste e método de inicialização suportado.
 -   Para jogos Steam, o início e o fim da sessão são observados pelo
     estado do jogo nos arquivos da Steam; o resultado é de melhor
     esforço, com precisão limitada pela forma de observação.
--   Sessões interrompidas por encerramento inesperado não somam tempo
-    por padrão, pois a duração é desconhecida.
+-   Toda sessão observada soma tempo ao total do jogo, qualquer que seja
+    a origem e mesmo que o jogo seja fechado à força. Se o próprio
+    launcher for encerrado inesperadamente enquanto um jogo roda, a
+    sessão é fechada no último registro periódico (heartbeat) e esse
+    tempo também é somado.
 
 ### 6.6 Controle e navegação
 

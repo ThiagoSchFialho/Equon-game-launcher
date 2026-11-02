@@ -1,6 +1,6 @@
 # Equon Game Launcher — Contexto do Banco de Dados
 
-**Versão:** 0.2
+**Versão:** 0.3
 **Status:** Rascunho — alinhado às decisões D-01 a D-17 do `ARCHITECTURE.md`
 **Idioma:** português
 **Finalidade:** descrever o modelo de dados, as regras de integridade e as decisões que a IA de programação e as pessoas devem respeitar ao criar migrações, repositórios e casos de uso.
@@ -17,7 +17,7 @@ Quando este documento e o código divergirem, atualize o documento no mesmo comm
 - Migrações: arquivos `.sql` versionados (`0001_init.sql`, ...), aplicados em ordem por um executor pequeno que registra a versão em `PRAGMA user_version`. Cada migração roda em transação.
 - **Obrigatório:** executar `PRAGMA foreign_keys = ON` em **toda** conexão. Sem isso o SQLite ignora as chaves estrangeiras e os `ON DELETE CASCADE` não funcionam.
 - O estado de desbloqueio das conquistas fica em `ACHIEVEMENTS`. **Não** criar `USER_ACHIEVEMENTS` nem perfis múltiplos.
-- Fontes Steam usadas: arquivos locais da Steam (instalação), `appdetails` (metadados), Steam Web API (conquistas) e SteamGridDB (artes). Epic Games e GOG **não** têm integração automática; esses jogos são adicionados manualmente (`origin = 'manual'`).
+- Fontes Steam usadas: arquivos locais da Steam (instalação), `appdetails` (metadados), Steam Web API (conquistas) e SteamGridDB (artes). Epic Games e GOG **não** têm integração automática; esses jogos são adicionados manualmente (`origin = 'manual'`). Jogos de emuladores (Yuzu, PlayStation 2 e origens criadas pelo usuário) também são adicionados manualmente, cada um com a sua origem (ver 3.10).
 - Segredos (chaves de API) nunca ficam em texto puro no banco (D-04).
 
 ---
@@ -40,7 +40,8 @@ Pontos de atenção:
 - **SteamID64 não cabe com segurança em número JavaScript** (passa de 2^53). Por isso `USERS.steam_id` é `TEXT` (17 dígitos). Já o **App ID** de um jogo é pequeno e pode ser `INTEGER`.
 - `UNIQUE` aceita vários `NULL` no SQLite, o que é o comportamento desejado para colunas opcionais como `GAMES.steam_id`.
 - A ordem padrão de `NULL` difere entre bancos. Sempre especificar explicitamente quando a ordenação importar (por exemplo, "sem data por último").
-- Considerar tabelas `STRICT` se a versão do SQLite empacotada suportar (validar na Fase 2).
+- Todas as tabelas são `STRICT` (o SQLite empacotado, 3.53.4, suporta; o recurso existe desde o 3.37). O banco recusa, por exemplo, texto em coluna `INTEGER`.
+- Colunas booleanas e enumeradas sempre têm `CHECK`, inclusive as que aceitam `NULL` (`installed IN (0,1)` ou `NULL`).
 - Upserts usam `INSERT ... ON CONFLICT (...) DO UPDATE`. A cláusula de atualização **nunca** pode tocar em `hidden` nem em `beated`.
 
 ---
@@ -60,19 +61,20 @@ Um registro por jogo, de qualquer origem.
 | `developer` | `TEXT` | |
 | `release_date` | `TEXT` | `YYYY-MM-DD` |
 | `time_last_played` | `TEXT` | Data/hora UTC da última sessão; `NULL` se nunca jogado |
-| `hidden` | `INTEGER NOT NULL DEFAULT 0` | Flag manual. Nunca sobrescrita por sincronização |
-| `installed` | `INTEGER` | `1` instalado, `0` confirmado como não instalado, `NULL` desconhecido (D-06) |
+| `hidden` | `INTEGER NOT NULL DEFAULT 0` | Flag manual (`CHECK IN (0,1)`). Nunca sobrescrita por sincronização |
+| `installed` | `INTEGER` | `1` instalado, `0` confirmado como não instalado, `NULL` desconhecido (D-06); `CHECK (installed IN (0,1))` |
 | `playtime` | `INTEGER NOT NULL DEFAULT 0` | Minutos medidos pelo launcher; `CHECK (playtime >= 0)` |
-| `beated` | `INTEGER NOT NULL DEFAULT 0` | Flag manual. Nunca sobrescrita por sincronização |
+| `beated` | `INTEGER NOT NULL DEFAULT 0` | Flag manual (`CHECK IN (0,1)`). Nunca sobrescrita por sincronização |
 | `required_age` | `TEXT` | Classificação indicativa |
-| `origin` | `TEXT NOT NULL` | `CHECK (origin IN ('steam','manual'))` (D-05) |
+| `origin` | `TEXT NOT NULL` | FK para `ORIGINS(key)` com `ON DELETE RESTRICT` (D-05) |
 | `metadata_fetched_at` | `TEXT` | Preenchido somente após salvar uma resposta válida de metadados (D-16) |
 
 Regras:
 
-- `origin` identifica a **fonte do registro**, não o estado de instalação.
+- `origin` identifica a **fonte do registro**, não o estado de instalação. Os valores possíveis estão na tabela `ORIGINS` (3.10), não fixos no schema.
 - Jogos com `origin = 'steam'` devem ter `steam_id` (`CHECK (origin <> 'steam' OR steam_id IS NOT NULL)`).
-- Jogos da Epic, GOG e de outros launchers são cadastrados como `manual`.
+- Jogos da Epic, GOG e de outros launchers são cadastrados como `manual`. Jogos de emulador usam a origem do emulador (por exemplo, `yuzu`, `ps2` ou uma origem criada pelo usuário).
+- Só jogos descobertos pelo adaptador da Steam usam `steam`; o usuário nunca escolhe `steam` ao adicionar um jogo.
 - `hidden` e `beated` começam em `0` e só mudam por ação do usuário.
 - `playtime` nunca é negativo. A regra de cálculo está em 3.8.
 - Possíveis duplicidades entre um jogo manual e um jogo Steam **não** são mescladas automaticamente: vão para revisão do usuário.
@@ -99,7 +101,7 @@ Uma única linha, com a configuração do usuário local.
 | Coluna | Tipo | Regras |
 | --- | --- | --- |
 | `id` | `INTEGER PRIMARY KEY` | `CHECK (id = 1)`; o repositório sempre usa `id = 1` (D-10) |
-| `steam_id` | `TEXT UNIQUE` | SteamID64 (17 dígitos, validar com `^\d{17}$`); `NULL` enquanto não configurado |
+| `steam_id` | `TEXT UNIQUE` | SteamID64 (17 dígitos, validar com `^\d{17}$`); `NULL` enquanto não configurado. O banco também verifica: 17 caracteres, só dígitos |
 | `steam_api_key_encrypted` | `BLOB` | Chave da Steam Web API criptografada com `safeStorage` (D-04) |
 | `steamgriddb_api_key_encrypted` | `BLOB` | Chave do SteamGridDB criptografada com `safeStorage` (D-15) |
 | `platine` | `INTEGER NOT NULL DEFAULT 0` | Jogos com platina; `CHECK (>= 0)` |
@@ -109,6 +111,7 @@ Uma única linha, com a configuração do usuário local.
 
 Regras:
 
+- A linha `id = 1` é criada pela migração inicial; o repositório nunca precisa tratar a ausência dela.
 - As chaves só são descriptografadas no processo principal, na hora de uma requisição. Nunca vão para a interface, para logs ou para mensagens de erro.
 - Os contadores são **agregados derivados** de `ACHIEVEMENTS`. São recalculados a partir dos dados persistidos, na mesma transação da sincronização; nunca incrementados às cegas.
 
@@ -126,7 +129,7 @@ Definição e estado pessoal de cada conquista de um jogo.
 | `icon` | `TEXT` | Referência da imagem; segue a política de cache de artes |
 | `unlocked` | `INTEGER NOT NULL DEFAULT 0` | `CHECK (unlocked IN (0,1))` |
 | `unlocked_at` | `TEXT` | `NULL` se bloqueada ou desconhecida |
-| `global_percent` | `REAL` | Percentual global; `NULL` se desconhecido (nunca `0` por falta de dado) |
+| `global_percent` | `REAL` | Percentual global; `NULL` se desconhecido (nunca `0` por falta de dado); `CHECK (global_percent BETWEEN 0 AND 100)` |
 | `tier` | `TEXT NOT NULL` | `CHECK (tier IN ('bronze','silver','gold'))` |
 
 Restrições: `UNIQUE (game_id, api_name)`.
@@ -156,7 +159,9 @@ Ordenação (regras de apresentação):
 | Coluna | Tipo | Regras |
 | --- | --- | --- |
 | `id` | `INTEGER PRIMARY KEY` | |
-| `name` | `TEXT NOT NULL UNIQUE` | Nomes normalizados para evitar duplicidade |
+| `name` | `TEXT NOT NULL UNIQUE COLLATE NOCASE` | Nomes normalizados para evitar duplicidade |
+
+Normalização: remover espaços nas pontas e colapsar espaços repetidos. A unicidade não diferencia maiúsculas (`Action` e `action` são o mesmo gênero); o nome guardado é o da primeira vez que apareceu.
 
 ### 3.6 `GAME_GENRES`
 
@@ -182,7 +187,7 @@ Configuração de lançamento de jogos **manuais**.
 
 Regras:
 
-- Só existe para jogos com `origin = 'manual'` (verificado na camada de aplicação).
+- Só existe para jogos com origem diferente de `steam` (`manual`, emuladores e origens do usuário; verificado na camada de aplicação). Para um emulador, `executable_path` é o emulador e o caminho da ROM vai em `arguments`.
 - Os três campos são **entrada não confiável**: validar se o executável existe e é um arquivo; nunca montar uma linha de comando como texto; passar argumentos como lista, sem shell.
 - Jogos da Steam são lançados por `steam://rungameid/<appid>` (D-17) e não usam esta tabela.
 - Jogos da Epic que só abrem pelo cliente oficial podem exigir outra forma de lançamento; validar na Fase 4.
@@ -196,21 +201,24 @@ Sessões de jogo observadas pelo launcher.
 | `id` | `INTEGER PRIMARY KEY` | |
 | `game_id` | `INTEGER NOT NULL` | FK para `GAMES(id)` com `ON DELETE CASCADE` |
 | `started_at` | `TEXT NOT NULL` | UTC |
-| `ended_at` | `TEXT` | UTC; `NULL` enquanto `running` ou se `interrupted` |
+| `last_seen_at` | `TEXT NOT NULL` | UTC; último heartbeat do launcher enquanto observava o jogo. Começa igual a `started_at` |
+| `ended_at` | `TEXT` | UTC; `NULL` enquanto `running` |
 | `duration_seconds` | `INTEGER` | `CHECK (duration_seconds IS NULL OR duration_seconds >= 0)` |
 | `status` | `TEXT NOT NULL` | `CHECK (status IN ('running','completed','interrupted'))` |
 
 Restrições:
 
-- `CHECK (status <> 'completed' OR (ended_at IS NOT NULL AND duration_seconds IS NOT NULL))`.
+- `CHECK (status = 'running' OR (ended_at IS NOT NULL AND duration_seconds IS NOT NULL))`: sessões `completed` e `interrupted` sempre têm fim e duração.
 - Índice único parcial: no máximo **uma** sessão `running` por jogo (`UNIQUE (game_id) WHERE status = 'running'`).
 
 Regras:
 
 - Uma sessão `running` é criada quando o início do jogo é **observado** (para jogos Steam, o flag `AppRunning` do manifesto; para jogos manuais, o processo iniciado). Abrir a URL da Steam não conta como início.
 - Ao encerrar normalmente: preencher `ended_at`, `duration_seconds`, `status = 'completed'` e atualizar `GAMES.playtime` e `GAMES.time_last_played` **na mesma transação**.
-- Na inicialização do launcher, sessões que ficaram `running` são marcadas como `interrupted`. Por padrão, sessões interrompidas **não** somam tempo (a duração é desconhecida).
-- **Cálculo de `GAMES.playtime`:** `floor(soma de duration_seconds das sessões 'completed' do jogo / 60)`. Assim os segundos que sobram de cada sessão se acumulam em vez de serem perdidos por arredondamento. O recálculo é idempotente.
+- **Toda sessão observada soma tempo**, qualquer que seja a origem e mesmo que o jogo tenha sido fechado à força (o launcher observa o fim do processo, então a sessão termina como `completed`).
+- **Heartbeat:** enquanto observa um jogo em execução, o launcher atualiza `last_seen_at` periodicamente (cerca de 30 s; o intervalo final é medido na Fase 4).
+- Se o próprio launcher morrer (crash, queda de energia, desligamento do Windows), na inicialização seguinte cada sessão que ficou `running` vira `interrupted`, com `ended_at = last_seen_at` e `duration_seconds = last_seen_at − started_at`, na mesma transação que recalcula `playtime`. Perde-se no máximo um intervalo de heartbeat.
+- **Cálculo de `GAMES.playtime`:** `floor(soma de duration_seconds das sessões 'completed' e 'interrupted' do jogo / 60)`. Assim os segundos que sobram de cada sessão se acumulam em vez de serem perdidos por arredondamento. O recálculo é idempotente.
 - Para jogos Steam, o início e o fim têm a precisão limitada pela forma de observar o manifesto; o resultado é "melhor esforço" e as limitações observadas devem ser documentadas.
 
 ### 3.9 `GAME_ARTWORK` (D-15)
@@ -225,8 +233,8 @@ Artes de cada jogo, guardadas em cache local.
 | `local_path` | `TEXT NOT NULL` | Caminho relativo à pasta de cache de artes |
 | `source` | `TEXT NOT NULL` | `CHECK (source IN ('steam','steamgriddb','user'))` |
 | `source_url` | `TEXT` | Origem remota, se houver |
-| `width` | `INTEGER` | Dimensões reais da imagem baixada |
-| `height` | `INTEGER` | |
+| `width` | `INTEGER` | Dimensões reais da imagem baixada; `CHECK (width > 0)` |
+| `height` | `INTEGER` | `CHECK (height > 0)` |
 | `user_selected` | `INTEGER NOT NULL DEFAULT 0` | `CHECK (user_selected IN (0,1))` |
 | `fetched_at` | `TEXT` | UTC |
 
@@ -251,6 +259,32 @@ Regras:
 - A tabela pode ficar sem linhas para um jogo: a interface usa placeholders.
 - A capa vertical (`cover_portrait`) e a quadrada (`cover_square`) são artes **independentes**: uma não é recortada a partir da outra. A tela Início usa a vertical; a Biblioteca usa a quadrada.
 - Validar as dimensões decodificadas de cada tipo: a vertical deve ter proporção 2:3 (alvo 600×900) e a quadrada proporção 1:1.
+
+### 3.10 `ORIGINS` (D-05)
+
+Origens possíveis de um jogo. É uma tabela, não uma lista fixa, para que o usuário possa criar origens novas (por exemplo, "Nintendo 64" para um emulador novo).
+
+| Coluna | Tipo | Regras |
+| --- | --- | --- |
+| `key` | `TEXT PRIMARY KEY` | Identificador estável, minúsculo (`steam`, `manual`, `yuzu`, `ps2`, `nintendo-64`). Nunca muda depois de criado |
+| `name` | `TEXT NOT NULL UNIQUE COLLATE NOCASE` | Nome exibido; editável |
+| `builtin` | `INTEGER NOT NULL DEFAULT 0` | `CHECK (builtin IN (0,1))`; origens de fábrica não podem ser excluídas |
+
+Linhas criadas pela migração inicial:
+
+| `key` | `name` | Observação |
+| --- | --- | --- |
+| `steam` | Steam | Única origem com adaptador automático (descoberta, metadados, conquistas) |
+| `manual` | PC | Jogos de PC de qualquer launcher (Epic, GOG, ...) |
+| `yuzu` | Yuzu | Jogos de Nintendo Switch pelo emulador |
+| `ps2` | PlayStation 2 | Jogos de PlayStation 2 pelo emulador |
+
+Regras:
+
+- O usuário pode criar, renomear e excluir as próprias origens. A `key` de uma origem nova é gerada a partir do nome (minúsculas, hífens) e não muda se o nome mudar.
+- Uma origem com jogos não pode ser excluída (`ON DELETE RESTRICT`); origens `builtin` nunca são excluídas.
+- Toda origem diferente de `steam` funciona como jogo manual: o usuário cadastra o jogo e a configuração de lançamento (3.7).
+- Proposta para a Fase 4 (fora do schema por enquanto): guardar o executável do emulador na origem, para que cada jogo só informe a ROM.
 
 ---
 
@@ -315,10 +349,13 @@ API REST v2 com chave pessoal gratuita. Fornece capa quadrada e logo (e, para jo
 | Motor de banco | SQLite embutido | D-02 |
 | Migrações e acesso a dados | SQL versionado + `better-sqlite3` + SQL nos repositórios | D-03 |
 | Guarda das chaves de API | Criptografadas com `safeStorage` (`BLOB`) | D-04 |
-| Valores de `origin` | `steam` e `manual` | D-05 |
+| Origens | Tabela `ORIGINS` extensível; de fábrica: `steam`, `manual`, `yuzu`, `ps2` | D-05 |
 | Estado de instalação desconhecido | `installed` nulo (`NULL` = desconhecido) | D-06 |
 | Configuração de lançamento manual | Tabela `GAME_LAUNCH_CONFIGS` | D-07 |
 | Sessões e arredondamento | Tabela `PLAY_SESSIONS`; `playtime` derivado dos segundos | D-08 |
+| Sessões interrompidas | Somam tempo até o último heartbeat (`last_seen_at`) | D-08 |
+| Tabelas `STRICT` | Sim, em todas as tabelas | Fase 2 |
+| Gêneros duplicados | Nome normalizado + `UNIQUE COLLATE NOCASE` | Fase 2 |
 | Onde calcular tier e contadores | Camada de aplicação, em transação | D-09 |
 | Linha única em `USERS` | `CHECK (id = 1)` | D-10 |
 | Descoberta e estado na Steam | Manifestos locais e `StateFlags` | D-12 |
@@ -330,13 +367,11 @@ API REST v2 com chave pessoal gratuita. Fornece capa quadrada e logo (e, para jo
 
 1. Validar a estrutura atual e os limites da Steam Web API para conquistas.
 2. Onde guardar as preferências (idioma, caminho da Steam, etc.): tabela de configurações ou arquivo de configuração.
-3. Se `yuzu` ainda é uma origem desejada (hoje não faz parte de `origin`).
-4. Se sessões interrompidas devem somar algum tempo (padrão atual: não).
-5. Como distinguir tempo medido pelo launcher de estatísticas de lojas, se algum dia houver importação.
-6. Política de limpeza do cache de artes e variantes de tamanho.
-7. Estado de instalação de jogos manuais.
-8. Se haverá uma ação manual de "atualizar metadados" de um jogo.
-9. Suporte a tabelas `STRICT` na versão do SQLite empacotada.
+3. Como distinguir tempo medido pelo launcher de estatísticas de lojas, se algum dia houver importação.
+4. Política de limpeza do cache de artes e variantes de tamanho.
+5. Estado de instalação de jogos manuais.
+6. Se haverá uma ação manual de "atualizar metadados" de um jogo.
+7. Guardar o executável do emulador na origem (proposta para a Fase 4).
 
 ---
 

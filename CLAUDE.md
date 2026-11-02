@@ -1,6 +1,6 @@
 # CLAUDE.md — Equon Game Launcher
 
-Controller-first game launcher for Windows (Electron + React + TypeScript, embedded SQLite). One local user, one Steam account. Games come from Steam (automatic) and manual entries. There is **no** automatic Epic/GOG integration: those games are added manually.
+Controller-first game launcher for Windows (Electron + React + TypeScript, embedded SQLite). One local user, one Steam account. Games come from Steam (automatic) and manual entries. There is **no** automatic Epic/GOG integration: those games are added manually. Origins are an extensible table (built-in `steam`, `manual`, `yuzu`, `ps2`; the user can add more, e.g. a new emulator); only `steam` has an automatic adapter.
 
 ## Language
 
@@ -16,13 +16,13 @@ Controller-first game launcher for Windows (Electron + React + TypeScript, embed
 4. `docs/DESIGN_SYSTEM.md` and `design/` — visual tokens and mockups.
 5. `docs/ROADMAP.md` — phases and acceptance criteria.
 
-If code and docs disagree, stop and ask. When a decision changes, update the docs **in the same commit**. Never invent tables, columns, `origin` values, art types or decisions that are not in the docs; propose them first.
+If code and docs disagree, stop and ask. When a decision changes, update the docs **in the same commit**. Never invent tables, columns, built-in origins, art types or decisions that are not in the docs; propose them first.
 
 ## Current status and scope of work
 
 - Phases 0 and 1 are complete (Phase 1 spike results: `docs/ARCHITECTURE.md` §3.1). **Work only on the phase the owner names** (next: Phase 2 — database and domain). Do not start the next phase on your own.
 - Before non-trivial work, propose a short plan and wait for approval.
-- Open decisions: D-13 (installer, Phase 8), where to persist preferences, whether `yuzu` is wanted, whether interrupted sessions add time (default: no). If a task depends on an open item, ask instead of deciding.
+- Open decisions: D-13 (installer, Phase 8), where to persist preferences, whether an emulator origin stores its executable (Phase 4). If a task depends on an open item, ask instead of deciding.
 
 ## Stack and tooling (accepted)
 
@@ -50,7 +50,8 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 - Booleans are `INTEGER` 0/1; timestamps are ISO-8601 UTC `TEXT`; SteamID64 is `TEXT` (exceeds JS safe integers); App IDs are `INTEGER`.
 - `GAMES.installed`: `1` installed, `0` confirmed not installed, `NULL` unknown. **A failed read must never write `0`.** Absent games become `0` only if `libraryfolders.vdf` and every library were read successfully; otherwise `NULL`.
 - Never overwrite `hidden`, `beated` or user-selected artwork during sync/upserts.
-- `playtime` (minutes) = `floor(sum of completed session seconds / 60)`, recomputed in the same transaction that closes the session. Never negative.
+- `playtime` (minutes) = `floor(sum of completed + interrupted session seconds / 60)`, recomputed in the same transaction that closes the session. Every observed session counts, for every origin. If the launcher dies, `running` sessions become `interrupted` at their last heartbeat (`last_seen_at`). Never negative.
+- All tables are `STRICT`; booleans and enums always have `CHECK`s.
 - Related writes (session + playtime, achievements + counters) happen in **one transaction**. Repeated syncs with the same data change nothing.
 - `tier` and platinum are pure domain functions; trophy counters are recomputed from `ACHIEVEMENTS`, never incremented blindly. Unknown `global_percent` is `NULL`, never `0`.
 - Metadata (`appdetails`) is fetched **only on discovery/add**, `metadata_fetched_at` is set only after a valid response, and failures are retried on later refreshes.

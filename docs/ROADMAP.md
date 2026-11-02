@@ -78,15 +78,18 @@ D-01 or D-03 is reopened only if they are unacceptable.
     encrypted key columns.
 -   [ ] Create `GAME_ARTWORK` with the five kinds: `cover_square`,
     `cover_portrait`, `logo`, `background` and `header`.
--   [ ] Confirm `GAMES.origin`, non-negative `playtime`, and uniqueness
-    of non-null Steam IDs.
+-   [ ] Create the extensible `ORIGINS` table with the built-in origins
+    (`steam`, `manual`, `yuzu`, `ps2`) and a repository to list, create,
+    rename and delete user origins (D-05).
+-   [ ] Confirm `GAMES.origin` (foreign key to `ORIGINS`), non-negative
+    `playtime`, and uniqueness of non-null Steam IDs.
 -   [ ] Confirm `UNIQUE (game_id, api_name)` and achievement FK cascade.
 -   [ ] Confirm `GAME_GENRES` composite PK and cascading FKs.
 -   [ ] Confirm foreign keys are actually enforced (tests must fail if
     the pragma is missing) and that upserts never touch `hidden` or
     `beated`.
 -   [ ] Confirm the single running session per game and the
-    `playtime` derivation from completed sessions.
+    `playtime` derivation from completed and interrupted sessions.
 -   [ ] Implement data-access functions for games, genres, and
     achievements.
 -   [ ] Add tests for constraints, migrations, cascades, transactions,
@@ -128,12 +131,18 @@ displays.
 -   [ ] Show it in Library and Game Details.
 -   [ ] Launch it with useful validation and errors.
 -   [ ] Observe the process where feasible.
--   [ ] Record each session in `PLAY_SESSIONS` and derive `playtime`
-    (minutes) from the completed sessions' seconds in one transaction.
+-   [ ] Record each session in `PLAY_SESSIONS`, update `last_seen_at`
+    periodically (heartbeat) and derive `playtime` (minutes) from the
+    completed and interrupted sessions' seconds in one transaction.
 -   [ ] Let the user choose local artwork files for a manual game.
 -   [ ] Decide how executables and images are picked with a controller
     (the native file dialog is not controller-navigable).
--   [ ] Mark sessions left `running` as `interrupted` on startup.
+-   [ ] On startup, mark sessions left `running` as `interrupted`,
+    closed at their last heartbeat, and add their time (D-08).
+-   [ ] Let the user pick the origin of a manual game and manage their
+    own origins (create, rename, delete unused), e.g. for a new emulator.
+-   [ ] Decide whether an emulator origin stores its executable so each
+    game only needs the ROM path.
 -   [ ] Validate with real games from other launchers (e.g. Epic Games
     Store), which are added manually with `origin = manual`. Document
     games that fail to start from their `.exe` directly because they

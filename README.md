@@ -23,6 +23,7 @@ The project is currently under development.
 
 - Steam game library integration (local installs, launch, and installation status).
 - Manually added games. This is how games from the Epic Games Store, GOG, or any other launcher are added; there is no automatic Epic or GOG integration.
+- Origins for emulated games (built-in Yuzu and PlayStation 2), plus origins you create yourself, such as Nintendo 64 for a new emulator.
 - Game details, artwork (via Steam, SteamGridDB, or local files), and metadata.
 - Playtime tracking.
 - Steam achievement synchronization.

@@ -1,8 +1,8 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.10
-**Status:** Draft — Phase 1 (project skeleton)
-**Last updated:** 2026-11-01
+**Version:** 0.11
+**Status:** Draft — Phase 2 (database and domain)
+**Last updated:** 2026-11-02
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
 **Purpose:** Define technical boundaries, record architecture decisions, and list what is still unresolved before implementation starts.
 
@@ -35,7 +35,7 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 
 ### Later phases (not MVP)
 
-- No automatic integration with Epic Games Store or GOG is planned. Epic games and any other PC games are added manually and use `origin = manual`. Other automatic sources (e.g. Yuzu) would be considered only after a reliable method is validated and a product decision is made.
+- No automatic integration with Epic Games Store or GOG is planned. Epic games and any other PC games are added manually and use `origin = manual`. Emulated games (Yuzu, PlayStation 2 and any origin the user creates, such as Nintendo 64) are also added manually under their own origin (D-05). Automatic discovery for any source other than Steam would be considered only after a reliable method is validated and a product decision is made.
 - Out of scope until a product decision says otherwise: cloud sync, accounts, multi-user, store purchases, social features, plugins/themes, auto-update, start with Windows, kiosk mode, Linux/macOS (`PRODUCT.md` §3 and §10).
 
 ### Constraints
@@ -56,7 +56,7 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-02 | Database engine | Accepted | SQLite (embedded); PostgreSQL does not fit the "no separate server" criterion (§3.2) |
 | D-03 | Migration tool and data-access approach | Accepted | Plain versioned SQL migrations + small runner; `better-sqlite3`; hand-written SQL in repositories (§3.3) |
 | D-04 | Steam API key storage | Accepted | Encrypt with Electron `safeStorage`; PRD wording needs adjusting (§3.4) |
-| D-05 | Approved `origin` values | Accepted | `steam`, `manual` only; Epic/GOG games are added manually (§3.5) |
+| D-05 | Game origins | Accepted | Extensible `ORIGINS` table: built-in `steam`, `manual`, `yuzu`, `ps2`; the user can add more. Only `steam` has an automatic adapter (§3.5) |
 | D-06 | Unknown installation state | Accepted | Make `installed` nullable; `NULL` = unknown (§3.6) |
 | D-07 | Manual-game launch configuration storage | Accepted | Dedicated table, not columns on `GAMES` (§3.7) |
 | D-08 | Session model and playtime rounding | Accepted | Add a `PLAY_SESSIONS` table; derive minutes from seconds (§3.8) |
@@ -139,9 +139,16 @@ Chosen by Claude at the owner's request to pick the best fit.
 
 The Steam Web API key is an API key, not a store login. If the owner agrees, amend the PRD sentence to say so.
 
-### 3.5 D-05 — `origin` values (Accepted)
+### 3.5 D-05 — Game origins (Accepted: extensible table)
 
-Docs disagree: `DATA_BASE_CONTEXT.md` gives `steam`, `yuzu`, `local`; earlier architecture text said "manual". **Proposal:** only `steam` and `manual`. Games from Epic, GOG or any other launcher are added manually and use `manual`; add a new value only if a new automatic adapter is approved later. Store as `TEXT` with a `CHECK` constraint listing the allowed values, mirrored by a TypeScript union type. Confirm whether `yuzu` is still wanted.
+Origins are **data, not a fixed enum** (owner decision, Phase 2). An `ORIGINS` table holds a stable `key`, an editable display `name` and a `builtin` flag (`DATA_BASE_CONTEXT.md` §3.10). `GAMES.origin` stores the key as `TEXT` with a foreign key to `ORIGINS(key)` (`ON DELETE RESTRICT`).
+
+- Built-in rows created by the first migration: `steam` ("Steam"), `manual` ("PC"), `yuzu` ("Yuzu"), `ps2` ("PlayStation 2"). Built-in origins cannot be deleted.
+- The user can create, rename and delete their own origins (for example "Nintendo 64" for a new emulator). An origin that still has games cannot be deleted. Keys never change after creation.
+- **Only `steam` has an automatic adapter** (discovery, metadata, achievements). Every other origin, built-in or user-created, behaves as a manually added game: the user registers the game and its launch configuration (for an emulator: the emulator executable, with the ROM path as an argument). The user never picks `steam` when adding a game.
+- Games from Epic, GOG or any other PC launcher use `manual`.
+- TypeScript: the origin is a `string` key; built-in keys are constants, and adapter capabilities are keyed by `steam` only.
+- Proposed for Phase 4 (not in the schema yet): store an emulator's executable once on its origin so each game only needs the ROM path.
 
 ### 3.6 D-06 — Installation state (Accepted: nullable)
 
@@ -149,7 +156,7 @@ Docs disagree: `DATA_BASE_CONTEXT.md` gives `steam`, `yuzu`, `local`; earlier ar
 
 ### 3.7 D-07 — Manual-game launch configuration (Accepted)
 
-The UML has no field for executable, arguments, or working directory. **Proposal:** a separate table, e.g. `GAME_LAUNCH_CONFIGS(game_id PK/FK → GAMES.id ON DELETE CASCADE, executable_path NOT NULL, arguments, working_directory)`. This keeps launch data out of `GAMES`, which is shared by all origins. Treat all three values as untrusted input (§7). Defined in `DATA_BASE_CONTEXT.md` §3.7.
+The UML has no field for executable, arguments, or working directory. **Proposal:** a separate table, e.g. `GAME_LAUNCH_CONFIGS(game_id PK/FK → GAMES.id ON DELETE CASCADE, executable_path NOT NULL, arguments, working_directory)`. This keeps launch data out of `GAMES`, which is shared by all origins. It applies to every origin except `steam` (built-in emulator origins and user-created origins included). Treat all three values as untrusted input (§7). Defined in `DATA_BASE_CONTEXT.md` §3.7.
 
 ### 3.8 D-08 — Sessions and playtime rounding (Accepted)
 
@@ -158,15 +165,16 @@ The UML has no field for executable, arguments, or working directory. **Proposal
 ```
 PLAY_SESSIONS(
   id, game_id → GAMES.id ON DELETE CASCADE,
-  started_at, ended_at NULL, duration_seconds NULL,
+  started_at, last_seen_at, ended_at NULL, duration_seconds NULL,
   status  -- 'running' | 'completed' | 'interrupted'
 )
 ```
 
 - Insert a `running` row when a launch is observed.
 - On normal exit, set `ended_at`, `duration_seconds`, `status = 'completed'`, and update `GAMES.playtime` and `time_last_played` in one transaction.
-- On startup, rows still `running` are marked `interrupted`. Whether interrupted sessions contribute time is an **open sub-decision** (default proposal: they do not, because the duration is unknown).
-- Rounding: rounding each session to whole minutes loses time over many short sessions. **Rule:** `GAMES.playtime = floor(sum of duration_seconds of the game's completed sessions / 60)`, recomputed in the same transaction that closes the session (idempotent; see `DATA_BASE_CONTEXT.md` §3.8). Covered by tests; `playtime` never goes negative.
+- **Every observed session counts toward playtime**, whatever the origin and however the game was closed (owner decision, Phase 2). A game that is force-closed or crashes is still observed ending, so its session completes normally.
+- **Heartbeat:** while observing a running game, the launcher periodically updates `last_seen_at` (about every 30 s; the final interval is set by measurement in Phase 4). If the launcher itself dies (crash, power loss, Windows shutdown), on the next startup each row still `running` becomes `interrupted` with `ended_at = last_seen_at` and `duration_seconds = last_seen_at − started_at`, in the same transaction that recomputes `playtime`. At most one heartbeat interval is lost.
+- Rounding: rounding each session to whole minutes loses time over many short sessions. **Rule:** `GAMES.playtime = floor(sum of duration_seconds of the game's completed and interrupted sessions / 60)`, recomputed in the same transaction that closes the session (idempotent; see `DATA_BASE_CONTEXT.md` §3.8). Covered by tests; `playtime` never goes negative.
 - Open sub-decision: `PRODUCT.md` asks to distinguish launcher-measured time from store-reported statistics. If store playtime is ever imported, a source indicator will be needed.
 
 ### 3.9 D-09 — `tier` and trophy counters (Accepted: application layer)
@@ -432,7 +440,7 @@ Illustrative shape (not final):
 
 ```ts
 interface SourceAdapter {
-  id: 'steam' | 'manual';
+  id: 'steam';   // the only automatic adapter; other origins are manual (D-05)
   capabilities: {
     discovery: boolean;
     metadata: boolean;
@@ -450,7 +458,7 @@ A discovery result always carries warnings and errors, so partial failure is vis
 
 ### MVP capability matrix (to be confirmed by validation)
 
-| Capability | Steam | Manual |
+| Capability | Steam | Manual (every other origin, incl. emulators) |
 | --- | --- | --- |
 | Discovery | `libraryfolders.vdf` + manifests (D-12) | User adds games |
 | Metadata and genres | `appdetails` | None |
@@ -470,7 +478,7 @@ Games from Epic, GOG and other launchers are registered as manual games. Some ma
 ### Rules to preserve (from `DATA_BASE_CONTEXT.md`)
 
 - `GAMES.playtime` is in minutes, `NOT NULL DEFAULT 0`, `CHECK (playtime >= 0)`.
-- `GAMES.origin` identifies the source, not installation state.
+- `GAMES.origin` identifies the source (a key in `ORIGINS`), not installation state.
 - `hidden` and `beated` are manual flags, default `FALSE`, never overwritten by sync.
 - `steam_id` is optional and unique when present.
 - `ACHIEVEMENTS`: FK to `GAMES.id` with `ON DELETE CASCADE`; `UNIQUE (game_id, api_name)`; `tier` restricted to `bronze|silver|gold`; `unlocked_at` and `global_percent` may be `NULL`.
@@ -488,7 +496,7 @@ Games from Epic, GOG and other launchers are registered as manual games. Some ma
 | `BOOLEAN` | `INTEGER` with `CHECK (col IN (0,1))` |
 | `VARCHAR(n)` | `TEXT` (length limits enforced with `CHECK` if needed) |
 | `REAL` | `REAL` |
-| `origin` | `TEXT` + `CHECK (origin IN (...))` |
+| `origin` | `TEXT` key with a foreign key to `ORIGINS(key)` (D-05) |
 
 SQLite-specific points that must be handled deliberately:
 
@@ -566,7 +574,7 @@ For Steam, use `appdetails`: check the success flag, validate optional fields, n
 4. On exit, finalize the session and update `playtime` / `time_last_played` in one transaction (D-08), then trigger the per-game achievements sync if applicable.
 5. On launch failure, show an actionable error with a retry option.
 
-On startup, reconcile sessions left `running` by a previous crash.
+On startup, reconcile sessions left `running` by a previous crash: mark them `interrupted`, close them at their last heartbeat and add their time (D-08).
 
 ---
 
@@ -642,4 +650,5 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-01 | 0.7 | Accepted D-14 (npm, electron-vite, Vitest, ESLint + Prettier, strict TypeScript); documented the `better-sqlite3` Node/Electron ABI rule and the `node:sqlite` check for the Phase 1 spike. Phase 1 unblocked |
 | 2026-11-01 | 0.8 | Accepted D-15 (artwork). Aligned `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md` and `ROADMAP.md` with all accepted decisions. Recorded the open Home cover type |
 | 2026-11-01 | 0.9 | Added a fifth art type: portrait cover 600×900 for the Home screen. Renamed `cover` to `cover_square`; added `cover_portrait` |
+| 2026-11-02 | 0.11 | Phase 2 decisions: D-05 changed to an extensible `ORIGINS` table (built-in `steam`, `manual`, `yuzu`, `ps2`; user-created origins); D-08 interrupted sessions add time up to their last heartbeat (`last_seen_at`) |
 | 2026-11-01 | 0.10 | Phase 1: recorded spike results (§3.1); better-sqlite3 13 needs no rebuild (N-API prebuilds), rebuild scripts dropped (§3.3, §3.15); electron-vite 6 confirmed maintained (release 2026-10-14) |
