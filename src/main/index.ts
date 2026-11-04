@@ -16,6 +16,11 @@ import { createServices } from './services'
 import type { SteamService } from './steam/steam-service'
 import type { AppOrigin } from './security/navigation'
 
+// In fullscreen, DirectComposition could leave one-off updates (a tab switch, a
+// screen without focus animation) unpresented until the next change on screen
+// (ARCHITECTURE.md §12). Must be set before the app is ready.
+app.commandLine.appendSwitch('disable-direct-composition')
+
 // Unpackaged runs (dev, preview) use their own data folder so they never
 // touch the real library.
 if (is.dev) {

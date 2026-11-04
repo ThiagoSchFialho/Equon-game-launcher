@@ -1,8 +1,8 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.19
+**Version:** 0.20
 **Status:** Draft — Phase 6 (Steam library and metadata)
-**Last updated:** 2026-11-02
+**Last updated:** 2026-11-04
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
 **Purpose:** Define technical boundaries, record architecture decisions, and list what is still unresolved before implementation starts.
 
@@ -599,6 +599,7 @@ On startup, reconcile sessions left `running` by a previous crash: mark them `in
 
 ## 12. UI architecture and performance
 
+- **Fullscreen presentation (fix after Phase 6):** in fullscreen on Windows, one-off updates with no animation after them (Settings tabs, the Achievements screen) could stay off screen until the next change, although the DOM had updated within 8 ms. Measured on the owner's machine with a real controller: a permanent 2 px animation made the problem disappear, and so did `--disable-direct-composition` without it (36 presses in fullscreen, no failure). The launcher sets that Chromium switch at startup because it has no continuous GPU cost. The failure is intermittent, so these results are strong evidence, not proof; other GPUs were not tested.
 - Screens: Home (continue playing, recent games, shortcut to the library), Library, Achievements, Game Details, Settings. Navigation is hybrid: compact global navigation plus contextual navigation where needed.
 - One focus manager owns focus. Focus must never disappear when a list updates, a filter changes, or images load; dialogs move focus in and return it on close; the app must never trap focus.
 - Every screen defines default, focus, unavailable, empty, loading and error states (`DESIGN_SYSTEM.md` §11).
@@ -669,6 +670,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-01 | 0.7 | Accepted D-14 (npm, electron-vite, Vitest, ESLint + Prettier, strict TypeScript); documented the `better-sqlite3` Node/Electron ABI rule and the `node:sqlite` check for the Phase 1 spike. Phase 1 unblocked |
 | 2026-11-01 | 0.8 | Accepted D-15 (artwork). Aligned `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md` and `ROADMAP.md` with all accepted decisions. Recorded the open Home cover type |
 | 2026-11-01 | 0.9 | Added a fifth art type: portrait cover 600×900 for the Home screen. Renamed `cover` to `cover_square`; added `cover_portrait` |
+| 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |
 | 2026-11-03 | 0.18 | Phase 6b: `appdetails` in Portuguese with the owner-chosen fields, `GetOwnedGames` sync after the startup scan, "Testar conexão" (Steam `GetPlayerSummaries`, SteamGridDB). |
 | 2026-11-03 | 0.17 | Phase 6a: no Steam folder override; running state from the registry `RunningAppID` (the manifest `AppRunning` flag is not set in practice); local Steam scan at startup and on "Atualizar biblioteca"; Settings screen (gear in the top bar: Conexões, Sobre). |
