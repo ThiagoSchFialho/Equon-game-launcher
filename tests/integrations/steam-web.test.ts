@@ -3,7 +3,8 @@ import { NetworkError, type HttpGet } from '../../src/integrations/http'
 import {
   fetchAppDetails,
   fetchOwnedGames,
-  fetchPlayerSummary
+  fetchPlayerSummary,
+  parseStoreDate
 } from '../../src/integrations/steam/steam-web'
 import { testSteamGridDbKey } from '../../src/integrations/steamgriddb/steamgriddb'
 
@@ -53,7 +54,8 @@ describe('fetchAppDetails', () => {
         description: 'O pôquer roguelike. Balatro "hipnoticamente" satisfatório.',
         developer: 'LocalThunk',
         requiredAge: 'L',
-        genres: ['Casual', 'Indie']
+        genres: ['Casual', 'Indie'],
+        releaseDate: '2024-02-20'
       }
     })
     expect(get.calls[0][0]).toBe(
@@ -66,7 +68,7 @@ describe('fetchAppDetails', () => {
       fake(200, { '1': { success: true, data: { required_age: '18', ratings } } })
     expect(await fetchAppDetails(rated({ dejus: { rating: '16' } }), 1)).toEqual({
       ok: true,
-      data: { description: null, developer: null, requiredAge: '16', genres: [] }
+      data: { description: null, developer: null, requiredAge: '16', genres: [], releaseDate: null }
     })
     // required_age and other systems are ignored; unknown DEJUS values are pendente.
     expect(await fetchAppDetails(rated({ pegi: { rating: '18' } }), 1)).toMatchObject({
@@ -92,6 +94,23 @@ describe('fetchAppDetails', () => {
     })
     expect(await fetchAppDetails(fake(429, null), 5)).toEqual({ ok: false, error: 'network' })
     expect(await fetchAppDetails(offline, 5)).toEqual({ ok: false, error: 'network' })
+  })
+})
+
+describe('parseStoreDate', () => {
+  it.each([
+    ['20/fev./2024', '2024-02-20'],
+    ['6/mar./2025', '2025-03-06'],
+    ['30/nov./2010', '2010-11-30'],
+    ['1/mai/2026', '2026-05-01'],
+    ['31/fev./2024', null],
+    ['', null],
+    ['Em breve', null],
+    ['2026', null],
+    ['T1 de 2026', null],
+    [undefined, null]
+  ])('%s → %s', (text, expected) => {
+    expect(parseStoreDate(text)).toBe(expected)
   })
 })
 

@@ -7,6 +7,8 @@ export interface SteamMetadata {
   developer: string | null
   requiredAge: string | null
   genres: string[]
+  /** YYYY-MM-DD or null. */
+  releaseDate: string | null
 }
 
 /** Steam games whose metadata was never saved (or whose last fetch failed), D-16. */
@@ -35,6 +37,7 @@ export function applySteamMetadata(
       title: game.title,
       description: metadata.description,
       developer: metadata.developer,
+      releaseDate: metadata.releaseDate,
       requiredAge: metadata.requiredAge,
       metadataFetchedAt: fetchedAt
     })

@@ -103,7 +103,8 @@ describe('steam online: metadata', () => {
           short_description: 'O pôquer roguelike.',
           developers: ['LocalThunk'],
           required_age: 0,
-          genres: [{ description: 'Casual' }, { description: 'Indie' }]
+          genres: [{ description: 'Casual' }, { description: 'Indie' }],
+          release_date: { coming_soon: false, date: '20/fev./2024' }
         }
       }
     })
@@ -115,6 +116,7 @@ describe('steam online: metadata', () => {
       title: 'Balatro',
       description: 'O pôquer roguelike.',
       developer: 'LocalThunk',
+      releaseDate: '2024-02-20',
       requiredAge: null,
       beated: true,
       metadataFetchedAt: '2026-11-04T02:00:00Z'

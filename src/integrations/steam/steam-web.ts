@@ -25,6 +25,8 @@ export interface AppDetails {
   /** Brazilian rating (DEJUS): L, 10, 12, 14, 16 or 18; null when absent or unknown. */
   requiredAge: string | null
   genres: string[]
+  /** YYYY-MM-DD; null when Steam has no exact date (e.g. "Em breve"). */
+  releaseDate: string | null
 }
 
 const appDetailsSchema = z.record(
@@ -38,7 +40,8 @@ const appDetailsSchema = z.record(
         ratings: z
           .object({ dejus: z.object({ rating: z.string().optional() }).optional() })
           .nullish(),
-        genres: z.array(z.object({ description: z.string() })).optional()
+        genres: z.array(z.object({ description: z.string() })).optional(),
+        release_date: z.object({ date: z.string().optional() }).nullish()
       })
     }),
     z.object({ success: z.literal(false) })
@@ -62,6 +65,37 @@ const DEJUS = new Set(['L', '10', '12', '14', '16', '18'])
 function dejusRating(rating: string | undefined): string | null {
   const value = rating?.trim().toUpperCase() ?? ''
   return DEJUS.has(value) ? value : null
+}
+
+const PT_MONTHS = [
+  'jan',
+  'fev',
+  'mar',
+  'abr',
+  'mai',
+  'jun',
+  'jul',
+  'ago',
+  'set',
+  'out',
+  'nov',
+  'dez'
+]
+
+/**
+ * Parses the Portuguese store date ("20/fev./2024", "6/mar./2025") into
+ * YYYY-MM-DD. Anything else ("Em breve", a year or quarter only, an empty
+ * string) is unknown: null.
+ */
+export function parseStoreDate(text: string | undefined): string | null {
+  const match = /^(\d{1,2})\/([a-zç]{3})\.?\/(\d{4})$/i.exec(text?.trim() ?? '')
+  if (!match) return null
+  const month = PT_MONTHS.indexOf(match[2].toLowerCase()) + 1
+  const day = Number(match[1])
+  const year = Number(match[3])
+  const date = new Date(Date.UTC(year, month - 1, day))
+  if (month === 0 || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null
+  return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
 const clean = (text: string | undefined): string | null => {
@@ -94,7 +128,8 @@ export async function fetchAppDetails(
       description: clean(data.short_description),
       developer: clean(data.developers?.[0]),
       requiredAge: dejusRating(data.ratings?.dejus?.rating),
-      genres: (data.genres ?? []).map((g) => clean(g.description)).filter((g) => g !== null)
+      genres: (data.genres ?? []).map((g) => clean(g.description)).filter((g) => g !== null),
+      releaseDate: parseStoreDate(data.release_date?.date)
     }
   }
 }

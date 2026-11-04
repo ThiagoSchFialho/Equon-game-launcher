@@ -229,8 +229,8 @@ Delivered in three reviewed steps: 6a (local Steam, Play, Settings),
 -   [x] Import metadata and genres from `appdetails` **only when a game
     is discovered or added**; set `metadata_fetched_at` only after a
     valid response and retry failures on later refreshes. Portuguese
-    (`l=brazilian`); fields: `genres`, `developers`, `short_description`
-    and the Brazilian rating `ratings.dejus.rating`. *(6b)*
+    (`l=brazilian`); fields: `genres`, `developers`, `short_description`,
+    `release_date` and the Brazilian rating `ratings.dejus.rating`. *(6b)*
 -   [x] Normalize responses and handle missing fields. *(6b)*
 -   [ ] Build the artwork pipeline: Steam `header_image` (Achievements
     screen) and screenshots, SteamGridDB (square and portrait covers, logo; name search
