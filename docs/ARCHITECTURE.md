@@ -305,7 +305,7 @@ Consequences and rules:
 - Achievement synchronization is separate and unaffected (§10).
 - Artwork (D-15) follows the same moment: fetched when the game is discovered or added, then cached.
 
-Phase 6b: requested in Portuguese (`l=brazilian`); only `genres`, `developers`, `short_description` and `required_age` are stored (owner decision; `release_date` is not used), plus `header_image` as the `header` artwork in 6c. Steam Web API calls (`GetOwnedGames/v1`, `GetPlayerSummaries/v2` for "Testar conexão") and the SteamGridDB key check go through an injected HTTP port in `src/integrations`, validated with zod; keys are decrypted only in main and request URLs are never logged.
+Phase 6b: requested in Portuguese (`l=brazilian`); only `genres`, `developers`, `short_description` and the Brazilian rating `ratings.dejus.rating` are stored (L/10/12/14/16/18; anything else is "pendente") (owner decision; `release_date` is not used), plus `header_image` as the `header` artwork in 6c. Steam Web API calls (`GetOwnedGames/v1`, `GetPlayerSummaries/v2` for "Testar conexão") and the SteamGridDB key check go through an injected HTTP port in `src/integrations`, validated with zod; keys are decrypted only in main and request URLs are never logged.
 
 Whether to offer a manual "refresh metadata" action for a single game is not decided; it would be an explicit user action, not an automatic refresh.
 

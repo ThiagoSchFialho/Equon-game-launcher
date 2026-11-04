@@ -22,7 +22,7 @@ const WEB_API = 'https://api.steampowered.com'
 export interface AppDetails {
   description: string | null
   developer: string | null
-  /** Steam `required_age` as text; null when Steam reports none (0). */
+  /** Brazilian rating (DEJUS): L, 10, 12, 14, 16 or 18; null when absent or unknown. */
   requiredAge: string | null
   genres: string[]
 }
@@ -35,7 +35,9 @@ const appDetailsSchema = z.record(
       data: z.object({
         short_description: z.string().optional(),
         developers: z.array(z.string()).optional(),
-        required_age: z.union([z.number(), z.string()]).optional(),
+        ratings: z
+          .object({ dejus: z.object({ rating: z.string().optional() }).optional() })
+          .nullish(),
         genres: z.array(z.object({ description: z.string() })).optional()
       })
     }),
@@ -52,6 +54,14 @@ function decodeEntities(text: string): string {
     .replace(/&gt;/g, '>')
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
+}
+
+/** DEJUS ratings shown by the age badges (owner decision); anything else is pendente. */
+const DEJUS = new Set(['L', '10', '12', '14', '16', '18'])
+
+function dejusRating(rating: string | undefined): string | null {
+  const value = rating?.trim().toUpperCase() ?? ''
+  return DEJUS.has(value) ? value : null
 }
 
 const clean = (text: string | undefined): string | null => {
@@ -78,13 +88,12 @@ export async function fetchAppDetails(
   if (!entry) return { ok: false, error: 'invalid-response' }
   if (!entry.success) return { ok: false, error: 'not-found' }
   const data = entry.data
-  const age = Number(data.required_age ?? 0)
   return {
     ok: true,
     data: {
       description: clean(data.short_description),
       developer: clean(data.developers?.[0]),
-      requiredAge: Number.isInteger(age) && age > 0 ? String(age) : null,
+      requiredAge: dejusRating(data.ratings?.dejus?.rating),
       genres: (data.genres ?? []).map((g) => clean(g.description)).filter((g) => g !== null)
     }
   }

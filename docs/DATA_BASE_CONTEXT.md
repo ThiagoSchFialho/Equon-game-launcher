@@ -331,10 +331,10 @@ Instalação, estado e jogo em execução vêm de `libraryfolders.vdf` e `appman
 
 Decisão do dono do projeto (Fase 6b): consultado em português (`l=brazilian&cc=br`) e usado só para estes campos:
 
-- Página do jogo: `genres` (gêneros), `developers` (primeiro valor → `developer`), `short_description` (→ `description`, texto simples) e `required_age` (→ `required_age` como texto; `0` ou ausente → `NULL`, exibido como "pendente").
+- Página do jogo: `genres` (gêneros), `developers` (primeiro valor → `developer`), `short_description` (→ `description`, texto simples) e a classificação brasileira `ratings.dejus.rating` (→ `required_age`: `l` → `L`, `10`/`12`/`14`/`16`/`18` como estão; ausente ou outro valor, como o `6` gerado pela Steam, → `NULL`, exibido como "pendente"). O campo `required_age` da resposta não é usado. A migração `0004` limpou as classificações antigas dos jogos Steam e marcou todos para nova busca.
 - Tela de conquistas: `header_image` (arte `header`, baixada na etapa 6c).
 
-`release_date` e `name` não são usados (o título vem do manifesto local). Verificar o indicador de sucesso (`success: false` para apps que não são jogos ou não existem), tratar todos os campos como opcionais e normalizar antes de salvar (entidades HTML decodificadas, espaços colapsados). Validado em uma resposta real em 2026-11-03. Fila de 1 requisição a cada 1,5 s (limite informado pela comunidade: ~200 a cada 5 minutos).
+`release_date`, `name` e `required_age` não são usados (o título vem do manifesto local). Verificar o indicador de sucesso (`success: false` para apps que não são jogos ou não existem), tratar todos os campos como opcionais e normalizar antes de salvar (entidades HTML decodificadas, espaços colapsados). Validado em uma resposta real em 2026-11-03. Fila de 1 requisição a cada 1,5 s (limite informado pela comunidade: ~200 a cada 5 minutos).
 
 **Frequência (D-16):** consultado **apenas quando o jogo é descoberto ou adicionado**. Sem refresh periódico e sem refresh na abertura. Falha não conta como concluído (`metadata_fetched_at` continua `NULL`) e é tentada de novo em um refresh posterior da biblioteca, com tentativas limitadas. Nunca sobrescrever `hidden`/`beated` nem trocar valores válidos por vazios.
 

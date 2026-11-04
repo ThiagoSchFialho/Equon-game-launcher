@@ -272,3 +272,25 @@ describe('SessionRepository', () => {
     ).toEqual({ last_seen_at: '2026-11-02T10:10:00Z' })
   })
 })
+
+describe('migration 0004', () => {
+  it('clears Steam ratings taken from required_age and queues a new metadata fetch', () => {
+    const fresh = openDatabase(':memory:')
+    migrate(fresh, migrations.slice(0, 3))
+    fresh
+      .prepare(
+        "INSERT INTO games (title, origin, steam_id, required_age, metadata_fetched_at) VALUES ('S', 'steam', 620, '17', '2026-11-03T00:00:00Z')"
+      )
+      .run()
+    fresh
+      .prepare("INSERT INTO games (title, origin, required_age) VALUES ('M', 'manual', '12')")
+      .run()
+    migrate(fresh, migrations)
+    expect(
+      fresh.prepare('SELECT origin, required_age, metadata_fetched_at FROM games ORDER BY id').all()
+    ).toEqual([
+      { origin: 'steam', required_age: null, metadata_fetched_at: null },
+      { origin: 'manual', required_age: '12', metadata_fetched_at: null }
+    ])
+  })
+})

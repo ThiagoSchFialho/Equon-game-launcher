@@ -32,6 +32,7 @@ const BALATRO = {
       type: 'game',
       name: 'Balatro',
       required_age: 0,
+      ratings: { dejus: { rating: 'l', required_age: '0' }, pegi: { rating: '3' } },
       short_description: 'O pôquer roguelike. Balatro &quot;hipnoticamente&quot;  satisfatório.',
       developers: ['LocalThunk'],
       genres: [
@@ -51,7 +52,7 @@ describe('fetchAppDetails', () => {
       data: {
         description: 'O pôquer roguelike. Balatro "hipnoticamente" satisfatório.',
         developer: 'LocalThunk',
-        requiredAge: null,
+        requiredAge: 'L',
         genres: ['Casual', 'Indie']
       }
     })
@@ -60,12 +61,24 @@ describe('fetchAppDetails', () => {
     )
   })
 
-  it('keeps a real age and treats missing fields as unknown', async () => {
-    const get = fake(200, { '1': { success: true, data: { required_age: '18' } } })
-    expect(await fetchAppDetails(get, 1)).toEqual({
+  it('uses the DEJUS rating only, and treats missing fields as unknown', async () => {
+    const rated = (ratings: unknown): HttpGet =>
+      fake(200, { '1': { success: true, data: { required_age: '18', ratings } } })
+    expect(await fetchAppDetails(rated({ dejus: { rating: '16' } }), 1)).toEqual({
       ok: true,
-      data: { description: null, developer: null, requiredAge: '18', genres: [] }
+      data: { description: null, developer: null, requiredAge: '16', genres: [] }
     })
+    // required_age and other systems are ignored; unknown DEJUS values are pendente.
+    expect(await fetchAppDetails(rated({ pegi: { rating: '18' } }), 1)).toMatchObject({
+      data: { requiredAge: null }
+    })
+    expect(await fetchAppDetails(rated({ dejus: { rating: 'ER' } }), 1)).toMatchObject({
+      data: { requiredAge: null }
+    })
+    expect(await fetchAppDetails(rated({ dejus: {} }), 1)).toMatchObject({
+      data: { requiredAge: null }
+    })
+    expect(await fetchAppDetails(rated(null), 1)).toMatchObject({ ok: true })
   })
 
   it('reports unknown apps, bad bodies, HTTP errors and network failures', async () => {
