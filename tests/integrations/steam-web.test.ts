@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { NetworkError, type HttpGet } from '../../src/integrations/http'
+import { NetworkError, isAllowedImageUrl, type HttpGet } from '../../src/integrations/http'
 import {
   fetchAppDetails,
   fetchOwnedGames,
@@ -190,5 +190,17 @@ describe('testSteamGridDbKey', () => {
     expect(await testSteamGridDbKey(fake(500, null), KEY)).toBe('network')
     expect(await testSteamGridDbKey(offline, KEY)).toBe('network')
     expect(await testSteamGridDbKey(fake(200, {}), 'short')).toBe('invalid-key')
+  })
+})
+
+describe('isAllowedImageUrl', () => {
+  it('allows only https images from Steam and SteamGridDB hosts', () => {
+    expect(isAllowedImageUrl('https://shared.akamai.steamstatic.com/a/header.jpg')).toBe(true)
+    expect(isAllowedImageUrl('https://cdn2.steamgriddb.com/grid/x.png')).toBe(true)
+    expect(isAllowedImageUrl('http://shared.akamai.steamstatic.com/a.jpg')).toBe(false)
+    expect(isAllowedImageUrl('https://steamstatic.com.evil.example/a.jpg')).toBe(false)
+    expect(isAllowedImageUrl('https://evil.example/steamstatic.com/a.jpg')).toBe(false)
+    expect(isAllowedImageUrl('file:///C:/a.png')).toBe(false)
+    expect(isAllowedImageUrl('not a url')).toBe(false)
   })
 })

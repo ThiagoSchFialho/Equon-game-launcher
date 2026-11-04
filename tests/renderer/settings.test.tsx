@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from '../../src/renderer/src/App'
 import type { EquonApi } from '../../src/shared/ipc/contract'
@@ -253,6 +253,75 @@ describe('connection tests and sync status', () => {
     await openSettings()
     expect(
       await screen.findByText(/^Tempo de jogo sincronizado às .* \(31 jogos\)\.$/)
+    ).toBeTruthy()
+  })
+})
+
+describe('duplicate review', () => {
+  it('shows candidates in Settings and lets the user keep, hide or remove', async () => {
+    let list = [
+      { manualGameId: 7, manualTitle: 'Balatro', steamTitle: 'Balatro' },
+      { manualGameId: 8, manualTitle: 'Celeste', steamTitle: 'Celeste' }
+    ]
+    const dismissDuplicate = vi.fn<EquonApi['library']['dismissDuplicate']>(async (id) => {
+      list = list.filter((d) => d.manualGameId !== id)
+    })
+    const setFlags = vi.fn<EquonApi['games']['setFlags']>(async (id) => {
+      list = list.filter((d) => d.manualGameId !== id)
+      return { ok: true, data: null }
+    })
+    installFakeApi([summary(1, 'Tidebound')], {
+      library: { duplicates: async () => list, dismissDuplicate },
+      games: { setFlags }
+    })
+    await openSettings()
+    expect(await screen.findByText('2 possíveis duplicatas para revisar.')).toBeTruthy()
+    await click('Revisar')
+    expect(await screen.findByText(/O jogo manual "Balatro" parece ser "Balatro"/)).toBeTruthy()
+    await clickText('Manter os dois')
+    expect(dismissDuplicate).toHaveBeenCalledWith(7)
+    expect(await screen.findByText(/O jogo manual "Celeste"/)).toBeTruthy()
+    await clickText('Ocultar o jogo manual')
+    expect(setFlags).toHaveBeenCalledWith(8, { hidden: true })
+    await waitFor(() =>
+      expect(screen.queryByText(/possíveis duplicatas|possível duplicata/)).toBeNull()
+    )
+  })
+})
+
+describe('SteamGridDB artwork for manual games', () => {
+  it('searches by title, applies the chosen game and reports the result', async () => {
+    const search = vi.fn<EquonApi['artwork']['search']>(async () => ({
+      ok: true,
+      data: [{ id: 77, name: 'Tidebound', year: 2021 }]
+    }))
+    const applySteamGridDb = vi.fn<EquonApi['artwork']['applySteamGridDb']>(async () => ({
+      ok: true,
+      data: ['cover_square', 'cover_portrait', 'logo']
+    }))
+    installFakeApi([summary(1, 'Tidebound')], { artwork: { search, applySteamGridDb } })
+    render(<App />)
+    await screen.findByText('12h 22m')
+    press('m')
+    await clickText('Buscar artes no SteamGridDB')
+    expect(search).toHaveBeenCalledWith('Tidebound')
+    expect(await screen.findByText('2021')).toBeTruthy()
+    const dialog = screen.getByRole('dialog', { name: 'Artes do SteamGridDB' })
+    act(() => (within(dialog).getByText('Tidebound').closest('button') as HTMLElement).click())
+    expect(applySteamGridDb).toHaveBeenCalledWith(1, 77)
+    expect(await screen.findByText('3 artes baixadas.')).toBeTruthy()
+  })
+
+  it('explains a missing key', async () => {
+    installFakeApi([summary(1, 'Tidebound')], {
+      artwork: { search: async () => ({ ok: false, error: { code: 'not-configured' } }) }
+    })
+    render(<App />)
+    await screen.findByText('12h 22m')
+    press('m')
+    await clickText('Buscar artes no SteamGridDB')
+    expect(
+      await screen.findByText('Configure a chave do SteamGridDB em Configurações.')
     ).toBeTruthy()
   })
 })

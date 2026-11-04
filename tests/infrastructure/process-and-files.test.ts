@@ -7,7 +7,8 @@ import {
   detectImageType,
   hasExpectedProportion,
   importArtwork,
-  removeGameArtwork
+  removeGameArtwork,
+  webpSize
 } from '../../src/infrastructure/artwork/import-artwork'
 import {
   listDirectory,
@@ -190,5 +191,50 @@ describe('artwork import', () => {
       expect(error).toBeInstanceOf(ArtworkImportFailure)
       expect((error as ArtworkImportFailure).code).toBe(code)
     }
+  })
+})
+
+describe('webpSize', () => {
+  const riff = (chunk: string, body: number[]): Uint8Array => {
+    const bytes = new Uint8Array(40)
+    bytes.set(
+      [...'RIFF'].map((c) => c.charCodeAt(0)),
+      0
+    )
+    bytes.set(
+      [...'WEBP'].map((c) => c.charCodeAt(0)),
+      8
+    )
+    bytes.set(
+      [...chunk].map((c) => c.charCodeAt(0)),
+      12
+    )
+    bytes.set(body, 20)
+    return bytes
+  }
+
+  it('reads VP8X, VP8 and VP8L headers (as served by the Steam store)', () => {
+    // VP8X: 24-bit width-1 and height-1 at bytes 24 and 27 → 1438×808.
+    expect(webpSize(riff('VP8X', [0, 0, 0, 0, 0x9d, 0x05, 0, 0x27, 0x03, 0]))).toEqual({
+      width: 1438,
+      height: 808
+    })
+    expect(webpSize(riff('VP8 ', [0, 0, 0, 0x9d, 0x01, 0x2a, 0x9e, 0x05, 0x28, 0x03]))).toEqual({
+      width: 1438,
+      height: 808
+    })
+    // VP8L: signature 0x2f, then 14-bit width-1 and height-1.
+    const bits = (1437 & 0x3fff) | ((807 & 0x3fff) << 14)
+    expect(
+      webpSize(
+        riff('VP8L', [0x2f, bits & 0xff, (bits >> 8) & 0xff, (bits >> 16) & 0xff, bits >>> 24])
+      )
+    ).toEqual({ width: 1438, height: 808 })
+  })
+
+  it('rejects other formats and broken headers', () => {
+    expect(webpSize(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0, 0, 0, 0]))).toBeNull()
+    expect(webpSize(riff('VP8 ', [0, 0, 0, 0, 0, 0]))).toBeNull()
+    expect(webpSize(riff('ABCD', []))).toBeNull()
   })
 })

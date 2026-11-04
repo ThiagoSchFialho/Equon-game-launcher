@@ -232,8 +232,8 @@ Delivered in three reviewed steps: 6a (local Steam, Play, Settings),
     (`l=brazilian`); fields: `genres`, `developers`, `short_description`,
     `release_date` and the Brazilian rating `ratings.dejus.rating`. *(6b)*
 -   [x] Normalize responses and handle missing fields. *(6b)*
--   [ ] Build the artwork pipeline: Steam `header_image` (Achievements
-    screen) and screenshots, SteamGridDB (square and portrait covers, logo; name search
+-   [x] Build the artwork pipeline: Steam `header_image` (Achievements
+    screen) and `background_raw` (game page), SteamGridDB (square and portrait covers, logo; name search
     with user confirmation for manual games), throttled queue, local cache,
     validation of downloads, and no overwriting of user-selected art.
 -   [x] Sync Steam playtime and last played once per launcher start
@@ -248,7 +248,8 @@ Delivered in three reviewed steps: 6a (local Steam, Play, Settings),
     and wire it to the repositories. *(6a)*
 -   [x] Add the "Atualizar biblioteca" action, scan progress (UI stays
     responsive during scans) and the partial-failure state. *(6a)*
--   [ ] Duplicate-review step (candidates are never merged silently). *(6c)*
+-   [x] Duplicate-review step in Settings (candidates are never merged
+    silently). *(6c)*
 -   [ ] Test using fixtures and simulated failures (unreadable library,
     missing `libraryfolders.vdf`, download in progress, running game,
     corrupt files, network errors).

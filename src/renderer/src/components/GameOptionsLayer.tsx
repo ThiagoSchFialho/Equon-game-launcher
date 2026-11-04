@@ -6,6 +6,7 @@ import { useRunning } from '../data/running'
 import { t } from '../strings'
 import { ConfirmDialog } from './Dialog'
 import { OptionsMenu } from './OptionsMenu'
+import { SteamGridDbSearch } from './SteamGridDbSearch'
 
 /**
  * Options menu for a game card (Home, Library): zerado/oculto for every
@@ -22,6 +23,7 @@ export function GameOptionsLayer({
   const { reload, refresh } = useGames()
   const running = useRunning().ids.includes(game.id)
   const [confirming, setConfirming] = useState(false)
+  const [searching, setSearching] = useState(false)
   const editable = game.origin !== 'steam'
 
   if (confirming) {
@@ -42,6 +44,16 @@ export function GameOptionsLayer({
       />
     )
   }
+  if (searching) {
+    return (
+      <SteamGridDbSearch
+        gameId={game.id}
+        title={game.title}
+        onClose={onClose}
+        onApplied={refresh}
+      />
+    )
+  }
   return (
     <OptionsMenu
       title={game.title}
@@ -56,6 +68,7 @@ export function GameOptionsLayer({
       }}
       onClose={onClose}
       onEdit={editable ? () => navigation.openGameForm(game.id) : undefined}
+      onArtwork={editable ? () => setSearching(true) : undefined}
       onRemove={editable && !running ? () => setConfirming(true) : undefined}
     />
   )

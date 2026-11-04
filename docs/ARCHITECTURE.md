@@ -1,6 +1,6 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.18
+**Version:** 0.19
 **Status:** Draft — Phase 6 (Steam library and metadata)
 **Last updated:** 2026-11-02
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
@@ -266,7 +266,7 @@ Each game needs five images: a **square cover** (Library), a **portrait cover 60
 | Square cover (`cover_square`) | SteamGridDB grids, filtered to square dimensions, looked up by Steam App ID | SteamGridDB name search; the user confirms the match. Otherwise a local file |
 | Portrait cover (`cover_portrait`, 600×900) | SteamGridDB grids, filtered to 600×900, looked up by Steam App ID. `appdetails` has no vertical cover; Steam's own CDN asset for it is undocumented and must not be relied on | Same as the square cover |
 | Logo | SteamGridDB logos | Same as cover |
-| 1920×1080 | `screenshots[].path_full` from `appdetails` (usually 1920×1080; verify real dimensions after download) | A local file chosen by the user. SteamGridDB heroes are wide banners, not 16:9 (verify dimensions), so use them only as a fallback with `cover` fit |
+| 1920×1080 | `background_raw` from `appdetails` (owner decision, Phase 6c; measured 1438×810, ≈16:9). Games without a dedicated store background get a blurred store-generated image there | A local file chosen by the user. SteamGridDB heroes are wide banners, not 16:9 (verify dimensions), so use them only as a fallback with `cover` fit |
 | Header | `header_image` from `appdetails` | SteamGridDB horizontal grid (460×215 / 920×430) or a crop of the 1920×1080 image |
 
 **SteamGridDB (adopted).** REST API v2 at `https://www.steamgriddb.com/api/v2`, `Authorization: Bearer <key>`. The key is free but requires a SteamGridDB account. Supports lookup by Steam App ID or SteamGridDB game ID, name search (needed for non-Steam games), and filters by dimensions and style. Art is community-contributed. A third-party document reports about 500 requests per hour on the free tier; this is not confirmed, so verify it and design for throttling.
@@ -288,6 +288,8 @@ Each game needs five images: a **square cover** (Library), a **portrait cover 60
 - Artwork the user selected is never overwritten by an automatic fetch (same principle as `hidden` / `beated`). Refresh only on an explicit action or when art is missing.
 - A failed fetch keeps the existing cached art. Validate every download (content type, maximum size, decoded dimensions) before saving.
 - Do not bundle or redistribute fetched images; the cache is personal and local.
+
+**Implemented in Phase 6c:** a main-process queue (`src/main/artwork/artwork-fetcher.ts`) runs after the startup scan, the metadata queue and every "Atualizar biblioteca", and when a SteamGridDB key is saved. It fills only missing kinds: `header` and `background` from `appdetails` (`filters=basic,background`), and `cover_square` (512×512/1024×1024), `cover_portrait` (600×900) and `logo` from SteamGridDB by App ID, taking the highest-scored static, non-NSFW, non-humor image (owner decision). API calls are spaced 1.5 s apart. Downloads are allowed only over https from `*.steamstatic.com` and `cdn2.steamgriddb.com` (redirects included), capped at 20 MB, then validated like local files; WebP, which Electron's `nativeImage` cannot decode, is checked through its VP8/VP8L/VP8X header instead of a full decode (displayed by the sandboxed renderer). Manual games: "Buscar artes no SteamGridDB" in the game options menu searches by title (`/search/autocomplete`), the user picks the game, and its covers, logo and header (460×215/920×430 grid) are stored as user-selected art; the background stays a local file.
 
 **Open sub-decisions:** cache eviction; stored sizes/variants (decide after measuring); the fallback look when a game has no 1920×1080 image; Picking files (decided in Phase 4): an **own controller-friendly file browser**. Main lists drives, a few known folders, folder names and only files with the allowed extensions (`.exe`/`.url` for game executables, `.exe` for emulators, Yuzu ROM formats for ROMs, `.png`/`.jpg`/`.jpeg`/`.webp` for images); it never returns file contents, and the chosen path is validated again in main when saving. A "Usar janela do Windows" button opens the native dialog for mouse users. Local artwork import: main reads the file (max 20 MB), checks the real type by its magic bytes, decodes it to get the dimensions, checks the kind's proportion (background 16:9, ±5%), copies it into the cache and saves it with `user_selected = 1`.
 
@@ -565,7 +567,7 @@ Per-game sync steps: fetch definitions, player state and global percentages → 
 5. Valid changes are persisted transactionally.
 6. The UI shows results and partial failures.
 
-A failed scan must not mark every game from that source as uninstalled. The planning part is implemented by the Phase 5 discovery contract (§8); the refresh action, progress and the review step arrive with the Steam adapter in Phase 6.
+A failed scan must not mark every game from that source as uninstalled. The planning part is the Phase 5 discovery contract (§8). Phase 6: refresh at startup and from Settings › "Atualizar biblioteca"; duplicate candidates (a newly found Steam game whose title matches a manual game) are kept in memory and reviewed in Settings: "Manter os dois", "Ocultar o jogo manual" or "Remover o jogo manual". A candidate only appears when the Steam game is first discovered, so no table is needed.
 
 ### Library view (Phase 5)
 
@@ -667,6 +669,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-01 | 0.7 | Accepted D-14 (npm, electron-vite, Vitest, ESLint + Prettier, strict TypeScript); documented the `better-sqlite3` Node/Electron ABI rule and the `node:sqlite` check for the Phase 1 spike. Phase 1 unblocked |
 | 2026-11-01 | 0.8 | Accepted D-15 (artwork). Aligned `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md` and `ROADMAP.md` with all accepted decisions. Recorded the open Home cover type |
 | 2026-11-01 | 0.9 | Added a fifth art type: portrait cover 600×900 for the Home screen. Renamed `cover` to `cover_square`; added `cover_portrait` |
+| 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |
 | 2026-11-03 | 0.18 | Phase 6b: `appdetails` in Portuguese with the owner-chosen fields, `GetOwnedGames` sync after the startup scan, "Testar conexão" (Steam `GetPlayerSummaries`, SteamGridDB). |
 | 2026-11-03 | 0.17 | Phase 6a: no Steam folder override; running state from the registry `RunningAppID` (the manifest `AppRunning` flag is not set in practice); local Steam scan at startup and on "Atualizar biblioteca"; Settings screen (gear in the top bar: Conexões, Sobre). |
 | 2026-11-03 | 0.16 | Phase 5: discovery contract (§8) and library view (§11). |

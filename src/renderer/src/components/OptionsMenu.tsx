@@ -4,7 +4,7 @@ import { ChoiceDialog, type ChoiceItem } from './Dialog'
 
 /**
  * Game options dialog (mockups "menu open"). Achievements arrive in Phase 7; "Desinstalar" is a future item, not in the
- * MVP. Edit and remove are offered for non-Steam games.
+ * MVP. Edit, SteamGridDB artwork and remove are offered for non-Steam games.
  */
 export function OptionsMenu({
   title,
@@ -13,6 +13,7 @@ export function OptionsMenu({
   onFlags,
   onClose,
   onEdit,
+  onArtwork,
   onRemove
 }: {
   title: string
@@ -22,6 +23,8 @@ export function OptionsMenu({
   onFlags: (flags: GameFlagsInput) => void
   onClose: () => void
   onEdit?: () => void
+  /** "Buscar artes no SteamGridDB" (manual games). */
+  onArtwork?: () => void
   onRemove?: () => void
 }): React.JSX.Element {
   const items: ChoiceItem[] = [
@@ -37,6 +40,7 @@ export function OptionsMenu({
       onConfirm: () => onFlags({ hidden: !hidden })
     },
     ...(onEdit ? [{ id: 'edit', label: t.menu.edit, onConfirm: onEdit }] : []),
+    ...(onArtwork ? [{ id: 'artwork', label: t.menu.artwork, onConfirm: onArtwork }] : []),
     { id: 'close', label: t.menu.close, onConfirm: onClose },
     ...(onRemove
       ? [

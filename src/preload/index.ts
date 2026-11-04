@@ -33,11 +33,19 @@ const api: EquonApi = {
   },
   library: {
     refresh: () => ipcRenderer.invoke(IpcChannel.libraryRefresh),
+    duplicates: () => ipcRenderer.invoke(IpcChannel.libraryDuplicates),
+    dismissDuplicate: (manualGameId) =>
+      ipcRenderer.invoke(IpcChannel.libraryDismissDuplicate, manualGameId),
     onChanged: (listener) => {
       const handler = (): void => listener()
       ipcRenderer.on(IpcEvent.libraryChanged, handler)
       return () => ipcRenderer.removeListener(IpcEvent.libraryChanged, handler)
     }
+  },
+  artwork: {
+    search: (term) => ipcRenderer.invoke(IpcChannel.artworkSearch, term),
+    applySteamGridDb: (gameId, steamGridDbGameId) =>
+      ipcRenderer.invoke(IpcChannel.artworkApplySteamGridDb, gameId, steamGridDbGameId)
   },
   settings: {
     get: () => ipcRenderer.invoke(IpcChannel.settingsGet),

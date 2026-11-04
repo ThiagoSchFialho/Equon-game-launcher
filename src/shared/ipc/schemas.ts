@@ -100,6 +100,20 @@ export const connectionTestSchema = z.strictObject({
   gamesVisible: z.boolean()
 }) satisfies z.ZodType<ConnectionTest>
 
+export const duplicateListSchema = z.array(
+  z.strictObject({ manualGameId: id, manualTitle: z.string(), steamTitle: z.string() })
+)
+export const steamGridDbGameListSchema = z.array(
+  z.strictObject({
+    id: z.number().int().positive(),
+    name: z.string(),
+    year: z.number().int().nullable()
+  })
+)
+export const artworkSearchArgs = z.tuple([z.string().max(200)])
+export const artworkApplyArgs = z.tuple([id, z.number().int().positive()])
+export const artworkKindListSchema = z.array(z.enum(ARTWORK_KINDS))
+
 export const settingsTestConnectionArgs = z.tuple([z.enum(['steam', 'steamgriddb'])])
 
 export const settingsInfoSchema = z.strictObject({

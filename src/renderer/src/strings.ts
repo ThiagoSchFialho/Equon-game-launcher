@@ -103,6 +103,7 @@ export const t = {
     unhide: 'Mostrar jogo',
     flagFailed: 'Não foi possível salvar a alteração.',
     edit: 'Editar jogo',
+    artwork: 'Buscar artes no SteamGridDB',
     remove: 'Remover jogo',
     close: 'Fechar',
     soon: 'Em breve'
@@ -254,6 +255,37 @@ export const t = {
     remove: 'Remover emulador',
     close: 'Fechar',
     changeNote: 'A troca vale para todos os jogos deste emulador.'
+  },
+  steamGridDb: {
+    title: 'Artes do SteamGridDB',
+    searching: 'Buscando…',
+    pick: 'Escolha o jogo certo para baixar as capas, o logo e o cabeçalho.',
+    noResults: (term: string) => `Nenhum jogo encontrado para "${term}".`,
+    otherName: 'Buscar outro nome',
+    searchTitle: 'Nome do jogo no SteamGridDB',
+    applying: (name: string) => `Baixando artes de ${name}…`,
+    applied: (count: number) => (count === 1 ? '1 arte baixada.' : `${count} artes baixadas.`),
+    nothingFound: 'O SteamGridDB não tem artes para este jogo.',
+    close: 'Fechar',
+    errors: {
+      'not-configured': 'Configure a chave do SteamGridDB em Configurações.',
+      'invalid-key': 'A chave do SteamGridDB é inválida.',
+      'not-found': 'Jogo não encontrado.',
+      network: 'Sem conexão com o SteamGridDB. Tente mais tarde.',
+      'invalid-response': 'O SteamGridDB respondeu de forma inesperada. Tente mais tarde.'
+    } as Record<string, string>
+  },
+  duplicates: {
+    notice: (n: number) =>
+      n === 1 ? '1 possível duplicata para revisar.' : `${n} possíveis duplicatas para revisar.`,
+    review: 'Revisar',
+    title: 'Possível duplicata',
+    message: (manual: string, steam: string) =>
+      `O jogo manual "${manual}" parece ser "${steam}", encontrado na Steam. Nada foi juntado.`,
+    keep: 'Manter os dois',
+    hide: 'Ocultar o jogo manual',
+    remove: 'Remover o jogo manual',
+    close: 'Fechar'
   },
   settings: {
     title: 'Configurações',

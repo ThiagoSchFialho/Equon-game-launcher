@@ -238,3 +238,9 @@
   font-size: var(--font-size-body);
   overflow-wrap: anywhere;
 }
+
+.settings__library-duplicates {
+  margin: var(--space-1) 0 0;
+  color: var(--color-warning);
+  font-size: var(--font-size-meta);
+}

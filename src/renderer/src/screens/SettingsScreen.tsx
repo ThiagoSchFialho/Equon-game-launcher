@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type {
+  DuplicateInfo,
   LibraryRefreshInfo,
   SecretKind,
   SettingsInfo,
@@ -13,10 +14,12 @@ import steamIcon from '../assets/icons/steam-white.svg'
 import syncIcon from '../assets/icons/sync.svg'
 import { useNavigation, currentSection } from '../app/navigation'
 import { Button } from '../components/Button'
+import { ChoiceDialog } from '../components/Dialog'
 import { Footer, type Hint } from '../components/Footer'
 import { FormRow } from '../components/FormRow'
 import { OnScreenKeyboard } from '../components/OnScreenKeyboard'
 import { StateMessage } from '../components/StateMessage'
+import { useGames } from '../data/games'
 import { TopBar } from '../components/TopBar'
 import { useFocusable, useScreenActions } from '../focus/focus-context'
 import { FocusScope } from '../focus/FocusProvider'
@@ -198,6 +201,12 @@ function Connections({
 }): React.JSX.Element {
   const [refreshing, setRefreshing] = useState(info.refreshing)
   const [lastRefresh, setLastRefresh] = useState(info.lastRefresh)
+  const [duplicates, setDuplicates] = useState<DuplicateInfo[]>([])
+  const [reviewing, setReviewing] = useState(false)
+  const loadDuplicates = useCallback(() => {
+    void window.equon.library.duplicates().then(setDuplicates, () => {})
+  }, [])
+  useEffect(loadDuplicates, [loadDuplicates])
 
   const remove = (secret: SecretKind): void => {
     void window.equon.settings.setSecret(secret, null).then((result) => {
@@ -210,7 +219,10 @@ function Connections({
     void window.equon.library
       .refresh()
       .then(setLastRefresh, () => {})
-      .finally(() => setRefreshing(false))
+      .finally(() => {
+        setRefreshing(false)
+        loadDuplicates()
+      })
   }
 
   return (
@@ -273,7 +285,19 @@ function Connections({
           <p className="settings__library-status" aria-live="polite">
             {refreshText(lastRefresh)}
           </p>
+          {duplicates.length > 0 && (
+            <p className="settings__library-duplicates">{t.duplicates.notice(duplicates.length)}</p>
+          )}
         </div>
+        {duplicates.length > 0 && (
+          <Button
+            id="settings:duplicates"
+            label={t.duplicates.review}
+            onConfirm={() => setReviewing(true)}
+          >
+            {t.duplicates.review}
+          </Button>
+        )}
         <Button
           id="settings:refresh"
           variant="primary"
@@ -285,7 +309,69 @@ function Connections({
           {refreshing ? t.settings.refreshing : t.settings.refresh}
         </Button>
       </div>
+      {reviewing && duplicates.length > 0 && (
+        <DuplicateReview
+          duplicate={duplicates[0]}
+          onDone={() => {
+            loadDuplicates()
+            if (duplicates.length <= 1) setReviewing(false)
+          }}
+          onClose={() => setReviewing(false)}
+        />
+      )}
     </div>
+  )
+}
+
+/** One candidate at a time; nothing is merged, the user decides (ARCHITECTURE.md §11). */
+function DuplicateReview({
+  duplicate,
+  onDone,
+  onClose
+}: {
+  duplicate: DuplicateInfo
+  onDone: () => void
+  onClose: () => void
+}): React.JSX.Element {
+  const { refresh: refreshGames } = useGames()
+  const act = (action: Promise<unknown>): void => {
+    void action.finally(() => {
+      refreshGames()
+      onDone()
+    })
+  }
+  const id = duplicate.manualGameId
+  return (
+    <ChoiceDialog
+      id={`duplicate-${id}`}
+      title={t.duplicates.title}
+      onClose={onClose}
+      footer={
+        <p className="dialog__message">
+          {t.duplicates.message(duplicate.manualTitle, duplicate.steamTitle)}
+        </p>
+      }
+      items={[
+        {
+          id: 'keep',
+          label: t.duplicates.keep,
+          onConfirm: () => act(window.equon.library.dismissDuplicate(id))
+        },
+        {
+          id: 'hide',
+          label: t.duplicates.hide,
+          onConfirm: () => act(window.equon.games.setFlags(id, { hidden: true }))
+        },
+        {
+          id: 'remove',
+          label: t.duplicates.remove,
+          tone: 'danger',
+          separated: true,
+          onConfirm: () => act(window.equon.games.remove(id))
+        },
+        { id: 'close', label: t.duplicates.close, onConfirm: onClose }
+      ]}
+    />
   )
 }
 

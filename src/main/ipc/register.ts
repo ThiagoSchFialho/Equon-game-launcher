@@ -34,6 +34,11 @@ import {
   settingsSetSecretArgs,
   settingsSetSteamIdArgs,
   settingsTestConnectionArgs,
+  artworkApplyArgs,
+  artworkKindListSchema,
+  artworkSearchArgs,
+  duplicateListSchema,
+  steamGridDbGameListSchema,
   connectionTestSchema,
   systemInfoSchema
 } from '../../shared/ipc/schemas'
@@ -41,6 +46,7 @@ import { z } from 'zod'
 import { listFiles, pickNative } from '../files/file-service'
 import type { ManualGameService } from '../games/manual-game-service'
 import type { SettingsService } from '../settings/settings-service'
+import type { ArtworkFetcher } from '../artwork/artwork-fetcher'
 import type { SteamOnline } from '../steam/steam-online'
 import type { SteamService } from '../steam/steam-service'
 import { isAppUrl, type AppOrigin } from '../security/navigation'
@@ -59,6 +65,7 @@ export interface IpcDeps {
   window: () => BrowserWindow | null
   steam: SteamService
   steamOnline: SteamOnline
+  artworkFetcher: ArtworkFetcher
   settings: SettingsService
   /** Settings › Sobre. */
   systemInfo?: () => SystemInfo
@@ -106,11 +113,45 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
   )
   ipcMain.handle(
     IpcChannel.settingsSetSecret,
-    createValidatedHandler(settingsSetSecretArgs, settingsResult, trusted, (kind, value) =>
-      deps.settings.setSecret(kind, value)
-    )
+    createValidatedHandler(settingsSetSecretArgs, settingsResult, trusted, (kind, value) => {
+      const result = deps.settings.setSecret(kind, value)
+      // A new SteamGridDB key fills the art that was missing.
+      if (result.ok && kind === 'steamgriddb-api-key' && value !== null) {
+        void deps.artworkFetcher.fetchMissing()
+      }
+      return result
+    })
   )
 
+  ipcMain.handle(
+    IpcChannel.libraryDuplicates,
+    createValidatedHandler(noArgs, duplicateListSchema, trusted, () => deps.steam.duplicates())
+  )
+  ipcMain.handle(
+    IpcChannel.libraryDismissDuplicate,
+    createValidatedHandler(gameIdArgs, z.undefined(), trusted, (manualGameId) => {
+      deps.steam.dismissDuplicate(manualGameId)
+      return undefined
+    })
+  )
+  ipcMain.handle(
+    IpcChannel.artworkSearch,
+    createValidatedHandler(
+      artworkSearchArgs,
+      resultSchema(steamGridDbGameListSchema),
+      trusted,
+      (term) => deps.artworkFetcher.search(term)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.artworkApplySteamGridDb,
+    createValidatedHandler(
+      artworkApplyArgs,
+      resultSchema(artworkKindListSchema),
+      trusted,
+      (gameId, gridId) => deps.artworkFetcher.applySteamGridDb(gameId, gridId)
+    )
+  )
   ipcMain.handle(
     IpcChannel.settingsTestConnection,
     createValidatedHandler(

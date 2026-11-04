@@ -19,6 +19,7 @@ import { Button } from '../components/Button'
 import { ConfirmDialog } from '../components/Dialog'
 import { Footer, type Hint } from '../components/Footer'
 import { OptionsMenu } from '../components/OptionsMenu'
+import { SteamGridDbSearch } from '../components/SteamGridDbSearch'
 import { StateMessage } from '../components/StateMessage'
 import {
   ageRatingKey,
@@ -235,7 +236,7 @@ export function GameDetailsScreen({ id, from }: { id: number; from: Section }): 
   const navigation = useNavigation()
   const { reload: reloadGames, refresh: refreshGames } = useGames()
   const { details, reload, refresh } = useGameDetails(id)
-  const [overlay, setOverlay] = useState<'menu' | 'remove' | null>(null)
+  const [overlay, setOverlay] = useState<'menu' | 'remove' | 'artwork' | null>(null)
   const [removeError, setRemoveError] = useState<string | null>(null)
   const running = useRunning().ids.includes(id)
   // While Steam installs or updates the game, re-read it so Play comes back when it is done.
@@ -321,7 +322,19 @@ export function GameDetailsScreen({ id, from }: { id: number; from: Section }): 
           }}
           onClose={() => setOverlay(null)}
           onEdit={details.data.editable ? () => navigation.openGameForm(id) : undefined}
+          onArtwork={details.data.editable ? () => setOverlay('artwork') : undefined}
           onRemove={details.data.editable && !running ? () => setOverlay('remove') : undefined}
+        />
+      )}
+      {overlay === 'artwork' && details.status === 'ready' && details.data && (
+        <SteamGridDbSearch
+          gameId={id}
+          title={details.data.title}
+          onClose={() => setOverlay(null)}
+          onApplied={() => {
+            refresh()
+            refreshGames()
+          }}
         />
       )}
       {overlay === 'remove' && details.status === 'ready' && details.data && (

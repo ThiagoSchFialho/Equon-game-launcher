@@ -79,6 +79,7 @@ export function installFakeApi(
     files?: Partial<EquonApi['files']>
     settings?: Partial<EquonApi['settings']>
     library?: Partial<EquonApi['library']>
+    artwork?: Partial<EquonApi['artwork']>
   } = {}
 ): EquonApi {
   const runningListeners = new Set<(ids: number[]) => void>()
@@ -105,8 +106,15 @@ export function installFakeApi(
         duplicates: 0,
         finishedAt: '2026-11-03T22:00:00Z'
       }),
+      duplicates: async () => [],
+      dismissDuplicate: async () => {},
       onChanged: () => () => {},
       ...overrides.library
+    },
+    artwork: {
+      search: async () => ({ ok: true, data: [] }),
+      applySteamGridDb: async () => ({ ok: true, data: [] }),
+      ...overrides.artwork
     },
     settings: {
       get: async () => settingsInfo(),

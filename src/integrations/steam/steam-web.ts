@@ -253,3 +253,49 @@ async function request(get: HttpGet, url: string): Promise<SteamWebResult<unknow
     throw error
   }
 }
+
+// ------------------------------------------------------------ store artwork
+
+const appArtworkSchema = z.record(
+  z.string(),
+  z.union([
+    z.object({
+      success: z.literal(true),
+      data: z.object({
+        header_image: z.string().optional(),
+        background_raw: z.string().optional()
+      })
+    }),
+    z.object({ success: z.literal(false) })
+  ])
+)
+
+/**
+ * Store artwork URLs (owner decision, Phase 6c): `header_image` for the
+ * Achievements screen and `background_raw` as the game page background.
+ */
+export async function fetchAppArtwork(
+  get: HttpGet,
+  appId: number
+): Promise<SteamWebResult<{ header: string | null; background: string | null }>> {
+  if (!isSteamAppId(appId)) return { ok: false, error: 'not-found' }
+  let response
+  try {
+    response = await get(`${STORE}?appids=${appId}&filters=basic,background`)
+  } catch (error) {
+    if (error instanceof NetworkError) return { ok: false, error: 'network' }
+    throw error
+  }
+  if (response.status !== 200) return { ok: false, error: 'network' }
+  const parsed = appArtworkSchema.safeParse(response.json)
+  const entry = parsed.success ? parsed.data[String(appId)] : undefined
+  if (!entry) return { ok: false, error: 'invalid-response' }
+  if (!entry.success) return { ok: false, error: 'not-found' }
+  return {
+    ok: true,
+    data: {
+      header: entry.data.header_image || null,
+      background: entry.data.background_raw || null
+    }
+  }
+}

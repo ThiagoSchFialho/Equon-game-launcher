@@ -6,7 +6,7 @@ import {
 } from '../../core/application'
 import { toUtcIso } from '../../core/domain'
 import type { SteamAdapter } from '../../integrations/steam/steam-adapter'
-import type { LibraryRefreshInfo } from '../../shared/ipc/contract'
+import type { DuplicateInfo, LibraryRefreshInfo } from '../../shared/ipc/contract'
 
 /** How often the registry RunningAppID is read (D-12). */
 export const RUNNING_POLL_MS = 2000
@@ -35,6 +35,9 @@ export interface SteamService {
   lastRefresh(): LibraryRefreshInfo | null
   /** Re-reads one Steam game before its page is shown; a read failure changes nothing. */
   refreshGame(gameId: number): Promise<void>
+  /** Candidates found by scans in this run, still to review (they are not stored). */
+  duplicates(): DuplicateInfo[]
+  dismissDuplicate(manualGameId: number): void
 }
 
 export function createSteamService(deps: SteamServiceDeps): SteamService {
@@ -43,17 +46,22 @@ export function createSteamService(deps: SteamServiceDeps): SteamService {
   let timer: ReturnType<typeof setInterval> | null = null
   let polling = false
   let scanned = false
+  // manual game id → Steam title; a candidate only appears when the Steam game is first found.
+  const duplicates = new Map<number, string>()
 
   const refresh = (): Promise<LibraryRefreshInfo> => {
     pending ??= refreshSteamLibrary(deps, deps.adapter)
       .then((summary) => {
+        for (const candidate of summary.duplicates) {
+          duplicates.set(candidate.existingGameId, candidate.discovered.title)
+        }
         last = {
           status: summary.status,
           reason: summary.reason,
           added: summary.added,
           missing: summary.missing,
           unknown: summary.unknown,
-          duplicates: summary.duplicates.length,
+          duplicates: duplicates.size,
           finishedAt: toUtcIso(deps.clock.now())
         }
         if (summary.status !== 'failed') deps.onLibraryChanged()
@@ -94,6 +102,21 @@ export function createSteamService(deps: SteamServiceDeps): SteamService {
     refresh,
     refreshing: () => pending !== null,
     lastRefresh: () => last,
+
+    duplicates() {
+      const list: DuplicateInfo[] = []
+      for (const [manualGameId, steamTitle] of duplicates) {
+        const game = deps.games.getById(manualGameId)
+        // Removed or hidden meanwhile: nothing left to review.
+        if (!game || game.hidden) duplicates.delete(manualGameId)
+        else list.push({ manualGameId, manualTitle: game.title, steamTitle })
+      }
+      return list
+    },
+
+    dismissDuplicate(manualGameId) {
+      duplicates.delete(manualGameId)
+    },
 
     async refreshGame(gameId) {
       const game = deps.games.getById(gameId)

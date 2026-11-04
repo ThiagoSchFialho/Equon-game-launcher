@@ -10,6 +10,10 @@ export const IpcChannel = {
   settingsSetSteamId: 'settings:set-steam-id',
   settingsSetSecret: 'settings:set-secret',
   settingsTestConnection: 'settings:test-connection',
+  libraryDuplicates: 'library:duplicates',
+  libraryDismissDuplicate: 'library:dismiss-duplicate',
+  artworkSearch: 'artwork:search',
+  artworkApplySteamGridDb: 'artwork:apply-steamgriddb',
   gamesList: 'games:list',
   gamesGet: 'games:get',
   gamesGetEditable: 'games:get-editable',
@@ -83,6 +87,20 @@ export interface SteamSyncInfo {
   games: number
   /** ISO-8601 UTC */
   finishedAt: string
+}
+
+/** A Steam game found by a scan whose title matches a manual game (never merged automatically). */
+export interface DuplicateInfo {
+  manualGameId: number
+  manualTitle: string
+  steamTitle: string
+}
+
+/** A SteamGridDB game offered in the manual-game artwork search. */
+export interface SteamGridDbGameInfo {
+  id: number
+  name: string
+  year: number | null
 }
 
 /** Successful "Testar conexão". */
@@ -258,8 +276,18 @@ export interface EquonApi {
   library: {
     /** Scans Steam again (also done at startup); concurrent calls share one scan. */
     refresh(): Promise<LibraryRefreshInfo>
+    /** Possible duplicates found by the last scans, still to review. */
+    duplicates(): Promise<DuplicateInfo[]>
+    /** "Manter os dois": removes the candidate from the review list. */
+    dismissDuplicate(manualGameId: number): Promise<void>
     /** Subscribes to library changes from scans; returns the unsubscribe function. */
     onChanged(listener: () => void): () => void
+  }
+  artwork: {
+    /** SteamGridDB name search for a manual game (needs the key). */
+    search(term: string): Promise<Result<SteamGridDbGameInfo[]>>
+    /** Downloads covers, logo and header of the chosen SteamGridDB game for a manual game. */
+    applySteamGridDb(gameId: number, steamGridDbGameId: number): Promise<Result<ArtworkKind[]>>
   }
   settings: {
     get(): Promise<SettingsInfo>

@@ -84,6 +84,19 @@ export function prepareArtwork(
     if (error instanceof ArtworkImportFailure) throw error
     throw new ArtworkImportFailure('unreadable')
   }
+  return prepareArtworkBytes(bytes, kind, decode)
+}
+
+/**
+ * The checks shared by local files and downloads (ARCHITECTURE.md §3.13):
+ * size limit, real type from the magic bytes, full decode and proportion.
+ */
+export function prepareArtworkBytes(
+  bytes: Buffer,
+  kind: ArtworkKind,
+  decode: (bytes: Buffer) => { width: number; height: number } | null
+): PreparedArtwork {
+  if (bytes.length > MAX_ARTWORK_BYTES) throw new ArtworkImportFailure('too-large')
   const type = detectImageType(bytes)
   if (!type) throw new ArtworkImportFailure('unsupported-type')
   const size = decode(bytes)
@@ -126,4 +139,30 @@ export function importArtwork(options: {
 /** Deletes a game's cached artwork folder (after the game row is removed). */
 export function removeGameArtwork(cacheDir: string, gameId: number): void {
   rmSync(join(cacheDir, String(gameId)), { recursive: true, force: true })
+}
+
+/**
+ * Size declared by a WebP header (VP8, VP8L or VP8X chunk). Electron's
+ * nativeImage cannot decode WebP, so for this format the header is checked
+ * instead of a full decode; the sandboxed renderer (Chromium) displays it.
+ * Returns null when the header is not a valid WebP header.
+ */
+export function webpSize(bytes: Uint8Array): { width: number; height: number } | null {
+  if (detectImageType(bytes) !== 'webp' || bytes.length < 30) return null
+  const view = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  const chunk = view.toString('ascii', 12, 16)
+  if (chunk === 'VP8X') {
+    return { width: 1 + view.readUIntLE(24, 3), height: 1 + view.readUIntLE(27, 3) }
+  }
+  if (chunk === 'VP8 ') {
+    // Key frame start code 9d 01 2a, then 14-bit width and height.
+    if (view[23] !== 0x9d || view[24] !== 0x01 || view[25] !== 0x2a) return null
+    return { width: view.readUInt16LE(26) & 0x3fff, height: view.readUInt16LE(28) & 0x3fff }
+  }
+  if (chunk === 'VP8L') {
+    if (view[20] !== 0x2f) return null
+    const bits = view.readUInt32LE(21)
+    return { width: (bits & 0x3fff) + 1, height: ((bits >> 14) & 0x3fff) + 1 }
+  }
+  return null
 }

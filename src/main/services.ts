@@ -24,7 +24,9 @@ import {
 import { createProcessLauncher } from '../infrastructure/process/process-launcher'
 import { readSteamRegistryValue } from '../integrations/steam/registry'
 import { createSteamAdapter } from '../integrations/steam/steam-adapter'
-import { fetchGet } from '../integrations/http'
+import { createFetchBytes, fetchGet } from '../integrations/http'
+import { MAX_ARTWORK_BYTES, webpSize } from '../infrastructure/artwork/import-artwork'
+import { createArtworkFetcher } from './artwork/artwork-fetcher'
 import { IpcEvent } from '../shared/ipc/contract'
 import { createManualGameService } from './games/manual-game-service'
 import type { IpcDeps } from './ipc/register'
@@ -40,10 +42,13 @@ const STEAM_START_TIMEOUT_MS = 90_000
 /** Steam updates a game that needs it before starting it. */
 const STEAM_UPDATE_TIMEOUT_MS = 10 * 60_000
 
-/** Full decode with Electron; the real size or null when the image cannot be decoded. */
+/**
+ * Full decode with Electron for PNG and JPEG; WebP (which nativeImage cannot
+ * decode) is checked through its header. Null when the image is not valid.
+ */
 function decodeImage(bytes: Buffer): { width: number; height: number } | null {
   const image = nativeImage.createFromBuffer(bytes)
-  return image.isEmpty() ? null : image.getSize()
+  return image.isEmpty() ? webpSize(bytes) : image.getSize()
 }
 
 /**
@@ -158,6 +163,20 @@ export function createServices(
     onError: (error) => console.error('Steam request failed:', String(error))
   })
 
+  const artworkFetcher = createArtworkFetcher({
+    games,
+    artwork,
+    get: fetchGet,
+    getBytes: createFetchBytes(MAX_ARTWORK_BYTES),
+    gridKey: () => secret('steamgriddb-api-key'),
+    cacheDir: artworkCacheDir,
+    decode: decodeImage,
+    clock,
+    wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    onLibraryChanged: () => window()?.webContents.send(IpcEvent.libraryChanged),
+    onError: (error) => console.error('Artwork download failed:', String(error))
+  })
+
   const steam = createSteamService({
     games,
     uow,
@@ -174,6 +193,8 @@ export function createServices(
         .catch((error) => console.error('Steam sync failed:', String(error)))
         .then(() => steamOnline.fetchMissingMetadata())
         .catch((error) => console.error('Steam metadata failed:', String(error)))
+        .then(() => artworkFetcher.fetchMissing())
+        .catch((error) => console.error('Artwork queue failed:', String(error)))
     }
   })
 
@@ -206,6 +227,7 @@ export function createServices(
     window,
     steam,
     steamOnline,
+    artworkFetcher,
     settings: createSettingsService({
       users,
       lastSync: () => steamOnline.lastSync(),
