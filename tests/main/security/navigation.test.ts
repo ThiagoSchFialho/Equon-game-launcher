@@ -10,6 +10,16 @@ describe('isAppUrl', () => {
     expect(isAppUrl('file:///C:/app/out/renderer/index.html#/library', prod)).toBe(true)
   })
 
+  it('ignores only the case of the drive letter', () => {
+    // Started from a lower-case d: shell, while Chromium reports the page as D:.
+    const lower = { rendererFileUrl: 'file:///d:/app/out/renderer/index.html' }
+    expect(isAppUrl('file:///D:/app/out/renderer/index.html', lower)).toBe(true)
+    expect(isAppUrl('file:///d:/app/out/renderer/index.html', prod)).toBe(false) // other drive
+    expect(isAppUrl('file:///c:/app/out/renderer/index.html', prod)).toBe(true)
+    expect(isAppUrl('file:///C:/APP/out/renderer/index.html', prod)).toBe(false)
+    expect(isAppUrl('file:///E:/app/out/renderer/index.html', lower)).toBe(false)
+  })
+
   it('rejects other local files in production', () => {
     expect(isAppUrl('file:///C:/Windows/win.ini', prod)).toBe(false)
     expect(isAppUrl('file:///C:/app/out/renderer/other.html', prod)).toBe(false)

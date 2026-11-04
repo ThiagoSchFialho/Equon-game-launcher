@@ -22,5 +22,13 @@ export function isAppUrl(url: string, origin: AppOrigin): boolean {
   }
 
   const expected = new URL(origin.rendererFileUrl)
-  return parsed.protocol === 'file:' && parsed.pathname === expected.pathname
+  return (
+    parsed.protocol === 'file:' &&
+    withUpperDrive(parsed.pathname) === withUpperDrive(expected.pathname)
+  )
+}
+
+/** Windows drive letters have no case: a d:\ shell gives /d:/ while Chromium reports /D:/. */
+function withUpperDrive(pathname: string): string {
+  return pathname.replace(/^\/[a-z]:/, (drive) => drive.toUpperCase())
 }
