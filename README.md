@@ -50,7 +50,7 @@ Design on Figma: https://www.figma.com/design/DIkoemv1pnAg8px8TZchNG/Untitled?no
 
 ## Tech Stack
 
-Recorded in `docs/ARCHITECTURE.md`. Phases 1–6 are implemented (skeleton, database, controller UI, manual games, library organization, Steam library and metadata); achievements come next.
+Recorded in `docs/ARCHITECTURE.md`. Phases 1–7 are implemented (skeleton, database, controller UI, manual games, library organization, Steam library and metadata, achievements); hardening and release preparation come next.
 
 - **Desktop:** Electron, React, and TypeScript, built with electron-vite.
 - **Local database:** SQLite (embedded, no separate server) via `better-sqlite3`.

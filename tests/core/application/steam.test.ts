@@ -101,11 +101,13 @@ describe('createSteamSessions', () => {
   let changes: number
   let sessions: SteamSessions
   let timeouts: (() => void)[]
+  let closedGames: number[]
 
   beforeEach(() => {
     clock = new Date('2026-11-03T22:05:42Z')
     changes = 0
     timeouts = []
+    closedGames = []
     sessions = createSteamSessions({
       games: games(),
       sessions: createSessionRepository(db),
@@ -117,7 +119,8 @@ describe('createSteamSessions', () => {
         return () => (timeouts = timeouts.filter((t) => t !== fn))
       },
       heartbeatMs: 30_000,
-      onChange: () => changes++
+      onChange: () => changes++,
+      onClosed: (gameId) => closedGames.push(gameId)
     })
   })
 
@@ -138,6 +141,7 @@ describe('createSteamSessions', () => {
     sessions.observe(0)
     expect(sessions.runningGameId()).toBeNull()
     expect(createSessionRepository(db).listRunning()).toEqual([])
+    expect(closedGames).toEqual([id])
     // 76 s observed: the Steam baseline is 0, so 1 minute.
     expect(games().getById(id)).toMatchObject({
       playtime: 1,

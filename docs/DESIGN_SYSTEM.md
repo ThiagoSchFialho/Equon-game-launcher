@@ -374,8 +374,10 @@ inteiramente operável por controle, teclado e mouse.
 
 ### Visão geral
 
--   Exibir um resumo agregado com o total de conquistas desbloqueadas e
-    os totais por categoria: Platina, Gold, Silver e Bronze.
+-   Exibir um resumo agregado com o total (soma de platinas, ouro, prata
+    e bronze) e os totais por categoria.
+-   Jogos ocultos também aparecem na lista, com a arte esmaecida e o selo
+    "Oculto".
 -   Os números devem ser derivados dos dados reais. Mockups e imagens de
     referência são ilustrativos e não estabelecem quantidades fixas.
 -   Cada item da lista de jogos deve apresentar arte, título, origem,
@@ -405,6 +407,7 @@ inteiramente operável por controle, teclado e mouse.
     rara à mais rara. Para dados Steam, usar `global_percent` em ordem
     decrescente: maior percentual primeiro. Percentuais desconhecidos
     ficam ao final.
+-   Conquistas bloqueadas mostram o ícone em cinza.
 -   Cada item pode apresentar ícone, nome, descrição, data de aquisição
     (quando desbloqueada e disponível) e percentual global de
     desbloqueio.

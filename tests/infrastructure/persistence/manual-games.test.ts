@@ -273,6 +273,18 @@ describe('SessionRepository', () => {
   })
 })
 
+describe('migration 0006', () => {
+  it('adds achievements_synced_at, empty for existing games', () => {
+    const fresh = openDatabase(':memory:')
+    migrate(fresh, migrations.slice(0, 5))
+    fresh.prepare("INSERT INTO games (title, origin, steam_id) VALUES ('S', 'steam', 620)").run()
+    migrate(fresh, migrations)
+    expect(fresh.prepare('SELECT achievements_synced_at FROM games').get()).toEqual({
+      achievements_synced_at: null
+    })
+  })
+})
+
 describe('migration 0005', () => {
   it('queues Steam games for a new metadata fetch, keeping stored values', () => {
     const fresh = openDatabase(':memory:')

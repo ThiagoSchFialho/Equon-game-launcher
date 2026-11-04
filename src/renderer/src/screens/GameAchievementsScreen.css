@@ -1,0 +1,210 @@
+.game-achievements {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: var(--space-8) var(--space-12) 0;
+}
+
+.game-achievements__title {
+  margin: 0 0 var(--space-4);
+  font-size: var(--font-size-screen-title);
+  font-weight: var(--font-weight-bold);
+}
+
+.game-achievements__stale {
+  margin: 0 0 var(--space-3);
+  color: var(--color-warning);
+  font-size: var(--font-size-meta);
+}
+
+.game-achievements__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-4) var(--space-8);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+}
+
+.game-achievements__count {
+  margin: 0;
+  font-size: var(--font-size-display);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+}
+
+.game-achievements__count span {
+  color: var(--color-text-secondary);
+}
+
+.game-achievements__percent {
+  margin: 0;
+  font-size: var(--font-size-card-title);
+}
+
+.game-achievements__columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-12);
+  flex: 1;
+  min-height: 0;
+  margin-top: var(--space-6);
+}
+
+.game-achievements__column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.game-achievements__column h2 {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-medium);
+}
+
+.game-achievements__column h2[data-tone='unlocked'] {
+  color: var(--color-accent);
+}
+
+.game-achievements__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  /* Room for the focus ring inside the scroll area. */
+  margin: calc(var(--space-2) * -1);
+  padding: var(--space-2) var(--space-2) var(--space-8);
+}
+
+.game-achievements__empty {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body);
+}
+
+.game-achievements__platinum {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+}
+
+.game-achievements__platinum img {
+  width: auto;
+  height: 26rem;
+  max-height: 60%;
+}
+
+.game-achievements__platinum p {
+  margin: 0;
+  color: var(--color-focus);
+  font-size: var(--font-size-display);
+  font-weight: var(--font-weight-medium);
+}
+
+.achievement {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr) auto;
+  gap: var(--space-5);
+  flex-shrink: 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-gap);
+  transition: outline-color var(--motion-focus) var(--motion-easing);
+}
+
+.achievement[data-focused='true'] {
+  background: var(--color-surface-raised);
+  outline-color: var(--color-focus);
+}
+
+.achievement__icon {
+  width: 6rem;
+  height: 6rem;
+  border-radius: var(--radius-button);
+}
+
+.achievement__icon--empty {
+  display: block;
+  background: var(--color-surface-raised);
+}
+
+/* Locked icons are shown too (owner decision), in grey. */
+.achievement[data-locked='true'] .achievement__icon {
+  filter: grayscale(1);
+}
+
+.achievement__text {
+  min-width: 0;
+}
+
+.achievement__name {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-medium);
+}
+
+.achievement__description {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-meta);
+  line-height: 1.4;
+}
+
+.achievement__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.achievement__date {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-meta);
+  white-space: nowrap;
+}
+
+.achievement__date img {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.achievement__tier {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  font-size: var(--font-size-meta);
+}
+
+.achievement__tier img {
+  width: auto;
+  height: 2.25rem;
+}
+
+.achievement__tier[data-tier='gold'] {
+  color: var(--color-accent);
+}
+
+.achievement__tier[data-tier='silver'] {
+  color: var(--color-text-primary);
+}
+
+.achievement__tier[data-tier='bronze'] {
+  color: var(--color-text-secondary);
+}

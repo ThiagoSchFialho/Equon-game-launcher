@@ -24,4 +24,6 @@ export interface Game {
   requiredAge: string | null
   /** ISO-8601 UTC; null = metadata not fetched yet or last fetch failed (D-16). */
   metadataFetchedAt: string | null
+  /** ISO-8601 UTC; null = achievements never synced successfully. */
+  achievementsSyncedAt: string | null
 }

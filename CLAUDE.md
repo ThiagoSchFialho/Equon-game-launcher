@@ -20,7 +20,7 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 
 ## Current status and scope of work
 
-- Phases 0–6 are complete (Phase 1 spike results: `docs/ARCHITECTURE.md` §3.1). **Work only on the phase the owner names** (next: Phase 7 — Achievements). Do not start the next phase on your own.
+- Phases 0–6 are complete (Phase 1 spike results: `docs/ARCHITECTURE.md` §3.1); Phase 7 (Achievements) is in review. **Work only on the phase the owner names** (next: Phase 8 — Hardening and release preparation). Do not start the next phase on your own.
 - Before non-trivial work, propose a short plan and wait for approval.
 - Open decisions: D-13 (installer, Phase 8), where to persist preferences. If a task depends on an open item, ask instead of deciding.
 
@@ -33,6 +33,7 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 - Persistence lives in `src/infrastructure/persistence` (the only place allowed to import `better-sqlite3`, enforced by lint). Add a schema change as a new `migrations/000N_*.sql` plus an entry in `migrations/index.ts`; never edit a released migration. Repositories implement the sync ports in `src/core/application/ports.ts`; tests use `tests/helpers/db.ts` (in-memory, migrated).
 - Scripts: `npm run dev`, `npm run dev:seed` (dev library with sample games), `npm run build`, `npm start` (preview build), `npm test` (Vitest, run once), `npm run lint`, `npm run typecheck`, `npm run format`. Node 24.18.0 (`.nvmrc`), Electron 44.10.1 (exact).
 - If Electron fails with `electron.app` undefined, `ELECTRON_RUN_AS_NODE=1` is set in the shell (VS Code sets it); unset it for `dev`/`start`.
+- If Vitest fails with "failed to find the runner" / "reading 'config'", the shell is in `d:\` in lower case (the VS Code terminal can be); run it from `D:\`.
 - Unpackaged runs use the `equon-game-launcher-dev` data folder; never seed or test against the real one.
 - Renderer: one `FocusManager` (`src/renderer/src/focus`); components use `useFocusable` / `useScreenActions` and semantic actions from `src/renderer/src/input`, never raw buttons or keys. UI text lives in `src/renderer/src/strings.ts` (pt-BR). Artwork is loaded only via `artworkUrl()` (`equon-art://game/<id>/<kind>`). Renderer tests use `// @vitest-environment jsdom`.
 - Sandboxed preload can only load `electron`; it imports constants/types from `src/shared/ipc/contract.ts` (no runtime deps). zod schemas live in `src/shared/ipc/schemas.ts` and are used by main.

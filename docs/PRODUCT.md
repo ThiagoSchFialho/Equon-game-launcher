@@ -213,12 +213,12 @@ limitações, condições de teste e método de inicialização suportado.
 
 -   Disponibilizar uma área própria de Conquistas na navegação
     principal.
--   Exibir estatísticas agregadas da conta: total de conquistas
-    desbloqueadas e quantidades por categoria de troféu (Platina, Gold,
-    Silver e Bronze), conforme os dados persistidos e as regras de
-    contagem deste documento.
--   Exibir uma lista dos jogos que possuem suporte a conquistas, com
-    arte, título, origem, percentual de conclusão e quantidade
+-   Exibir estatísticas agregadas da conta: total (soma de platinas,
+    ouro, prata e bronze) e quantidades por categoria de troféu,
+    conforme os dados persistidos e as regras de contagem deste
+    documento.
+-   Exibir uma lista dos jogos que possuem suporte a conquistas,
+    inclusive os ocultos, com arte, título, origem, percentual de conclusão e quantidade
     desbloqueada em relação ao total conhecido.
 -   A ordenação padrão da lista deve ser pela última sessão, começando
     pelo jogo jogado mais recentemente.

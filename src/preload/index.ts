@@ -42,6 +42,18 @@ const api: EquonApi = {
       return () => ipcRenderer.removeListener(IpcEvent.libraryChanged, handler)
     }
   },
+  achievements: {
+    overview: () => ipcRenderer.invoke(IpcChannel.achievementsOverview),
+    game: (id) => ipcRenderer.invoke(IpcChannel.achievementsGame, id),
+    syncAll: () => ipcRenderer.invoke(IpcChannel.achievementsSyncAll),
+    status: () => ipcRenderer.invoke(IpcChannel.achievementsStatus),
+    ensureIcons: (id) => ipcRenderer.invoke(IpcChannel.achievementsEnsureIcons, id),
+    onChanged: (listener) => {
+      const handler = (): void => listener()
+      ipcRenderer.on(IpcEvent.achievementsChanged, handler)
+      return () => ipcRenderer.removeListener(IpcEvent.achievementsChanged, handler)
+    }
+  },
   artwork: {
     search: (term) => ipcRenderer.invoke(IpcChannel.artworkSearch, term),
     applySteamGridDb: (gameId, steamGridDbGameId) =>

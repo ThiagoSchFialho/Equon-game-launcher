@@ -21,6 +21,7 @@ interface GameRow {
   steam_playtime_baseline: number | null
   steam_synced_at: string | null
   playtime_offset: number
+  achievements_synced_at: string | null
 }
 
 const toGame = (row: GameRow): Game => ({
@@ -38,7 +39,8 @@ const toGame = (row: GameRow): Game => ({
   playtimeOffset: row.playtime_offset,
   beated: toBool(row.beated),
   requiredAge: row.required_age,
-  metadataFetchedAt: row.metadata_fetched_at
+  metadataFetchedAt: row.metadata_fetched_at,
+  achievementsSyncedAt: row.achievements_synced_at
 })
 
 const countedStatuses = COUNTED_SESSION_STATUSES.map((s) => `'${s}'`).join(', ')
@@ -70,6 +72,10 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
     RETURNING *`)
 
   const selectBySteamAppId = db.prepare<[number], GameRow>('SELECT * FROM games WHERE steam_id = ?')
+
+  const updateAchievementsSynced = db.prepare<[string, number]>(
+    'UPDATE games SET achievements_synced_at = ? WHERE id = ?'
+  )
 
   const updateFlags = db.prepare<Record<string, unknown>, GameRow>(`
     UPDATE games SET hidden = COALESCE(@hidden, hidden), beated = COALESCE(@beated, beated)
@@ -182,6 +188,10 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
     delete: (id) => remove.run(id).changes > 0,
 
     recomputePlayStats: (id) => recomputePlayStats(id),
+
+    setAchievementsSynced: (id, syncedAt) => {
+      updateAchievementsSynced.run(syncedAt, id)
+    },
 
     applySteamPlayStats: (stats, syncedAt) =>
       db.transaction(() => {

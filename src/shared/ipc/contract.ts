@@ -12,6 +12,11 @@ export const IpcChannel = {
   settingsTestConnection: 'settings:test-connection',
   libraryDuplicates: 'library:duplicates',
   libraryDismissDuplicate: 'library:dismiss-duplicate',
+  achievementsOverview: 'achievements:overview',
+  achievementsGame: 'achievements:game',
+  achievementsSyncAll: 'achievements:sync-all',
+  achievementsStatus: 'achievements:status',
+  achievementsEnsureIcons: 'achievements:ensure-icons',
   artworkSearch: 'artwork:search',
   artworkApplySteamGridDb: 'artwork:apply-steamgriddb',
   gamesList: 'games:list',
@@ -41,7 +46,9 @@ export const IpcEvent = {
   /** Payload: ids of the games currently running. */
   gamesRunningChanged: 'games:running-changed',
   /** No payload: games were added or changed by a library scan. */
-  libraryChanged: 'library:changed'
+  libraryChanged: 'library:changed',
+  /** No payload: achievement data, sync progress or icons changed. */
+  achievementsChanged: 'achievements:changed'
 } as const
 
 export interface AppInfo {
@@ -87,6 +94,78 @@ export interface SteamSyncInfo {
   games: number
   /** ISO-8601 UTC */
   finishedAt: string
+}
+
+export type TrophyTier = 'bronze' | 'silver' | 'gold'
+
+export interface TrophyTotals {
+  platine: number
+  gold: number
+  silver: number
+  bronze: number
+}
+
+/** One line of the achievements overview. */
+export interface AchievementGameSummary {
+  id: number
+  title: string
+  originName: string
+  hidden: boolean
+  /** ISO-8601 UTC */
+  timeLastPlayed: string | null
+  artwork: ArtworkKind[]
+  unlocked: number
+  total: number
+  /** 0–100, never rounded up to look complete. */
+  percent: number
+  platinum: boolean
+}
+
+export interface AchievementsOverview {
+  /** Platinum games plus unlocked achievements (owner decision, Phase 7). */
+  total: number
+  trophies: TrophyTotals
+  games: AchievementGameSummary[]
+  /** No Steam game was synced yet: the list is empty for that reason. */
+  neverSynced: boolean
+}
+
+export interface AchievementItem {
+  id: number
+  name: string
+  description: string | null
+  /** ISO-8601 UTC */
+  unlockedAt: string | null
+  /** Null when unknown, never 0 for missing data. */
+  globalPercent: number | null
+  tier: TrophyTier
+  iconCached: boolean
+}
+
+export interface GameAchievements {
+  id: number
+  title: string
+  /** 'none': the game has no achievements, which is not an error. */
+  status: 'ready' | 'none' | 'never-synced'
+  /** The last sync of this game failed: the data below is the last known good. */
+  stale: boolean
+  unlockedCount: number
+  total: number
+  /** Null when no achievement is known. */
+  percent: number | null
+  platinum: boolean
+  trophies: TrophyTotals
+  unlocked: AchievementItem[]
+  locked: AchievementItem[]
+}
+
+export interface AchievementSyncStatus {
+  running: boolean
+  done: number
+  total: number
+  failures: { title: string; reason: string }[]
+  /** ISO-8601 UTC of the last finished full sync in this run. */
+  lastRun: string | null
 }
 
 /** A Steam game found by a scan whose title matches a manual game (never merged automatically). */
@@ -137,6 +216,11 @@ export type ArtworkKind = (typeof ARTWORK_KINDS)[number]
 
 /** Privileged scheme that serves cached artwork; the renderer never sees file paths. */
 export const ARTWORK_SCHEME = 'equon-art'
+
+/** Cached icon of an achievement, served by the same privileged scheme. */
+export function achievementIconUrl(achievementId: number): string {
+  return `${ARTWORK_SCHEME}://achievement/${achievementId}`
+}
 
 export function artworkUrl(gameId: number, kind: ArtworkKind): string {
   return `${ARTWORK_SCHEME}://game/${gameId}/${kind}`
@@ -281,6 +365,17 @@ export interface EquonApi {
     /** "Manter os dois": removes the candidate from the review list. */
     dismissDuplicate(manualGameId: number): Promise<void>
     /** Subscribes to library changes from scans; returns the unsubscribe function. */
+    onChanged(listener: () => void): () => void
+  }
+  achievements: {
+    overview(): Promise<AchievementsOverview>
+    /** null when the game does not exist. */
+    game(id: number): Promise<GameAchievements | null>
+    /** Explicit full sync; resolves when it ends. Concurrent calls share one run. */
+    syncAll(): Promise<AchievementSyncStatus>
+    status(): Promise<AchievementSyncStatus>
+    /** Downloads the missing icons of a game; the change event reports progress. */
+    ensureIcons(id: number): Promise<void>
     onChanged(listener: () => void): () => void
   }
   artwork: {

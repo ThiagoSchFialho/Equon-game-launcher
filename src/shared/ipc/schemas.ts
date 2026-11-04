@@ -1,11 +1,14 @@
 import { z } from 'zod'
 import {
   ARTWORK_KINDS,
+  type AchievementsOverview,
+  type AchievementSyncStatus,
   type AppInfo,
   type BrowserListing,
   type ConnectionTest,
   type EmulatorInfo,
   type EditableGame,
+  type GameAchievements,
   type GameDetails,
   type GameSummary,
   type LibraryRefreshInfo,
@@ -99,6 +102,67 @@ export const connectionTestSchema = z.strictObject({
   personaName: z.string().nullable(),
   gamesVisible: z.boolean()
 }) satisfies z.ZodType<ConnectionTest>
+
+const trophyTotalsSchema = z.strictObject({
+  platine: z.number().int().nonnegative(),
+  gold: z.number().int().nonnegative(),
+  silver: z.number().int().nonnegative(),
+  bronze: z.number().int().nonnegative()
+})
+
+export const achievementsOverviewSchema = z.strictObject({
+  total: z.number().int().nonnegative(),
+  trophies: trophyTotalsSchema,
+  games: z.array(
+    z.strictObject({
+      id,
+      title: z.string(),
+      originName: z.string(),
+      hidden: z.boolean(),
+      timeLastPlayed: z.string().nullable(),
+      artwork: z.array(z.enum(ARTWORK_KINDS)),
+      unlocked: z.number().int().nonnegative(),
+      total: z.number().int().positive(),
+      percent: z.number().min(0).max(100),
+      platinum: z.boolean()
+    })
+  ),
+  neverSynced: z.boolean()
+}) satisfies z.ZodType<AchievementsOverview>
+
+const achievementItemSchema = z.strictObject({
+  id,
+  name: z.string(),
+  description: z.string().nullable(),
+  unlockedAt: z.string().nullable(),
+  globalPercent: z.number().min(0).max(100).nullable(),
+  tier: z.enum(['bronze', 'silver', 'gold']),
+  iconCached: z.boolean()
+})
+
+export const gameAchievementsResultSchema = z
+  .strictObject({
+    id,
+    title: z.string(),
+    status: z.enum(['ready', 'none', 'never-synced']),
+    stale: z.boolean(),
+    unlockedCount: z.number().int().nonnegative(),
+    total: z.number().int().nonnegative(),
+    percent: z.number().min(0).max(100).nullable(),
+    platinum: z.boolean(),
+    trophies: trophyTotalsSchema,
+    unlocked: z.array(achievementItemSchema),
+    locked: z.array(achievementItemSchema)
+  })
+  .nullable() satisfies z.ZodType<GameAchievements | null>
+
+export const achievementSyncStatusSchema = z.strictObject({
+  running: z.boolean(),
+  done: z.number().int().nonnegative(),
+  total: z.number().int().nonnegative(),
+  failures: z.array(z.strictObject({ title: z.string(), reason: z.string() })),
+  lastRun: z.string().nullable()
+}) satisfies z.ZodType<AchievementSyncStatus>
 
 export const duplicateListSchema = z.array(
   z.strictObject({ manualGameId: id, manualTitle: z.string(), steamTitle: z.string() })

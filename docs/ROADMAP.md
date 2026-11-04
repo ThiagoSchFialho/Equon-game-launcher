@@ -264,39 +264,39 @@ usable without a SteamGridDB key.
 
 ### Tasks
 
--   [ ] Validate the current Steam Web API formats and limits before
+-   [x] Validate the current Steam Web API formats and limits before
     implementing; never log URLs that contain the API key.
--   [ ] Import definitions using `GetSchemaForGame`.
--   [ ] Import unlock state using `GetPlayerAchievements`.
--   [ ] Import global percentages using
+-   [x] Import definitions using `GetSchemaForGame`.
+-   [x] Import unlock state using `GetPlayerAchievements`.
+-   [x] Import global percentages using
     `GetGlobalAchievementPercentagesForApp`.
--   [ ] Upsert by `(game_id, api_name)`.
--   [ ] Sync a game's achievements automatically only after that game
+-   [x] Upsert by `(game_id, api_name)`.
+-   [x] Sync a game's achievements automatically only after that game
     closes, when supported and when the launcher can observe the close.
--   [ ] Add a manual action to sync achievements for all supported
+-   [x] Add a manual action to sync achievements for all supported
     games.
--   [ ] Do not implement periodic or automatic full-library
+-   [x] Do not implement periodic or automatic full-library
     synchronization.
--   [ ] Run sync in the background and isolate per-game failures.
--   [ ] Calculate personal completion as unlocked / total known
+-   [x] Run sync in the background and isolate per-game failures.
+-   [x] Calculate personal completion as unlocked / total known
     achievements; handle games with no known achievements.
--   [ ] Implement the global achievements overview with aggregate trophy
+-   [x] Implement the global achievements overview with aggregate trophy
     counts and a per-game progress list.
--   [ ] Sort the overview by last session descending by default.
--   [ ] Add the alternative overview sort by personal completion
+-   [x] Sort the overview by last session descending by default.
+-   [x] Add the alternative overview sort by personal completion
     percentage, descending.
--   [ ] Sort unlocked achievements by unlock date, newest first.
--   [ ] Sort locked achievements by `global_percent` descending (least
+-   [x] Sort unlocked achievements by unlock date, newest first.
+-   [x] Sort locked achievements by `global_percent` descending (least
     rare first); place unknown dates/percentages last.
--   [ ] Show an explicit informational state for games that do not
+-   [x] Show an explicit informational state for games that do not
     support achievements.
--   [ ] Implement the platinum state when every known achievement for a
+-   [x] Implement the platinum state when every known achievement for a
     game is unlocked and at least one achievement is known.
--   [ ] Preserve last known good data; allow `unlocked_at` and
+-   [x] Preserve last known good data; allow `unlocked_at` and
     `global_percent` to be `NULL`.
--   [ ] Implement controller-friendly loading, stale-data, partial
+-   [x] Implement controller-friendly loading, stale-data, partial
     failure, and no-support states.
--   [ ] Test counters, tiers, platinum calculation, ordering, and
+-   [x] Test counters, tiers, platinum calculation, ordering, and
     idempotent synchronization.
 
 **Acceptance:** Repeated sync creates no duplicates; closing one game

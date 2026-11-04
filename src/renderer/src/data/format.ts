@@ -43,6 +43,17 @@ export function ageRatingKey(requiredAge: string | null): AgeRatingKey {
   return value === 'L' ? 'l' : (value as AgeRatingKey)
 }
 
+/** Unlock moment in local time, e.g. "20/03/2026 19:35". */
+export function formatUnlockDate(iso: string): string {
+  const date = new Date(iso)
+  const day = date.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })
+  return `${day} ${formatClock(date)}`
+}
+
 /** Clock text, e.g. "19:20". */
 export function formatClock(date: Date): string {
   return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })

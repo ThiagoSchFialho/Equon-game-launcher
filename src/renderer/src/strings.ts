@@ -357,7 +357,36 @@ export const t = {
     error: 'Não foi possível carregar as configurações.'
   },
   achievements: {
-    soon: 'A área de conquistas chegará em breve.'
+    title: 'Conquistas',
+    total: 'Total de conquistas',
+    tiers: { platine: 'Platina', gold: 'Ouro', silver: 'Prata', bronze: 'Bronze' },
+    sorts: { recent: 'Recentes', completion: 'Conclusão' },
+    changeSort: 'Alterar ordenação',
+    syncShort: 'Sincronizar',
+    sync: 'Sincronizar conquistas',
+    syncing: 'Sincronizando…',
+    progress: (done: number, total: number) => `Sincronizando ${done} de ${total} jogos…`,
+    syncDone: 'Conquistas sincronizadas.',
+    syncPartial: (failed: number, total: number) =>
+      failed === 1
+        ? `1 de ${total} jogos não pôde ser sincronizado.`
+        : `${failed} de ${total} jogos não puderam ser sincronizados.`,
+    syncNeedsConfig: 'Configure o ID Steam e a chave em Configurações › Conexões.',
+    loading: 'Carregando conquistas…',
+    error: 'Não foi possível carregar as conquistas.',
+    neverSynced: 'As conquistas ainda não foram sincronizadas.',
+    neverSyncedHint: 'Use “Sincronizar conquistas” para buscar os seus jogos da Steam.',
+    empty: 'Nenhum dos seus jogos tem conquistas.',
+    noneForGame: 'Este jogo não possui conquistas.',
+    notSyncedGame: 'As conquistas deste jogo ainda não foram sincronizadas.',
+    syncFailed: 'A última sincronização deste jogo falhou.',
+    stale: 'Dados desatualizados: a última sincronização deste jogo falhou.',
+    unlocked: 'Conquistas obtidas',
+    locked: 'Conquistas bloqueadas',
+    noneUnlocked: 'Nenhuma conquista obtida ainda.',
+    platinum: 'Platinado',
+    hiddenText: 'Conquista oculta',
+    noDate: '--/--/---- --:--'
   }
 }
 

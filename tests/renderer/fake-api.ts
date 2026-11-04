@@ -69,6 +69,8 @@ export const settingsInfo = (extra: Partial<SettingsInfo> = {}): SettingsInfo =>
   ...extra
 })
 
+const syncStatus = { running: false, done: 0, total: 0, failures: [], lastRun: null }
+
 /** Installs a complete fake `window.equon`; pass overrides per test. */
 export function installFakeApi(
   games: GameSummary[],
@@ -80,6 +82,7 @@ export function installFakeApi(
     settings?: Partial<EquonApi['settings']>
     library?: Partial<EquonApi['library']>
     artwork?: Partial<EquonApi['artwork']>
+    achievements?: Partial<EquonApi['achievements']>
   } = {}
 ): EquonApi {
   const runningListeners = new Set<(ids: number[]) => void>()
@@ -93,7 +96,7 @@ export function installFakeApi(
         node: '24.18.0',
         os: 'Windows 11 Pro (10.0.26300)',
         dataPath: 'C:\\Users\\u\\AppData\\Roaming\\equon-game-launcher-dev',
-        schemaVersion: 5
+        schemaVersion: 6
       })
     },
     library: {
@@ -110,6 +113,20 @@ export function installFakeApi(
       dismissDuplicate: async () => {},
       onChanged: () => () => {},
       ...overrides.library
+    },
+    achievements: {
+      overview: async () => ({
+        total: 0,
+        trophies: { platine: 0, gold: 0, silver: 0, bronze: 0 },
+        games: [],
+        neverSynced: true
+      }),
+      game: async () => null,
+      syncAll: async () => syncStatus,
+      status: async () => syncStatus,
+      ensureIcons: async () => {},
+      onChanged: () => () => {},
+      ...overrides.achievements
     },
     artwork: {
       search: async () => ({ ok: true, data: [] }),

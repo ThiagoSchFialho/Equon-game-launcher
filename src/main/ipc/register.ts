@@ -1,5 +1,5 @@
 import { app, ipcMain, type BrowserWindow } from 'electron'
-import type { GameRunner } from '../../core/application'
+import type { GameRunner, UserRepository } from '../../core/application'
 import { IpcChannel, type SystemInfo } from '../../shared/ipc/contract'
 import {
   appGetInfoArgs,
@@ -34,6 +34,9 @@ import {
   settingsSetSecretArgs,
   settingsSetSteamIdArgs,
   settingsTestConnectionArgs,
+  achievementsOverviewSchema,
+  achievementSyncStatusSchema,
+  gameAchievementsResultSchema,
   artworkApplyArgs,
   artworkKindListSchema,
   artworkSearchArgs,
@@ -46,6 +49,8 @@ import { z } from 'zod'
 import { listFiles, pickNative } from '../files/file-service'
 import type { ManualGameService } from '../games/manual-game-service'
 import type { SettingsService } from '../settings/settings-service'
+import { getAchievementsOverview, getGameAchievements } from '../achievements/achievement-queries'
+import type { AchievementSync } from '../achievements/achievement-sync'
 import type { ArtworkFetcher } from '../artwork/artwork-fetcher'
 import type { SteamOnline } from '../steam/steam-online'
 import type { SteamService } from '../steam/steam-service'
@@ -66,6 +71,10 @@ export interface IpcDeps {
   steam: SteamService
   steamOnline: SteamOnline
   artworkFetcher: ArtworkFetcher
+  achievementSync: AchievementSync
+  users: UserRepository
+  /** Where artwork files live; achievement icons are looked up there. */
+  artworkCacheDir: string
   settings: SettingsService
   /** Settings › Sobre. */
   systemInfo?: () => SystemInfo
@@ -120,6 +129,45 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
         void deps.artworkFetcher.fetchMissing()
       }
       return result
+    })
+  )
+
+  // Achievements
+  const achievementDeps = {
+    ...queries,
+    users: deps.users,
+    isStale: (id: number) => deps.achievementSync.isStale(id),
+    cacheDir: deps.artworkCacheDir
+  }
+  ipcMain.handle(
+    IpcChannel.achievementsOverview,
+    createValidatedHandler(noArgs, achievementsOverviewSchema, trusted, () =>
+      getAchievementsOverview(achievementDeps)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.achievementsGame,
+    createValidatedHandler(gameIdArgs, gameAchievementsResultSchema, trusted, (id) =>
+      getGameAchievements(achievementDeps, id)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.achievementsSyncAll,
+    createValidatedHandler(noArgs, achievementSyncStatusSchema, trusted, () =>
+      deps.achievementSync.syncAll()
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.achievementsStatus,
+    createValidatedHandler(noArgs, achievementSyncStatusSchema, trusted, () =>
+      deps.achievementSync.status()
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.achievementsEnsureIcons,
+    createValidatedHandler(gameIdArgs, z.undefined(), trusted, async (id) => {
+      await deps.achievementSync.ensureIcons(id)
+      return undefined
     })
   )
 

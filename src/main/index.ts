@@ -4,6 +4,7 @@ import { join } from 'path'
 import { pathToFileURL } from 'url'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import {
+  createAchievementRepository,
   createArtworkRepository,
   openAppDatabase,
   schemaVersion,
@@ -97,7 +98,11 @@ app.whenReady().then(async () => {
   })
 
   hardenApp(appOrigin)
-  handleArtworkProtocol(createArtworkRepository(db), artworkCacheDir)
+  handleArtworkProtocol(
+    createArtworkRepository(db),
+    createAchievementRepository(db),
+    artworkCacheDir
+  )
   const database = db
   const services = createServices(db, artworkCacheDir, () => mainWindow, {
     // Windows DPAPI through safeStorage (D-04); keys never leave main in clear text.

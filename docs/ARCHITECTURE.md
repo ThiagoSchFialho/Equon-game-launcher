@@ -1,7 +1,7 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.21
-**Status:** Draft — Phase 6 (Steam library and metadata)
+**Version:** 0.22
+**Status:** Draft — Phase 7 (Achievements)
 **Last updated:** 2026-11-04
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
 **Purpose:** Define technical boundaries, record architecture decisions, and list what is still unresolved before implementation starts.
@@ -522,11 +522,12 @@ SQLite-specific points that must be handled deliberately:
 
 ## 10. Achievements architecture
 
-### Data sources (validate current formats before implementing)
+### Data sources
 
-- Definitions: `ISteamUserStats/GetSchemaForGame/v2` (needs the key).
+- Definitions: `ISteamUserStats/GetSchemaForGame/v2` (needs the key; `l=brazilian`).
 - Player state: `ISteamUserStats/GetPlayerAchievements/v1` (needs key and Steam ID).
-- Global rates: `ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2` (confirm whether a key is required; do not assume).
+- Global rates: `ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2` (no key; `percent` comes as text).
+- Formats validated on 2026-11-04 against a real account (33 games).
 - Unknown global percent is stored as `NULL`, never `0`. Privacy settings and missing data can limit results.
 
 ### Domain rules
@@ -551,6 +552,8 @@ SQLite-specific points that must be handled deliberately:
 1. **After a game closes** (only when the close was observed and the game supports achievements): sync **that game only**.
 2. **Manual full sync:** only when the user explicitly asks. Runs in the background with progress and per-game results.
 3. **Never:** periodic sync, or automatic sync of the whole library (including at startup).
+
+**Phase 7 decisions:** `GAMES.achievements_synced_at` tells "never synced" from "no achievements". The sync after a close waits 10 s so Steam can record what was unlocked, and is silent without credentials. A full sync pauses 1 s between games. Stale state (the last attempt for a game failed) is kept in memory for the run. Icons are downloaded only when a game's screen opens, served by `equon-art://achievement/<id>`; `steamcdn-a.akamaihd.net` joined the image host allowlist. The overview total counts platinum games too, and hidden games are listed (owner decisions).
 
 Per-game sync steps: fetch definitions, player state and global percentages → validate and normalize → in **one transaction**, upsert by `(game_id, api_name)`, recompute `tier` where `global_percent` changed, recompute `USERS` counters from `ACHIEVEMENTS`. If any fetch is invalid or incomplete, change nothing, keep the last known good data, mark it as stale in the UI, and record the error. A failed request must never set `unlocked = FALSE` or delete rows. Repeating a sync with identical data must change nothing.
 
@@ -670,6 +673,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-01 | 0.7 | Accepted D-14 (npm, electron-vite, Vitest, ESLint + Prettier, strict TypeScript); documented the `better-sqlite3` Node/Electron ABI rule and the `node:sqlite` check for the Phase 1 spike. Phase 1 unblocked |
 | 2026-11-01 | 0.8 | Accepted D-15 (artwork). Aligned `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md` and `ROADMAP.md` with all accepted decisions. Recorded the open Home cover type |
 | 2026-11-01 | 0.9 | Added a fifth art type: portrait cover 600×900 for the Home screen. Renamed `cover` to `cover_square`; added `cover_portrait` |
+| 2026-11-04 | 0.22 | Phase 7: achievements sync (after a close and manual), overview and per-game screens, `achievements_synced_at`, on-demand icons. |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

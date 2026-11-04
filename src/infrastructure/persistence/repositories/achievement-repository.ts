@@ -60,7 +60,14 @@ export function createAchievementRepository(db: SqliteDatabase): AchievementRepo
     SELECT count(*) AS total, coalesce(sum(unlocked), 0) AS unlocked
     FROM achievements WHERE game_id = ?`)
 
+  const selectById = db.prepare<[number], AchievementRow>('SELECT * FROM achievements WHERE id = ?')
+
   return {
+    getById: (id) => {
+      const row = selectById.get(id)
+      return row ? toAchievement(row) : null
+    },
+
     upsertForGame: (gameId, achievements) =>
       db.transaction(() => {
         for (const a of achievements) {

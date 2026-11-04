@@ -114,6 +114,7 @@ export interface GameRepository {
    * Returns how many games were updated. Unknown App IDs are ignored.
    */
   applySteamPlayStats(stats: readonly SteamPlayStats[], syncedAt: string): number
+  setAchievementsSynced(id: number, syncedAt: string): void
 }
 
 export interface LaunchConfigRepository {
@@ -168,6 +169,7 @@ export interface AchievementRepository {
   /** global_percent descending (least rare first), unknown last, then display name and api name. */
   listLocked(gameId: number): Achievement[]
   progress(gameId: number): AchievementProgress
+  getById(id: number): Achievement | null
 }
 
 export interface ArtworkRepository {

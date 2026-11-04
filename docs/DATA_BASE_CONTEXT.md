@@ -68,6 +68,7 @@ Um registro por jogo, de qualquer origem.
 | `required_age` | `TEXT` | Classificação indicativa |
 | `origin` | `TEXT NOT NULL` | FK para `ORIGINS(key)` com `ON DELETE RESTRICT` (D-05) |
 | `metadata_fetched_at` | `TEXT` | Preenchido somente após salvar uma resposta válida de metadados (D-16) |
+| `achievements_synced_at` | `TEXT` | UTC da última sincronização de conquistas que deu certo (Fase 7). `NULL` = nunca sincronizado; data preenchida e nenhuma linha em `ACHIEVEMENTS` = o jogo não tem conquistas |
 | `steam_playtime_baseline` | `INTEGER` | Minutos informados pela Steam na última sincronização de tempo de jogo (3.11); `CHECK (>= 0)`; `NULL` se nunca sincronizado |
 | `steam_synced_at` | `TEXT` | UTC da última sincronização de tempo de jogo com a Steam; preenchido junto com `steam_playtime_baseline` (`CHECK`: os dois nulos ou os dois preenchidos) |
 | `playtime_offset` | `INTEGER NOT NULL DEFAULT 0` | Minutos informados pelo usuário ao cadastrar/editar um jogo que não é da Steam (tempo jogado fora do launcher); `CHECK (>= 0)`. Migração `0002` |
@@ -124,6 +125,7 @@ Regras:
 
 - A linha `id = 1` é criada pela migração inicial; o repositório nunca precisa tratar a ausência dela.
 - As chaves só são descriptografadas no processo principal, na hora de uma requisição. Nunca vão para a interface, para logs ou para mensagens de erro.
+- O total exibido na tela de Conquistas soma platinas, ouro, prata e bronze (decisão do dono do projeto, Fase 7). Os troféus de jogos ocultos contam, e esses jogos também aparecem na lista.
 - Os contadores são **agregados derivados** de `ACHIEVEMENTS`. São recalculados a partir dos dados persistidos, na mesma transação da sincronização; nunca incrementados às cegas.
 
 ### 3.4 `ACHIEVEMENTS`
@@ -354,11 +356,14 @@ Decisão do dono do projeto (Fase 2). Para jogos Steam, a Steam é a fonte da ve
 
 ### 4.3 Steam — Web API (conquistas e tempo de jogo)
 
-Endpoints candidatos (validar formato e limites atuais antes de implementar):
+Endpoints usados:
 
-- Definições: `ISteamUserStats/GetSchemaForGame/v2` (precisa da chave).
-- Estado pessoal: `ISteamUserStats/GetPlayerAchievements/v1` (precisa da chave e do SteamID64).
-- Percentuais globais: `ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2` (confirmar se exige chave; não assumir).
+- Definições: `ISteamUserStats/GetSchemaForGame/v2` (precisa da chave; `l=brazilian`). Jogo sem conquistas responde sem `availableGameStats.achievements`.
+- Estado pessoal: `ISteamUserStats/GetPlayerAchievements/v1` (precisa da chave e do SteamID64). Perfil privado responde com erro "Profile is not public".
+- Percentuais globais: `ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2` (sem chave; o percentual vem como texto, `"89.8"`).
+- Ícones: `icon` guarda a URL remota (`steamcdn-a.akamaihd.net`). O arquivo é baixado só quando o usuário abre as conquistas daquele jogo e fica em `<jogo>/achievements/<id>` no cache de artes. Conquistas bloqueadas mostram o mesmo ícone em cinza.
+
+Formatos validados em 2026-11-04 com uma conta real.
 
 Perfis privados e dados ausentes podem limitar o resultado. Percentual global desconhecido é `NULL`, nunca `0`. A chave às vezes viaja na URL; **nunca** registrar URLs com a chave.
 
@@ -422,7 +427,6 @@ API REST v2 com chave pessoal gratuita. Fornece capa quadrada e logo (e, para jo
 
 ### 7.2 Ainda em aberto
 
-1. Validar a estrutura atual e os limites da Steam Web API para conquistas.
 2. Onde guardar as preferências (idioma etc.): tabela de configurações ou arquivo de configuração. O caminho da Steam não é mais preferência: é sempre detectado (Fase 6).
 3. Política de limpeza do cache de artes e variantes de tamanho.
 4. Se haverá uma ação manual de "atualizar metadados" de um jogo.

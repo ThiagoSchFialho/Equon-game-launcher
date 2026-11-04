@@ -239,6 +239,8 @@ export function GameDetailsScreen({ id, from }: { id: number; from: Section }): 
   const [overlay, setOverlay] = useState<'menu' | 'remove' | 'artwork' | null>(null)
   const [removeError, setRemoveError] = useState<string | null>(null)
   const running = useRunning().ids.includes(id)
+  // The sync after a game closes changes the achievement count shown here.
+  useEffect(() => window.equon.achievements.onChanged(refresh), [refresh])
   // While Steam installs or updates the game, re-read it so Play comes back when it is done.
   const steamBusy = details.status === 'ready' && details.data?.launchIssue === 'steam-busy'
   useEffect(() => {
@@ -321,6 +323,7 @@ export function GameDetailsScreen({ id, from }: { id: number; from: Section }): 
             })
           }}
           onClose={() => setOverlay(null)}
+          onAchievements={() => navigation.openGameAchievements(id)}
           onEdit={details.data.editable ? () => navigation.openGameForm(id) : undefined}
           onArtwork={details.data.editable ? () => setOverlay('artwork') : undefined}
           onRemove={details.data.editable && !running ? () => setOverlay('remove') : undefined}

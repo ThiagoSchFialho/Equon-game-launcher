@@ -24,6 +24,7 @@ const game = (id: number, extra: Partial<Game>): Game => ({
   beated: false,
   requiredAge: null,
   metadataFetchedAt: null,
+  achievementsSyncedAt: null,
   ...extra
 })
 

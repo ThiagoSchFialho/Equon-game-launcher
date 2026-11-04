@@ -43,9 +43,9 @@ describe('App navigation', () => {
     press('e')
     expect(await screen.findByText('2 jogos')).toBeTruthy()
     press('e')
-    expect(await screen.findByText('A área de conquistas chegará em breve.')).toBeTruthy()
+    expect(await screen.findByText('As conquistas ainda não foram sincronizadas.')).toBeTruthy()
     press('e') // no wrap-around
-    expect(screen.getByText('A área de conquistas chegará em breve.')).toBeTruthy()
+    expect(await screen.findByText('As conquistas ainda não foram sincronizadas.')).toBeTruthy()
   })
 
   it('opens and closes the options menu with the menu action', async () => {
@@ -53,7 +53,7 @@ describe('App navigation', () => {
     await screen.findByText('12h 22m')
     press('m')
     expect(await screen.findByRole('dialog', { name: 'Tidebound' })).toBeTruthy()
-    expect(screen.getAllByText('Em breve')).toHaveLength(1)
+    expect(screen.queryByText('Em breve')).toBeNull()
     expect(screen.getByText('Marcar como zerado')).toBeTruthy()
     expect(screen.getByText('Ocultar jogo')).toBeTruthy()
     press('Escape')

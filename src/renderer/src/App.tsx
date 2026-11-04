@@ -5,12 +5,15 @@ import {
   isSectionRoute,
   settingsRoute,
   formRoute,
+  gameAchievementsRoute,
   previousRoute,
   stepSection,
   type Navigation,
   type Route
 } from './app/navigation'
 import { DEFAULT_LIBRARY_VIEW, type LibraryView } from '../../shared/library-view'
+import type { AchievementSort } from '../../shared/achievements-view'
+import { AchievementSortContext, type AchievementSortState } from './data/achievements'
 import { GamesContext, useGamesLoader } from './data/games'
 import { LibraryViewContext, type LibraryViewState } from './data/library-view'
 import { RunningContext, useRunningLoader } from './data/running'
@@ -18,6 +21,7 @@ import { FocusManager } from './focus/focus-manager'
 import { FocusProvider } from './focus/FocusProvider'
 import { useInput } from './input/useInput'
 import { AchievementsScreen } from './screens/AchievementsScreen'
+import { GameAchievementsScreen } from './screens/GameAchievementsScreen'
 import { GameDetailsScreen } from './screens/GameDetailsScreen'
 import { GameFormScreen } from './screens/GameFormScreen'
 import { HomeScreen } from './screens/HomeScreen'
@@ -37,6 +41,8 @@ function CurrentScreen({ route }: { route: Route }): React.JSX.Element {
       return <GameDetailsScreen key={route.id} id={route.id} from={route.from} />
     case 'gameForm':
       return <GameFormScreen key={route.id ?? 'new'} id={route.id} />
+    case 'gameAchievements':
+      return <GameAchievementsScreen key={route.id} id={route.id} />
     case 'settings':
       return <SettingsScreen />
   }
@@ -54,6 +60,11 @@ function App(): React.JSX.Element {
   )
   // A game that stops has new playtime and last-played values; refresh keeps focus in place.
   const running = useRunningLoader(games.refresh)
+  const [achievementSort, setAchievementSort] = useState<AchievementSort>('recent')
+  const achievementSortState = useMemo<AchievementSortState>(
+    () => ({ sort: achievementSort, setSort: setAchievementSort }),
+    [achievementSort]
+  )
   // Steam scans (startup, "Atualizar biblioteca") add or change games.
   useEffect(() => window.equon.library.onChanged(games.refresh), [games.refresh])
 
@@ -72,6 +83,7 @@ function App(): React.JSX.Element {
       openGame: (id) => setRoute((r) => ({ name: 'game', id, from: currentSection(r) })),
       openGameForm: (id) => setRoute((r) => formRoute(r, id)),
       openSettings: () => setRoute(settingsRoute),
+      openGameAchievements: (id) => setRoute((r) => gameAchievementsRoute(r, id)),
       back: () => setRoute(previousRoute),
       // Sections only change from the section screens themselves.
       stepSection: (delta) =>
@@ -86,7 +98,9 @@ function App(): React.JSX.Element {
         <GamesContext.Provider value={games}>
           <RunningContext.Provider value={running}>
             <LibraryViewContext.Provider value={libraryViewState}>
-              <CurrentScreen route={route} />
+              <AchievementSortContext.Provider value={achievementSortState}>
+                <CurrentScreen route={route} />
+              </AchievementSortContext.Provider>
             </LibraryViewContext.Provider>
           </RunningContext.Provider>
         </GamesContext.Provider>

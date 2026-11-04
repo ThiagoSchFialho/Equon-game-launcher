@@ -10,6 +10,8 @@ export type Route =
   | ScreenRoute
   /** Add (id null) or edit form; `previous` is where Cancel/back returns. */
   | { name: 'gameForm'; id: number | null; previous: ScreenRoute }
+  /** One game's achievements, from the overview or the game's options menu. */
+  | { name: 'gameAchievements'; id: number; previous: ScreenRoute }
   /** Settings, opened from the gear in the top bar. */
   | { name: 'settings'; previous: ScreenRoute }
 
@@ -25,6 +27,7 @@ export interface Navigation {
   openGame(id: number): void
   openGameForm(id: number | null): void
   openSettings(): void
+  openGameAchievements(id: number): void
   /** Go back one screen; no-op at a top-level section. */
   back(): void
   /** LB/RB: move to the neighbouring section without wrapping around. */
@@ -66,6 +69,11 @@ function screenOf(route: Route): ScreenRoute {
 /** Route that opens the add/edit form from `route`. */
 export function formRoute(route: Route, id: number | null): Route {
   return { name: 'gameForm', id, previous: screenOf(route) }
+}
+
+/** Route that opens one game's achievements from `route`. */
+export function gameAchievementsRoute(route: Route, id: number): Route {
+  return { name: 'gameAchievements', id, previous: screenOf(route) }
 }
 
 /** Route that opens the settings from `route`. */

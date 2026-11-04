@@ -39,7 +39,12 @@ export const fetchGet: HttpGet = async (url, headers) => {
 export type HttpGetBytes = (url: string) => Promise<Uint8Array | null>
 
 /** Hosts artwork may be downloaded from (ARCHITECTURE.md §3.13); https only. */
-const IMAGE_HOSTS = [/\.steamstatic\.com$/, /^cdn2\.steamgriddb\.com$/]
+// steamcdn-a.akamaihd.net serves the achievement icons (measured on 2026-11-04).
+const IMAGE_HOSTS = [
+  /\.steamstatic\.com$/,
+  /^steamcdn-a\.akamaihd\.net$/,
+  /^cdn2\.steamgriddb\.com$/
+]
 
 export function isAllowedImageUrl(url: string): boolean {
   try {

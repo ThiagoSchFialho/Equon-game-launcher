@@ -26,6 +26,7 @@ import { readSteamRegistryValue } from '../integrations/steam/registry'
 import { createSteamAdapter } from '../integrations/steam/steam-adapter'
 import { createFetchBytes, fetchGet } from '../integrations/http'
 import { MAX_ARTWORK_BYTES, webpSize } from '../infrastructure/artwork/import-artwork'
+import { createAchievementSync } from './achievements/achievement-sync'
 import { createArtworkFetcher } from './artwork/artwork-fetcher'
 import { IpcEvent } from '../shared/ipc/contract'
 import { createManualGameService } from './games/manual-game-service'
@@ -68,6 +69,7 @@ export function createServices(
   const origins = createOriginRepository(db)
   const artwork = createArtworkRepository(db)
   const emulators = createEmulatorRepository(db)
+  const achievements = createAchievementRepository(db)
   const uow = createUnitOfWork(db)
   const inspector = createFileInspector()
 
@@ -98,6 +100,8 @@ export function createServices(
     },
     heartbeatMs: HEARTBEAT_MS,
     onChange: () => sendRunning(),
+    // Only the game that just closed (DATA_BASE_CONTEXT.md §5).
+    onClosed: (gameId) => void achievementSync.syncAfterClose(gameId),
     onError: (error) => console.error('Steam session error:', error)
   })
 
@@ -163,6 +167,23 @@ export function createServices(
     onError: (error) => console.error('Steam request failed:', String(error))
   })
 
+  const achievementSync = createAchievementSync({
+    games,
+    achievements,
+    users,
+    uow,
+    get: fetchGet,
+    getBytes: createFetchBytes(MAX_ARTWORK_BYTES),
+    credentials: () => ({ steamId: users.getSteamId(), steamKey: secret('steam-api-key') }),
+    cacheDir: artworkCacheDir,
+    decode: decodeImage,
+    clock,
+    wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    onChanged: () => window()?.webContents.send(IpcEvent.achievementsChanged),
+    // Messages only: request URLs (which may hold keys) are never logged.
+    onError: (error) => console.error('Achievement sync failed:', String(error))
+  })
+
   const artworkFetcher = createArtworkFetcher({
     games,
     artwork,
@@ -204,7 +225,7 @@ export function createServices(
       origins,
       artwork,
       genres,
-      achievements: createAchievementRepository(db),
+      achievements,
       configs,
       emulators,
       inspector,
@@ -228,6 +249,9 @@ export function createServices(
     steam,
     steamOnline,
     artworkFetcher,
+    achievementSync,
+    users,
+    artworkCacheDir,
     settings: createSettingsService({
       users,
       lastSync: () => steamOnline.lastSync(),

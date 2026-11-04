@@ -14,6 +14,8 @@ export interface SteamSessionsDeps {
   heartbeatMs: number
   /** Called when the running Steam game changes. */
   onChange: () => void
+  /** A session closed normally: the launcher saw this game stop. */
+  onClosed?: (gameId: number) => void
   onError?: (error: unknown) => void
 }
 
@@ -49,6 +51,7 @@ export function createSteamSessions(deps: SteamSessionsDeps): SteamSessions {
         deps.sessions.complete(sessionId, now())
         deps.games.recomputePlayStats(gameId)
       })
+      deps.onClosed?.(gameId)
     } catch (error) {
       // Left running: the next launcher start closes it at its last heartbeat.
       deps.onError?.(error)

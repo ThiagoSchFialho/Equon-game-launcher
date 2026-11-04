@@ -1,7 +1,28 @@
 import { describe, expect, it } from 'vitest'
-import { parseArtworkUrl } from '../../../src/main/artwork/artwork-url'
-import { ARTWORK_KINDS as SHARED_KINDS, artworkUrl } from '../../../src/shared/ipc/contract'
+import { parseAchievementIconUrl, parseArtworkUrl } from '../../../src/main/artwork/artwork-url'
+import {
+  ARTWORK_KINDS as SHARED_KINDS,
+  achievementIconUrl,
+  artworkUrl
+} from '../../../src/shared/ipc/contract'
 import { ARTWORK_KINDS as DOMAIN_KINDS } from '../../../src/core/domain'
+
+describe('achievement icon URLs', () => {
+  it('round-trips and rejects anything else', () => {
+    expect(parseAchievementIconUrl(achievementIconUrl(42))).toBe(42)
+    for (const bad of [
+      'equon-art://achievement/0',
+      'equon-art://achievement/abc',
+      'equon-art://achievement/42/x',
+      'equon-art://achievement/42?x=1',
+      'equon-art://achievement/..%2F1',
+      'equon-art://game/42/logo',
+      'file:///C:/a.png'
+    ]) {
+      expect(parseAchievementIconUrl(bad), bad).toBeNull()
+    }
+  })
+})
 
 describe('artwork URLs', () => {
   it('round-trips every kind', () => {
