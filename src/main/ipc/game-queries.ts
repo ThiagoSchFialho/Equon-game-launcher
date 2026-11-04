@@ -15,7 +15,8 @@ import {
   emulatorForOrigin,
   isShortcutName,
   type Game,
-  type LaunchConfig
+  type LaunchConfig,
+  type SteamLiveState
 } from '../../core/domain'
 import type { EditableGame, GameDetails, GameSummary, LaunchIssue } from '../../shared/ipc/contract'
 
@@ -28,6 +29,8 @@ export interface GameQueryDeps {
   configs: LaunchConfigRepository
   emulators: EmulatorRepository
   inspector: FileInspector
+  /** Live manifest state of a Steam game (D-12); never stored. */
+  steamLiveState(appId: number): SteamLiveState
 }
 
 /** Why Play cannot be offered for a game, or null (DATA_BASE_CONTEXT.md §3.2, §3.12). */
@@ -36,8 +39,12 @@ function launchIssueOf(
   game: Game,
   config: LaunchConfig | null
 ): LaunchIssue | null {
-  // Steam launching arrives in Phase 6.
-  if (game.origin === BuiltinOrigin.steam) return 'steam'
+  if (game.origin === BuiltinOrigin.steam) {
+    if (game.installed === null) return 'install-unknown'
+    if (game.installed === false || game.steamAppId === null) return 'not-installed'
+    const live = deps.steamLiveState(game.steamAppId)
+    return live === 'updating' || live === 'paused' ? 'steam-busy' : null
+  }
   if (!config) return 'no-config'
   if (game.installed === null) return 'install-unknown'
   if (game.installed === false) return 'not-installed'

@@ -91,6 +91,7 @@ export interface GameFlags {
 export interface GameRepository {
   create(game: NewGame): Game
   getById(id: number): Game | null
+  findBySteamAppId(appId: number): Game | null
   /** Ordered by title. */
   list(): Game[]
   /** Never touches hidden, beated, playtime, time_last_played or installed. */
@@ -229,7 +230,16 @@ export interface TrophyCounters {
   bronze: number
 }
 
+/** Secrets stored in USERS, always encrypted with safeStorage (D-04, D-15). */
+export type SecretKind = 'steam-api-key' | 'steamgriddb-api-key'
+
 export interface UserRepository {
+  /** SteamID64 (17 digits) or null. */
+  getSteamId(): string | null
+  setSteamId(steamId: string | null): void
+  /** Encrypted bytes as stored; decrypted only in main. */
+  getSecret(kind: SecretKind): Uint8Array | null
+  setSecret(kind: SecretKind, encrypted: Uint8Array | null): void
   getTrophyCounters(): TrophyCounters
   /** Recomputes counters from ACHIEVEMENTS; never increments blindly. */
   recomputeTrophyCounters(): TrophyCounters

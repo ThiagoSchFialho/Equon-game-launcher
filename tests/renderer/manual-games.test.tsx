@@ -58,7 +58,11 @@ describe('play from game details', () => {
 
   it('explains launch failures and unavailable states', async () => {
     const missing = summary(1, 'Missing', { installed: false })
-    const steam = summary(2, 'Portal 2', { origin: 'steam', originName: 'Steam' })
+    const steam = summary(2, 'Portal 2', {
+      origin: 'steam',
+      originName: 'Steam',
+      installed: false
+    })
     const ok = summary(3, 'Fine')
     installFakeApi([missing, steam, ok], {
       games: { launch: async () => ({ ok: false, error: { code: 'start-failed' } }) }
@@ -86,9 +90,7 @@ describe('play from game details', () => {
 
     press('Escape')
     await click('Portal 2')
-    expect(
-      await screen.findByText('Iniciar jogos da Steam estará disponível em breve.')
-    ).toBeTruthy()
+    expect(await screen.findByText('Jogo não instalado na Steam.')).toBeTruthy()
   })
 })
 

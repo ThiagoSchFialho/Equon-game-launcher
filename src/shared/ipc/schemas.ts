@@ -7,8 +7,11 @@ import {
   type EditableGame,
   type GameDetails,
   type GameSummary,
+  type LibraryRefreshInfo,
   type ManualGameForm,
-  type OriginInfo
+  type OriginInfo,
+  type SettingsInfo,
+  type SystemInfo
 } from './contract'
 
 const id = z.number().int().positive()
@@ -46,6 +49,52 @@ export const gamesSetFlagsArgs = z.tuple([
     .refine((flags) => flags.hidden !== undefined || flags.beated !== undefined)
 ])
 export const noArgs = z.tuple([])
+
+/** SteamID64 (17 digits) or null to clear it. */
+export const settingsSetSteamIdArgs = z.tuple([
+  z
+    .string()
+    .regex(/^\d{17}$/)
+    .nullable()
+])
+/** API keys: plain tokens; null removes the stored key. */
+export const settingsSetSecretArgs = z.tuple([
+  z.enum(['steam-api-key', 'steamgriddb-api-key']),
+  z
+    .string()
+    .regex(/^[A-Za-z0-9]{16,128}$/)
+    .nullable()
+])
+
+export const systemInfoSchema = z.strictObject({
+  appVersion: z.string(),
+  electron: z.string(),
+  chrome: z.string(),
+  node: z.string(),
+  os: z.string(),
+  dataPath: z.string(),
+  schemaVersion: z.number().int().nonnegative()
+}) satisfies z.ZodType<SystemInfo>
+
+export const libraryRefreshInfoSchema = z.strictObject({
+  status: z.enum(['complete', 'partial', 'failed']),
+  reason: z.string().nullable(),
+  added: z.number().int().nonnegative(),
+  missing: z.number().int().nonnegative(),
+  unknown: z.number().int().nonnegative(),
+  duplicates: z.number().int().nonnegative(),
+  finishedAt: z.string()
+}) satisfies z.ZodType<LibraryRefreshInfo>
+
+export const settingsInfoSchema = z.strictObject({
+  steamId: z.string().nullable(),
+  steamApiKey: z.boolean(),
+  steamGridDbKey: z.boolean(),
+  secretsAvailable: z.boolean(),
+  steamPath: z.string().nullable(),
+  refreshing: z.boolean(),
+  lastRefresh: libraryRefreshInfoSchema.nullable()
+}) satisfies z.ZodType<SettingsInfo>
 
 export const originsCreateArgs = z.tuple([z.string().max(100)])
 export const originsRenameArgs = z.tuple([originKey, z.string().max(100)])
@@ -99,7 +148,7 @@ export const gameDetailsSchema = z.strictObject({
   editable: z.boolean(),
   launchable: z.boolean(),
   launchIssue: z
-    .enum(['steam', 'not-installed', 'install-unknown', 'no-config', 'emulator-missing'])
+    .enum(['not-installed', 'install-unknown', 'no-config', 'emulator-missing', 'steam-busy'])
     .nullable(),
   tracksTime: z.boolean()
 }) satisfies z.ZodType<GameDetails>

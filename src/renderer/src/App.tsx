@@ -1,8 +1,10 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   NavigationContext,
   currentSection,
   emulatorsRoute,
+  isSectionRoute,
+  settingsRoute,
   formRoute,
   previousRoute,
   stepSection,
@@ -22,6 +24,7 @@ import { GameDetailsScreen } from './screens/GameDetailsScreen'
 import { GameFormScreen } from './screens/GameFormScreen'
 import { HomeScreen } from './screens/HomeScreen'
 import { LibraryScreen } from './screens/LibraryScreen'
+import { SettingsScreen } from './screens/SettingsScreen'
 import './screens/Screen.css'
 
 function CurrentScreen({ route }: { route: Route }): React.JSX.Element {
@@ -38,6 +41,8 @@ function CurrentScreen({ route }: { route: Route }): React.JSX.Element {
       return <GameFormScreen key={route.id ?? 'new'} id={route.id} />
     case 'emulators':
       return <EmulatorsScreen />
+    case 'settings':
+      return <SettingsScreen />
   }
 }
 
@@ -51,8 +56,10 @@ function App(): React.JSX.Element {
     () => ({ view: libraryView, setView: setLibraryView }),
     [libraryView]
   )
-  // A game that stops has new playtime and last-played values.
-  const running = useRunningLoader(games.reload)
+  // A game that stops has new playtime and last-played values; refresh keeps focus in place.
+  const running = useRunningLoader(games.refresh)
+  // Steam scans (startup, "Atualizar biblioteca") add or change games.
+  useEffect(() => window.equon.library.onChanged(games.refresh), [games.refresh])
 
   const dispatch = useCallback(
     (action: Parameters<FocusManager['handle']>[0]) => {
@@ -69,14 +76,11 @@ function App(): React.JSX.Element {
       openGame: (id) => setRoute((r) => ({ name: 'game', id, from: currentSection(r) })),
       openGameForm: (id) => setRoute((r) => formRoute(r, id)),
       openEmulators: () => setRoute(emulatorsRoute),
+      openSettings: () => setRoute(settingsRoute),
       back: () => setRoute(previousRoute),
       // Sections only change from the section screens themselves.
       stepSection: (delta) =>
-        setRoute((r) =>
-          r.name === 'game' || r.name === 'gameForm' || r.name === 'emulators'
-            ? r
-            : { name: stepSection(r.name, delta) }
-        )
+        setRoute((r) => (isSectionRoute(r) ? { name: stepSection(r.name, delta) } : r))
     }),
     [route]
   )

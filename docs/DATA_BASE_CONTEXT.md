@@ -228,7 +228,7 @@ Restrições:
 
 Regras:
 
-- Uma sessão `running` é criada quando o início do jogo é **observado** (para jogos Steam, o flag `AppRunning` do manifesto; para jogos manuais, o processo iniciado). Abrir a URL da Steam não conta como início.
+- Uma sessão `running` é criada quando o início do jogo é **observado** (para jogos Steam, o valor `RunningAppID` do registro do Windows, lido a cada 2 s; para jogos manuais, o processo iniciado). Abrir a URL da Steam não conta como início.
 - Ao encerrar normalmente: preencher `ended_at`, `duration_seconds`, `status = 'completed'` e atualizar `GAMES.playtime` e `GAMES.time_last_played` **na mesma transação**.
 - **Toda sessão observada soma tempo**, qualquer que seja a origem e mesmo que o jogo tenha sido fechado à força (o launcher observa o fim do processo, então a sessão termina como `completed`).
 - **Heartbeat:** enquanto observa um jogo em execução, o launcher atualiza `last_seen_at` periodicamente (cerca de 30 s; o intervalo final é medido na Fase 4).
@@ -417,7 +417,7 @@ API REST v2 com chave pessoal gratuita. Fornece capa quadrada e logo (e, para jo
 ### 7.2 Ainda em aberto
 
 1. Validar a estrutura atual e os limites da Steam Web API para conquistas.
-2. Onde guardar as preferências (idioma, caminho da Steam, etc.): tabela de configurações ou arquivo de configuração.
+2. Onde guardar as preferências (idioma etc.): tabela de configurações ou arquivo de configuração. O caminho da Steam não é mais preferência: é sempre detectado (Fase 6).
 3. Política de limpeza do cache de artes e variantes de tamanho.
 4. Se haverá uma ação manual de "atualizar metadados" de um jogo.
 

@@ -4,7 +4,8 @@ import { IpcChannel, IpcEvent, type EquonApi } from '../shared/ipc/contract'
 // Only named, typed operations are exposed. Never expose ipcRenderer itself.
 const api: EquonApi = {
   app: {
-    getInfo: () => ipcRenderer.invoke(IpcChannel.appGetInfo)
+    getInfo: () => ipcRenderer.invoke(IpcChannel.appGetInfo),
+    getSystemInfo: () => ipcRenderer.invoke(IpcChannel.appGetSystemInfo)
   },
   games: {
     list: () => ipcRenderer.invoke(IpcChannel.gamesList),
@@ -29,6 +30,19 @@ const api: EquonApi = {
     create: (name) => ipcRenderer.invoke(IpcChannel.originsCreate, name),
     rename: (key, name) => ipcRenderer.invoke(IpcChannel.originsRename, key, name),
     remove: (key) => ipcRenderer.invoke(IpcChannel.originsRemove, key)
+  },
+  library: {
+    refresh: () => ipcRenderer.invoke(IpcChannel.libraryRefresh),
+    onChanged: (listener) => {
+      const handler = (): void => listener()
+      ipcRenderer.on(IpcEvent.libraryChanged, handler)
+      return () => ipcRenderer.removeListener(IpcEvent.libraryChanged, handler)
+    }
+  },
+  settings: {
+    get: () => ipcRenderer.invoke(IpcChannel.settingsGet),
+    setSteamId: (steamId) => ipcRenderer.invoke(IpcChannel.settingsSetSteamId, steamId),
+    setSecret: (kind, value) => ipcRenderer.invoke(IpcChannel.settingsSetSecret, kind, value)
   },
   emulators: {
     list: () => ipcRenderer.invoke(IpcChannel.emulatorsList),

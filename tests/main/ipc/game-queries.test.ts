@@ -17,6 +17,7 @@ import { gameDetailsSchema, gameSummaryListSchema } from '../../../src/shared/ip
 import { createTestDb } from '../../helpers/db'
 
 let deps: GameQueryDeps
+const steamLive = new Map<number, 'updating' | 'paused' | 'update-required' | 'unhealthy' | null>()
 
 beforeEach(() => {
   const db = createTestDb()
@@ -28,7 +29,8 @@ beforeEach(() => {
     achievements: createAchievementRepository(db),
     configs: createLaunchConfigRepository(db),
     emulators: createEmulatorRepository(db),
-    inspector: { stateOf: () => 'file' }
+    inspector: { stateOf: () => 'file' },
+    steamLiveState: (appId) => steamLive.get(appId) ?? null
   }
 })
 
@@ -115,6 +117,23 @@ describe('game queries', () => {
     })
     expect(gameDetailsSchema.safeParse(details).success).toBe(true)
     expect(getGameDetails(deps, 9999)).toBeNull()
+  })
+
+  it('offers Play for installed Steam games unless Steam is busy with them', () => {
+    const game = deps.games.upsertSteamGame({ steamAppId: 620, title: 'Portal 2' })
+    expect(getGameDetails(deps, game.id)).toMatchObject({
+      launchIssue: 'install-unknown',
+      tracksTime: true
+    })
+    deps.games.setInstalled(game.id, false)
+    expect(getGameDetails(deps, game.id)?.launchIssue).toBe('not-installed')
+    deps.games.setInstalled(game.id, true)
+    expect(getGameDetails(deps, game.id)).toMatchObject({ launchIssue: null, launchable: true })
+    steamLive.set(620, 'update-required')
+    expect(getGameDetails(deps, game.id)?.launchIssue).toBeNull()
+    steamLive.set(620, 'updating')
+    expect(getGameDetails(deps, game.id)?.launchIssue).toBe('steam-busy')
+    steamLive.clear()
   })
 
   it('reports no achievement summary when none are known', () => {

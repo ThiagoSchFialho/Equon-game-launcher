@@ -1,16 +1,19 @@
-import { app, BrowserWindow, dialog } from 'electron'
+import { app, BrowserWindow, dialog, safeStorage } from 'electron'
+import { release, version } from 'os'
 import { join } from 'path'
 import { pathToFileURL } from 'url'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import {
   createArtworkRepository,
   openAppDatabase,
+  schemaVersion,
   type SqliteDatabase
 } from '../infrastructure/persistence'
 import { handleArtworkProtocol, registerArtworkScheme } from './artwork/artwork-protocol'
 import { registerIpcHandlers } from './ipc/register'
 import { hardenApp } from './security/harden'
 import { createServices } from './services'
+import type { SteamService } from './steam/steam-service'
 import type { AppOrigin } from './security/navigation'
 
 // Unpackaged runs (dev, preview) use their own data folder so they never
@@ -61,6 +64,7 @@ function createWindow(): void {
 }
 
 let db: SqliteDatabase | undefined
+let steam: SteamService | undefined
 
 app.whenReady().then(async () => {
   electronApp.setAppUserModelId('com.equon.launcher')
@@ -89,11 +93,28 @@ app.whenReady().then(async () => {
 
   hardenApp(appOrigin)
   handleArtworkProtocol(createArtworkRepository(db), artworkCacheDir)
-  registerIpcHandlers(
-    appOrigin,
-    createServices(db, artworkCacheDir, () => mainWindow)
-  )
+  const database = db
+  const services = createServices(db, artworkCacheDir, () => mainWindow, {
+    // Windows DPAPI through safeStorage (D-04); keys never leave main in clear text.
+    available: () => safeStorage.isEncryptionAvailable(),
+    encrypt: (plain) => safeStorage.encryptString(plain)
+  })
+  registerIpcHandlers(appOrigin, {
+    ...services,
+    systemInfo: () => ({
+      appVersion: app.getVersion(),
+      electron: process.versions.electron,
+      chrome: process.versions.chrome,
+      node: process.versions.node,
+      os: `${version()} (${release()})`,
+      dataPath: userData,
+      schemaVersion: schemaVersion(database)
+    })
+  })
   createWindow()
+  // Local Steam scan and running-game watcher (D-12); a failure never blocks the app.
+  steam = services.steam
+  steam.start()
 })
 
 app.on('window-all-closed', () => {
@@ -101,5 +122,6 @@ app.on('window-all-closed', () => {
 })
 
 app.on('will-quit', () => {
+  steam?.stop()
   db?.close()
 })

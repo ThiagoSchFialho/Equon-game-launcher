@@ -4,11 +4,14 @@ import {
   emulatorForOrigin,
   isAllowedShortcutUrl,
   isShortcutName,
+  steamRunUrl,
+  type SteamLiveState,
   toUtcIso,
   type Game,
   type LaunchConfig
 } from '../domain'
 import { LaunchError } from './errors'
+import type { SteamSessions } from './steam-sessions'
 import type {
   Clock,
   EmulatorRepository,
@@ -40,6 +43,14 @@ export interface GameRunnerDeps {
   onRunningChanged: (runningGameIds: number[]) => void
   /** Called when closing a session fails (the game itself already ended). */
   onError?: (error: unknown) => void
+  /** Steam games (D-17): opened by URL, observed through the registry (D-12). */
+  steam: {
+    sessions: SteamSessions
+    openRunUrl(url: string): Promise<void>
+    liveState(appId: number): SteamLiveState
+    /** How long to wait for Steam to report the game running. */
+    startTimeoutMs: number
+  }
 }
 
 export interface GameRunner {
@@ -92,8 +103,10 @@ export function resolveLaunchPlan(
 }
 
 /**
- * Starts manual games and tracks their sessions (D-08): a running session
- * is inserted once the process has started, refreshed by a heartbeat while
+ * Starts games and tracks their sessions (D-08). Steam games open through
+ * `steam://rungameid/<appid>` and count as started once Steam reports them
+ * running (D-17); their sessions belong to SteamSessions. For manual games
+ * a running session is inserted once the process has started, refreshed by a heartbeat while
  * it runs, and completed in the same transaction that recomputes playtime
  * when the process exits. Only the process the launcher started is observed;
  * games that hand off to another launcher end their session early, and .url
@@ -105,12 +118,39 @@ export function createGameRunner(deps: GameRunnerDeps): GameRunner {
   const now = (): string => toUtcIso(deps.clock.now())
   const notify = (): void => deps.onRunningChanged([...running.keys()])
 
+  // The session itself is opened by SteamSessions when the registry shows the game.
+  const launchSteam = async (game: Game): Promise<void> => {
+    const appId = game.steamAppId
+    if (appId === null) throw new LaunchError('not-found')
+    if (deps.steam.sessions.runningGameId() === game.id || starting.has(game.id)) {
+      throw new LaunchError('already-running')
+    }
+    if (game.installed !== true) throw new LaunchError('not-installed')
+    const live = deps.steam.liveState(appId)
+    if (live === 'updating' || live === 'paused') throw new LaunchError('steam-busy')
+    starting.add(game.id)
+    try {
+      await deps.steam.openRunUrl(steamRunUrl(appId))
+      const started = await deps.steam.sessions.waitForStart(appId, deps.steam.startTimeoutMs)
+      if (!started) throw new LaunchError('start-timeout')
+    } catch (error) {
+      if (error instanceof LaunchError) throw error
+      throw new LaunchError('start-failed', error instanceof Error ? error.message : String(error))
+    } finally {
+      starting.delete(game.id)
+    }
+  }
+
   return {
-    runningGameIds: () => [...running.keys()],
+    runningGameIds: () => {
+      const steamGame = deps.steam.sessions.runningGameId()
+      return steamGame === null ? [...running.keys()] : [...running.keys(), steamGame]
+    },
 
     async launch(gameId) {
       const game = deps.games.getById(gameId)
-      if (!game || game.origin === BuiltinOrigin.steam) throw new LaunchError('not-found')
+      if (!game) throw new LaunchError('not-found')
+      if (game.origin === BuiltinOrigin.steam) return launchSteam(game)
       if (running.has(gameId) || starting.has(gameId)) throw new LaunchError('already-running')
       const config = deps.configs.get(gameId)
       if (!config) throw new LaunchError('no-config')

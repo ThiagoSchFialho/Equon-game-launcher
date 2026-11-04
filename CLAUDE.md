@@ -20,7 +20,7 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 
 ## Current status and scope of work
 
-- Phases 0–5 are complete (Phase 1 spike results: `docs/ARCHITECTURE.md` §3.1). **Work only on the phase the owner names** (next: Phase 6 — Steam library and metadata). Do not start the next phase on your own.
+- Phases 0–5 are complete (Phase 1 spike results: `docs/ARCHITECTURE.md` §3.1). **Work only on the phase the owner names** (current: Phase 6 — Steam library and metadata, steps 6a/6b/6c; 6a in review). Do not start the next phase on your own.
 - Before non-trivial work, propose a short plan and wait for approval.
 - Open decisions: D-13 (installer, Phase 8), where to persist preferences. If a task depends on an open item, ask instead of deciding.
 
@@ -62,8 +62,8 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 
 ## Steam rules
 
-- Discovery: Windows registry `SteamPath` (fallback + user override) → `libraryfolders.vdf` → `appmanifest_*.acf` → `StateFlags`. Ignore non-game manifests. Pin behavior with fixtures; the flags are not an official contract.
-- Launch: `steam://rungameid/<appid>`, built in main from a validated numeric App ID taken from the DB, never from renderer strings. A launch counts as started only when `AppRunning` is observed (with timeout); a session starts then.
+- Discovery: Windows registry `SteamPath` (via `reg.exe`, fallback to the default folder; no user override) → `libraryfolders.vdf` → `appmanifest_*.acf` → `StateFlags`. Local scan at startup and on "Atualizar biblioteca". Ignore non-game manifests. Pin behavior with fixtures; the flags are not an official contract.
+- Launch: `steam://rungameid/<appid>`, built in main from a validated numeric App ID taken from the DB, never from renderer strings. A launch counts as started only when the registry `RunningAppID` shows the game (with timeout); a session starts then. Steam sessions follow `RunningAppID` (polled every 2 s), for games started by the launcher or by Steam; the manifest `AppRunning` flag is not used (Steam does not set it).
 - Offer Play only when `installed = 1`.
 - Achievements: sync only the game that just closed, plus a manual full sync. Never periodic or automatic full-library sync. Validate current Steam Web API formats before implementing.
 

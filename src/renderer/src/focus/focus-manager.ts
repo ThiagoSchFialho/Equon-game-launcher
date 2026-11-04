@@ -15,6 +15,8 @@ export interface FocusableOptions {
    * container positions it itself (e.g. a transform carousel).
    */
   scroll?: 'nearest' | 'center' | 'none'
+  /** Never chosen automatically (initial focus, re-homing); reached by direction or mouse only. */
+  manualOnly?: boolean
 }
 
 interface Entry extends FocusableOptions {
@@ -203,7 +205,7 @@ export class FocusManager {
     const current = this.focusedId ? this.entries.get(this.focusedId) : undefined
     if (current && current.scope === scope) return
 
-    const inScope = this.scopeEntries(scope)
+    const inScope = this.scopeEntries(scope).filter((e) => !e.manualOnly)
     if (inScope.length === 0) {
       if (this.focusedId !== null && !current) {
         this.focusedId = null

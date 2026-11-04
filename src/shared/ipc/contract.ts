@@ -4,6 +4,11 @@
 
 export const IpcChannel = {
   appGetInfo: 'app:get-info',
+  appGetSystemInfo: 'app:get-system-info',
+  libraryRefresh: 'library:refresh',
+  settingsGet: 'settings:get',
+  settingsSetSteamId: 'settings:set-steam-id',
+  settingsSetSecret: 'settings:set-secret',
   gamesList: 'games:list',
   gamesGet: 'games:get',
   gamesGetEditable: 'games:get-editable',
@@ -29,12 +34,56 @@ export type IpcChannel = (typeof IpcChannel)[keyof typeof IpcChannel]
 /** Events main sends to the renderer. */
 export const IpcEvent = {
   /** Payload: ids of the games currently running. */
-  gamesRunningChanged: 'games:running-changed'
+  gamesRunningChanged: 'games:running-changed',
+  /** No payload: games were added or changed by a library scan. */
+  libraryChanged: 'library:changed'
 } as const
 
 export interface AppInfo {
   name: string
   version: string
+}
+
+/** Settings › Sobre. */
+export interface SystemInfo {
+  appVersion: string
+  electron: string
+  chrome: string
+  node: string
+  /** e.g. "Windows 11 Pro (10.0.26300)". */
+  os: string
+  dataPath: string
+  /** PRAGMA user_version. */
+  schemaVersion: number
+}
+
+/** Result of the last Steam library scan. */
+export interface LibraryRefreshInfo {
+  status: 'complete' | 'partial' | 'failed'
+  /** 'steam-not-found', 'libraryfolders-unreadable', 'library-unreadable' or null. */
+  reason: string | null
+  added: number
+  missing: number
+  unknown: number
+  /** Possible duplicates found (review arrives in Phase 6c). */
+  duplicates: number
+  /** ISO-8601 UTC */
+  finishedAt: string
+}
+
+export type SecretKind = 'steam-api-key' | 'steamgriddb-api-key'
+
+/** Settings › Conexões. Secrets are never sent: only whether they are set. */
+export interface SettingsInfo {
+  steamId: string | null
+  steamApiKey: boolean
+  steamGridDbKey: boolean
+  /** False when Windows cannot encrypt (safeStorage); secrets cannot be saved then. */
+  secretsAvailable: boolean
+  /** Steam folder found by the last scan; null = not found (yet). */
+  steamPath: string | null
+  refreshing: boolean
+  lastRefresh: LibraryRefreshInfo | null
 }
 
 /** Mirrors the domain artwork kinds (a test keeps them in sync). */
@@ -106,7 +155,12 @@ export interface GameDetails extends GameSummary {
 }
 
 export type LaunchIssue =
-  'steam' | 'not-installed' | 'install-unknown' | 'no-config' | 'emulator-missing'
+  | 'not-installed'
+  | 'install-unknown'
+  | 'no-config'
+  | 'emulator-missing'
+  /** Steam is installing, updating or repairing the game. */
+  | 'steam-busy'
 
 export interface GameFlagsInput {
   hidden?: boolean
@@ -178,6 +232,19 @@ export interface BrowserListing {
 export interface EquonApi {
   app: {
     getInfo(): Promise<AppInfo>
+    getSystemInfo(): Promise<SystemInfo>
+  }
+  library: {
+    /** Scans Steam again (also done at startup); concurrent calls share one scan. */
+    refresh(): Promise<LibraryRefreshInfo>
+    /** Subscribes to library changes from scans; returns the unsubscribe function. */
+    onChanged(listener: () => void): () => void
+  }
+  settings: {
+    get(): Promise<SettingsInfo>
+    setSteamId(steamId: string | null): Promise<Result<SettingsInfo>>
+    /** null removes the secret. The value goes to main once and is never returned. */
+    setSecret(kind: SecretKind, value: string | null): Promise<Result<SettingsInfo>>
   }
   games: {
     list(): Promise<GameSummary[]>

@@ -2,10 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   LaunchError,
   createGameRunner,
+  createSteamSessions,
   recoverInterruptedSessions,
   type GameRunner,
   type ProcessCommand,
-  type RunningProcess
+  type RunningProcess,
+  type SteamSessions
 } from '../../../src/core/application'
 import {
   createEmulatorRepository,
@@ -15,6 +17,7 @@ import {
   createUnitOfWork,
   type SqliteDatabase
 } from '../../../src/infrastructure/persistence'
+import type { SteamLiveState } from '../../../src/core/domain'
 import { createTestDb } from '../../helpers/db'
 
 let db: SqliteDatabase
@@ -28,6 +31,19 @@ let existing: Set<string>
 let runningChanges: number[][]
 let launchImpl: (command: ProcessCommand) => Promise<RunningProcess>
 let runner: GameRunner
+let steamSessions: SteamSessions
+let steamOpened: string[]
+let live: Map<number, SteamLiveState>
+let timeouts: (() => void)[]
+
+const steamDeps = (): Parameters<typeof createGameRunner>[0]['steam'] => ({
+  sessions: steamSessions,
+  openRunUrl: async (url) => {
+    steamOpened.push(url)
+  },
+  liveState: (appId) => live.get(appId) ?? null,
+  startTimeoutMs: 90_000
+})
 
 const games = (): ReturnType<typeof createGameRepository> => createGameRepository(db)
 const flush = (): Promise<void> => new Promise((r) => setTimeout(r, 0))
@@ -53,6 +69,22 @@ beforeEach(() => {
   shortcutTargets = new Map()
   existing = new Set()
   runningChanges = []
+  steamOpened = []
+  live = new Map()
+  timeouts = []
+  steamSessions = createSteamSessions({
+    games: createGameRepository(db),
+    sessions: createSessionRepository(db),
+    uow: createUnitOfWork(db),
+    clock: { now: () => clock },
+    repeat: () => () => {},
+    after: (_ms, fn) => {
+      timeouts.push(fn)
+      return () => (timeouts = timeouts.filter((t) => t !== fn))
+    },
+    heartbeatMs: 30_000,
+    onChange: () => {}
+  })
   launchImpl = async (command) => {
     launched.push(command)
     return { pid: 4242, exited: new Promise<void>((r) => (exitProcess = r)) }
@@ -77,7 +109,8 @@ beforeEach(() => {
       return () => (ticks = ticks.filter((t) => t !== tick))
     },
     heartbeatMs: 30_000,
-    onRunningChanged: (ids) => runningChanges.push(ids)
+    onRunningChanged: (ids) => runningChanges.push(ids),
+    steam: steamDeps()
   })
 })
 
@@ -131,7 +164,8 @@ describe('game runner', () => {
     const notInstalled = addManualGame(false)
 
     await expect(runner.launch(9999)).rejects.toMatchObject({ code: 'not-found' })
-    await expect(runner.launch(steam.id)).rejects.toMatchObject({ code: 'not-found' })
+    // Steam games launch through Steam now; an unknown install state is refused.
+    await expect(runner.launch(steam.id)).rejects.toMatchObject({ code: 'not-installed' })
     await expect(runner.launch(noConfig.id)).rejects.toMatchObject({ code: 'no-config' })
     await expect(runner.launch(notInstalled)).rejects.toMatchObject({ code: 'not-installed' })
     expect(launched).toEqual([])
@@ -182,7 +216,8 @@ describe('game runner', () => {
       repeat: () => () => {},
       heartbeatMs: 30_000,
       onRunningChanged: () => {},
-      onError
+      onError,
+      steam: steamDeps()
     })
     const id = addManualGame()
     await runner.launch(id)
@@ -278,5 +313,46 @@ describe('game runner: emulators and shortcuts', () => {
     shortcutTargets.set('C:/Games/Bad.url', null)
     await expect(runner.launch(id)).rejects.toMatchObject({ code: 'shortcut-invalid' })
     expect(opened).toEqual([])
+  })
+})
+
+describe('game runner: Steam games', () => {
+  const addSteamGame = (installed: boolean | null = true): number => {
+    const game = games().upsertSteamGame({ steamAppId: 2379780, title: 'Balatro' })
+    games().setInstalled(game.id, installed)
+    return game.id
+  }
+
+  it('opens steam://rungameid and resolves once Steam reports the game running', async () => {
+    const id = addSteamGame()
+    const launching = runner.launch(id)
+    await flush()
+    expect(steamOpened).toEqual(['steam://rungameid/2379780'])
+    expect(runner.runningGameIds()).toEqual([])
+    steamSessions.observe(2379780)
+    await launching
+    expect(runner.runningGameIds()).toEqual([id])
+    expect(createSessionRepository(db).listRunning()).toHaveLength(1)
+    await expect(runner.launch(id)).rejects.toMatchObject({ code: 'already-running' })
+  })
+
+  it('fails with start-timeout when Steam never reports the game', async () => {
+    const id = addSteamGame()
+    const launching = runner.launch(id)
+    await flush()
+    timeouts.forEach((fire) => fire())
+    await expect(launching).rejects.toMatchObject({ code: 'start-timeout' })
+    expect(createSessionRepository(db).listRunning()).toEqual([])
+  })
+
+  it('refuses games that are not installed, unknown, or being updated', async () => {
+    const id = addSteamGame(false)
+    await expect(runner.launch(id)).rejects.toMatchObject({ code: 'not-installed' })
+    games().setInstalled(id, null)
+    await expect(runner.launch(id)).rejects.toMatchObject({ code: 'not-installed' })
+    games().setInstalled(id, true)
+    live.set(2379780, 'updating')
+    await expect(runner.launch(id)).rejects.toMatchObject({ code: 'steam-busy' })
+    expect(steamOpened).toEqual([])
   })
 })

@@ -204,19 +204,28 @@ discovery plan never erases data on failure and never merges duplicates.
 
 ### Tasks
 
--   [ ] Locate Steam through the Windows registry, with fallback and a
-    user override in Settings.
--   [ ] Read `libraryfolders.vdf` and every `appmanifest_*.acf`, handling
-    multiple library folders and ignoring non-game manifests.
--   [ ] Interpret `StateFlags` (installed, running, installing,
-    updating, paused, unhealthy) and pin the behavior with fixtures.
--   [ ] Write `installed` as `1`, `0` or `NULL` following the rules in
-    `DATA_BASE_CONTEXT.md` §3.2; a failed read never writes `0`.
--   [ ] Launch Steam games with `steam://rungameid/<appid>`, built in the
-    main process from a validated App ID, and confirm the start by
-    observing the `AppRunning` flag.
--   [ ] Observe Steam sessions from the manifest state, with process
-    polling as a fallback; document the limits.
+Delivered in three reviewed steps: 6a (local Steam, Play, Settings),
+6b (network: connection tests, `GetOwnedGames`, `appdetails`) and 6c
+(artwork, duplicate review).
+
+-   [x] Locate Steam through the Windows registry with a fallback to the
+    default folder (no manual override: `libraryfolders.vdf` lists every
+    library). *(6a)*
+-   [x] Read `libraryfolders.vdf` and every `appmanifest_*.acf`, handling
+    multiple library folders and ignoring non-game manifests. *(6a)*
+-   [x] Interpret `StateFlags` (installed, installing, updating, paused,
+    unhealthy) and pin the behavior with fixtures. *(6a)*
+-   [x] Write `installed` as `1`, `0` or `NULL` following the rules in
+    `DATA_BASE_CONTEXT.md` §3.2; a failed read never writes `0`. Local
+    scan at startup and on "Atualizar biblioteca". *(6a)*
+-   [x] Launch Steam games with `steam://rungameid/<appid>`, built in the
+    main process from a validated App ID, and confirm the start through
+    the registry `RunningAppID`. *(6a)*
+-   [x] Observe Steam sessions from the registry `RunningAppID` (the
+    manifest `AppRunning` flag is not set in practice); limits documented
+    in D-12. *(6a)*
+-   [x] Settings screen (gear in the top bar): Conexões (SteamID, keys,
+    "Atualizar biblioteca") and Sobre. *(6a)*
 -   [ ] Import metadata and genres from `appdetails` **only when a game
     is discovered or added**; set `metadata_fetched_at` only after a
     valid response and retry failures on later refreshes.
@@ -228,13 +237,14 @@ discovery plan never erases data on failure and never merges duplicates.
 -   [ ] Sync Steam playtime and last played once per launcher start
     with `GetOwnedGames` (after closing interrupted sessions), using the
     repository support from Phase 2; a failed sync changes nothing.
--   [ ] Securely store the Steam account ID and the Steam and
-    SteamGridDB API keys (encrypted with `safeStorage`).
--   [ ] Implement the Steam adapter on the Phase 5 discovery contract
-    and wire it to the repositories.
--   [ ] Add the "Atualizar biblioteca" action, scan progress (UI stays
-    responsive during scans), partial-failure state and the
-    duplicate-review step (candidates are never merged silently).
+-   [x] Securely store the Steam account ID and the Steam and
+    SteamGridDB API keys (encrypted with `safeStorage`). *(6a)*
+-   [ ] "Testar conexão" for the Steam Web API and SteamGridDB. *(6b)*
+-   [x] Implement the Steam adapter on the Phase 5 discovery contract
+    and wire it to the repositories. *(6a)*
+-   [x] Add the "Atualizar biblioteca" action, scan progress (UI stays
+    responsive during scans) and the partial-failure state. *(6a)*
+-   [ ] Duplicate-review step (candidates are never merged silently). *(6c)*
 -   [ ] Test using fixtures and simulated failures (unreadable library,
     missing `libraryfolders.vdf`, download in progress, running game,
     corrupt files, network errors).

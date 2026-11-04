@@ -87,18 +87,25 @@ function Stat({
 }
 
 /** Why Play is unavailable, or what is happening (DATA_BASE_CONTEXT.md §3.2). */
-function playNote(game: GameDetails, running: boolean, launchError: string | null): string | null {
+function playNote(
+  game: GameDetails,
+  running: boolean,
+  launching: boolean,
+  launchError: string | null
+): string | null {
+  const steam = game.origin === 'steam'
   if (launchError) return launchError
   if (running) return t.game.runningNote
+  if (launching && steam) return t.game.steamLaunching
   switch (game.launchIssue) {
     case null:
       return game.tracksTime ? null : t.game.untracked
-    case 'steam':
-      return t.game.steamSoon
+    case 'steam-busy':
+      return t.game.steamBusy
     case 'install-unknown':
-      return t.game.installUnknown
+      return steam ? t.game.steamUnknown : t.game.installUnknown
     case 'not-installed':
-      return t.game.notInstalled
+      return steam ? t.game.steamNotInstalled : t.game.notInstalled
     case 'emulator-missing':
       return t.game.emulatorMissing
     case 'no-config':
@@ -129,7 +136,7 @@ function Details({
       }
     })
   }
-  const note = playNote(game, running, launchError)
+  const note = playNote(game, running, launching, launchError)
   const year = releaseYear(game.releaseDate)
   const rating = ageRatingKey(game.requiredAge)
   const byline = [year, game.developer].filter(Boolean).join(' • ')

@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import type {
   EmulatorInfo,
   EquonApi,
+  SettingsInfo,
   GameDetails,
   GameSummary,
   OriginInfo
@@ -34,15 +35,9 @@ export const details = (game: GameSummary, extra: Partial<GameDetails> = {}): Ga
   genres: ['Ação'],
   achievements: { total: 50, unlocked: 16, platinum: false },
   editable: game.origin !== 'steam',
-  launchable: game.origin !== 'steam' && game.installed === true,
+  launchable: game.installed === true,
   launchIssue:
-    game.origin === 'steam'
-      ? 'steam'
-      : game.installed === true
-        ? null
-        : game.installed === false
-          ? 'not-installed'
-          : 'install-unknown',
+    game.installed === true ? null : game.installed === false ? 'not-installed' : 'install-unknown',
   tracksTime: true,
   ...extra
 })
@@ -62,6 +57,17 @@ export const yuzu = (executablePath: string | null = null): EmulatorInfo => ({
   executablePath
 })
 
+export const settingsInfo = (extra: Partial<SettingsInfo> = {}): SettingsInfo => ({
+  steamId: null,
+  steamApiKey: false,
+  steamGridDbKey: false,
+  secretsAvailable: true,
+  steamPath: 'C:\\Program Files (x86)\\Steam',
+  refreshing: false,
+  lastRefresh: null,
+  ...extra
+})
+
 /** Installs a complete fake `window.equon`; pass overrides per test. */
 export function installFakeApi(
   games: GameSummary[],
@@ -70,11 +76,49 @@ export function installFakeApi(
     origins?: Partial<EquonApi['origins']>
     emulators?: Partial<EquonApi['emulators']>
     files?: Partial<EquonApi['files']>
+    settings?: Partial<EquonApi['settings']>
+    library?: Partial<EquonApi['library']>
   } = {}
 ): EquonApi {
   const runningListeners = new Set<(ids: number[]) => void>()
   const api: EquonApi = {
-    app: { getInfo: async () => ({ name: 'equon', version: '0.1.0' }) },
+    app: {
+      getInfo: async () => ({ name: 'equon', version: '0.1.0' }),
+      getSystemInfo: async () => ({
+        appVersion: '0.1.0',
+        electron: '44.10.1',
+        chrome: '146.0',
+        node: '24.18.0',
+        os: 'Windows 11 Pro (10.0.26300)',
+        dataPath: 'C:\\Users\\u\\AppData\\Roaming\\equon-game-launcher-dev',
+        schemaVersion: 3
+      })
+    },
+    library: {
+      refresh: async () => ({
+        status: 'complete',
+        reason: null,
+        added: 2,
+        missing: 0,
+        unknown: 0,
+        duplicates: 0,
+        finishedAt: '2026-11-03T22:00:00Z'
+      }),
+      onChanged: () => () => {},
+      ...overrides.library
+    },
+    settings: {
+      get: async () => settingsInfo(),
+      setSteamId: async (steamId) => ({ ok: true, data: settingsInfo({ steamId }) }),
+      setSecret: async (kind, value) => ({
+        ok: true,
+        data: settingsInfo({
+          steamApiKey: kind === 'steam-api-key' && value !== null,
+          steamGridDbKey: kind === 'steamgriddb-api-key' && value !== null
+        })
+      }),
+      ...overrides.settings
+    },
     games: {
       list: async () => games,
       get: async (id) => {

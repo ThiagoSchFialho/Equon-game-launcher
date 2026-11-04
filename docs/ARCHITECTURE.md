@@ -1,7 +1,7 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.16
-**Status:** Draft — Phase 5 (library organization)
+**Version:** 0.17
+**Status:** Draft — Phase 6 (Steam library and metadata)
 **Last updated:** 2026-11-02
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
 **Purpose:** Define technical boundaries, record architecture decisions, and list what is still unresolved before implementation starts.
@@ -222,7 +222,7 @@ The reference implementation (a prototype using an Express router) already does 
 | UpdateRequired | 2 | needs update |
 | FullyInstalled | 4 | installed |
 | FilesMissing | 32 | unhealthy |
-| AppRunning | 64 | running |
+| AppRunning | 64 | not set by Steam in practice (Phase 6 measurement); not used |
 | FilesCorrupt | 128 | unhealthy |
 | UpdateRunning | 256 | installing/updating |
 | UpdatePaused | 512 | paused |
@@ -236,7 +236,7 @@ The reference implementation (a prototype using an Express router) already does 
 **Required adaptations:**
 
 - **No local server.** Drop the HTTP routes. Implement pure parsing functions plus a `SteamAdapter` (capability contract, §8) called by use cases through IPC. The adapter does not know about the database.
-- **Find Steam on Windows properly.** Read the install path from the registry value `SteamPath` under `HKCU\Software\Valve\Steam`, fall back to the default install folder, and allow a user override in Settings (`PRODUCT.md` §6.7). Remove the macOS/Linux branches. If Steam is not found, report it as a warning and change no data. How to read the registry (spawning `reg query` without a shell, or a small dependency) is an implementation detail to settle in Phase 6.
+- **Find Steam on Windows properly.** Read the install path from the registry value `SteamPath` under `HKCU\Software\Valve\Steam` (with `reg.exe`, no shell, fixed arguments) and fall back to the default install folder. There is **no user override** (owner decision, Phase 6): `libraryfolders.vdf` already lists every library on every drive, so only the main install has to be found. Remove the macOS/Linux branches. If Steam is not found, report it as a warning and change no data.
 - **A failed read is not an uninstall.** The prototype swallows read errors and then marks every game missing from the scan as not installed. That breaks the project rule. Instead, each library returns `ok` or `unreadable` with the error, and the adapter returns warnings. When writing results:
   - games found in the scan → `installed = 1`;
   - games absent from the scan → `installed = 0` **only if** `libraryfolders.vdf` and every listed library were read successfully; otherwise → `installed = NULL` (unknown), for example when a drive holding a library is disconnected;
@@ -247,15 +247,15 @@ The reference implementation (a prototype using an Express router) already does 
 - **Parsing.** The regex approach is acceptable for the few fields needed, but names can contain escaped characters and formats can vary. Cover this with fixtures, or use a small VDF parser if the regexes prove fragile.
 - **Scope.** This only finds games that have a manifest (installed or being installed). Owned-but-not-installed games would need the `GetOwnedGames` endpoint (requires the key), which is not part of the MVP docs.
 
-**Running state and sessions:** the `AppRunning` flag lets the launcher notice a game starting and stopping, including games started from Steam itself. Candidate mechanism: poll the manifests (or watch the `steamapps` folders for changes, if reliable on Windows) and treat transitions as session start/end. Interval or watcher choice is decided by measurement. Treat the result as **best-effort**: the flag is Steam-internal and may lag or go stale if a game crashes or Steam closes. Validate those cases, and keep process polling of the game's install folder (`installdir` from the manifest) as a fallback. Document observed limits; the PRD does not promise perfect capture.
+**Running state and sessions (decided in Phase 6):** measured on a real install, the manifest never sets `AppRunning`; Steam reports the running game in the registry instead (`HKCU\Software\Valve\Steam\RunningAppID`, plus `Apps\<appid>\Running`), switching within a poll interval when the game opens and closes. The launcher reads `RunningAppID` every 2 s with `reg.exe` (no shell). A session starts when the value becomes the App ID of a library game, for games started by the launcher or by Steam itself, and ends when it returns to 0 or changes (`SteamSessions`, same heartbeat and interrupted-session recovery as manual games). Best-effort: if Steam crashes or is killed, the value can stay stale until Steam or the launcher restarts. The manifest is still used for the install state and the live states (updating, paused, update required, unhealthy).
 
 **Launch (D-17, Accepted):** launch Steam games with the URL protocol `steam://rungameid/<appid>`.
 
 - The URL is built in the main process from a validated numeric App ID taken from the database, never from a string supplied by the renderer. It is opened through Electron's external-URL mechanism, restricted to this exact pattern (see §7).
-- Opening the URL only asks Steam to start the game; it does not prove the game started. Treat the launch as successful when the manifest `AppRunning` flag is observed (D-12) within a timeout. If it is not, show an actionable error with a retry option. The timeout is set by measurement, not guessed.
+- Opening the URL only asks Steam to start the game; it does not prove the game started. Treat the launch as successful when `RunningAppID` shows the game (D-12) within a timeout (90 s for now; to be refined by measurement). If it is not, show an actionable error with a retry option. The timeout is set by measurement, not guessed.
 - Offer **Play** only when `installed = 1`. For `NULL` (unknown), warn instead of launching blindly. If the game is updating or installing, show that state rather than launching.
 - If Steam is not running, the protocol is expected to start the client; validate this behavior and its delay on a real install.
-- A session starts when `AppRunning` is observed, not when the URL is opened.
+- A session starts when the registry shows the game running, not when the URL is opened.
 
 ### 3.13 D-15 — Artwork sources and cache (Accepted)
 
@@ -467,7 +467,7 @@ type DiscoveryResult =
 | Metadata and genres | `appdetails` | None |
 | Installation state | Manifest `StateFlags`, tri-state (D-12) | Executable exists → 1, missing → 0, read error → unknown (Phase 4) |
 | Launch | `steam://rungameid/<appid>` (D-17) | Executable + args + working dir |
-| Session observation | Best-effort: manifest `AppRunning`, process polling as fallback | Reliable for direct child processes |
+| Session observation | Best-effort: registry `RunningAppID` polled every 2 s (D-12) | Reliable for direct child processes |
 | Achievements | Steam Web API | Not supported |
 
 Games from Epic, GOG and other launchers are registered as manual games. Some may only start through their official client (login or DRM); if launching the `.exe` directly fails, the manual launch configuration may need an alternative launch method. Validate this in Phase 4 with real games.
@@ -576,8 +576,8 @@ For Steam, use `appdetails`: check the success flag, validate optional fields, n
 ### Launch and session
 
 1. Validate the launch configuration (§7).
-2. Invoke the adapter's launch. For Steam, open `steam://rungameid/<appid>` built in the main process (D-17) and confirm the start by observing `AppRunning`.
-3. Insert a `running` session and observe the process where feasible: for Steam games through the manifest `AppRunning` flag (D-12), for manual games through the launched process.
+2. Invoke the adapter's launch. For Steam, open `steam://rungameid/<appid>` built in the main process (D-17) and confirm the start by observing the game in the registry `RunningAppID`.
+3. Insert a `running` session and observe the process where feasible: for Steam games through the registry `RunningAppID` (D-12), for manual games through the launched process.
 4. On exit, finalize the session and update `playtime` / `time_last_played` in one transaction (D-08), then trigger the per-game achievements sync if applicable.
 5. On launch failure, show an actionable error with a retry option.
 
@@ -665,6 +665,8 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-01 | 0.7 | Accepted D-14 (npm, electron-vite, Vitest, ESLint + Prettier, strict TypeScript); documented the `better-sqlite3` Node/Electron ABI rule and the `node:sqlite` check for the Phase 1 spike. Phase 1 unblocked |
 | 2026-11-01 | 0.8 | Accepted D-15 (artwork). Aligned `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md` and `ROADMAP.md` with all accepted decisions. Recorded the open Home cover type |
 | 2026-11-01 | 0.9 | Added a fifth art type: portrait cover 600×900 for the Home screen. Renamed `cover` to `cover_square`; added `cover_portrait` |
+| 2026-11-03 | 0.17 | Phase 6a: no Steam folder override; running state from the registry `RunningAppID` (the manifest `AppRunning` flag is not set in practice); local Steam scan at startup and on "Atualizar biblioteca"; Settings screen (gear in the top bar: Conexões, Sobre). |
+| 2026-11-03 | 0.16 | Phase 5: discovery contract (§8) and library view (§11). |
 | 2026-11-02 | 0.15 | Phase 4 owner changes: emulators become a separate feature (`EMULATORS`, Yuzu only, ROM-only games, `-f -g "<rom>"`), replacing emulator defaults on origins; `.url` shortcuts accepted with a scheme allowlist and no playtime measurement |
 | 2026-11-02 | 0.14 | Phase 4 decisions: emulator defaults on origins (pre-fill only), `playtime_offset` for user-entered playtime, manual install state from the executable, own file browser with native-dialog fallback, local artwork import rules, new input actions (X, Y, LT, RT) and text-entry mode |
 | 2026-11-02 | 0.13 | Phase 3 decisions: own focus manager; `previousSection`/`nextSection` actions (LB/RB); `equon-art://` protocol for cached artwork; React Testing Library + jsdom; separate dev user-data folder and seed script |

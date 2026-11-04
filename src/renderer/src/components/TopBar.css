@@ -46,13 +46,49 @@
   color: var(--color-text-primary);
 }
 
-.top-bar__clock {
+.top-bar__end {
   position: absolute;
   right: var(--space-12);
   top: var(--space-5);
   display: flex;
   align-items: center;
+  gap: var(--space-6);
   height: 3.75rem;
+}
+
+.top-bar__settings {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-gap);
+  opacity: 0.8;
+  transition:
+    outline-color var(--motion-focus) var(--motion-easing),
+    opacity var(--motion-focus) var(--motion-easing);
+}
+
+.top-bar__settings img {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.top-bar__settings:hover,
+.top-bar__settings[data-selected='true'] {
+  opacity: 1;
+}
+
+.top-bar__settings[data-focused='true'] {
+  opacity: 1;
+  outline-color: var(--color-focus);
+}
+
+.top-bar__clock {
+  display: flex;
+  align-items: center;
   font-size: var(--font-size-screen-title);
   font-weight: var(--font-weight-semibold);
 }

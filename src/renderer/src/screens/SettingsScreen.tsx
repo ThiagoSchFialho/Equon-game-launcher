@@ -1,0 +1,386 @@
+import { useCallback, useEffect, useState } from 'react'
+import type {
+  LibraryRefreshInfo,
+  SecretKind,
+  SettingsInfo,
+  SystemInfo
+} from '../../../shared/ipc/contract'
+import checkIcon from '../assets/icons/check-circle.svg'
+import editIcon from '../assets/icons/edit.svg'
+import infoIcon from '../assets/icons/info.svg'
+import steamIcon from '../assets/icons/steam-white.svg'
+import syncIcon from '../assets/icons/sync.svg'
+import { useNavigation, currentSection } from '../app/navigation'
+import { Button } from '../components/Button'
+import { Footer, type Hint } from '../components/Footer'
+import { FormRow } from '../components/FormRow'
+import { OnScreenKeyboard } from '../components/OnScreenKeyboard'
+import { StateMessage } from '../components/StateMessage'
+import { TopBar } from '../components/TopBar'
+import { useFocusable, useScreenActions } from '../focus/focus-context'
+import { FocusScope } from '../focus/FocusProvider'
+import { errorMessage, t } from '../strings'
+import './SettingsScreen.css'
+
+type Tab = 'connections' | 'about'
+type Overlay = { kind: 'steamId' } | { kind: 'secret'; secret: SecretKind; label: string }
+
+const HINTS: Hint[] = [
+  { button: 'A', label: t.hints.select },
+  { button: 'B', label: t.hints.back }
+]
+
+/** Settings (mockup "settings ideas2"): Conexões and Sobre. Keys never come back from main. */
+export function SettingsScreen(): React.JSX.Element {
+  const navigation = useNavigation()
+  const [tab, setTab] = useState<Tab>('connections')
+  const [info, setInfo] = useState<SettingsInfo | null>(null)
+  const [loadFailed, setLoadFailed] = useState(false)
+  const [overlay, setOverlay] = useState<Overlay | null>(null)
+  const [errors, setErrors] = useState<Partial<Record<'steamId' | SecretKind, string>>>({})
+
+  const load = useCallback(() => {
+    window.equon.settings.get().then(
+      (data) => {
+        setLoadFailed(false)
+        setInfo(data)
+      },
+      () => setLoadFailed(true)
+    )
+  }, [])
+  useEffect(load, [load])
+
+  useScreenActions({ back: () => navigation.back() })
+
+  let content: React.JSX.Element
+  if (loadFailed) {
+    content = (
+      <StateMessage
+        tone="error"
+        message={t.settings.error}
+        action={{ id: 'settings:retry', label: t.library.retry, onConfirm: load }}
+      />
+    )
+  } else if (info === null) {
+    content = <StateMessage message={t.settings.loading} />
+  } else if (tab === 'connections') {
+    content = (
+      <Connections
+        info={info}
+        errors={errors}
+        onChanged={setInfo}
+        onEdit={setOverlay}
+        onError={(field, message) => setErrors((e) => ({ ...e, [field]: message }))}
+      />
+    )
+  } else {
+    content = <About steamPath={info.steamPath} />
+  }
+
+  const save = async (
+    field: 'steamId' | SecretKind,
+    action: Promise<{ ok: true; data: SettingsInfo } | { ok: false; error: { code: string } }>
+  ): Promise<void> => {
+    setOverlay(null)
+    const result = await action
+    if (result.ok) {
+      setInfo(result.data)
+      setErrors((e) => ({ ...e, [field]: undefined }))
+    } else {
+      setErrors((e) => ({ ...e, [field]: errorMessage(result.error.code) }))
+    }
+  }
+
+  return (
+    <FocusScope id="screen:settings">
+      <div className="screen">
+        <TopBar active={currentSection(navigation.route)} />
+        <main className="screen__main settings">
+          <nav className="settings__tabs" aria-label={t.settings.title}>
+            <SettingsTab
+              id="connections"
+              icon={steamIcon}
+              label={t.settings.tabs.connections}
+              selected={tab === 'connections'}
+              onSelect={setTab}
+            />
+            <SettingsTab
+              id="about"
+              icon={infoIcon}
+              label={t.settings.tabs.about}
+              selected={tab === 'about'}
+              onSelect={setTab}
+            />
+          </nav>
+          <section className="settings__content">
+            <h1 className="settings__title">{t.settings.tabs[tab]}</h1>
+            {content}
+          </section>
+        </main>
+        <Footer hints={HINTS} />
+      </div>
+
+      {overlay?.kind === 'steamId' && (
+        <OnScreenKeyboard
+          title={t.settings.steamId}
+          placeholder={t.settings.steamIdHint}
+          initialValue={info?.steamId ?? ''}
+          mode="number"
+          maxLength={17}
+          onCancel={() => setOverlay(null)}
+          onDone={(value) => void save('steamId', window.equon.settings.setSteamId(value || null))}
+        />
+      )}
+      {overlay?.kind === 'secret' && (
+        <OnScreenKeyboard
+          title={overlay.label}
+          placeholder={t.settings.keyPlaceholder}
+          initialValue=""
+          mode="text"
+          maxLength={128}
+          onCancel={() => setOverlay(null)}
+          onDone={(value) => {
+            if (value.trim() === '') setOverlay(null)
+            else void save(overlay.secret, window.equon.settings.setSecret(overlay.secret, value))
+          }}
+        />
+      )}
+    </FocusScope>
+  )
+}
+
+function SettingsTab({
+  id,
+  icon,
+  label,
+  selected,
+  onSelect
+}: {
+  id: Tab
+  icon: string
+  label: string
+  selected: boolean
+  onSelect: (tab: Tab) => void
+}): React.JSX.Element {
+  const { setElement, focused, mouse } = useFocusable<HTMLButtonElement>(`settings:tab:${id}`, {
+    onConfirm: () => onSelect(id),
+    autoFocus: id === 'connections'
+  })
+  return (
+    <button
+      ref={setElement}
+      className="settings__tab"
+      data-focused={focused}
+      data-selected={selected}
+      aria-current={selected ? 'page' : undefined}
+      tabIndex={-1}
+      {...mouse}
+    >
+      <img src={icon} alt="" />
+      <span>{label}</span>
+    </button>
+  )
+}
+
+function Connections({
+  info,
+  errors,
+  onChanged,
+  onEdit,
+  onError
+}: {
+  info: SettingsInfo
+  errors: Partial<Record<'steamId' | SecretKind, string>>
+  onChanged: (info: SettingsInfo) => void
+  onEdit: (overlay: Overlay) => void
+  onError: (field: SecretKind, message: string) => void
+}): React.JSX.Element {
+  const [refreshing, setRefreshing] = useState(info.refreshing)
+  const [lastRefresh, setLastRefresh] = useState(info.lastRefresh)
+
+  const remove = (secret: SecretKind): void => {
+    void window.equon.settings.setSecret(secret, null).then((result) => {
+      if (result.ok) onChanged(result.data)
+      else onError(secret, errorMessage(result.error.code))
+    })
+  }
+  const refresh = (): void => {
+    setRefreshing(true)
+    void window.equon.library
+      .refresh()
+      .then(setLastRefresh, () => {})
+      .finally(() => setRefreshing(false))
+  }
+
+  return (
+    <div className="settings__sections">
+      {!info.secretsAvailable && (
+        <p className="settings__warning" role="alert">
+          {t.settings.secretsUnavailable}
+        </p>
+      )}
+
+      <h2 className="settings__group">
+        <img src={steamIcon} alt="" />
+        {t.settings.steam}
+      </h2>
+      <FormRow
+        id="settings-steam-id"
+        label={t.settings.steamId}
+        placeholder={t.settings.steamIdPlaceholder}
+        value={info.steamId}
+        error={errors.steamId}
+        onConfirm={() => onEdit({ kind: 'steamId' })}
+      />
+      <SecretRow
+        id="steam-key"
+        label={t.settings.steamKey}
+        configured={info.steamApiKey}
+        error={errors['steam-api-key']}
+        onEdit={() =>
+          onEdit({ kind: 'secret', secret: 'steam-api-key', label: t.settings.steamKey })
+        }
+        onRemove={() => remove('steam-api-key')}
+      />
+      <TestButton id="settings:test-steam" />
+
+      <h2 className="settings__group">{t.settings.steamGridDb}</h2>
+      <SecretRow
+        id="steamgriddb-key"
+        label={t.settings.steamGridDbKey}
+        configured={info.steamGridDbKey}
+        error={errors['steamgriddb-api-key']}
+        onEdit={() =>
+          onEdit({
+            kind: 'secret',
+            secret: 'steamgriddb-api-key',
+            label: t.settings.steamGridDbKey
+          })
+        }
+        onRemove={() => remove('steamgriddb-api-key')}
+      />
+      <TestButton id="settings:test-steamgriddb" />
+
+      <div className="settings__library">
+        <div>
+          <p className="settings__library-title">{t.settings.library}</p>
+          <p className="settings__library-status" aria-live="polite">
+            {refreshText(lastRefresh)}
+          </p>
+        </div>
+        <Button
+          id="settings:refresh"
+          variant="primary"
+          label={t.settings.refresh}
+          unavailable={refreshing}
+          onConfirm={refresh}
+        >
+          <img src={syncIcon} alt="" />
+          {refreshing ? t.settings.refreshing : t.settings.refresh}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function refreshText(info: LibraryRefreshInfo | null): string {
+  if (info === null) return t.settings.neverRefreshed
+  if (info.status === 'failed') {
+    return t.settings.refreshFailed[info.reason ?? ''] ?? t.settings.refreshFailedOther
+  }
+  if (info.status === 'partial') return t.settings.refreshPartial
+  return t.settings.refreshResult(info.added, info.missing)
+}
+
+/** A stored key: only "configured or not" is shown, never the value (D-04). */
+function SecretRow({
+  id,
+  label,
+  configured,
+  error,
+  onEdit,
+  onRemove
+}: {
+  id: string
+  label: string
+  configured: boolean
+  error?: string
+  onEdit: () => void
+  onRemove: () => void
+}): React.JSX.Element {
+  return (
+    <div className="settings__secret-wrap">
+      <div className="settings__secret">
+        <div className="settings__secret-box" data-invalid={Boolean(error)}>
+          <span>{label}</span>
+          {configured ? (
+            <span className="settings__configured">
+              <img src={checkIcon} alt="" />
+              {t.settings.configured}
+            </span>
+          ) : (
+            <span className="settings__not-configured">{t.settings.notConfigured}</span>
+          )}
+        </div>
+        <Button
+          id={`settings:${id}:edit`}
+          label={configured ? t.settings.change : t.settings.configure}
+          onConfirm={onEdit}
+        >
+          <img src={editIcon} alt="" />
+          {configured ? t.settings.change : t.settings.configure}
+        </Button>
+        {configured && (
+          <Button id={`settings:${id}:remove`} label={t.settings.remove} onConfirm={onRemove}>
+            <span className="settings__danger">{t.settings.remove}</span>
+          </Button>
+        )}
+      </div>
+      {error && (
+        <p className="form-row__error" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  )
+}
+
+/** Live connection tests need the network and arrive in Phase 6b. */
+function TestButton({ id }: { id: string }): React.JSX.Element {
+  return (
+    <div className="settings__test">
+      <Button id={id} variant="primary" label={t.settings.test} unavailable onConfirm={() => {}}>
+        {t.settings.test}
+      </Button>
+      <span className="settings__test-note">{t.settings.testSoon}</span>
+    </div>
+  )
+}
+
+function About({ steamPath }: { steamPath: string | null }): React.JSX.Element {
+  const [system, setSystem] = useState<SystemInfo | null>(null)
+  useEffect(() => {
+    void window.equon.app.getSystemInfo().then(setSystem, () => {})
+  }, [])
+  if (!system) return <StateMessage message={t.settings.loading} />
+  const rows: [string, string][] = [
+    [t.settings.about.version, system.appVersion],
+    [t.settings.about.os, system.os],
+    [t.settings.about.steamPath, steamPath ?? t.settings.about.steamNotFound],
+    [t.settings.about.dataPath, system.dataPath],
+    [t.settings.about.schema, String(system.schemaVersion)],
+    [t.settings.about.electron, system.electron],
+    [t.settings.about.chrome, system.chrome],
+    [t.settings.about.node, system.node]
+  ]
+  return (
+    <dl className="settings__about">
+      {rows.map(([label, value]) => (
+        <div key={label} className="settings__about-row">
+          <dt>{label}</dt>
+          <dd>{value}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}

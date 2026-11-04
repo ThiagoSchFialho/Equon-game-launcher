@@ -197,7 +197,12 @@ limitações, condições de teste e método de inicialização suportado.
 
 -   Preferências visuais essenciais.
 -   Configurações de navegação/entrada necessárias ao MVP.
--   Gerenciamento de caminhos e atualização das bibliotecas.
+-   Gerenciamento de caminhos e atualização das bibliotecas. A pasta da
+    Steam é sempre detectada (registro do Windows e pasta padrão); todas as
+    bibliotecas vêm do `libraryfolders.vdf`, sem caminho manual.
+-   Conexões: SteamID64 e chaves da Steam Web API e do SteamGridDB
+    (guardadas criptografadas), "Atualizar biblioteca".
+-   Aba "Sobre" com informações básicas do sistema.
 -   Opções para adicionar, editar e remover jogos manuais.
 -   Informações básicas de diagnóstico para facilitar suporte.
 

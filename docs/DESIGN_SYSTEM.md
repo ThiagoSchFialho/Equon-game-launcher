@@ -85,6 +85,18 @@ filtros do Início.
 -   Explicar consequências de configurações potencialmente disruptivas.
 -   Evitar diálogos complexos que sejam difíceis de operar por controle.
 -   Sempre indicar como voltar e onde o foco está.
+-   Acesso pela engrenagem ao lado do relógio, na barra superior (alcançada
+    com o direcional para cima a partir da tela; nunca recebe o foco
+    inicial).
+-   Layout (mockup `settings ideas2`): barra lateral com as abas
+    "Conexões" e "Sobre"; conteúdo à direita.
+-   Conexões: Steam (ID Steam; chave da Steam API com Alterar/Remover ou
+    Configurar; "Testar conexão"), SteamGridDB (chave; "Testar conexão")
+    e o painel "Biblioteca" com "Atualizar biblioteca" e o resultado da
+    última leitura. Chaves aparecem só como "Configurada" / "Não
+    configurada", nunca o valor.
+-   Sobre: versão do Equon, sistema, pasta da Steam detectada, pasta de
+    dados, versão do banco e versões de Electron, Chromium e Node.js.
 
 ## 3. Tokens visuais iniciais
 

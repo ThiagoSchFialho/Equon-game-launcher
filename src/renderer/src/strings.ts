@@ -62,7 +62,10 @@ export const t = {
   game: {
     play: 'Jogar',
     running: 'Em execução',
-    steamSoon: 'Iniciar jogos da Steam estará disponível em breve.',
+    steamNotInstalled: 'Jogo não instalado na Steam.',
+    steamUnknown: 'Não foi possível verificar a instalação (disco da biblioteca desconectado?).',
+    steamBusy: 'A Steam está instalando ou atualizando este jogo.',
+    steamLaunching: 'Abrindo pela Steam…',
     notInstalled: 'Arquivo do jogo não encontrado. Edite o jogo para corrigir o caminho.',
     installUnknown: 'Não foi possível verificar o arquivo do jogo (disco desconectado?).',
     emulatorMissing: 'Configure o Yuzu em Biblioteca › Emuladores.',
@@ -87,6 +90,8 @@ export const t = {
     'not-installed': 'Arquivo do jogo não encontrado. Edite o jogo para corrigir o caminho.',
     'emulator-missing': 'Configure o Yuzu em Biblioteca › Emuladores.',
     'shortcut-invalid': 'O atalho .url não aponta para uma loja suportada. Edite o jogo.',
+    'start-timeout': 'A Steam não iniciou o jogo a tempo. Tente de novo.',
+    'steam-busy': 'A Steam está instalando ou atualizando este jogo.',
     'already-running': 'O jogo já está em execução.',
     'start-failed': 'Não foi possível iniciar o jogo. Verifique o executável e os argumentos.'
   } as Record<string, string>,
@@ -195,7 +200,8 @@ export const t = {
     'invalid-name': 'Nome inválido.',
     'builtin-origin': 'Origens de fábrica não podem ser excluídas.',
     'origin-in-use': 'Esta origem ainda tem jogos.',
-    'not-found': 'Não encontrado.'
+    'not-found': 'Não encontrado.',
+    'secrets-unavailable': 'O Windows não permitiu guardar a chave com segurança.'
   } as Record<string, string>,
   keyboard: {
     done: 'Pronto',
@@ -248,6 +254,57 @@ export const t = {
     remove: 'Remover emulador',
     close: 'Fechar',
     changeNote: 'A troca vale para todos os jogos deste emulador.'
+  },
+  settings: {
+    title: 'Configurações',
+    tabs: { connections: 'Conexões', about: 'Sobre' },
+    steam: 'Steam',
+    steamId: 'ID Steam',
+    steamIdPlaceholder: 'Digite sua id Steam…',
+    steamIdHint: 'SteamID64 (17 números), no endereço do seu perfil da Steam.',
+    steamKey: 'Chave da Steam API',
+    steamGridDb: 'SteamGridDB',
+    steamGridDbKey: 'Chave do SteamGridDB',
+    configured: 'Configurada',
+    notConfigured: 'Não configurada',
+    configure: 'Configurar',
+    change: 'Alterar',
+    remove: 'Remover',
+    test: 'Testar conexão',
+    testSoon: 'O teste de conexão chega na próxima etapa.',
+    secretsUnavailable: 'O Windows não oferece criptografia agora; as chaves não podem ser salvas.',
+    keyPlaceholder: 'Cole ou digite a chave',
+    library: 'Biblioteca',
+    refresh: 'Atualizar biblioteca',
+    refreshing: 'Atualizando…',
+    neverRefreshed: 'Os jogos da Steam são lidos ao abrir o Equon.',
+    refreshResult: (added: number, missing: number) =>
+      [
+        'Biblioteca atualizada',
+        added > 0 ? (added === 1 ? '1 jogo novo' : `${added} jogos novos`) : null,
+        missing > 0 ? (missing === 1 ? '1 não encontrado' : `${missing} não encontrados`) : null
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    refreshPartial: 'Atualização parcial: uma biblioteca não pôde ser lida (disco desconectado?).',
+    refreshFailed: {
+      'steam-not-found': 'Steam não encontrada neste computador.',
+      'libraryfolders-unreadable': 'Não foi possível ler as bibliotecas da Steam.'
+    } as Record<string, string>,
+    refreshFailedOther: 'Não foi possível ler a Steam.',
+    about: {
+      version: 'Versão do Equon',
+      electron: 'Electron',
+      chrome: 'Chromium',
+      node: 'Node.js',
+      os: 'Sistema',
+      steamPath: 'Pasta da Steam',
+      steamNotFound: 'Não encontrada',
+      dataPath: 'Pasta de dados',
+      schema: 'Versão do banco de dados'
+    },
+    loading: 'Carregando…',
+    error: 'Não foi possível carregar as configurações.'
   },
   achievements: {
     soon: 'A área de conquistas chegará em breve.'

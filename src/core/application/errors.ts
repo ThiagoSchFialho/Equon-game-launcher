@@ -38,6 +38,10 @@ export type LaunchErrorCode =
   | 'start-failed'
   | 'emulator-missing'
   | 'shortcut-invalid'
+  /** Steam did not report the game running in time. */
+  | 'start-timeout'
+  /** Steam is installing, updating or repairing the game. */
+  | 'steam-busy'
 
 export class LaunchError extends Error {
   constructor(

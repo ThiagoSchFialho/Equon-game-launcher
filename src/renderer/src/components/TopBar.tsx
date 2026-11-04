@@ -5,8 +5,10 @@ import homeIcon from '../assets/icons/home.svg'
 import homeSelectedIcon from '../assets/icons/home-selected.svg'
 import libraryIcon from '../assets/icons/library.svg'
 import librarySelectedIcon from '../assets/icons/library-selected.svg'
+import settingsIcon from '../assets/icons/settings.svg'
 import { useNavigation, type Section } from '../app/navigation'
 import { formatClock } from '../data/format'
+import { useFocusable } from '../focus/focus-context'
 import { t } from '../strings'
 import './TopBar.css'
 
@@ -35,6 +37,35 @@ function Clock(): React.JSX.Element {
   return <time className="top-bar__clock">{formatClock(now)}</time>
 }
 
+/** Opens the settings; focusable so the controller reaches it (up from the screen). */
+function SettingsButton({ active }: { active: boolean }): React.JSX.Element {
+  const navigation = useNavigation()
+  // One id per screen: opening Settings must not carry the focus over to the new gear.
+  const { setElement, focused, mouse } = useFocusable<HTMLButtonElement>(
+    `top-bar:settings:${navigation.route.name}`,
+    {
+      // The screen content keeps the initial focus; up from it reaches the gear.
+      manualOnly: true,
+      onConfirm: () => {
+        if (!active) navigation.openSettings()
+      }
+    }
+  )
+  return (
+    <button
+      ref={setElement}
+      className="top-bar__settings"
+      data-focused={focused}
+      data-selected={active}
+      aria-label={t.settings.title}
+      tabIndex={-1}
+      {...mouse}
+    >
+      <img src={settingsIcon} alt="" />
+    </button>
+  )
+}
+
 /** Global navigation. Sections change with LB/RB (or Q/E) and by clicking a tab. */
 export function TopBar({ active }: { active: Section }): React.JSX.Element {
   const navigation = useNavigation()
@@ -58,7 +89,10 @@ export function TopBar({ active }: { active: Section }): React.JSX.Element {
           )
         })}
       </nav>
-      <Clock />
+      <div className="top-bar__end">
+        <SettingsButton active={navigation.route.name === 'settings'} />
+        <Clock />
+      </div>
     </header>
   )
 }

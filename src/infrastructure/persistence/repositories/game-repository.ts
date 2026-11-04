@@ -69,6 +69,8 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
       metadata_fetched_at = COALESCE(excluded.metadata_fetched_at, games.metadata_fetched_at)
     RETURNING *`)
 
+  const selectBySteamAppId = db.prepare<[number], GameRow>('SELECT * FROM games WHERE steam_id = ?')
+
   const updateFlags = db.prepare<Record<string, unknown>, GameRow>(`
     UPDATE games SET hidden = COALESCE(@hidden, hidden), beated = COALESCE(@beated, beated)
     WHERE id = @id RETURNING *`)
@@ -130,6 +132,11 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
           playtimeOffset: game.playtimeOffset ?? 0
         }) as GameRow
       ),
+
+    findBySteamAppId: (appId) => {
+      const row = selectBySteamAppId.get(appId)
+      return row ? toGame(row) : null
+    },
 
     getById: (id) => {
       const row = selectById.get(id)

@@ -1,6 +1,6 @@
 import { app, ipcMain, type BrowserWindow } from 'electron'
 import type { GameRunner } from '../../core/application'
-import { IpcChannel } from '../../shared/ipc/contract'
+import { IpcChannel, type SystemInfo } from '../../shared/ipc/contract'
 import {
   appGetInfoArgs,
   appInfoSchema,
@@ -28,11 +28,18 @@ import {
   originsRemoveArgs,
   originsRenameArgs,
   resultSchema,
-  runningIdsSchema
+  runningIdsSchema,
+  libraryRefreshInfoSchema,
+  settingsInfoSchema,
+  settingsSetSecretArgs,
+  settingsSetSteamIdArgs,
+  systemInfoSchema
 } from '../../shared/ipc/schemas'
 import { z } from 'zod'
 import { listFiles, pickNative } from '../files/file-service'
 import type { ManualGameService } from '../games/manual-game-service'
+import type { SettingsService } from '../settings/settings-service'
+import type { SteamService } from '../steam/steam-service'
 import { isAppUrl, type AppOrigin } from '../security/navigation'
 import {
   getEditableGame,
@@ -47,11 +54,16 @@ export interface IpcDeps {
   service: ManualGameService
   runner: GameRunner
   window: () => BrowserWindow | null
+  steam: SteamService
+  settings: SettingsService
+  /** Settings › Sobre. */
+  systemInfo?: () => SystemInfo
 }
 
 const idResult = resultSchema(z.strictObject({ id: z.number().int().positive() }))
 const nullResult = resultSchema(z.null())
 const originResult = resultSchema(originInfoSchema)
+const settingsResult = resultSchema(settingsInfoSchema)
 
 export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
   const trusted = (url: string): boolean => isAppUrl(url, origin)
@@ -63,6 +75,36 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
       name: app.getName(),
       version: app.getVersion()
     }))
+  )
+
+  if (deps.systemInfo) {
+    const systemInfo = deps.systemInfo
+    ipcMain.handle(
+      IpcChannel.appGetSystemInfo,
+      createValidatedHandler(noArgs, systemInfoSchema, trusted, () => systemInfo())
+    )
+  }
+
+  // Library and settings
+  ipcMain.handle(
+    IpcChannel.libraryRefresh,
+    createValidatedHandler(noArgs, libraryRefreshInfoSchema, trusted, () => deps.steam.refresh())
+  )
+  ipcMain.handle(
+    IpcChannel.settingsGet,
+    createValidatedHandler(noArgs, settingsInfoSchema, trusted, () => deps.settings.get())
+  )
+  ipcMain.handle(
+    IpcChannel.settingsSetSteamId,
+    createValidatedHandler(settingsSetSteamIdArgs, settingsResult, trusted, (steamId) =>
+      deps.settings.setSteamId(steamId)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.settingsSetSecret,
+    createValidatedHandler(settingsSetSecretArgs, settingsResult, trusted, (kind, value) =>
+      deps.settings.setSecret(kind, value)
+    )
   )
 
   // Games
