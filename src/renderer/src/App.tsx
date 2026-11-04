@@ -79,17 +79,37 @@ function App(): React.JSX.Element {
   const navigation = useMemo<Navigation>(
     () => ({
       route,
-      goToSection: (section) => setRoute({ name: section }),
-      openGame: (id) => setRoute((r) => ({ name: 'game', id, from: currentSection(r) })),
-      openGameForm: (id) => setRoute((r) => formRoute(r, id)),
-      openSettings: () => setRoute(settingsRoute),
-      openGameAchievements: (id) => setRoute((r) => gameAchievementsRoute(r, id)),
+      goToSection: (section) => {
+        manager.forgetAllFocus()
+        setRoute({ name: section })
+      },
+      // Going forward starts at the first item; back (below) returns to where it was.
+      openGame: (id) => {
+        manager.forgetFocus(`screen:game:${id}`)
+        setRoute((r) => ({ name: 'game', id, from: currentSection(r) }))
+      },
+      openGameForm: (id) => {
+        manager.forgetFocus('screen:game-form')
+        setRoute((r) => formRoute(r, id))
+      },
+      openSettings: () => {
+        manager.forgetFocus('screen:settings')
+        setRoute(settingsRoute)
+      },
+      openGameAchievements: (id) => {
+        manager.forgetFocus(`screen:game-achievements:${id}`)
+        setRoute((r) => gameAchievementsRoute(r, id))
+      },
       back: () => setRoute(previousRoute),
       // Sections only change from the section screens themselves.
-      stepSection: (delta) =>
+      stepSection: (delta) => {
+        // Outside a section nothing changes, so the list below keeps its focus for "back".
+        if (!isSectionRoute(route)) return
+        manager.forgetAllFocus()
         setRoute((r) => (isSectionRoute(r) ? { name: stepSection(r.name, delta) } : r))
+      }
     }),
-    [route]
+    [route, manager]
   )
 
   return (

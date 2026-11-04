@@ -88,6 +88,9 @@ const cards = (): (string | null)[] =>
     c.getAttribute('aria-label')
   )
 
+const focusedLabel = (): string | null =>
+  document.querySelector('[data-focused="true"]')?.getAttribute('aria-label') ?? null
+
 const openOverview = async (): Promise<void> => {
   render(<App />)
   await screen.findByText('Início')
@@ -108,6 +111,11 @@ describe('sortAchievementGames', () => {
       'Never played',
       'Newest'
     ])
+    expect(sortAchievementGames(overview.games, 'title').map((g) => g.title)).toEqual([
+      'Never played',
+      'Newest',
+      'Older'
+    ])
   })
 })
 
@@ -124,7 +132,17 @@ describe('achievements overview', () => {
 
     press('x')
     await waitFor(() => expect(cards()).toEqual(['Older', 'Never played', 'Newest']))
+    await waitFor(() => expect(focusedLabel()).toBe('Older'))
     expect(screen.getByLabelText('Ordenar: Conclusão')).toBeTruthy()
+
+    press('x')
+    await waitFor(() => expect(cards()).toEqual(['Never played', 'Newest', 'Older']))
+    await waitFor(() => expect(focusedLabel()).toBe('Never played'))
+    expect(screen.getByLabelText('Ordenar: Título')).toBeTruthy()
+
+    press('x')
+    await waitFor(() => expect(cards()).toEqual(['Newest', 'Older', 'Never played']))
+    expect(screen.getByLabelText('Ordenar: Recentes')).toBeTruthy()
   })
 
   it('keeps the sort after opening a game and coming back', async () => {
@@ -212,14 +230,40 @@ describe('game achievements', () => {
     expect(screen.getByText('—')).toBeTruthy()
     expect(screen.getByText('Conquista oculta')).toBeTruthy()
     expect(screen.getByText('--/--/---- --:--')).toBeTruthy()
-    // Locked icons are shown too.
+    // Locked icons use Steam's own locked art.
     const locked = screen.getByLabelText('Segredo')
     expect(locked.getAttribute('data-locked')).toBe('true')
     expect(locked.querySelector('img.achievement__icon')?.getAttribute('src')).toBe(
-      'equon-art://achievement/12'
+      'equon-art://achievement/12/locked'
     )
     press('Escape')
     expect(await screen.findByText('797')).toBeTruthy()
+  })
+
+  it('keeps up and down inside a column, even when the other column is above', async () => {
+    const item = (id: number, name: string): GameAchievements['unlocked'][number] => ({
+      id,
+      name,
+      description: null,
+      unlockedAt: null,
+      globalPercent: null,
+      tier: 'bronze',
+      iconCached: false
+    })
+    await open(
+      details({
+        unlocked: [item(21, 'U1'), item(22, 'U2')],
+        locked: [item(31, 'L1'), item(32, 'L2')]
+      })
+    )
+    await screen.findByLabelText('U1')
+    await waitFor(() => expect(focusedLabel()).toBe('U1'))
+    press('ArrowUp') // top of the column: stays
+    expect(focusedLabel()).toBe('U1')
+    press('ArrowDown')
+    expect(focusedLabel()).toBe('U2')
+    press('ArrowDown') // end of the column: stays
+    expect(focusedLabel()).toBe('U2')
   })
 
   it('asks main for the icons of the open game only', async () => {

@@ -50,9 +50,16 @@ describe('fetchAchievementSchema', () => {
           apiName: 'BAL_01',
           displayName: 'Aumento de Aposta!',
           description: 'Alcance Aposta 4',
-          icon: 'https://steamcdn-a.akamaihd.net/a.jpg'
+          icon: 'https://steamcdn-a.akamaihd.net/a.jpg',
+          iconLocked: 'https://steamcdn-a.akamaihd.net/b.jpg'
         },
-        { apiName: 'BAL_02', displayName: 'Segredo', description: null, icon: null }
+        {
+          apiName: 'BAL_02',
+          displayName: 'Segredo',
+          description: null,
+          icon: null,
+          iconLocked: null
+        }
       ]
     })
     expect(urls[0]).toContain('appid=2379780&l=brazilian')

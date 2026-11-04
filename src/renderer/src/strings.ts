@@ -360,7 +360,7 @@ export const t = {
     title: 'Conquistas',
     total: 'Total de conquistas',
     tiers: { platine: 'Platina', gold: 'Ouro', silver: 'Prata', bronze: 'Bronze' },
-    sorts: { recent: 'Recentes', completion: 'Conclusão' },
+    sorts: { recent: 'Recentes', completion: 'Conclusão', title: 'Título' },
     changeSort: 'Alterar ordenação',
     syncShort: 'Sincronizar',
     sync: 'Sincronizar conquistas',

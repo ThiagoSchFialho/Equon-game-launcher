@@ -138,13 +138,16 @@ export function createAchievementSync(deps: AchievementSyncDeps): AchievementSyn
       ...deps.achievements.listLocked(gameId)
     ]
     for (const row of rows) {
-      if (!row.icon || achievementIconPath(deps.cacheDir, gameId, row.id)) continue
-      const bytes = await deps.getBytes(row.icon)
+      // Only the art of the current state is needed.
+      const locked = !row.unlocked
+      const url = locked ? row.iconLocked : row.icon
+      if (!url || achievementIconPath(deps.cacheDir, gameId, row.id, locked)) continue
+      const bytes = await deps.getBytes(url)
       if (bytes === null) continue
       try {
         // "logo" has no required proportion; icons are small squares.
         const prepared = prepareArtworkBytes(Buffer.from(bytes), 'logo', deps.decode)
-        writeAchievementIcon(deps.cacheDir, gameId, row.id, prepared)
+        writeAchievementIcon(deps.cacheDir, gameId, row.id, locked, prepared)
         // Shown in batches, so a long list fills in without a refresh per icon.
         if (++changed % 8 === 0) deps.onChanged()
       } catch (error) {

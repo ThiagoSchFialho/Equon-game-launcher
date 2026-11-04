@@ -137,6 +137,27 @@ export class FocusManager {
     }
   }
 
+  /**
+   * Makes `id` the focus of its scope: now when the scope is active, or when
+   * it becomes active again (e.g. a dialog above it closes).
+   */
+  preferFocus(id: string): void {
+    const entry = this.entries.get(id)
+    if (!entry) return
+    if (entry.scope === this.activeScope) this.focus(id)
+    else this.remembered.set(entry.scope, id)
+  }
+
+  /** Forward navigation: this screen starts from its first item, not from the last focus. */
+  forgetFocus(scope: string): void {
+    this.remembered.delete(scope)
+  }
+
+  /** Section switch: the screen stack is gone, so no screen restores its last focus. */
+  forgetAllFocus(): void {
+    this.remembered.clear()
+  }
+
   /** Mouse click: focus and confirm. */
   activate(id: string): void {
     this.focus(id)

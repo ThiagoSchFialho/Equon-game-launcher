@@ -146,6 +146,7 @@ export interface AchievementUpsert {
   displayName: string
   description: string | null
   icon: string | null
+  iconLocked?: string | null
   unlocked: boolean
   unlockedAt: string | null
   globalPercent: number | null

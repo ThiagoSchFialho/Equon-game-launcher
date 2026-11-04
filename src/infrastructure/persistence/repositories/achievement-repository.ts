@@ -10,6 +10,7 @@ interface AchievementRow {
   display_name: string
   description: string | null
   icon: string | null
+  icon_locked: string | null
   unlocked: number
   unlocked_at: string | null
   global_percent: number | null
@@ -23,6 +24,7 @@ const toAchievement = (row: AchievementRow): Achievement => ({
   displayName: row.display_name,
   description: row.description,
   icon: row.icon,
+  iconLocked: row.icon_locked,
   unlocked: toBool(row.unlocked),
   unlockedAt: row.unlocked_at,
   globalPercent: row.global_percent,
@@ -34,20 +36,21 @@ export function createAchievementRepository(db: SqliteDatabase): AchievementRepo
   // sync with the same data changes nothing.
   const upsert = db.prepare<Record<string, unknown>>(`
     INSERT INTO achievements
-      (game_id, api_name, display_name, description, icon, unlocked, unlocked_at, global_percent, tier)
+      (game_id, api_name, display_name, description, icon, icon_locked, unlocked, unlocked_at, global_percent, tier)
     VALUES
-      (@gameId, @apiName, @displayName, @description, @icon, @unlocked, @unlockedAt, @globalPercent, @tier)
+      (@gameId, @apiName, @displayName, @description, @icon, @iconLocked, @unlocked, @unlockedAt, @globalPercent, @tier)
     ON CONFLICT (game_id, api_name) DO UPDATE SET
       display_name   = excluded.display_name,
       description    = excluded.description,
       icon           = excluded.icon,
+      icon_locked    = excluded.icon_locked,
       unlocked       = excluded.unlocked,
       unlocked_at    = excluded.unlocked_at,
       global_percent = excluded.global_percent,
       tier           = excluded.tier
-    WHERE (achievements.display_name, achievements.description, achievements.icon, achievements.unlocked,
+    WHERE (achievements.display_name, achievements.description, achievements.icon, achievements.icon_locked, achievements.unlocked,
            achievements.unlocked_at, achievements.global_percent, achievements.tier)
-       IS NOT (excluded.display_name, excluded.description, excluded.icon, excluded.unlocked,
+       IS NOT (excluded.display_name, excluded.description, excluded.icon, excluded.icon_locked, excluded.unlocked,
                excluded.unlocked_at, excluded.global_percent, excluded.tier)`)
 
   const selectUnlocked = db.prepare<[number], AchievementRow>(`
@@ -77,6 +80,7 @@ export function createAchievementRepository(db: SqliteDatabase): AchievementRepo
             displayName: a.displayName,
             description: a.description,
             icon: a.icon,
+            iconLocked: a.iconLocked ?? null,
             unlocked: toBit(a.unlocked),
             unlockedAt: a.unlockedAt,
             globalPercent: a.globalPercent,

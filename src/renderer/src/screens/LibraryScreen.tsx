@@ -19,7 +19,7 @@ import { ToolbarField } from '../components/ToolbarField'
 import { TopBar } from '../components/TopBar'
 import { useGames } from '../data/games'
 import { useLibraryView } from '../data/library-view'
-import { useFocusManager, useScreenActions } from '../focus/focus-context'
+import { useFocusFirstOnChange, useFocusManager, useScreenActions } from '../focus/focus-context'
 import { FocusScope } from '../focus/FocusProvider'
 import { t } from '../strings'
 import './LibraryScreen.css'
@@ -67,6 +67,8 @@ export function LibraryScreen(): React.JSX.Element {
     view.origin === null
       ? t.library.allOrigins
       : (origins.find(([key]) => key === view.origin)?.[1] ?? view.origin)
+
+  useFocusFirstOnChange(view, shown[0] ? `game-card:square:${shown[0].id}` : null)
 
   const close = (): void => setOverlay(null)
   const clearFilters = (): void => setView((v) => ({ ...DEFAULT_LIBRARY_VIEW, sort: v.sort }))

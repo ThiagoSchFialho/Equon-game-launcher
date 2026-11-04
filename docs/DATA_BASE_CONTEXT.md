@@ -139,7 +139,8 @@ Definição e estado pessoal de cada conquista de um jogo.
 | `api_name` | `TEXT NOT NULL` | Nome interno estável vindo da Steam |
 | `display_name` | `TEXT NOT NULL` | |
 | `description` | `TEXT` | Pode ser nula (conquistas ocultas) |
-| `icon` | `TEXT` | Referência da imagem; segue a política de cache de artes |
+| `icon` | `TEXT` | URL do ícone da conquista obtida; segue a política de cache de artes |
+| `icon_locked` | `TEXT` | URL do ícone da conquista bloqueada (`icongray` da Steam; nem sempre é uma cópia em cinza de `icon`). Preenchido pela sincronização |
 | `unlocked` | `INTEGER NOT NULL DEFAULT 0` | `CHECK (unlocked IN (0,1))` |
 | `unlocked_at` | `TEXT` | `NULL` se bloqueada ou desconhecida |
 | `global_percent` | `REAL` | Percentual global; `NULL` se desconhecido (nunca `0` por falta de dado); `CHECK (global_percent BETWEEN 0 AND 100)` |
@@ -162,7 +163,7 @@ Progresso pessoal: `desbloqueadas / total conhecido × 100`. Quando o total é z
 
 Ordenação (regras de apresentação):
 
-- Visão geral dos jogos: por `GAMES.time_last_played` decrescente (padrão) ou por percentual de conclusão decrescente; desconhecidos por último.
+- Visão geral dos jogos: por `GAMES.time_last_played` decrescente (padrão), por percentual de conclusão decrescente ou por título em ordem alfabética; desconhecidos por último.
 - Desbloqueadas: `unlocked_at` decrescente, `NULL` por último.
 - Bloqueadas: `global_percent` decrescente (menos raras primeiro), `NULL` por último.
 - Desempate estável: `display_name`, depois `api_name`.
@@ -361,7 +362,7 @@ Endpoints usados:
 - Definições: `ISteamUserStats/GetSchemaForGame/v2` (precisa da chave; `l=brazilian`). Jogo sem conquistas responde sem `availableGameStats.achievements`.
 - Estado pessoal: `ISteamUserStats/GetPlayerAchievements/v1` (precisa da chave e do SteamID64). Perfil privado responde com erro "Profile is not public".
 - Percentuais globais: `ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2` (sem chave; o percentual vem como texto, `"89.8"`).
-- Ícones: `icon` guarda a URL remota (`steamcdn-a.akamaihd.net`). O arquivo é baixado só quando o usuário abre as conquistas daquele jogo e fica em `<jogo>/achievements/<id>` no cache de artes. Conquistas bloqueadas mostram o mesmo ícone em cinza.
+- Ícones: `icon` guarda a URL remota (`steamcdn-a.akamaihd.net`). O arquivo é baixado só quando o usuário abre as conquistas daquele jogo e fica em `<jogo>/achievements/<id>` no cache de artes. Conquistas bloqueadas usam o ícone próprio da Steam para esse estado (`icon_locked`, vindo de `icongray`), em `<jogo>/achievements/<id>-locked`; só a arte do estado atual é baixada.
 
 Formatos validados em 2026-11-04 com uma conta real.
 

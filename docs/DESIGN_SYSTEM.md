@@ -245,6 +245,9 @@ apenas de animação para mostrar que uma ação foi ativada.
 -   Campos e opções devem ter rótulos explícitos.
 -   Alterações de filtro devem manter o contexto e informar quando não
     houver resultados.
+-   Ao mudar ordenação, filtro ou busca, e ao trocar de seção ou abrir uma
+    tela, o foco vai para o primeiro item da lista. Voltar (B) devolve o
+    foco ao item de onde o usuário saiu.
 -   O acesso às opções deve ser possível por controle.
 -   Não exigir digitação por teclado físico para realizar tarefas
     básicas; considerar um teclado virtual ou um fluxo alternativo se a
@@ -376,8 +379,8 @@ inteiramente operável por controle, teclado e mouse.
 
 -   Exibir um resumo agregado com o total (soma de platinas, ouro, prata
     e bronze) e os totais por categoria.
--   Jogos ocultos também aparecem na lista, com a arte esmaecida e o selo
-    "Oculto".
+-   Jogos ocultos também aparecem na lista, com o selo "Oculto" e a arte
+    normal.
 -   Os números devem ser derivados dos dados reais. Mockups e imagens de
     referência são ilustrativos e não estabelecem quantidades fixas.
 -   Cada item da lista de jogos deve apresentar arte, título, origem,
@@ -385,10 +388,11 @@ inteiramente operável por controle, teclado e mouse.
     desbloqueada / total conhecido.
 -   A ordenação padrão é por última sessão, do jogo jogado mais
     recentemente ao mais antigo.
--   A ordenação alternativa é por percentual de conclusão, do maior para
-    o menor.
+-   As ordenações alternativas são por percentual de conclusão, do maior
+    para o menor, e alfabética; a troca percorre as três em sequência.
 -   A opção de ordenação atual deve ser identificável e a troca deve ser
     acessível por controle, teclado e mouse.
+-   O item em foco fica no centro da tela, como na Biblioteca.
 -   Jogos sem conquistas não precisam aparecer como itens normais na
     lista de progresso. Quando o usuário abrir a área de conquistas de
     um jogo sem suporte, mostrar uma mensagem explícita informando que o
@@ -407,7 +411,10 @@ inteiramente operável por controle, teclado e mouse.
     rara à mais rara. Para dados Steam, usar `global_percent` em ordem
     decrescente: maior percentual primeiro. Percentuais desconhecidos
     ficam ao final.
--   Conquistas bloqueadas mostram o ícone em cinza.
+-   Conquistas bloqueadas mostram o ícone próprio da Steam para esse
+    estado (`icongray`).
+-   Cima/baixo percorrem só a coluna atual; esquerda/direita trocam de
+    coluna.
 -   Cada item pode apresentar ícone, nome, descrição, data de aquisição
     (quando desbloqueada e disponível) e percentual global de
     desbloqueio.

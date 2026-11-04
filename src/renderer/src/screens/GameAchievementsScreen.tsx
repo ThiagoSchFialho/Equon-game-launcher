@@ -8,7 +8,7 @@ import { TROPHY_IMAGES } from '../components/trophy-images'
 import { ProgressBar, TrophyRow } from '../components/Trophies'
 import { useGameAchievements } from '../data/achievements'
 import { formatUnlockDate } from '../data/format'
-import { useFocusable, useScreenActions } from '../focus/focus-context'
+import { useFocusable, useFocusManager, useScreenActions } from '../focus/focus-context'
 import { FocusScope } from '../focus/FocusProvider'
 import { t } from '../strings'
 import './GameAchievementsScreen.css'
@@ -136,6 +136,8 @@ function AchievementColumn({
             item={item}
             locked={tone === 'locked'}
             autoFocus={autoFocus && index === 0}
+            previousId={items[index - 1]?.id ?? null}
+            nextId={items[index + 1]?.id ?? null}
           />
         ))}
       </div>
@@ -147,14 +149,26 @@ function AchievementColumn({
 function AchievementRow({
   item,
   locked,
-  autoFocus
+  autoFocus,
+  previousId,
+  nextId
 }: {
   item: AchievementItem
   locked: boolean
   autoFocus: boolean
+  previousId: number | null
+  nextId: number | null
 }): React.JSX.Element {
+  const manager = useFocusManager()
   const { setElement, focused } = useFocusable<HTMLDivElement>(`achievement:${item.id}`, {
-    autoFocus
+    autoFocus,
+    // Up and down follow this column; only left and right cross to the other one.
+    onDirection: (direction) => {
+      if (direction !== 'up' && direction !== 'down') return false
+      const target = direction === 'up' ? previousId : nextId
+      if (target !== null) manager.focus(`achievement:${target}`)
+      return true
+    }
   })
   return (
     <div
@@ -165,7 +179,7 @@ function AchievementRow({
       aria-label={item.name}
     >
       {item.iconCached ? (
-        <img className="achievement__icon" src={achievementIconUrl(item.id)} alt="" />
+        <img className="achievement__icon" src={achievementIconUrl(item.id, locked)} alt="" />
       ) : (
         <span className="achievement__icon achievement__icon--empty" aria-hidden />
       )}

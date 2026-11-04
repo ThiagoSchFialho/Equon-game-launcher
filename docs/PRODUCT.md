@@ -222,8 +222,8 @@ limitações, condições de teste e método de inicialização suportado.
     desbloqueada em relação ao total conhecido.
 -   A ordenação padrão da lista deve ser pela última sessão, começando
     pelo jogo jogado mais recentemente.
--   Disponibilizar uma segunda ordenação por percentual de conclusão, do
-    maior para o menor.
+-   Disponibilizar também as ordenações por percentual de conclusão, do
+    maior para o menor, e alfabética.
 -   Não usar quantidades fixas ou exemplos numéricos dos mockups como
     requisitos. Os totais exibidos devem ser calculados a partir dos
     dados reais disponíveis.

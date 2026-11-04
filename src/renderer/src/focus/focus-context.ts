@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useId,
   useLayoutEffect,
   useRef,
@@ -61,6 +62,20 @@ export function useFocusable<T extends HTMLElement = HTMLElement>(
       }
     }
   }
+}
+
+/**
+ * Moves focus to the first item of a list when `change` changes (sort, filter,
+ * search), never on the first render: coming back to a screen keeps its focus.
+ */
+export function useFocusFirstOnChange(change: unknown, firstId: string | null): void {
+  const manager = useFocusManager()
+  const previous = useRef(change)
+  useEffect(() => {
+    if (previous.current === change) return
+    previous.current = change
+    if (firstId !== null) manager.preferFocus(firstId)
+  }, [manager, change, firstId])
 }
 
 /** Screen-level handlers for back, menu, sections and scroll. `modal` blocks layers below. */

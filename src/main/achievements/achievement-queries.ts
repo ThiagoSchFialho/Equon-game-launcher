@@ -80,7 +80,7 @@ export function getGameAchievements(
     unlockedAt: row.unlockedAt,
     globalPercent: row.globalPercent,
     tier: row.tier,
-    iconCached: achievementIconPath(deps.cacheDir, id, row.id) !== null
+    iconCached: achievementIconPath(deps.cacheDir, id, row.id, !row.unlocked) !== null
   })
   const trophies: TrophyTotals = {
     platine: progress.platinum ? 1 : 0,

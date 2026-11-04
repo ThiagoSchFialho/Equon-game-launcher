@@ -7,6 +7,8 @@ export interface Achievement {
   displayName: string
   description: string | null
   icon: string | null
+  /** Steam's own art for the locked state; not always a grey copy of `icon`. */
+  iconLocked: string | null
   unlocked: boolean
   /** ISO-8601 UTC */
   unlockedAt: string | null

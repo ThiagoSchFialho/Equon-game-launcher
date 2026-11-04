@@ -217,9 +217,9 @@ export type ArtworkKind = (typeof ARTWORK_KINDS)[number]
 /** Privileged scheme that serves cached artwork; the renderer never sees file paths. */
 export const ARTWORK_SCHEME = 'equon-art'
 
-/** Cached icon of an achievement, served by the same privileged scheme. */
-export function achievementIconUrl(achievementId: number): string {
-  return `${ARTWORK_SCHEME}://achievement/${achievementId}`
+/** Cached icon of an achievement (locked or unlocked art), served by the same privileged scheme. */
+export function achievementIconUrl(achievementId: number, locked: boolean): string {
+  return `${ARTWORK_SCHEME}://achievement/${achievementId}/${locked ? 'locked' : 'unlocked'}`
 }
 
 export function artworkUrl(gameId: number, kind: ArtworkKind): string {

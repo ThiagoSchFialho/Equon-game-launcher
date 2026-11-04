@@ -1,6 +1,6 @@
 import type { AchievementGameSummary } from './ipc/contract'
 
-export type AchievementSort = 'recent' | 'completion'
+export type AchievementSort = 'recent' | 'completion' | 'title'
 
 const collator = new Intl.Collator('pt-BR', { sensitivity: 'base', numeric: true })
 const byTitle = (a: AchievementGameSummary, b: AchievementGameSummary): number =>
@@ -19,7 +19,15 @@ const SORTS: Record<
   (a: AchievementGameSummary, b: AchievementGameSummary) => number
 > = {
   recent: byRecent,
-  completion: (a, b) => b.percent - a.percent || byRecent(a, b)
+  completion: (a, b) => b.percent - a.percent || byRecent(a, b),
+  title: byTitle
+}
+
+const SORT_CYCLE: readonly AchievementSort[] = ['recent', 'completion', 'title']
+
+/** The order X and the sort field step through. */
+export function nextAchievementSort(sort: AchievementSort): AchievementSort {
+  return SORT_CYCLE[(SORT_CYCLE.indexOf(sort) + 1) % SORT_CYCLE.length]
 }
 
 export function sortAchievementGames(

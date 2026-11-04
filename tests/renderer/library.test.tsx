@@ -90,6 +90,38 @@ describe('library organization', () => {
     expect(screen.getByLabelText('Ordenar: Tempo de jogo')).toBeTruthy()
   })
 
+  it('moves focus to the first game after a sort, a filter or a section change', async () => {
+    const focused = (): string | null =>
+      document.querySelector('[data-focused="true"]')?.getAttribute('aria-label') ?? null
+    installFakeApi(games)
+    await openLibrary()
+    await waitFor(() => expect(focused()).toBe('Celeste'))
+
+    await click('Ordenar: Título')
+    await clickText('Tempo de jogo')
+    await waitFor(() => expect(cards()[0]).toBe('Pokémon Red'))
+    await waitFor(() => expect(focused()).toBe('Pokémon Red'))
+
+    await click('Origem: Todas')
+    await clickText('Yuzu')
+    await waitFor(() => expect(cards()).toEqual(['Zelda']))
+    await waitFor(() => expect(focused()).toBe('Zelda'))
+
+    await click('Origem: Yuzu')
+    await clickText('Todas')
+    await waitFor(() => expect(cards()[0]).toBe('Pokémon Red'))
+    await waitFor(() => expect(focused()).toBe('Pokémon Red'))
+
+    // Away from the first game, then to another section and back: first game again.
+    press('ArrowRight') // jsdom has no layout: the target is arbitrary, just not this game
+    expect(focused()).not.toBe('Pokémon Red')
+    press('q')
+    await screen.findByText('Início')
+    press('e')
+    await screen.findByRole('heading', { name: 'Biblioteca' })
+    await waitFor(() => expect(focused()).toBe('Pokémon Red'))
+  })
+
   it('filters by install state and shows hidden games on request', async () => {
     installFakeApi(games)
     await openLibrary()

@@ -273,6 +273,25 @@ describe('SessionRepository', () => {
   })
 })
 
+describe('migration 0007', () => {
+  it('adds icon_locked, empty until the next sync', () => {
+    const fresh = openDatabase(':memory:')
+    migrate(fresh, migrations.slice(0, 6))
+    const game = fresh
+      .prepare("INSERT INTO games (title, origin, steam_id) VALUES ('S', 'steam', 620)")
+      .run()
+    fresh
+      .prepare(
+        "INSERT INTO achievements (game_id, api_name, display_name, tier) VALUES (?, 'A', 'A', 'bronze')"
+      )
+      .run(game.lastInsertRowid)
+    migrate(fresh, migrations)
+    expect(fresh.prepare('SELECT icon_locked FROM achievements').get()).toEqual({
+      icon_locked: null
+    })
+  })
+})
+
 describe('migration 0006', () => {
   it('adds achievements_synced_at, empty for existing games', () => {
     const fresh = openDatabase(':memory:')

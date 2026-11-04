@@ -57,6 +57,7 @@
   /* Room for the focus ring inside the scroll area. */
   padding: var(--space-2);
   margin: calc(var(--space-2) * -1);
+  scroll-padding: var(--space-4);
 }
 
 .settings__title {

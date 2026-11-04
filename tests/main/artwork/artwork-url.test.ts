@@ -9,12 +9,17 @@ import { ARTWORK_KINDS as DOMAIN_KINDS } from '../../../src/core/domain'
 
 describe('achievement icon URLs', () => {
   it('round-trips and rejects anything else', () => {
-    expect(parseAchievementIconUrl(achievementIconUrl(42))).toBe(42)
+    expect(parseAchievementIconUrl(achievementIconUrl(42, true))).toEqual({ id: 42, locked: true })
+    expect(parseAchievementIconUrl(achievementIconUrl(42, false))).toEqual({
+      id: 42,
+      locked: false
+    })
     for (const bad of [
       'equon-art://achievement/0',
       'equon-art://achievement/abc',
+      'equon-art://achievement/42',
       'equon-art://achievement/42/x',
-      'equon-art://achievement/42?x=1',
+      'equon-art://achievement/42/locked?x=1',
       'equon-art://achievement/..%2F1',
       'equon-art://game/42/logo',
       'file:///C:/a.png'

@@ -59,7 +59,8 @@ const get: HttpGet = async (url) => {
               name,
               displayName: name,
               description: `Desc ${name}`,
-              icon: `https://steamcdn-a.akamaihd.net/${name}.png`
+              icon: `https://steamcdn-a.akamaihd.net/${name}.png`,
+              icongray: `https://steamcdn-a.akamaihd.net/${name}-gray.png`
             }))
           }
         }
@@ -94,7 +95,11 @@ const get: HttpGet = async (url) => {
     }
   }
 }
-const getBytes: HttpGetBytes = async (url) => (url.includes('MID') ? null : new Uint8Array(PNG))
+const fetchedImages: string[] = []
+const getBytes: HttpGetBytes = async (url) => {
+  fetchedImages.push(url)
+  return url.includes('MID') ? null : new Uint8Array(PNG)
+}
 
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'equon-ach-'))
@@ -310,7 +315,8 @@ describe('icons', () => {
     const id = addSteam(300, 'Game')
     await sync.syncAll()
     const rows = [...achievements().listUnlocked(id), ...achievements().listLocked(id)]
-    expect(rows.every((r) => achievementIconPath(dir, id, r.id) === null)).toBe(true)
+    expect(rows.every((r) => achievementIconPath(dir, id, r.id, !r.unlocked) === null)).toBe(true)
+    fetchedImages.length = 0
     expect(existsSync(join(dir, String(id)))).toBe(false)
 
     await sync.ensureIcons(id)
@@ -321,6 +327,12 @@ describe('icons', () => {
       ['COMMON', true],
       ['MID', false],
       ['RARE', true]
+    ])
+    // Unlocked art for what is unlocked, Steam's locked art for the rest.
+    expect(fetchedImages.map((u) => u.split('/').pop()).sort()).toEqual([
+      'COMMON-gray.png',
+      'MID-gray.png',
+      'RARE.png'
     ])
   })
 })

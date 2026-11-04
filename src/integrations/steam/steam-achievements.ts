@@ -12,8 +12,9 @@ export interface AchievementDefinition {
   displayName: string
   /** null for hidden achievements Steam does not describe. */
   description: string | null
-  /** Remote icon URL. */
+  /** Remote icon URLs: unlocked art and locked art. */
   icon: string | null
+  iconLocked: string | null
 }
 
 const schemaSchema = z.object({
@@ -26,7 +27,8 @@ const schemaSchema = z.object({
               name: z.string().min(1),
               displayName: z.string().optional(),
               description: z.string().optional(),
-              icon: z.string().optional()
+              icon: z.string().optional(),
+              icongray: z.string().optional()
             })
           )
           .optional()
@@ -57,7 +59,8 @@ export async function fetchAchievementSchema(
       apiName: a.name,
       displayName: a.displayName?.trim() || a.name,
       description: a.description?.trim() || null,
-      icon: a.icon || null
+      icon: a.icon || null,
+      iconLocked: a.icongray || null
     }))
   }
 }

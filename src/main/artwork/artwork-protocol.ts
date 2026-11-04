@@ -21,10 +21,12 @@ export function handleArtworkProtocol(
 ): void {
   protocol.handle(ARTWORK_SCHEME, async (request) => {
     if (request.method !== 'GET') return new Response(null, { status: 405 })
-    const iconId = parseAchievementIconUrl(request.url)
-    if (iconId !== null) {
-      const achievement = achievements.getById(iconId)
-      const icon = achievement && achievementIconPath(cacheDir, achievement.gameId, iconId)
+    const iconTarget = parseAchievementIconUrl(request.url)
+    if (iconTarget !== null) {
+      const achievement = achievements.getById(iconTarget.id)
+      const icon =
+        achievement &&
+        achievementIconPath(cacheDir, achievement.gameId, iconTarget.id, iconTarget.locked)
       if (!icon) return new Response(null, { status: 404 })
       const response = await net.fetch(pathToFileURL(icon).href)
       return response.ok ? response : new Response(null, { status: 404 })

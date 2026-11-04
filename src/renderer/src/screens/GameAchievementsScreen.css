@@ -46,6 +46,8 @@
 .game-achievements__columns {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  /* Without this the implicit row grows with its content, past the footer. */
+  grid-template-rows: minmax(0, 1fr);
   gap: var(--space-12);
   flex: 1;
   min-height: 0;
@@ -77,9 +79,11 @@
   min-height: 0;
   overflow-y: auto;
   scrollbar-width: none;
-  /* Room for the focus ring inside the scroll area. */
-  margin: calc(var(--space-2) * -1);
-  padding: var(--space-2) var(--space-2) var(--space-8);
+  /* Room for the focus ring: sideways and on top. Below, the list ends above the footer. */
+  margin: calc(var(--space-2) * -1) calc(var(--space-2) * -1) 0;
+  padding: var(--space-2) var(--space-2) var(--space-4);
+  /* Keeps the first and last rows, with their focus ring, fully in view. */
+  scroll-padding: var(--space-3) 0 var(--space-4);
 }
 
 .game-achievements__empty {
@@ -137,11 +141,6 @@
 .achievement__icon--empty {
   display: block;
   background: var(--color-surface-raised);
-}
-
-/* Locked icons are shown too (owner decision), in grey. */
-.achievement[data-locked='true'] .achievement__icon {
-  filter: grayscale(1);
 }
 
 .achievement__text {

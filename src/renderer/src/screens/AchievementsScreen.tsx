@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { sortAchievementGames } from '../../../shared/achievements-view'
+import { nextAchievementSort, sortAchievementGames } from '../../../shared/achievements-view'
 import type { AchievementGameSummary, AchievementSyncStatus } from '../../../shared/ipc/contract'
 import chevronIcon from '../assets/icons/arrow-right.svg'
 import steamIcon from '../assets/icons/steam-white.svg'
@@ -18,7 +18,7 @@ import {
   useAchievementsOverview,
   useAchievementSyncStatus
 } from '../data/achievements'
-import { useFocusable, useScreenActions } from '../focus/focus-context'
+import { useFocusable, useFocusFirstOnChange, useScreenActions } from '../focus/focus-context'
 import { FocusScope } from '../focus/FocusProvider'
 import { t } from '../strings'
 import './AchievementsScreen.css'
@@ -43,7 +43,7 @@ export function AchievementsScreen(): React.JSX.Element {
   const sync = (): void => {
     if (!running) void window.equon.achievements.syncAll()
   }
-  const toggleSort = (): void => setSort(sort === 'recent' ? 'completion' : 'recent')
+  const toggleSort = (): void => setSort(nextAchievementSort(sort))
 
   useScreenActions({
     previousSection: () => navigation.stepSection(-1),
@@ -56,6 +56,8 @@ export function AchievementsScreen(): React.JSX.Element {
     () => (overview.status === 'ready' ? sortAchievementGames(overview.data.games, sort) : []),
     [overview, sort]
   )
+
+  useFocusFirstOnChange(sort, games[0] ? `achievements:game:${games[0].id}` : null)
 
   let content: React.JSX.Element
   if (overview.status === 'loading') {
@@ -162,7 +164,7 @@ function GameRow({
   const navigation = useNavigation()
   const { setElement, focused, mouse } = useFocusable<HTMLButtonElement>(
     `achievements:game:${game.id}`,
-    { autoFocus, onConfirm: () => navigation.openGameAchievements(game.id) }
+    { autoFocus, scroll: 'center', onConfirm: () => navigation.openGameAchievements(game.id) }
   )
   return (
     <button

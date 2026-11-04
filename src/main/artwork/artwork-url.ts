@@ -1,8 +1,8 @@
 import { ARTWORK_SCHEME, type ArtworkKind } from '../../shared/ipc/contract'
 import { artworkKindSchema } from '../../shared/ipc/schemas'
 
-/** Parses `equon-art://achievement/<id>`; anything else is rejected. */
-export function parseAchievementIconUrl(url: string): number | null {
+/** Parses `equon-art://achievement/<id>/<locked|unlocked>`; anything else is rejected. */
+export function parseAchievementIconUrl(url: string): { id: number; locked: boolean } | null {
   let parsed: URL
   try {
     parsed = new URL(url)
@@ -19,8 +19,8 @@ export function parseAchievementIconUrl(url: string): number | null {
   ) {
     return null
   }
-  const match = /^\/([1-9]\d{0,15})$/.exec(parsed.pathname)
-  return match ? Number(match[1]) : null
+  const match = /^\/([1-9]\d{0,15})\/(locked|unlocked)$/.exec(parsed.pathname)
+  return match ? { id: Number(match[1]), locked: match[2] === 'locked' } : null
 }
 
 /**

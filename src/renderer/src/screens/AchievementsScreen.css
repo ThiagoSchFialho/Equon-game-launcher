@@ -102,10 +102,6 @@
   border-radius: var(--radius-button);
 }
 
-.achievement-game[data-hidden='true'] .achievement-game__art {
-  opacity: 0.45;
-}
-
 .achievement-game__info {
   display: flex;
   flex-direction: column;

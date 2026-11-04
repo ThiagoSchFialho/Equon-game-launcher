@@ -14,6 +14,7 @@ export interface RemoteAchievements {
     displayName: string
     description: string | null
     icon: string | null
+    iconLocked: string | null
   }[]
   player: ReadonlyMap<string, { unlocked: boolean; unlockedAt: string | null }>
   /** Unknown percentages stay out of the map and become NULL, never 0. */
