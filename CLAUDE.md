@@ -20,7 +20,7 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 
 ## Current status and scope of work
 
-- Phases 0–5 are complete (Phase 1 spike results: `docs/ARCHITECTURE.md` §3.1). **Work only on the phase the owner names** (current: Phase 6 — Steam library and metadata, steps 6a/6b/6c; 6c in review). Do not start the next phase on your own.
+- Phases 0–6 are complete (Phase 1 spike results: `docs/ARCHITECTURE.md` §3.1). **Work only on the phase the owner names** (next: Phase 7 — Achievements). Do not start the next phase on your own.
 - Before non-trivial work, propose a short plan and wait for approval.
 - Open decisions: D-13 (installer, Phase 8), where to persist preferences. If a task depends on an open item, ask instead of deciding.
 
