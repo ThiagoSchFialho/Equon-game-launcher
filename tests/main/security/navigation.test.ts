@@ -20,6 +20,11 @@ describe('isAppUrl', () => {
     expect(isAppUrl('file:///E:/app/out/renderer/index.html', lower)).toBe(false)
   })
 
+  it('rejects the same path on a network share', () => {
+    expect(isAppUrl('file://evil/C:/app/out/renderer/index.html', prod)).toBe(false)
+    expect(isAppUrl('file://localhost/C:/app/out/renderer/index.html', prod)).toBe(true)
+  })
+
   it('rejects other local files in production', () => {
     expect(isAppUrl('file:///C:/Windows/win.ini', prod)).toBe(false)
     expect(isAppUrl('file:///C:/app/out/renderer/other.html', prod)).toBe(false)

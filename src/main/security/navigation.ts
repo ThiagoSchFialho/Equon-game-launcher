@@ -24,6 +24,8 @@ export function isAppUrl(url: string, origin: AppOrigin): boolean {
   const expected = new URL(origin.rendererFileUrl)
   return (
     parsed.protocol === 'file:' &&
+    // file://server/... is a network share, even with the same path.
+    parsed.host === expected.host &&
     withUpperDrive(parsed.pathname) === withUpperDrive(expected.pathname)
   )
 }
