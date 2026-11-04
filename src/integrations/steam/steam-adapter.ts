@@ -1,7 +1,12 @@
 import { join, normalize } from 'node:path'
 import type { DiscoveryResult, IntegrationAdapter } from '../../core/application'
 import type { SteamLiveState } from '../../core/domain'
-import { scanSteamLibraries, type SteamFs, type SteamLibraryReport } from './library-scanner'
+import {
+  readManifest,
+  scanSteamLibraries,
+  type SteamFs,
+  type SteamLibraryReport
+} from './library-scanner'
 
 export const DEFAULT_STEAM_PATH = 'C:\\Program Files (x86)\\Steam'
 
@@ -18,6 +23,11 @@ export interface SteamAdapter extends IntegrationAdapter {
   libraries(): SteamLibraryReport[]
   /** Live manifest state from the last scan (updating, paused…); never stored. */
   liveState(appId: number): SteamLiveState
+  /**
+   * Re-reads one game's manifest (game page open, Steam busy): fresh install
+   * and live state, or null when it cannot be read (nothing changes then).
+   */
+  readGame(appId: number): Promise<{ installed: boolean; live: SteamLiveState } | null>
 }
 
 /**
@@ -29,6 +39,7 @@ export function createSteamAdapter(deps: SteamAdapterDeps): SteamAdapter {
   let found: string | null = null
   let libraries: SteamLibraryReport[] = []
   let live = new Map<number, SteamLiveState>()
+  let manifests = new Map<number, string>()
 
   const hasLibraryList = (path: string): boolean =>
     deps.isFile(join(path, 'steamapps', 'libraryfolders.vdf'))
@@ -60,12 +71,27 @@ export function createSteamAdapter(deps: SteamAdapterDeps): SteamAdapter {
       libraries = scan.libraries
       const same = (a: string): boolean => a.toLowerCase() === (found as string).toLowerCase()
       found = libraries.find((library) => same(library.path))?.path ?? found
-      if (scan.result.status !== 'failed') live = scan.live
+      if (scan.result.status !== 'failed') {
+        live = scan.live
+        manifests = scan.manifests
+      }
       return scan.result
     },
 
     steamPath: () => found,
     libraries: () => libraries,
-    liveState: (appId) => live.get(appId) ?? null
+    liveState: (appId) => live.get(appId) ?? null,
+
+    async readGame(appId) {
+      const file = manifests.get(appId)
+      if (!file) return null
+      try {
+        const { state } = readManifest(await deps.fs.readText(file))
+        live.set(appId, state.live)
+        return state
+      } catch {
+        return null
+      }
+    }
   }
 }

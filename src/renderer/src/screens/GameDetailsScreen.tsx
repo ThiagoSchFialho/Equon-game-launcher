@@ -53,6 +53,9 @@ const MENU_HINTS: Hint[] = [
   { button: 'B', label: t.hints.back }
 ]
 
+/** How often a game Steam is busy with is re-read. */
+const STEAM_BUSY_POLL_MS = 5000
+
 function BackLink({ from }: { from: Section }): React.JSX.Element {
   const navigation = useNavigation()
   const { setElement, focused, mouse } = useFocusable<HTMLButtonElement>('game:back', {
@@ -235,6 +238,13 @@ export function GameDetailsScreen({ id, from }: { id: number; from: Section }): 
   const [overlay, setOverlay] = useState<'menu' | 'remove' | null>(null)
   const [removeError, setRemoveError] = useState<string | null>(null)
   const running = useRunning().ids.includes(id)
+  // While Steam installs or updates the game, re-read it so Play comes back when it is done.
+  const steamBusy = details.status === 'ready' && details.data?.launchIssue === 'steam-busy'
+  useEffect(() => {
+    if (!steamBusy) return
+    const timer = setInterval(refresh, STEAM_BUSY_POLL_MS)
+    return () => clearInterval(timer)
+  }, [steamBusy, refresh])
 
   // When this game stops, playtime and last session change.
   const wasRunning = useRef(running)

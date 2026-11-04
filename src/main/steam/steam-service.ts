@@ -31,6 +31,8 @@ export interface SteamService {
   refresh(): Promise<LibraryRefreshInfo>
   refreshing(): boolean
   lastRefresh(): LibraryRefreshInfo | null
+  /** Re-reads one Steam game before its page is shown; a read failure changes nothing. */
+  refreshGame(gameId: number): Promise<void>
 }
 
 export function createSteamService(deps: SteamServiceDeps): SteamService {
@@ -86,6 +88,17 @@ export function createSteamService(deps: SteamServiceDeps): SteamService {
     },
     refresh,
     refreshing: () => pending !== null,
-    lastRefresh: () => last
+    lastRefresh: () => last,
+
+    async refreshGame(gameId) {
+      const game = deps.games.getById(gameId)
+      if (!game || game.steamAppId === null) return
+      const state = await deps.adapter.readGame(game.steamAppId)
+      // A successful read of the manifest is authoritative for this game (§3.2).
+      if (state && game.installed !== state.installed) {
+        deps.games.setInstalled(game.id, state.installed)
+        deps.onLibraryChanged()
+      }
+    }
   }
 }

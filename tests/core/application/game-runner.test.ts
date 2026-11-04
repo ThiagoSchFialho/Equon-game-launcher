@@ -42,7 +42,8 @@ const steamDeps = (): Parameters<typeof createGameRunner>[0]['steam'] => ({
     steamOpened.push(url)
   },
   liveState: (appId) => live.get(appId) ?? null,
-  startTimeoutMs: 90_000
+  startTimeoutMs: 90_000,
+  updateTimeoutMs: 600_000
 })
 
 const games = (): ReturnType<typeof createGameRepository> => createGameRepository(db)

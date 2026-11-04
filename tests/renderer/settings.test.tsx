@@ -168,3 +168,31 @@ describe('Steam games on the game page', () => {
     ).toBeTruthy()
   })
 })
+
+describe('on-screen keyboard paste', () => {
+  const paste = (text: string): void => {
+    const event = new Event('paste', { cancelable: true }) as Event & {
+      clipboardData: { getData: () => string }
+    }
+    event.clipboardData = { getData: () => text }
+    act(() => {
+      window.dispatchEvent(event)
+    })
+  }
+
+  it('pastes clipboard text on one line, digits only for numbers', async () => {
+    installFakeApi([summary(1, 'Tidebound')])
+    await openSettings()
+    await click('ID Steam')
+    const dialog = await screen.findByRole('dialog', { name: 'ID Steam' })
+    paste(' 7656119 7960287930\n')
+    expect(dialog.querySelector('.keyboard__input')?.textContent).toBe('76561197960287930')
+    press('Escape')
+
+    const [configure] = await screen.findAllByLabelText('Configurar')
+    act(() => configure.click())
+    const keyDialog = await screen.findByRole('dialog', { name: 'Chave da Steam API' })
+    paste('ABC\r\nDEF')
+    expect(keyDialog.querySelector('.keyboard__input')?.textContent).toBe('ABC DEF')
+  })
+})

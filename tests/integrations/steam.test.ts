@@ -50,16 +50,18 @@ const manifest = (appId: number, name: string, flags: number): string => `"AppSt
 /** In-memory Steam folders; missing directories throw like a disconnected drive. */
 function fakeFs(files: Record<string, string>): SteamFs {
   const norm = (path: string): string => path.replace(/\//g, '\\').toLowerCase()
-  const entries = new Map(Object.entries(files).map(([k, v]) => [norm(k), v]))
+  // Read live, so a test can change a file between calls.
+  const entries = (): Map<string, string> =>
+    new Map(Object.entries(files).map(([k, v]) => [norm(k), v]))
   return {
     readText: async (path) => {
-      const text = entries.get(norm(path))
+      const text = entries().get(norm(path))
       if (text === undefined) throw new Error(`ENOENT ${path}`)
       return text
     },
     listDir: async (path) => {
       const prefix = norm(path) + '\\'
-      const names = [...entries.keys()]
+      const names = [...entries().keys()]
         .filter((k) => k.startsWith(prefix) && !k.slice(prefix.length).includes('\\'))
         .map((k) => k.slice(prefix.length))
       if (names.length === 0) throw new Error(`ENOENT ${path}`)
@@ -207,5 +209,29 @@ describe('registry and URLs', () => {
     expect(isSteamId64('76561197960287930')).toBe(true)
     expect(isSteamId64('7656119796028793')).toBe(false)
     expect(isSteamId64('7656119796028793a')).toBe(false)
+  })
+})
+
+describe('createSteamAdapter.readGame', () => {
+  it('re-reads one manifest after a scan and keeps the live state fresh', async () => {
+    const files = install()
+    const steam = createSteamAdapter({
+      fs: fakeFs(files),
+      readSteamPath: async () => C,
+      isFile: () => true
+    })
+    expect(await steam.readGame(578080)).toBeNull() // nothing scanned yet
+    await steam.discover()
+    expect(steam.liveState(578080)).toBe('update-required')
+
+    // PUBG starts downloading its update after the scan.
+    const pubg = 'D:\\SteamLibrary\\steamapps\\appmanifest_578080.acf'
+    files[pubg] = manifest(578080, 'PUBG', 1048582)
+    expect(await steam.readGame(578080)).toEqual({ installed: true, live: 'updating' })
+    expect(steam.liveState(578080)).toBe('updating')
+
+    delete files[pubg]
+    expect(await steam.readGame(578080)).toBeNull()
+    expect(steam.liveState(578080)).toBe('updating')
   })
 })

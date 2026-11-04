@@ -24,6 +24,8 @@ export interface SteamScan {
   libraries: SteamLibraryReport[]
   /** Live (not stored) state per App ID, from the manifests just read. */
   live: Map<number, SteamLiveState>
+  /** Manifest file per App ID, to re-read one game later. */
+  manifests: Map<number, string>
 }
 
 const MANIFEST = /^appmanifest_(\d+)\.acf$/i
@@ -70,6 +72,7 @@ export function libraryPaths(steamPath: string, vdf: VdfObject): string[] {
  */
 export async function scanSteamLibraries(steamPath: string, fs: SteamFs): Promise<SteamScan> {
   const live = new Map<number, SteamLiveState>()
+  const manifests = new Map<number, string>()
   let vdf: VdfObject
   try {
     vdf = parseVdf(await fs.readText(join(steamPath, 'steamapps', 'libraryfolders.vdf')))
@@ -77,7 +80,8 @@ export async function scanSteamLibraries(steamPath: string, fs: SteamFs): Promis
     return {
       result: { status: 'failed', reason: 'libraryfolders-unreadable' },
       libraries: [],
-      live
+      live,
+      manifests
     }
   }
 
@@ -99,17 +103,14 @@ export async function scanSteamLibraries(steamPath: string, fs: SteamFs): Promis
     for (const name of names) {
       if (!MANIFEST.test(name)) continue
       try {
-        const manifest = vdfGet(parseVdf(await fs.readText(join(steamapps, name))), 'AppState')
-        if (!manifest || typeof manifest !== 'object') throw new Error('No AppState')
-        const appId = Number(text(manifest, 'appid'))
-        const title = text(manifest, 'name')?.trim()
-        if (!isSteamAppId(appId) || !title) throw new Error('Incomplete manifest')
+        const file = join(steamapps, name)
+        const { appId, title, state } = readManifest(await fs.readText(file))
         if (STEAM_NON_GAME_APP_IDS.has(appId)) continue
-        const state = steamStateFromFlags(Number(text(manifest, 'StateFlags') ?? 0))
         // The same app in two libraries: the installed copy wins.
         if (found.get(appId)?.installed === true && !state.installed) continue
         found.set(appId, { externalId: String(appId), title, installed: state.installed })
         live.set(appId, state.live)
+        manifests.set(appId, file)
       } catch {
         ok = false
         complete = false
@@ -124,6 +125,21 @@ export async function scanSteamLibraries(steamPath: string, fs: SteamFs): Promis
       ? { status: 'complete', games }
       : { status: 'partial', games, reason: 'library-unreadable' },
     libraries,
-    live
+    live,
+    manifests
   }
+}
+
+/** Parses one appmanifest_*.acf; throws when it is broken or incomplete. */
+export function readManifest(textContent: string): {
+  appId: number
+  title: string
+  state: ReturnType<typeof steamStateFromFlags>
+} {
+  const manifest = vdfGet(parseVdf(textContent), 'AppState')
+  if (!manifest || typeof manifest !== 'object') throw new Error('No AppState')
+  const appId = Number(text(manifest, 'appid'))
+  const title = text(manifest, 'name')?.trim()
+  if (!isSteamAppId(appId) || !title) throw new Error('Incomplete manifest')
+  return { appId, title, state: steamStateFromFlags(Number(text(manifest, 'StateFlags') ?? 0)) }
 }

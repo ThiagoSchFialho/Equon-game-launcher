@@ -113,7 +113,20 @@ export function OnScreenKeyboard({
       }
       return false
     })
-    return () => setTextCapture(null)
+    // Ctrl+V: text from the clipboard, on one line (digits only in number mode).
+    const onPaste = (event: ClipboardEvent): void => {
+      const pasted = event.clipboardData?.getData('text/plain') ?? ''
+      const clean =
+        mode === 'number' ? pasted.replace(/\s+/g, '') : pasted.replace(/\s+/g, ' ').trim()
+      if (clean === '') return
+      event.preventDefault()
+      insert(clean)
+    }
+    window.addEventListener('paste', onPaste)
+    return () => {
+      setTextCapture(null)
+      window.removeEventListener('paste', onPaste)
+    }
     // insert/erase only use state setters and props fixed for the dialog's life.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

@@ -50,6 +50,8 @@ export interface GameRunnerDeps {
     liveState(appId: number): SteamLiveState
     /** How long to wait for Steam to report the game running. */
     startTimeoutMs: number
+    /** Longer wait when Steam must update the game first. */
+    updateTimeoutMs: number
   }
 }
 
@@ -131,7 +133,9 @@ export function createGameRunner(deps: GameRunnerDeps): GameRunner {
     starting.add(game.id)
     try {
       await deps.steam.openRunUrl(steamRunUrl(appId))
-      const started = await deps.steam.sessions.waitForStart(appId, deps.steam.startTimeoutMs)
+      const timeout =
+        live === 'update-required' ? deps.steam.updateTimeoutMs : deps.steam.startTimeoutMs
+      const started = await deps.steam.sessions.waitForStart(appId, timeout)
       if (!started) throw new LaunchError('start-timeout')
     } catch (error) {
       if (error instanceof LaunchError) throw error

@@ -116,9 +116,10 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
   )
   ipcMain.handle(
     IpcChannel.gamesGet,
-    createValidatedHandler(gamesGetArgs, gameDetailsResultSchema, trusted, (id) =>
-      getGameDetails(queries, id)
-    )
+    createValidatedHandler(gamesGetArgs, gameDetailsResultSchema, trusted, async (id) => {
+      await deps.steam.refreshGame(id)
+      return getGameDetails(queries, id)
+    })
   )
   ipcMain.handle(
     IpcChannel.gamesGetEditable,

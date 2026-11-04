@@ -35,6 +35,8 @@ import { createSteamService } from './steam/steam-service'
 const HEARTBEAT_MS = 30_000
 /** How long Steam may take to report a launched game running (first guess; measure). */
 const STEAM_START_TIMEOUT_MS = 90_000
+/** Steam updates a game that needs it before starting it. */
+const STEAM_UPDATE_TIMEOUT_MS = 10 * 60_000
 
 /** Full decode with Electron; the real size or null when the image cannot be decoded. */
 function decodeImage(bytes: Buffer): { width: number; height: number } | null {
@@ -121,7 +123,8 @@ export function createServices(
         await shell.openExternal(url)
       },
       liveState: (appId) => adapter.liveState(appId),
-      startTimeoutMs: STEAM_START_TIMEOUT_MS
+      startTimeoutMs: STEAM_START_TIMEOUT_MS,
+      updateTimeoutMs: STEAM_UPDATE_TIMEOUT_MS
     }
   })
 
