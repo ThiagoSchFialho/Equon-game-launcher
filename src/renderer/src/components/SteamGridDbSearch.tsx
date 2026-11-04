@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { SteamGridDbGameInfo } from '../../../shared/ipc/contract'
+import { useFocusManager } from '../focus/focus-context'
 import { t } from '../strings'
 import { ChoiceDialog, type ChoiceItem } from './Dialog'
 import { OnScreenKeyboard } from './OnScreenKeyboard'
@@ -29,6 +30,13 @@ export function SteamGridDbSearch({
 }): React.JSX.Element {
   const [step, setStep] = useState<Step>({ kind: 'searching', term: title })
   const searchingTerm = step.kind === 'searching' ? step.term : null
+
+  // "Fechar" is the only row while searching, so focus would stay on it: move to the results.
+  const focus = useFocusManager()
+  const firstRow = step.kind === 'results' ? (step.games[0]?.id ?? 'other') : null
+  useEffect(() => {
+    if (firstRow !== null) focus.focus(`choice:steamgriddb:${firstRow}`)
+  }, [focus, firstRow])
 
   useEffect(() => {
     if (searchingTerm === null) return

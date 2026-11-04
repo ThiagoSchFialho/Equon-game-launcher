@@ -307,6 +307,7 @@ describe('SteamGridDB artwork for manual games', () => {
     expect(search).toHaveBeenCalledWith('Tidebound')
     expect(await screen.findByText('2021')).toBeTruthy()
     const dialog = screen.getByRole('dialog', { name: 'Artes do SteamGridDB' })
+    expect(dialog.querySelector('[data-focused="true"]')?.textContent).toContain('Tidebound')
     // Game names can be long: this list uses the wide dialog.
     expect(dialog.className).toContain('dialog--wide')
     act(() => (within(dialog).getByText('Tidebound').closest('button') as HTMLElement).click())
