@@ -96,7 +96,7 @@ Regras de gravação em `GAMES.installed`:
 - Steam não encontrada, ou erro geral de leitura → **não alterar nada**.
 - Uma leitura que falhou **nunca** pode gravar `0`.
 - Estados transitórios (rodando, instalando, atualizando, pausado, atualização necessária, arquivos corrompidos) **não são gravados**; são lidos ao vivo e exibidos na interface.
-- A varredura local só enxerga jogos com manifesto (instalados ou em instalação). Jogos comprados e não instalados exigiriam `GetOwnedGames` (precisa de chave) e não fazem parte do MVP.
+- A varredura local só enxerga jogos com manifesto (instalados ou em instalação). Os jogos comprados e não instalados vêm do `GetOwnedGames` (precisa de chave; seção 3.11).
 - Não reutilizar o método da Steam para jogos manuais.
 
 **Jogos de outras origens (decidido na Fase 4):** o estado vem da existência do executável da configuração de lançamento (3.7), conferida no processo principal sempre que a biblioteca ou o jogo é carregado:
@@ -346,13 +346,15 @@ Decisão do dono do projeto (Fase 6b): consultado em português (`l=brazilian&cc
 
 Decisão do dono do projeto (Fase 2). Para jogos Steam, a Steam é a fonte da verdade do tempo total e da última vez jogado, porque inclui o tempo jogado em outros computadores e antes do Equon.
 
-- **Quando:** uma única vez **a cada abertura do launcher**, com uma chamada a `IPlayerService/GetOwnedGames/v1` (precisa da chave e do SteamID64; formato validado em 2026-11-03: `response.games[].appid`, `playtime_forever` em minutos, `rtime_last_played` em segundos Unix; perfil sem detalhes de jogos públicos responde `response` vazio, tratado como falha). Roda depois da varredura local. É a única sincronização automática na abertura; conquistas continuam seguindo a seção 5.
+- **Quando:** uma única vez **a cada abertura do launcher**, com uma chamada a `IPlayerService/GetOwnedGames/v1` (precisa da chave e do SteamID64; formato validado em 2026-11-03: `response.games[].appid`, `name` (com `include_appinfo=1`), `playtime_forever` em minutos, `rtime_last_played` em segundos Unix; perfil sem detalhes de jogos públicos responde `response` vazio, tratado como falha). Roda depois da varredura local. É a única sincronização automática na abertura; conquistas continuam seguindo a seção 5.
 - **Ordem na abertura:** primeiro fechar as sessões interrompidas (3.8), depois sincronizar com a Steam.
 - **O que faz:** para cada jogo com `origin = 'steam'` já existente no banco e presente na resposta, em **uma transação**: gravar `steam_playtime_baseline` (`playtime_forever`, em minutos) e `steam_synced_at`, **sobrescrever** `time_last_played` com `rtime_last_played` (quando a Steam informa uma data) e recalcular `playtime` pela regra de 3.8.
 - **Enquanto o launcher está aberto:** cada sessão observada soma sobre a base da Steam. Na próxima abertura a Steam já contabilizou essas sessões e o valor é sobrescrito de novo, sem contagem dupla.
 - **Falhas:** sem chave, sem internet, perfil privado ou resposta inválida → **não alterar nada**; as sessões continuam somando sobre a última sincronização boa.
 - Jogos que a Steam ainda não contabilizou (por exemplo, jogados com a Steam em modo offline) podem ter o tempo reduzido temporariamente: o valor da Steam sempre sobrescreve. Aceito pelo dono do projeto.
-- Não cria jogos (jogos comprados e não instalados continuam fora do MVP) e não toca em `hidden`/`beated`.
+- **Jogos que a biblioteca ainda não tem (decisão do dono do projeto, Fase 7):** a abertura e "Atualizar biblioteca" usam a mesma resposta para criá-los, sempre depois da varredura local. O jogo novo entra com `installed = 0` se a varredura foi completa; caso contrário, `NULL` (uma leitura que falhou nunca grava `0`). Um título igual ao de um jogo de outra origem vira candidato a duplicata, sem mesclar. Os metadados e as artes seguem depois, na fila normal (D-16).
+- **"Atualizar biblioteca" não sobrescreve o tempo de jogo:** só os jogos ainda sem sincronização (`steam_synced_at` nulo) recebem a base da Steam. Os demais só mudam na próxima abertura.
+- Não toca em `hidden`/`beated`, nem no `installed` de jogos já existentes. Jogos sem nome na resposta não são criados.
 - Jogos de outras origens usam apenas o tempo medido pelo launcher.
 
 ### 4.3 Steam — Web API (conquistas e tempo de jogo)

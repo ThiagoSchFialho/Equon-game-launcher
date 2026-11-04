@@ -1,6 +1,7 @@
 import {
   refreshSteamLibrary,
   type GameRepository,
+  type OwnedSyncOutcome,
   type SteamSessions,
   type UnitOfWork
 } from '../../core/application'
@@ -20,16 +21,18 @@ export interface SteamServiceDeps {
   readRunningAppId(): Promise<string | null>
   clock: { now(): Date }
   onLibraryChanged(): void
-  /** After each scan that read something; `first` is the startup scan. */
-  afterScan?(first: boolean): void
+  /** Runs after the local scan, inside every refresh; `first` is the startup one. */
+  syncOwned(options: { first: boolean; scanComplete: boolean }): Promise<OwnedSyncOutcome>
+  /** Background work after each refresh (metadata and artwork of new games). */
+  afterRefresh?(): void
   onError?(error: unknown): void
 }
 
 export interface SteamService {
-  /** Startup: one local scan, then the running-game watcher. */
+  /** Startup: one refresh (local scan and owned games), then the running-game watcher. */
   start(): void
   stop(): void
-  /** Concurrent calls share the scan in progress. */
+  /** Concurrent calls share the refresh in progress. */
   refresh(): Promise<LibraryRefreshInfo>
   refreshing(): boolean
   lastRefresh(): LibraryRefreshInfo | null
@@ -49,29 +52,43 @@ export function createSteamService(deps: SteamServiceDeps): SteamService {
   // manual game id → Steam title; a candidate only appears when the Steam game is first found.
   const duplicates = new Map<number, string>()
 
+  /** A failing online step never breaks the local scan. */
+  const syncOwned = async (scanComplete: boolean): Promise<OwnedSyncOutcome> => {
+    const first = !scanned
+    scanned = true
+    try {
+      return await deps.syncOwned({ first, scanComplete })
+    } catch (error) {
+      deps.onError?.(error)
+      return { added: 0, duplicates: [], error: 'invalid-response' }
+    }
+  }
+
+  const runRefresh = async (): Promise<LibraryRefreshInfo> => {
+    const summary = await refreshSteamLibrary(deps, deps.adapter)
+    const owned = await syncOwned(summary.status === 'complete')
+    for (const candidate of [...summary.duplicates, ...owned.duplicates]) {
+      duplicates.set(candidate.existingGameId, candidate.discovered.title)
+    }
+    last = {
+      status: summary.status,
+      reason: summary.reason,
+      added: summary.added + owned.added,
+      missing: summary.missing,
+      unknown: summary.unknown,
+      duplicates: duplicates.size,
+      ownedError: owned.error,
+      finishedAt: toUtcIso(deps.clock.now())
+    }
+    if (summary.status !== 'failed' || owned.added > 0) deps.onLibraryChanged()
+    deps.afterRefresh?.()
+    return last
+  }
+
   const refresh = (): Promise<LibraryRefreshInfo> => {
-    pending ??= refreshSteamLibrary(deps, deps.adapter)
-      .then((summary) => {
-        for (const candidate of summary.duplicates) {
-          duplicates.set(candidate.existingGameId, candidate.discovered.title)
-        }
-        last = {
-          status: summary.status,
-          reason: summary.reason,
-          added: summary.added,
-          missing: summary.missing,
-          unknown: summary.unknown,
-          duplicates: duplicates.size,
-          finishedAt: toUtcIso(deps.clock.now())
-        }
-        if (summary.status !== 'failed') deps.onLibraryChanged()
-        deps.afterScan?.(!scanned)
-        scanned = true
-        return last
-      })
-      .finally(() => {
-        pending = null
-      })
+    pending ??= runRefresh().finally(() => {
+      pending = null
+    })
     return pending
   }
 

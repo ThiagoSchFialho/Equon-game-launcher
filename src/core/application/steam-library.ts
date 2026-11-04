@@ -1,11 +1,12 @@
-import { BuiltinOrigin, type Game } from '../domain'
+import { BuiltinOrigin, type Game, type InstallState } from '../domain'
 import {
+  findDuplicates,
   planDiscovery,
   runDiscovery,
   type DuplicateCandidate,
   type IntegrationAdapter
 } from './discovery'
-import type { GameRepository, UnitOfWork } from './ports'
+import type { GameRepository, SteamPlayStats, UnitOfWork } from './ports'
 
 export interface LibraryRefreshSummary {
   status: 'complete' | 'partial' | 'failed'
@@ -58,5 +59,67 @@ export async function refreshSteamLibrary(
     missing: plan.installChanges.filter((c) => c.installed === false).length,
     unknown: plan.installChanges.filter((c) => c.installed === null).length,
     duplicates: plan.duplicates
+  }
+}
+
+/** One game the account owns; without a title it can only update a stored game. */
+export interface OwnedSteamGame extends SteamPlayStats {
+  title: string | null
+}
+
+export interface OwnedImportSummary {
+  added: number
+  /** Stored games whose Steam play stats were written. */
+  updated: number
+  duplicates: DuplicateCandidate[]
+}
+
+/** What the owned-games step of a refresh reports; `error` means nothing was changed. */
+export interface OwnedSyncOutcome {
+  added: number
+  duplicates: DuplicateCandidate[]
+  error: string | null
+}
+
+/**
+ * Applies a GetOwnedGames response in one transaction (DATA_BASE_CONTEXT.md
+ * §3.11): games the library does not have yet are created, as not installed
+ * only after a complete scan, since a failed read never writes "not installed";
+ * otherwise as unknown. Stored games keep hidden, beated and their install
+ * state. Steam's play stats overwrite every game at startup
+ * (`overwritePlaytime`); otherwise only games never synced receive them.
+ */
+export function importOwnedSteamGames(
+  deps: { games: GameRepository; uow: UnitOfWork },
+  owned: readonly OwnedSteamGame[],
+  options: { scanComplete: boolean; overwritePlaytime: boolean; syncedAt: string }
+): OwnedImportSummary {
+  const installed: InstallState = options.scanComplete ? false : null
+  const existing = deps.games.list()
+  const known = new Set(existing.map(appIdOf).filter((id) => id !== null))
+  const fresh = owned.flatMap((game) =>
+    game.title !== null && !known.has(String(game.steamAppId))
+      ? [{ externalId: String(game.steamAppId), title: game.title, installed, game }]
+      : []
+  )
+
+  const updated = deps.uow.transaction(() => {
+    for (const { title, game } of fresh) {
+      deps.games.create({
+        origin: BuiltinOrigin.steam,
+        steamAppId: game.steamAppId,
+        title,
+        installed
+      })
+    }
+    return deps.games.applySteamPlayStats(owned, options.syncedAt, {
+      onlyUnsynced: !options.overwritePlaytime
+    })
+  })
+
+  return {
+    added: fresh.length,
+    updated,
+    duplicates: findDuplicates(BuiltinOrigin.steam, fresh, existing, appIdOf)
   }
 }

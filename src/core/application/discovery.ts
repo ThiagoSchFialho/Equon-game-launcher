@@ -79,10 +79,33 @@ export function planDiscovery(
   if (result.status === 'failed') return EMPTY_PLAN
 
   const found = new Set(result.games.map((g) => g.externalId))
-  const known = new Set<string>()
   const installChanges: DiscoveryPlan['installChanges'] = []
-  const others = new Map<string, number>()
 
+  for (const game of existing) {
+    if (game.origin !== source) continue
+    const externalId = externalIdOf(game)
+    if (externalId === null || found.has(externalId)) continue
+    // A failed read never writes "not installed" (DATA_BASE_CONTEXT.md §3.2).
+    const installed = result.status === 'complete' ? false : null
+    if (game.installed !== installed) installChanges.push({ gameId: game.id, installed })
+  }
+
+  return {
+    upserts: result.games,
+    installChanges,
+    duplicates: findDuplicates(source, result.games, existing, externalIdOf)
+  }
+}
+
+/** Games not known yet whose title matches a game of another origin; a candidate appears once. */
+export function findDuplicates(
+  source: OriginKey,
+  discovered: readonly DiscoveredGame[],
+  existing: readonly Game[],
+  externalIdOf: (game: Game) => string | null
+): DuplicateCandidate[] {
+  const known = new Set<string>()
+  const others = new Map<string, number>()
   for (const game of existing) {
     if (game.origin !== source) {
       const key = titleMatchKey(game.title)
@@ -90,20 +113,14 @@ export function planDiscovery(
       continue
     }
     const externalId = externalIdOf(game)
-    if (externalId === null) continue
-    known.add(externalId)
-    if (found.has(externalId)) continue
-    // A failed read never writes "not installed" (DATA_BASE_CONTEXT.md §3.2).
-    const installed = result.status === 'complete' ? false : null
-    if (game.installed !== installed) installChanges.push({ gameId: game.id, installed })
+    if (externalId !== null) known.add(externalId)
   }
 
   const duplicates: DuplicateCandidate[] = []
-  for (const discovered of result.games) {
-    if (known.has(discovered.externalId)) continue
-    const match = others.get(titleMatchKey(discovered.title))
-    if (match !== undefined) duplicates.push({ discovered, existingGameId: match })
+  for (const game of discovered) {
+    if (known.has(game.externalId)) continue
+    const match = others.get(titleMatchKey(game.title))
+    if (match !== undefined) duplicates.push({ discovered: game, existingGameId: match })
   }
-
-  return { upserts: result.games, installChanges, duplicates }
+  return duplicates
 }

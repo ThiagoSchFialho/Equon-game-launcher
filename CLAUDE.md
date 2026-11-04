@@ -64,6 +64,7 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 ## Steam rules
 
 - Discovery: Windows registry `SteamPath` (via `reg.exe`, fallback to the default folder; no user override) → `libraryfolders.vdf` → `appmanifest_*.acf` → `StateFlags`. Local scan at startup and on "Atualizar biblioteca". Ignore non-game manifests. Pin behavior with fixtures; the flags are not an official contract.
+- Owned games: after every local scan (startup and "Atualizar biblioteca"), `GetOwnedGames` creates the owned games the library is missing, with `installed = 0` only after a complete scan, otherwise `NULL`. The button never overwrites the play stats of games already synced.
 - Launch: `steam://rungameid/<appid>`, built in main from a validated numeric App ID taken from the DB, never from renderer strings. A launch counts as started only when the registry `RunningAppID` shows the game (with timeout); a session starts then. Steam sessions follow `RunningAppID` (polled every 2 s), for games started by the launcher or by Steam; the manifest `AppRunning` flag is not used (Steam does not set it).
 - Offer Play only when `installed = 1`.
 - Achievements: sync only the game that just closed, plus a manual full sync. Never periodic or automatic full-library sync. Validate current Steam Web API formats before implementing.

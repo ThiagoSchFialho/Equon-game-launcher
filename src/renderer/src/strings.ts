@@ -328,14 +328,18 @@ export const t = {
     refresh: 'Atualizar biblioteca',
     refreshing: 'Atualizando…',
     neverRefreshed: 'Os jogos da Steam são lidos ao abrir o Equon.',
-    refreshResult: (added: number, missing: number) =>
+    refreshResult: (time: string, added: number, missing: number) =>
       [
-        'Biblioteca atualizada',
+        `Biblioteca atualizada às ${time}`,
         added > 0 ? (added === 1 ? '1 jogo novo' : `${added} jogos novos`) : null,
-        missing > 0 ? (missing === 1 ? '1 não encontrado' : `${missing} não encontrados`) : null
+        missing > 0 ? (missing === 1 ? '1 não encontrado' : `${missing} não encontrados`) : null,
+        added === 0 && missing === 0 ? 'nenhuma novidade' : null
       ]
         .filter(Boolean)
         .join(' · '),
+    ownedNotConfigured:
+      'Configure o ID Steam e a chave da API para trazer os jogos não instalados.',
+    ownedFailed: (reason: string) => `Jogos não instalados não atualizados: ${reason}`,
     refreshPartial: 'Atualização parcial: uma biblioteca não pôde ser lida (disco desconectado?).',
     refreshFailed: {
       'steam-not-found': 'Steam não encontrada neste computador.',

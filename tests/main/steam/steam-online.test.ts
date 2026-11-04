@@ -11,6 +11,8 @@ import { createTestDb } from '../../helpers/db'
 
 const KEY = 'ABCDEF0123456789ABCDEF0123456789'
 const STEAM_ID = '76561197960287930'
+const STARTUP = { updatePlaytime: true, scanComplete: true }
+const BUTTON = { updatePlaytime: false, scanComplete: true }
 
 let db: SqliteDatabase
 let responses: Map<string, { status: number; json: unknown }>
@@ -59,30 +61,125 @@ describe('steam online: playtime sync', () => {
         ]
       }
     })
-    expect(await online.syncPlaytime()).toMatchObject({ status: 'ok', games: 1 })
+    await online.syncOwnedGames(STARTUP)
+    expect(online.lastSync()).toMatchObject({ status: 'ok', games: 1 })
     expect(games().getById(id)).toMatchObject({
       playtime: 91,
       timeLastPlayed: '2026-11-04T00:00:00Z',
       hidden: true
     })
-    expect(games().findBySteamAppId(999)).toBeNull() // never creates games
+    expect(games().findBySteamAppId(999)).toBeNull() // no name: cannot be added
     expect(changes).toBe(1)
   })
 
   it('changes nothing without credentials or when Steam fails', async () => {
     const id = games().upsertSteamGame({ steamAppId: 2379780, title: 'Balatro' }).id
     credentials = { steamId: null, steamKey: KEY, gridKey: null }
-    expect(await online.syncPlaytime()).toMatchObject({ status: 'failed', error: 'not-configured' })
+    expect(await online.syncOwnedGames(STARTUP)).toMatchObject({
+      error: 'not-configured',
+      added: 0
+    })
+    expect(online.lastSync()).toMatchObject({ status: 'failed', error: 'not-configured' })
     expect(urls).toEqual([])
 
     credentials = { steamId: STEAM_ID, steamKey: KEY, gridKey: null }
     answer('GetOwnedGames', 200, { response: {} })
-    expect(await online.syncPlaytime()).toMatchObject({
-      status: 'failed',
-      error: 'private-profile'
-    })
+    expect(await online.syncOwnedGames(STARTUP)).toMatchObject({ error: 'private-profile' })
     expect(online.lastSync()).toMatchObject({ error: 'private-profile' })
     expect(games().getById(id)).toMatchObject({ playtime: 0, timeLastPlayed: null })
+  })
+})
+
+describe('steam online: owned games', () => {
+  const OWNED = {
+    response: {
+      games: [
+        { appid: 620, name: 'Portal 2', playtime_forever: 90, rtime_last_played: 1793750400 },
+        { appid: 730, name: 'Counter-Strike 2', playtime_forever: 500 }
+      ]
+    }
+  }
+
+  it('adds owned games as not installed, with Steam play stats, and is idempotent', async () => {
+    answer('GetOwnedGames', 200, OWNED)
+    expect(await online.syncOwnedGames(BUTTON)).toMatchObject({ added: 2, error: null })
+    expect(games().findBySteamAppId(620)).toMatchObject({
+      title: 'Portal 2',
+      origin: 'steam',
+      installed: false,
+      hidden: false,
+      playtime: 90,
+      timeLastPlayed: '2026-11-04T00:00:00Z'
+    })
+    expect(changes).toBe(1)
+
+    const before = games().list()
+    expect(await online.syncOwnedGames(BUTTON)).toMatchObject({ added: 0, error: null })
+    expect(games().list()).toEqual(before)
+    expect(changes).toBe(1)
+  })
+
+  it('never writes "not installed" when the local scan was not complete', async () => {
+    answer('GetOwnedGames', 200, OWNED)
+    await online.syncOwnedGames({ updatePlaytime: false, scanComplete: false })
+    expect(games().findBySteamAppId(620)?.installed).toBeNull()
+  })
+
+  it('the button leaves synced games alone; only startup overwrites their play stats', async () => {
+    const id = games().upsertSteamGame({ steamAppId: 620, title: 'Portal 2' }).id
+    games().setInstalled(id, true)
+    games().setFlags(id, { hidden: true, beated: true })
+    answer('GetOwnedGames', 200, {
+      response: { games: [{ appid: 620, name: 'Portal 2', playtime_forever: 90 }] }
+    })
+    await online.syncOwnedGames(STARTUP)
+    expect(games().getById(id)).toMatchObject({ playtime: 90, installed: true, hidden: true })
+
+    answer('GetOwnedGames', 200, {
+      response: { games: [{ appid: 620, name: 'Renamed', playtime_forever: 200 }] }
+    })
+    await online.syncOwnedGames(BUTTON)
+    expect(games().getById(id)).toMatchObject({
+      title: 'Portal 2',
+      playtime: 90,
+      installed: true,
+      hidden: true,
+      beated: true
+    })
+    await online.syncOwnedGames(STARTUP)
+    expect(games().getById(id)).toMatchObject({ playtime: 200, installed: true })
+  })
+
+  it('a game found by the local scan gets its first baseline from the button', async () => {
+    const id = games().upsertSteamGame({ steamAppId: 620, title: 'Portal 2' }).id
+    answer('GetOwnedGames', 200, OWNED)
+    await online.syncOwnedGames(BUTTON)
+    expect(games().getById(id)).toMatchObject({ playtime: 90 })
+  })
+
+  it('reports a game that matches a manual one for review, without merging', async () => {
+    const manual = games().create({ origin: 'manual', title: 'Portal 2' }).id
+    answer('GetOwnedGames', 200, OWNED)
+    const outcome = await online.syncOwnedGames(BUTTON)
+    expect(outcome.duplicates).toMatchObject([
+      { existingGameId: manual, discovered: { externalId: '620' } }
+    ])
+    expect(games().list()).toHaveLength(3)
+  })
+
+  it('a failed button press changes nothing and keeps the startup sync info', async () => {
+    answer('GetOwnedGames', 200, OWNED)
+    await online.syncOwnedGames(STARTUP)
+    const info = online.lastSync()
+    const before = games().list()
+    answer('GetOwnedGames', 200, { response: {} })
+    expect(await online.syncOwnedGames(BUTTON)).toEqual({
+      added: 0,
+      duplicates: [],
+      error: 'private-profile'
+    })
+    expect(online.lastSync()).toEqual(info)
+    expect(games().list()).toEqual(before)
   })
 })
 

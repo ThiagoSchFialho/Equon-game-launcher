@@ -1,8 +1,10 @@
 import {
   applySteamMetadata,
   gamesMissingMetadata,
+  importOwnedSteamGames,
   type GameRepository,
   type GenreRepository,
+  type OwnedSyncOutcome,
   type UnitOfWork
 } from '../../core/application'
 import { toUtcIso } from '../../core/domain'
@@ -32,8 +34,15 @@ export interface SteamOnlineDeps {
 }
 
 export interface SteamOnline {
-  /** GetOwnedGames once per launcher start (DATA_BASE_CONTEXT.md §3.11); a failure changes nothing. */
-  syncPlaytime(): Promise<SteamSyncInfo>
+  /**
+   * GetOwnedGames (DATA_BASE_CONTEXT.md §3.11): adds the games the library is
+   * missing; `updatePlaytime` (once per launcher start) also overwrites Steam's
+   * play stats of every game. A failure changes nothing.
+   */
+  syncOwnedGames(options: {
+    updatePlaytime: boolean
+    scanComplete: boolean
+  }): Promise<OwnedSyncOutcome>
   lastSync(): SteamSyncInfo | null
   /** Fetches appdetails for Steam games still without metadata (D-16), one at a time. */
   fetchMissingMetadata(): Promise<void>
@@ -45,28 +54,31 @@ export function createSteamOnline(deps: SteamOnlineDeps): SteamOnline {
   let metadataRun: Promise<void> | null = null
   const now = (): string => toUtcIso(deps.clock.now())
 
-  const syncPlaytime = async (): Promise<SteamSyncInfo> => {
+  const syncOwnedGames: SteamOnline['syncOwnedGames'] = async ({
+    updatePlaytime,
+    scanComplete
+  }) => {
+    const failed = (error: string): OwnedSyncOutcome => {
+      if (updatePlaytime) last = { status: 'failed', error, games: 0, finishedAt: now() }
+      return { added: 0, duplicates: [], error }
+    }
     const { steamId, steamKey } = deps.credentials()
-    if (!steamId || !steamKey) {
-      last = { status: 'failed', error: 'not-configured', games: 0, finishedAt: now() }
-      return last
-    }
+    if (!steamId || !steamKey) return failed('not-configured')
     const owned = await fetchOwnedGames(deps.get, steamKey, steamId)
-    if (!owned.ok) {
-      last = { status: 'failed', error: owned.error, games: 0, finishedAt: now() }
-      return last
-    }
-    const updated = deps.games.applySteamPlayStats(
+    if (!owned.ok) return failed(owned.error)
+    const { added, updated, duplicates } = importOwnedSteamGames(
+      deps,
       owned.data.map((g) => ({
         steamAppId: g.appId,
+        title: g.title,
         playtimeMinutes: g.playtimeMinutes,
         lastPlayed: g.lastPlayed
       })),
-      now()
+      { scanComplete, overwritePlaytime: updatePlaytime, syncedAt: now() }
     )
-    last = { status: 'ok', error: null, games: updated, finishedAt: now() }
-    if (updated > 0) deps.onLibraryChanged()
-    return last
+    if (updatePlaytime) last = { status: 'ok', error: null, games: updated, finishedAt: now() }
+    if (added > 0 || updated > 0) deps.onLibraryChanged()
+    return { added, duplicates, error: null }
   }
 
   const fetchMissing = async (): Promise<void> => {
@@ -88,7 +100,7 @@ export function createSteamOnline(deps: SteamOnlineDeps): SteamOnline {
   }
 
   return {
-    syncPlaytime,
+    syncOwnedGames,
     lastSync: () => last,
 
     fetchMissingMetadata() {

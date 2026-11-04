@@ -93,7 +93,9 @@ filtros do Início.
 -   Conexões: Steam (ID Steam; chave da Steam API com Alterar/Remover ou
     Configurar; "Testar conexão"), SteamGridDB (chave; "Testar conexão")
     e o painel "Biblioteca" com "Atualizar biblioteca" e o resultado da
-    última leitura. Chaves aparecem só como "Configurada" / "Não
+    última leitura, sempre com o horário e o que mudou ("nenhuma novidade"
+    quando nada mudou); se os jogos não instalados não puderem ser lidos,
+    o motivo aparece logo abaixo. Chaves aparecem só como "Configurada" / "Não
     configurada", nunca o valor.
 -   Emuladores: uma linha por emulador suportado, com o executável
     configurado; trocar vale para todos os jogos do emulador.

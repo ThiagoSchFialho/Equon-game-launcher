@@ -6,6 +6,7 @@ import {
   createSessionRepository,
   createUnitOfWork
 } from '../../../src/infrastructure/persistence'
+import type { OwnedSyncOutcome } from '../../../src/core/application'
 import { createSteamService } from '../../../src/main/steam/steam-service'
 import { createTestDb } from '../../helpers/db'
 
@@ -15,6 +16,8 @@ describe('steam service: duplicate review', () => {
     const games = createGameRepository(db)
     const uow = createUnitOfWork(db)
     let result: DiscoveryResult = { status: 'complete', games: [] }
+    const ownedCalls: { first: boolean; scanComplete: boolean }[] = []
+    let owned = (): OwnedSyncOutcome => ({ added: 0, duplicates: [], error: null })
     const adapter = {
       source: 'steam',
       capabilities: {
@@ -46,7 +49,11 @@ describe('steam service: duplicate review', () => {
       }),
       readRunningAppId: async () => null,
       clock: { now: () => new Date('2026-11-04T03:00:00Z') },
-      onLibraryChanged: () => {}
+      onLibraryChanged: () => {},
+      syncOwned: async (options) => {
+        ownedCalls.push(options)
+        return owned()
+      }
     })
 
     const balatro = games.create({ origin: 'manual', title: 'Balatro' }).id
@@ -70,5 +77,37 @@ describe('steam service: duplicate review', () => {
     games.setFlags(celeste, { hidden: true })
     expect(service.duplicates()).toEqual([])
     expect(games.list()).toHaveLength(4) // nothing was merged
+
+    // The owned-games step runs in every refresh; only the first one is the startup one.
+    expect(ownedCalls.slice(0, 2)).toEqual([
+      { first: true, scanComplete: true },
+      { first: false, scanComplete: true }
+    ])
+
+    // Its games and candidates join the scan's; an error does not fail the refresh.
+    const other = games.create({ origin: 'manual', title: 'Doom' }).id
+    owned = () => ({
+      added: 3,
+      duplicates: [
+        { discovered: { externalId: '1', title: 'Doom', installed: false }, existingGameId: other }
+      ],
+      error: null
+    })
+    expect(await service.refresh()).toMatchObject({ added: 3, duplicates: 1, ownedError: null })
+
+    owned = () => {
+      throw new Error('boom')
+    }
+    expect(await service.refresh()).toMatchObject({
+      status: 'complete',
+      added: 0,
+      ownedError: 'invalid-response'
+    })
+
+    // Steam folder not found: nothing local, but owned games are still read as unknown.
+    result = { status: 'failed', reason: 'steam-not-found' }
+    owned = () => ({ added: 0, duplicates: [], error: null })
+    expect(await service.refresh()).toMatchObject({ status: 'failed', reason: 'steam-not-found' })
+    expect(ownedCalls[ownedCalls.length - 1]).toEqual({ first: false, scanComplete: false })
   })
 })

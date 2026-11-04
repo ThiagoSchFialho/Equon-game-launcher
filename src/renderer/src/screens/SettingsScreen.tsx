@@ -296,6 +296,11 @@ function Connections({
           <p className="settings__library-status" aria-live="polite">
             {refreshText(lastRefresh)}
           </p>
+          {lastRefresh?.ownedError && (
+            <p className="settings__library-status" role="alert">
+              {ownedErrorText(lastRefresh.ownedError)}
+            </p>
+          )}
           {duplicates.length > 0 && (
             <p className="settings__library-duplicates">{t.duplicates.notice(duplicates.length)}</p>
           )}
@@ -392,8 +397,18 @@ function refreshText(info: LibraryRefreshInfo | null): string {
     return t.settings.refreshFailed[info.reason ?? ''] ?? t.settings.refreshFailedOther
   }
   if (info.status === 'partial') return t.settings.refreshPartial
-  return t.settings.refreshResult(info.added, info.missing)
+  return t.settings.refreshResult(clockTime(info.finishedAt), info.added, info.missing)
 }
+
+function ownedErrorText(error: string): string {
+  if (error === 'not-configured') return t.settings.ownedNotConfigured
+  return t.settings.ownedFailed(
+    (t.settings.testErrors[error] ?? t.settings.testErrors['invalid-response']).toLowerCase()
+  )
+}
+
+const clockTime = (iso: string): string =>
+  new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
 /** A stored key: only "configured or not" is shown, never the value (D-04). */
 function SecretRow({
@@ -451,11 +466,7 @@ function SecretRow({
 function syncText(sync: SteamSyncInfo | null): string {
   if (sync === null) return t.settings.sync.never
   if (sync.status === 'ok') {
-    const time = new Date(sync.finishedAt).toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-    return t.settings.sync.ok(time, sync.games)
+    return t.settings.sync.ok(clockTime(sync.finishedAt), sync.games)
   }
   return t.settings.sync.failed(
     (

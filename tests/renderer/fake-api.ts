@@ -107,6 +107,7 @@ export function installFakeApi(
         missing: 0,
         unknown: 0,
         duplicates: 0,
+        ownedError: null,
         finishedAt: '2026-11-03T22:00:00Z'
       }),
       duplicates: async () => [],

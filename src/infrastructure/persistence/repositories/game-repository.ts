@@ -116,6 +116,7 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
       steam_synced_at = @syncedAt,
       time_last_played = COALESCE(@lastPlayed, time_last_played)
     WHERE steam_id = @steamAppId AND origin = 'steam'
+      AND (@onlyUnsynced = 0 OR steam_synced_at IS NULL)
     RETURNING id`)
 
   const found = (row: GameRow | undefined, id: number): Game => {
@@ -193,7 +194,7 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
       updateAchievementsSynced.run(syncedAt, id)
     },
 
-    applySteamPlayStats: (stats, syncedAt) =>
+    applySteamPlayStats: (stats, syncedAt, options) =>
       db.transaction(() => {
         let updated = 0
         for (const s of stats) {
@@ -201,7 +202,8 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
             steamAppId: s.steamAppId,
             minutes: s.playtimeMinutes,
             syncedAt,
-            lastPlayed: s.lastPlayed
+            lastPlayed: s.lastPlayed,
+            onlyUnsynced: options?.onlyUnsynced ? 1 : 0
           })
           if (!row) continue
           recomputePlayStats(row.id)

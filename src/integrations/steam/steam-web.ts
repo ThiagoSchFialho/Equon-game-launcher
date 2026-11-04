@@ -180,6 +180,8 @@ export async function fetchPlayerSummary(
 
 export interface OwnedGame {
   appId: number
+  /** null when Steam sends no name: such a game cannot be added to the library. */
+  title: string | null
   /** playtime_forever, minutes. */
   playtimeMinutes: number
   /** rtime_last_played as ISO-8601 UTC; null when 0 or absent. */
@@ -193,6 +195,7 @@ const ownedGamesSchema = z.object({
       .array(
         z.object({
           appid: z.number(),
+          name: z.string().optional(),
           playtime_forever: z.number(),
           rtime_last_played: z.number().optional()
         })
@@ -215,7 +218,7 @@ export async function fetchOwnedGames(
   if (!isSteamId64(steamId)) return { ok: false, error: 'invalid-steam-id' }
   const response = await request(
     get,
-    `${WEB_API}/IPlayerService/GetOwnedGames/v1/?key=${key}&steamid=${steamId}&include_played_free_games=1`
+    `${WEB_API}/IPlayerService/GetOwnedGames/v1/?key=${key}&steamid=${steamId}&include_appinfo=1&include_played_free_games=1`
   )
   if (!response.ok) return response
   const parsed = ownedGamesSchema.safeParse(response.data)
@@ -230,6 +233,7 @@ export async function fetchOwnedGames(
       .filter((g) => isSteamAppId(g.appid) && Number.isFinite(g.playtime_forever))
       .map((g) => ({
         appId: g.appid,
+        title: g.name?.trim() || null,
         playtimeMinutes: Math.max(0, Math.floor(g.playtime_forever)),
         lastPlayed:
           g.rtime_last_played && g.rtime_last_played > 0

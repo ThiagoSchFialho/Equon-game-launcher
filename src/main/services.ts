@@ -207,12 +207,12 @@ export function createServices(
     clock,
     onLibraryChanged: () => window()?.webContents.send(IpcEvent.libraryChanged),
     onError: (error) => console.error('Steam error:', error),
-    // Startup: playtime sync once (after interrupted sessions and the scan), then metadata.
-    afterScan: (first) => {
-      const sync = first ? steamOnline.syncPlaytime() : Promise.resolve(null)
-      void sync
-        .catch((error) => console.error('Steam sync failed:', String(error)))
-        .then(() => steamOnline.fetchMissingMetadata())
+    // Steam's play stats overwrite only once per launcher start (after interrupted sessions).
+    syncOwned: ({ first, scanComplete }) =>
+      steamOnline.syncOwnedGames({ updatePlaytime: first, scanComplete }),
+    afterRefresh: () => {
+      void steamOnline
+        .fetchMissingMetadata()
         .catch((error) => console.error('Steam metadata failed:', String(error)))
         .then(() => artworkFetcher.fetchMissing())
         .catch((error) => console.error('Artwork queue failed:', String(error)))

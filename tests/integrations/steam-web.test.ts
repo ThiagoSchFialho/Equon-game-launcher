@@ -120,7 +120,12 @@ describe('fetchOwnedGames', () => {
       response: {
         game_count: 2,
         games: [
-          { appid: 2379780, playtime_forever: 91, rtime_last_played: 1793750400 },
+          {
+            appid: 2379780,
+            name: ' Balatro ',
+            playtime_forever: 91,
+            rtime_last_played: 1793750400
+          },
           { appid: 730, playtime_forever: 614, rtime_last_played: 0 }
         ]
       }
@@ -128,11 +133,17 @@ describe('fetchOwnedGames', () => {
     expect(await fetchOwnedGames(get, KEY, STEAM_ID)).toEqual({
       ok: true,
       data: [
-        { appId: 2379780, playtimeMinutes: 91, lastPlayed: '2026-11-04T00:00:00Z' },
-        { appId: 730, playtimeMinutes: 614, lastPlayed: null }
+        {
+          appId: 2379780,
+          title: 'Balatro',
+          playtimeMinutes: 91,
+          lastPlayed: '2026-11-04T00:00:00Z'
+        },
+        { appId: 730, title: null, playtimeMinutes: 614, lastPlayed: null }
       ]
     })
     expect(get.calls[0][0]).toContain('/IPlayerService/GetOwnedGames/v1/?key=')
+    expect(get.calls[0][0]).toContain('include_appinfo=1')
   })
 
   it('treats an empty response (private profile) and bad keys as failures', async () => {

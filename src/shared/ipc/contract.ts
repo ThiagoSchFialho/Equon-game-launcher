@@ -79,6 +79,8 @@ export interface LibraryRefreshInfo {
   unknown: number
   /** Possible duplicates found (review arrives in Phase 6c). */
   duplicates: number
+  /** Why owned games could not be read ('not-configured', 'private-profile'…); null when read. */
+  ownedError: string | null
   /** ISO-8601 UTC */
   finishedAt: string
 }

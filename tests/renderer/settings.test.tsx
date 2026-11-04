@@ -109,6 +109,7 @@ describe('settings', () => {
       missing: 0,
       unknown: 3,
       duplicates: 0,
+      ownedError: null,
       finishedAt: '2026-11-03T22:00:00Z'
     }))
     installFakeApi([summary(1, 'Tidebound')], { library: { refresh } })
@@ -120,6 +121,41 @@ describe('settings', () => {
       await screen.findByText(
         'Atualização parcial: uma biblioteca não pôde ser lida (disco desconectado?).'
       )
+    ).toBeTruthy()
+  })
+
+  it('always answers a refresh: time, new games, and why owned games were not read', async () => {
+    const refresh = vi.fn<EquonApi['library']['refresh']>(async () => ({
+      status: 'complete',
+      reason: null,
+      added: 12,
+      missing: 0,
+      unknown: 0,
+      duplicates: 0,
+      ownedError: null,
+      finishedAt: '2026-11-03T22:00:00Z'
+    }))
+    installFakeApi([summary(1, 'Tidebound')], { library: { refresh } })
+    await openSettings()
+    await click('Atualizar biblioteca')
+    expect(
+      await screen.findByText(/^Biblioteca atualizada às \d\d:\d\d · 12 jogos novos$/)
+    ).toBeTruthy()
+
+    refresh.mockResolvedValueOnce({
+      status: 'complete',
+      reason: null,
+      added: 0,
+      missing: 0,
+      unknown: 0,
+      duplicates: 0,
+      ownedError: 'not-configured',
+      finishedAt: '2026-11-03T22:05:00Z'
+    })
+    await click('Atualizar biblioteca')
+    expect(await screen.findByText(/· nenhuma novidade$/)).toBeTruthy()
+    expect(
+      screen.getByText('Configure o ID Steam e a chave da API para trazer os jogos não instalados.')
     ).toBeTruthy()
   })
 

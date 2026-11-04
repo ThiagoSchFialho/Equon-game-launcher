@@ -88,6 +88,7 @@ export const libraryRefreshInfoSchema = z.strictObject({
   missing: z.number().int().nonnegative(),
   unknown: z.number().int().nonnegative(),
   duplicates: z.number().int().nonnegative(),
+  ownedError: z.string().nullable(),
   finishedAt: z.string()
 }) satisfies z.ZodType<LibraryRefreshInfo>
 

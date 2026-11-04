@@ -111,9 +111,14 @@ export interface GameRepository {
    * Applies a Steam playtime sync in one transaction: for each steam game
    * already stored, sets the baseline and sync time, overwrites
    * time_last_played (when Steam reports one) and recomputes playtime.
-   * Returns how many games were updated. Unknown App IDs are ignored.
+   * Returns how many games were updated. Unknown App IDs are ignored. With
+   * `onlyUnsynced`, games that already have a Steam baseline are left alone.
    */
-  applySteamPlayStats(stats: readonly SteamPlayStats[], syncedAt: string): number
+  applySteamPlayStats(
+    stats: readonly SteamPlayStats[],
+    syncedAt: string,
+    options?: { onlyUnsynced?: boolean }
+  ): number
   setAchievementsSynced(id: number, syncedAt: string): void
 }
 
