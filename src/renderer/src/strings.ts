@@ -24,7 +24,6 @@ export const t = {
     empty: 'Nenhum jogo na biblioteca ainda.',
     emptyHint: 'Jogos da Steam e jogos adicionados manualmente aparecerão aqui.',
     addGame: 'Adicionar jogo',
-    emulators: 'Emuladores',
     search: 'Buscar',
     searchTitle: 'Buscar jogo',
     searchPlaceholder: 'Digite o nome do jogo',
@@ -68,7 +67,7 @@ export const t = {
     steamLaunching: 'Abrindo pela Steam…',
     notInstalled: 'Arquivo do jogo não encontrado. Edite o jogo para corrigir o caminho.',
     installUnknown: 'Não foi possível verificar o arquivo do jogo (disco desconectado?).',
-    emulatorMissing: 'Configure o Yuzu em Biblioteca › Emuladores.',
+    emulatorMissing: 'Configure o Yuzu em Configurações › Emuladores.',
     untracked: 'Atalho .url: o tempo de jogo não é medido.',
     noConfig: 'Configure o executável editando o jogo.',
     runningNote: 'O tempo desta sessão será somado quando o jogo fechar.',
@@ -88,7 +87,7 @@ export const t = {
     'not-found': 'Este jogo não pode ser iniciado.',
     'no-config': 'Configure o executável editando o jogo.',
     'not-installed': 'Arquivo do jogo não encontrado. Edite o jogo para corrigir o caminho.',
-    'emulator-missing': 'Configure o Yuzu em Biblioteca › Emuladores.',
+    'emulator-missing': 'Configure o Yuzu em Configurações › Emuladores.',
     'shortcut-invalid': 'O atalho .url não aponta para uma loja suportada. Edite o jogo.',
     'start-timeout': 'A Steam não iniciou o jogo a tempo. Tente de novo.',
     'steam-busy': 'A Steam está instalando ou atualizando este jogo.',
@@ -166,7 +165,7 @@ export const t = {
     emulatorCommand: (emulator: string, rom: string) =>
       `Será iniciado com: ${emulator} -f -g "${rom}"`,
     emulatorMissing: (emulator: string) =>
-      `${emulator} ainda não foi configurado. Use “Emuladores” na Biblioteca.`,
+      `${emulator} ainda não foi configurado. Use Configurações › Emuladores.`,
     shortcutNote:
       'Atalhos .url abrem pela loja; argumentos não se aplicam e o tempo de jogo não é medido.',
     discard: {
@@ -246,7 +245,6 @@ export const t = {
     builtin: 'De fábrica'
   },
   emulators: {
-    title: 'Emuladores',
     subtitle: 'Escolha o emulador e indique onde está o executável dele.',
     notConfigured: (exe: string) => `Não configurado — escolha o ${exe}`,
     loading: 'Carregando emuladores…',
@@ -289,7 +287,7 @@ export const t = {
   },
   settings: {
     title: 'Configurações',
-    tabs: { connections: 'Conexões', about: 'Sobre' },
+    tabs: { connections: 'Conexões', emulators: 'Emuladores', about: 'Sobre' },
     steam: 'Steam',
     steamId: 'ID Steam',
     steamIdPlaceholder: 'Digite sua id Steam…',

@@ -252,7 +252,7 @@ describe('add game form', () => {
     await click('Origem')
     await clickText('Yuzu')
     expect(
-      await screen.findByText('Yuzu ainda não foi configurado. Use “Emuladores” na Biblioteca.')
+      await screen.findByText('Yuzu ainda não foi configurado. Use Configurações › Emuladores.')
     ).toBeTruthy()
   })
 
@@ -285,8 +285,8 @@ describe('add game form', () => {
   })
 })
 
-describe('add emulator', () => {
-  it('configures, changes and removes the Yuzu executable from the Library', async () => {
+describe('emulators in Settings', () => {
+  it('configures, changes and removes the Yuzu executable', async () => {
     let current: string | null = null
     const set = vi.fn<EquonApi['emulators']['set']>(async (_key, path) => {
       current = path
@@ -303,7 +303,11 @@ describe('add emulator', () => {
     render(<App />)
     await screen.findByText('12h 22m')
     press('e')
-    await click('Emuladores')
+    // The Library has no emulator button any more; the tab lives in Settings.
+    await screen.findByText('1 jogo')
+    expect(screen.queryByLabelText('Emuladores')).toBeNull()
+    await click('Configurações')
+    await clickText('Emuladores')
     expect(await screen.findByText('Não configurado — escolha o yuzu.exe')).toBeTruthy()
     await click('Yuzu')
     await clickText('yuzu.exe')

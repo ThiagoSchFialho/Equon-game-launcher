@@ -113,7 +113,7 @@ com o computador ligado a uma TV.
     origem são adicionados manualmente, apontando para o `.exe` do jogo ou
     para um atalho `.url` (atalhos das lojas, como Epic; nesse caso o
     tempo de jogo não é medido).
--   **Emuladores:** a Biblioteca tem "Emuladores", onde o usuário
+-   **Emuladores:** as Configurações têm a aba "Emuladores", onde o usuário
     escolhe um emulador suportado (por enquanto só o Yuzu) e indica o
     executável dele. Ao adicionar um jogo com origem Yuzu, o usuário só
     escolhe a ROM; o launcher abre o jogo direto no emulador.
@@ -202,6 +202,7 @@ limitações, condições de teste e método de inicialização suportado.
     bibliotecas vêm do `libraryfolders.vdf`, sem caminho manual.
 -   Conexões: SteamID64 e chaves da Steam Web API e do SteamGridDB
     (guardadas criptografadas), "Atualizar biblioteca".
+-   Aba "Emuladores" para indicar o executável de cada emulador suportado.
 -   Aba "Sobre" com informações básicas do sistema.
 -   Opções para adicionar, editar e remover jogos manuais.
 -   Informações básicas de diagnóstico para facilitar suporte.

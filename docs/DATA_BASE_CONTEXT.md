@@ -315,7 +315,7 @@ Emuladores suportados pelo launcher e o executável que o usuário configurou pa
 
 Regras:
 
-- Configurado pela tela "Emuladores" da Biblioteca; pode ser trocado ou removido.
+- Configurado na aba "Emuladores" das Configurações; pode ser trocado ou removido.
 - **Yuzu:** ROMs `.nsp`, `.xci`, `.nca`, `.nro` e `.nso`. O jogo abre com `yuzu.exe -f -g "<rom>"` (`-f` tela cheia, `-g` jogo), montado no processo principal como lista de argumentos, sem shell.
 - Estado de instalação de um jogo do Yuzu: existência da ROM (mesmas regras de 3.2). Sem o emulador configurado (ou com o executável ausente), o jogo não pode ser iniciado e a interface explica o motivo.
 

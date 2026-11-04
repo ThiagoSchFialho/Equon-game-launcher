@@ -10,8 +10,6 @@ export type Route =
   | ScreenRoute
   /** Add (id null) or edit form; `previous` is where Cancel/back returns. */
   | { name: 'gameForm'; id: number | null; previous: ScreenRoute }
-  /** Emulator setup (§3.12), opened from the Library. */
-  | { name: 'emulators'; previous: ScreenRoute }
   /** Settings, opened from the gear in the top bar. */
   | { name: 'settings'; previous: ScreenRoute }
 
@@ -26,7 +24,6 @@ export interface Navigation {
   goToSection(section: Section): void
   openGame(id: number): void
   openGameForm(id: number | null): void
-  openEmulators(): void
   openSettings(): void
   /** Go back one screen; no-op at a top-level section. */
   back(): void
@@ -69,11 +66,6 @@ function screenOf(route: Route): ScreenRoute {
 /** Route that opens the add/edit form from `route`. */
 export function formRoute(route: Route, id: number | null): Route {
   return { name: 'gameForm', id, previous: screenOf(route) }
-}
-
-/** Route that opens the emulator setup from `route`. */
-export function emulatorsRoute(route: Route): Route {
-  return { name: 'emulators', previous: screenOf(route) }
 }
 
 /** Route that opens the settings from `route`. */

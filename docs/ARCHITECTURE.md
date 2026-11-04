@@ -1,6 +1,6 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.20
+**Version:** 0.21
 **Status:** Draft — Phase 6 (Steam library and metadata)
 **Last updated:** 2026-11-04
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
@@ -148,7 +148,7 @@ Origins are **data, not a fixed enum** (owner decision, Phase 2). An `ORIGINS` t
 - **Only `steam` has an automatic adapter** (discovery, metadata, achievements). Every other origin, built-in or user-created, behaves as a manually added game: the user registers the game and its launch configuration (an `.exe` or `.url` shortcut; for Yuzu games, the ROM). The user never picks `steam` when adding a game.
 - Games from Epic, GOG or any other PC launcher use `manual`.
 - TypeScript: the origin is a `string` key; built-in keys are constants, and adapter capabilities are keyed by `steam` only.
-- **Emulators (decided in Phase 4):** emulators are a separate feature, not origin settings. An `EMULATORS` table stores the executable the user configured per supported emulator (only **Yuzu** for now; Library → "Emuladores"). A Yuzu game (origin `yuzu`) stores only its ROM path; at launch main builds `yuzu.exe -f -g "<rom>"` as an argument array, so changing `yuzu.exe` applies to every Yuzu game. The built-in `manual` origin is displayed as "Jogo Local" (migration `0002`). Details: `DATA_BASE_CONTEXT.md` §3.7 and §3.12.
+- **Emulators (decided in Phase 4):** emulators are a separate feature, not origin settings. An `EMULATORS` table stores the executable the user configured per supported emulator (only **Yuzu** for now; Settings → "Emuladores"). A Yuzu game (origin `yuzu`) stores only its ROM path; at launch main builds `yuzu.exe -f -g "<rom>"` as an argument array, so changing `yuzu.exe` applies to every Yuzu game. The built-in `manual` origin is displayed as "Jogo Local" (migration `0002`). Details: `DATA_BASE_CONTEXT.md` §3.7 and §3.12.
 - **`.url` shortcuts (decided in Phase 4):** a manual game may point to a Windows internet shortcut. Main reads its `URL=` line and only accepts the schemes `com.epicgames.launcher:`, `steam:`, `uplay:`, `origin2:`, `link2ea:` and `battlenet:` (checked when saving and again when launching), then opens it through Electron's external-URL mechanism. No process is observed, so **no playtime is measured** for these games.
 
 ### 3.6 D-06 — Installation state (Accepted: nullable)
@@ -670,6 +670,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-01 | 0.7 | Accepted D-14 (npm, electron-vite, Vitest, ESLint + Prettier, strict TypeScript); documented the `better-sqlite3` Node/Electron ABI rule and the `node:sqlite` check for the Phase 1 spike. Phase 1 unblocked |
 | 2026-11-01 | 0.8 | Accepted D-15 (artwork). Aligned `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md` and `ROADMAP.md` with all accepted decisions. Recorded the open Home cover type |
 | 2026-11-01 | 0.9 | Added a fifth art type: portrait cover 600×900 for the Home screen. Renamed `cover` to `cover_square`; added `cover_portrait` |
+| 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |
 | 2026-11-03 | 0.18 | Phase 6b: `appdetails` in Portuguese with the owner-chosen fields, `GetOwnedGames` sync after the startup scan, "Testar conexão" (Steam `GetPlayerSummaries`, SteamGridDB). |

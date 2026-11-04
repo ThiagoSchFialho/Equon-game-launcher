@@ -9,12 +9,14 @@ import type {
 } from '../../../shared/ipc/contract'
 import checkIcon from '../assets/icons/check-circle.svg'
 import editIcon from '../assets/icons/edit.svg'
+import gamepadIcon from '../assets/icons/gamepad.svg'
 import infoIcon from '../assets/icons/info.svg'
 import steamIcon from '../assets/icons/steam-white.svg'
 import syncIcon from '../assets/icons/sync.svg'
 import { useNavigation, currentSection } from '../app/navigation'
 import { Button } from '../components/Button'
 import { ChoiceDialog } from '../components/Dialog'
+import { EmulatorsSettings } from '../components/EmulatorsSettings'
 import { Footer, type Hint } from '../components/Footer'
 import { FormRow } from '../components/FormRow'
 import { OnScreenKeyboard } from '../components/OnScreenKeyboard'
@@ -26,7 +28,7 @@ import { FocusScope } from '../focus/FocusProvider'
 import { errorMessage, t } from '../strings'
 import './SettingsScreen.css'
 
-type Tab = 'connections' | 'about'
+type Tab = 'connections' | 'emulators' | 'about'
 type Overlay = { kind: 'steamId' } | { kind: 'secret'; secret: SecretKind; label: string }
 
 const HINTS: Hint[] = [
@@ -34,7 +36,7 @@ const HINTS: Hint[] = [
   { button: 'B', label: t.hints.back }
 ]
 
-/** Settings (mockup "settings ideas2"): Conexões and Sobre. Keys never come back from main. */
+/** Settings (mockup "settings ideas2"): Conexões, Emuladores and Sobre. Keys never come back from main. */
 export function SettingsScreen(): React.JSX.Element {
   const navigation = useNavigation()
   const [tab, setTab] = useState<Tab>('connections')
@@ -77,6 +79,8 @@ export function SettingsScreen(): React.JSX.Element {
         onError={(field, message) => setErrors((e) => ({ ...e, [field]: message }))}
       />
     )
+  } else if (tab === 'emulators') {
+    content = <EmulatorsSettings />
   } else {
     content = <About steamPath={info.steamPath} />
   }
@@ -106,6 +110,13 @@ export function SettingsScreen(): React.JSX.Element {
               icon={steamIcon}
               label={t.settings.tabs.connections}
               selected={tab === 'connections'}
+              onSelect={setTab}
+            />
+            <SettingsTab
+              id="emulators"
+              icon={gamepadIcon}
+              label={t.settings.tabs.emulators}
+              selected={tab === 'emulators'}
               onSelect={setTab}
             />
             <SettingsTab

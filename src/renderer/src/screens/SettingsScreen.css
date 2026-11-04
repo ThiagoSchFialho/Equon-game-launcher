@@ -72,6 +72,12 @@
   padding-bottom: var(--space-8);
 }
 
+.settings__subtitle {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body);
+}
+
 .settings__group {
   display: flex;
   align-items: center;

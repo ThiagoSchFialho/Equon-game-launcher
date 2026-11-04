@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   NavigationContext,
   currentSection,
-  emulatorsRoute,
   isSectionRoute,
   settingsRoute,
   formRoute,
@@ -19,7 +18,6 @@ import { FocusManager } from './focus/focus-manager'
 import { FocusProvider } from './focus/FocusProvider'
 import { useInput } from './input/useInput'
 import { AchievementsScreen } from './screens/AchievementsScreen'
-import { EmulatorsScreen } from './screens/EmulatorsScreen'
 import { GameDetailsScreen } from './screens/GameDetailsScreen'
 import { GameFormScreen } from './screens/GameFormScreen'
 import { HomeScreen } from './screens/HomeScreen'
@@ -39,8 +37,6 @@ function CurrentScreen({ route }: { route: Route }): React.JSX.Element {
       return <GameDetailsScreen key={route.id} id={route.id} from={route.from} />
     case 'gameForm':
       return <GameFormScreen key={route.id ?? 'new'} id={route.id} />
-    case 'emulators':
-      return <EmulatorsScreen />
     case 'settings':
       return <SettingsScreen />
   }
@@ -75,7 +71,6 @@ function App(): React.JSX.Element {
       goToSection: (section) => setRoute({ name: section }),
       openGame: (id) => setRoute((r) => ({ name: 'game', id, from: currentSection(r) })),
       openGameForm: (id) => setRoute((r) => formRoute(r, id)),
-      openEmulators: () => setRoute(emulatorsRoute),
       openSettings: () => setRoute(settingsRoute),
       back: () => setRoute(previousRoute),
       // Sections only change from the section screens themselves.

@@ -192,13 +192,6 @@ export function LibraryScreen(): React.JSX.Element {
             </Button>
             <div className="library__toolbar-actions">
               <Button
-                id="library:emulators"
-                label={t.library.emulators}
-                onConfirm={() => navigation.openEmulators()}
-              >
-                {t.library.emulators}
-              </Button>
-              <Button
                 id="library:add"
                 variant="primary"
                 label={t.library.addGame}
