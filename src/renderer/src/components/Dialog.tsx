@@ -88,20 +88,23 @@ export function ChoiceDialog({
   title,
   items,
   onClose,
-  footer
+  footer,
+  width
 }: {
   id: string
   title: string
   items: readonly ChoiceItem[]
   onClose: () => void
   footer?: ReactNode
+  /** Wide for lists of long names; narrow by default. */
+  width?: 'narrow' | 'wide'
 }): React.JSX.Element {
   const initial = Math.max(
     0,
     items.findIndex((item) => item.selected)
   )
   return (
-    <DialogFrame id={id} title={title} onClose={onClose}>
+    <DialogFrame id={id} title={title} onClose={onClose} width={width}>
       <h2 className="dialog__title">{title}</h2>
       <div className="dialog__panel dialog__panel--list">
         {items.map((item, i) => (

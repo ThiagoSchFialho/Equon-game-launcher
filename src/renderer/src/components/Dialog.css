@@ -99,10 +99,10 @@
   color: var(--color-text-secondary);
 }
 
+/* Long names wrap instead of being cut. */
 .choice__label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .choice__detail {

@@ -111,6 +111,7 @@ export function SteamGridDbSearch({
   return (
     <ChoiceDialog
       id="steamgriddb"
+      width="wide"
       title={t.steamGridDb.title}
       items={items}
       onClose={onClose}
