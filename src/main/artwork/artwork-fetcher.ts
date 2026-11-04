@@ -6,7 +6,7 @@ import {
   writeArtwork
 } from '../../infrastructure/artwork/import-artwork'
 import type { HttpGet, HttpGetBytes } from '../../integrations/http'
-import { fetchAppArtwork } from '../../integrations/steam/steam-web'
+import { fetchAppArtwork, isGeneratedStoreBackground } from '../../integrations/steam/steam-web'
 import {
   findBestAsset,
   searchSteamGridDb,
@@ -110,7 +110,12 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
   const fillSteamGame = async (game: Game, have: readonly ArtworkKind[]): Promise<boolean> => {
     const appId = game.steamAppId as number
     let changed = false
-    const missing = (kind: ArtworkKind): boolean => !have.includes(kind)
+    // A blurred store-generated background (stored before the screenshot rule) counts as missing.
+    const stored = deps.artwork.get(game.id, 'background')
+    const generated =
+      stored !== null && !stored.userSelected && isGeneratedStoreBackground(stored.sourceUrl ?? '')
+    const missing = (kind: ArtworkKind): boolean =>
+      !have.includes(kind) || (kind === 'background' && generated)
 
     if (missing('header') || missing('background')) {
       const urls = await fetchAppArtwork(deps.get, appId)

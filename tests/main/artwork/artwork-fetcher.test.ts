@@ -143,6 +143,46 @@ describe('artwork fetcher: Steam games', () => {
   })
 })
 
+describe('artwork fetcher: generated store backgrounds', () => {
+  it('uses the first screenshot instead, also replacing one stored earlier', async () => {
+    const id = games().upsertSteamGame({ steamAppId: 40800, title: 'Super Meat Boy' }).id
+    const blurred = 'https://store.akamai.steamstatic.com/images/storepagebackground/app/40800?t=1'
+    artwork().save({
+      gameId: id,
+      kind: 'background',
+      localPath: String(id) + '/background.webp',
+      source: 'steam',
+      sourceUrl: blurred,
+      width: 1438,
+      height: 808,
+      userSelected: false,
+      fetchedAt: null
+    })
+    json.set('appids=40800&filters=basic,background,screenshots', {
+      status: 200,
+      json: {
+        '40800': {
+          success: true,
+          data: {
+            header_image: 'https://x.steamstatic.com/h.jpg',
+            background_raw: blurred,
+            screenshots: [{ path_full: 'https://x.steamstatic.com/ss.1920x1080.jpg' }]
+          }
+        }
+      }
+    })
+    image('https://x.steamstatic.com/h.jpg', 460, 215)
+    image('https://x.steamstatic.com/ss.1920x1080.jpg', 1920, 1080)
+
+    await fetcher.fetchMissing()
+
+    expect(artwork().get(id, 'background')).toMatchObject({
+      sourceUrl: 'https://x.steamstatic.com/ss.1920x1080.jpg',
+      width: 1920
+    })
+  })
+})
+
 describe('artwork fetcher: manual games', () => {
   it('searches and applies the chosen SteamGridDB game as user-selected art', async () => {
     const id = games().create({ origin: 'manual', title: 'Hollow Quest' }).id
