@@ -82,8 +82,12 @@ export function OnScreenKeyboard({
   const [warning, setWarning] = useState<string | null>(null)
   // Latest value for the physical-keyboard capture registered once on mount.
   const valueRef = useRef(value)
+  // Keeps the end of a long text (and the caret) in view.
+  const inputRef = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
     valueRef.current = value
+    const input = inputRef.current
+    if (input) input.scrollTop = input.scrollHeight
   }, [value])
 
   const insert = (text: string): void => {
@@ -151,9 +155,18 @@ export function OnScreenKeyboard({
       <div className="keyboard">
         <div className="keyboard__header">
           <h2 className="keyboard__title">{title}</h2>
-          <div className="keyboard__input" data-empty={value === ''}>
-            <span>{value === '' ? placeholder : value}</span>
-            <span className="keyboard__caret" aria-hidden />
+          <div ref={inputRef} className="keyboard__input" data-empty={value === ''}>
+            {value === '' ? (
+              <>
+                <span className="keyboard__caret" aria-hidden />
+                <span>{placeholder}</span>
+              </>
+            ) : (
+              <>
+                <span>{value}</span>
+                <span className="keyboard__caret" aria-hidden />
+              </>
+            )}
           </div>
           {warning && <p className="keyboard__warning">{warning}</p>}
         </div>

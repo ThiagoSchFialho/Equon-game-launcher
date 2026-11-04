@@ -16,17 +16,20 @@
   font-weight: var(--font-weight-semibold);
 }
 
+/* Long text wraps; the box grows up to a few lines, then scrolls to keep the end in view. */
 .keyboard__input {
-  display: flex;
-  align-items: center;
   min-height: 3.25rem;
-  padding: var(--space-2) var(--space-8);
+  max-height: 9.5rem;
+  padding: var(--space-3) var(--space-8);
   background: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-button);
   font-size: var(--font-size-body);
-  overflow: hidden;
-  white-space: pre;
+  line-height: 1.6;
+  overflow-y: auto;
+  scrollbar-width: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .keyboard__input[data-empty='true'] {
@@ -34,6 +37,8 @@
 }
 
 .keyboard__caret {
+  display: inline-block;
+  vertical-align: middle;
   width: 2px;
   height: 1.25rem;
   margin-left: 1px;
@@ -42,7 +47,6 @@
 }
 
 .keyboard__input[data-empty='true'] .keyboard__caret {
-  order: -1;
   margin: 0 1px 0 0;
 }
 
