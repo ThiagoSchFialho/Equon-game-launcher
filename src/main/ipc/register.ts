@@ -33,12 +33,15 @@ import {
   settingsInfoSchema,
   settingsSetSecretArgs,
   settingsSetSteamIdArgs,
+  settingsTestConnectionArgs,
+  connectionTestSchema,
   systemInfoSchema
 } from '../../shared/ipc/schemas'
 import { z } from 'zod'
 import { listFiles, pickNative } from '../files/file-service'
 import type { ManualGameService } from '../games/manual-game-service'
 import type { SettingsService } from '../settings/settings-service'
+import type { SteamOnline } from '../steam/steam-online'
 import type { SteamService } from '../steam/steam-service'
 import { isAppUrl, type AppOrigin } from '../security/navigation'
 import {
@@ -55,6 +58,7 @@ export interface IpcDeps {
   runner: GameRunner
   window: () => BrowserWindow | null
   steam: SteamService
+  steamOnline: SteamOnline
   settings: SettingsService
   /** Settings › Sobre. */
   systemInfo?: () => SystemInfo
@@ -104,6 +108,16 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
     IpcChannel.settingsSetSecret,
     createValidatedHandler(settingsSetSecretArgs, settingsResult, trusted, (kind, value) =>
       deps.settings.setSecret(kind, value)
+    )
+  )
+
+  ipcMain.handle(
+    IpcChannel.settingsTestConnection,
+    createValidatedHandler(
+      settingsTestConnectionArgs,
+      resultSchema(connectionTestSchema),
+      trusted,
+      (kind) => deps.steamOnline.testConnection(kind)
     )
   )
 

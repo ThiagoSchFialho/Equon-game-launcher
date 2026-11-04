@@ -271,7 +271,27 @@ export const t = {
     change: 'Alterar',
     remove: 'Remover',
     test: 'Testar conexão',
-    testSoon: 'O teste de conexão chega na próxima etapa.',
+    testing: 'Testando…',
+    testNeedsConfig: 'Configure o ID Steam e a chave para testar.',
+    testNeedsGridKey: 'Configure a chave para testar.',
+    testOkSteam: (name: string) => `Conectado como ${name}.`,
+    testPrivate: (name: string) =>
+      `Conectado como ${name}, mas os detalhes de jogos do perfil são privados: o tempo de jogo não sincroniza.`,
+    testOkGrid: 'Chave válida.',
+    testErrors: {
+      'not-configured': 'Configure as informações acima antes de testar.',
+      'invalid-key': 'Chave inválida.',
+      'invalid-steam-id': 'ID Steam não encontrado.',
+      'private-profile': 'Os detalhes de jogos do perfil são privados.',
+      network: 'Sem conexão com o serviço. Verifique a internet.',
+      'invalid-response': 'O serviço respondeu de forma inesperada. Tente mais tarde.'
+    } as Record<string, string>,
+    sync: {
+      never: 'O tempo de jogo da Steam é sincronizado ao abrir o Equon.',
+      ok: (time: string, games: number) =>
+        `Tempo de jogo sincronizado às ${time} (${games === 1 ? '1 jogo' : `${games} jogos`}).`,
+      failed: (reason: string) => `Tempo de jogo não sincronizado: ${reason}`
+    },
     secretsUnavailable: 'O Windows não oferece criptografia agora; as chaves não podem ser salvas.',
     keyPlaceholder: 'Cole ou digite a chave',
     library: 'Biblioteca',

@@ -329,7 +329,12 @@ Instalação, estado e jogo em execução vêm de `libraryfolders.vdf` e `appman
 
 ### 4.2 Steam — `appdetails` (metadados)
 
-Usado para título, descrição, desenvolvedor, data de lançamento, classificação indicativa e gêneros, e para as artes `header_image` e `screenshots`. Verificar o indicador de sucesso, tratar todos os campos como opcionais e normalizar antes de salvar.
+Decisão do dono do projeto (Fase 6b): consultado em português (`l=brazilian&cc=br`) e usado só para estes campos:
+
+- Página do jogo: `genres` (gêneros), `developers` (primeiro valor → `developer`), `short_description` (→ `description`, texto simples) e `required_age` (→ `required_age` como texto; `0` ou ausente → `NULL`, exibido como "pendente").
+- Tela de conquistas: `header_image` (arte `header`, baixada na etapa 6c).
+
+`release_date` e `name` não são usados (o título vem do manifesto local). Verificar o indicador de sucesso (`success: false` para apps que não são jogos ou não existem), tratar todos os campos como opcionais e normalizar antes de salvar (entidades HTML decodificadas, espaços colapsados). Validado em uma resposta real em 2026-11-03. Fila de 1 requisição a cada 1,5 s (limite informado pela comunidade: ~200 a cada 5 minutos).
 
 **Frequência (D-16):** consultado **apenas quando o jogo é descoberto ou adicionado**. Sem refresh periódico e sem refresh na abertura. Falha não conta como concluído (`metadata_fetched_at` continua `NULL`) e é tentada de novo em um refresh posterior da biblioteca, com tentativas limitadas. Nunca sobrescrever `hidden`/`beated` nem trocar valores válidos por vazios.
 
@@ -337,7 +342,7 @@ Usado para título, descrição, desenvolvedor, data de lançamento, classifica�
 
 Decisão do dono do projeto (Fase 2). Para jogos Steam, a Steam é a fonte da verdade do tempo total e da última vez jogado, porque inclui o tempo jogado em outros computadores e antes do Equon.
 
-- **Quando:** uma única vez **a cada abertura do launcher**, com uma chamada a `IPlayerService/GetOwnedGames` (precisa da chave e do SteamID64; validar o formato atual antes de implementar). É a única sincronização automática na abertura; conquistas continuam seguindo a seção 5.
+- **Quando:** uma única vez **a cada abertura do launcher**, com uma chamada a `IPlayerService/GetOwnedGames/v1` (precisa da chave e do SteamID64; formato validado em 2026-11-03: `response.games[].appid`, `playtime_forever` em minutos, `rtime_last_played` em segundos Unix; perfil sem detalhes de jogos públicos responde `response` vazio, tratado como falha). Roda depois da varredura local. É a única sincronização automática na abertura; conquistas continuam seguindo a seção 5.
 - **Ordem na abertura:** primeiro fechar as sessões interrompidas (3.8), depois sincronizar com a Steam.
 - **O que faz:** para cada jogo com `origin = 'steam'` já existente no banco e presente na resposta, em **uma transação**: gravar `steam_playtime_baseline` (`playtime_forever`, em minutos) e `steam_synced_at`, **sobrescrever** `time_last_played` com `rtime_last_played` (quando a Steam informa uma data) e recalcular `playtime` pela regra de 3.8.
 - **Enquanto o launcher está aberto:** cada sessão observada soma sobre a base da Steam. Na próxima abertura a Steam já contabilizou essas sessões e o valor é sobrescrito de novo, sem contagem dupla.

@@ -1,6 +1,6 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.17
+**Version:** 0.18
 **Status:** Draft — Phase 6 (Steam library and metadata)
 **Last updated:** 2026-11-02
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
@@ -304,6 +304,8 @@ Consequences and rules:
 - Fetching never overwrites `hidden` or `beated`, and never replaces valid stored values with empty ones.
 - Achievement synchronization is separate and unaffected (§10).
 - Artwork (D-15) follows the same moment: fetched when the game is discovered or added, then cached.
+
+Phase 6b: requested in Portuguese (`l=brazilian`); only `genres`, `developers`, `short_description` and `required_age` are stored (owner decision; `release_date` is not used), plus `header_image` as the `header` artwork in 6c. Steam Web API calls (`GetOwnedGames/v1`, `GetPlayerSummaries/v2` for "Testar conexão") and the SteamGridDB key check go through an injected HTTP port in `src/integrations`, validated with zod; keys are decrypted only in main and request URLs are never logged.
 
 Whether to offer a manual "refresh metadata" action for a single game is not decided; it would be an explicit user action, not an automatic refresh.
 
@@ -665,6 +667,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-01 | 0.7 | Accepted D-14 (npm, electron-vite, Vitest, ESLint + Prettier, strict TypeScript); documented the `better-sqlite3` Node/Electron ABI rule and the `node:sqlite` check for the Phase 1 spike. Phase 1 unblocked |
 | 2026-11-01 | 0.8 | Accepted D-15 (artwork). Aligned `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md` and `ROADMAP.md` with all accepted decisions. Recorded the open Home cover type |
 | 2026-11-01 | 0.9 | Added a fifth art type: portrait cover 600×900 for the Home screen. Renamed `cover` to `cover_square`; added `cover_portrait` |
+| 2026-11-03 | 0.18 | Phase 6b: `appdetails` in Portuguese with the owner-chosen fields, `GetOwnedGames` sync after the startup scan, "Testar conexão" (Steam `GetPlayerSummaries`, SteamGridDB). |
 | 2026-11-03 | 0.17 | Phase 6a: no Steam folder override; running state from the registry `RunningAppID` (the manifest `AppRunning` flag is not set in practice); local Steam scan at startup and on "Atualizar biblioteca"; Settings screen (gear in the top bar: Conexões, Sobre). |
 | 2026-11-03 | 0.16 | Phase 5: discovery contract (§8) and library view (§11). |
 | 2026-11-02 | 0.15 | Phase 4 owner changes: emulators become a separate feature (`EMULATORS`, Yuzu only, ROM-only games, `-f -g "<rom>"`), replacing emulator defaults on origins; `.url` shortcuts accepted with a scheme allowlist and no playtime measurement |

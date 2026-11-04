@@ -1,18 +1,21 @@
 import type { SecretKind, UserRepository } from '../../core/application'
 import { isSteamId64 } from '../../core/domain'
-import type { Result, SettingsInfo } from '../../shared/ipc/contract'
+import type { Result, SettingsInfo, SteamSyncInfo } from '../../shared/ipc/contract'
 import type { SteamService } from '../steam/steam-service'
 
 /** Electron safeStorage behind a port, so tests need no Electron. */
 export interface SecretCipher {
   available(): boolean
   encrypt(plain: string): Uint8Array
+  /** Throws when the bytes cannot be decrypted (e.g. another Windows user). */
+  decrypt(encrypted: Uint8Array): string
 }
 
 export interface SettingsServiceDeps {
   users: UserRepository
   cipher: SecretCipher
   steam: Pick<SteamService, 'refreshing' | 'lastRefresh'>
+  lastSync(): SteamSyncInfo | null
   steamPath(): string | null
 }
 
@@ -35,7 +38,8 @@ export function createSettingsService(deps: SettingsServiceDeps): SettingsServic
     secretsAvailable: deps.cipher.available(),
     steamPath: deps.steamPath(),
     refreshing: deps.steam.refreshing(),
-    lastRefresh: deps.steam.lastRefresh()
+    lastRefresh: deps.steam.lastRefresh(),
+    lastSync: deps.lastSync()
   })
 
   return {

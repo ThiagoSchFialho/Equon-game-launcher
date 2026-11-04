@@ -9,6 +9,7 @@ export const IpcChannel = {
   settingsGet: 'settings:get',
   settingsSetSteamId: 'settings:set-steam-id',
   settingsSetSecret: 'settings:set-secret',
+  settingsTestConnection: 'settings:test-connection',
   gamesList: 'games:list',
   gamesGet: 'games:get',
   gamesGetEditable: 'games:get-editable',
@@ -73,6 +74,25 @@ export interface LibraryRefreshInfo {
 
 export type SecretKind = 'steam-api-key' | 'steamgriddb-api-key'
 
+/** Last Steam playtime sync (GetOwnedGames, once per launcher start). */
+export interface SteamSyncInfo {
+  status: 'ok' | 'failed'
+  /** 'not-configured', 'invalid-key', 'private-profile', 'network'… or null. */
+  error: string | null
+  /** Games updated. */
+  games: number
+  /** ISO-8601 UTC */
+  finishedAt: string
+}
+
+/** Successful "Testar conexão". */
+export interface ConnectionTest {
+  /** Steam profile name; null for SteamGridDB. */
+  personaName: string | null
+  /** False when the Steam profile hides game details (playtime cannot sync). */
+  gamesVisible: boolean
+}
+
 /** Settings › Conexões. Secrets are never sent: only whether they are set. */
 export interface SettingsInfo {
   steamId: string | null
@@ -84,6 +104,7 @@ export interface SettingsInfo {
   steamPath: string | null
   refreshing: boolean
   lastRefresh: LibraryRefreshInfo | null
+  lastSync: SteamSyncInfo | null
 }
 
 /** Mirrors the domain artwork kinds (a test keeps them in sync). */
@@ -245,6 +266,8 @@ export interface EquonApi {
     setSteamId(steamId: string | null): Promise<Result<SettingsInfo>>
     /** null removes the secret. The value goes to main once and is never returned. */
     setSecret(kind: SecretKind, value: string | null): Promise<Result<SettingsInfo>>
+    /** One live request with the stored credentials. */
+    testConnection(kind: 'steam' | 'steamgriddb'): Promise<Result<ConnectionTest>>
   }
   games: {
     list(): Promise<GameSummary[]>

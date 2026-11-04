@@ -196,3 +196,63 @@ describe('on-screen keyboard paste', () => {
     expect(keyDialog.querySelector('.keyboard__input')?.textContent).toBe('ABC DEF')
   })
 })
+
+describe('connection tests and sync status', () => {
+  it('tests Steam and explains a private profile and errors', async () => {
+    const testConnection = vi
+      .fn<EquonApi['settings']['testConnection']>()
+      .mockResolvedValueOnce({ ok: true, data: { personaName: 'Jogador', gamesVisible: true } })
+      .mockResolvedValueOnce({ ok: true, data: { personaName: 'Jogador', gamesVisible: false } })
+      .mockResolvedValueOnce({ ok: false, error: { code: 'invalid-key' } })
+    installFakeApi([summary(1, 'Tidebound')], {
+      settings: {
+        get: async () =>
+          settingsInfo({
+            steamId: '76561197960287930',
+            steamApiKey: true,
+            lastSync: {
+              status: 'failed',
+              error: 'private-profile',
+              games: 0,
+              finishedAt: '2026-11-04T02:00:00Z'
+            }
+          }),
+        testConnection
+      }
+    })
+    await openSettings()
+    expect(
+      screen.getByText(
+        'Tempo de jogo não sincronizado: os detalhes de jogos do perfil são privados.'
+      )
+    ).toBeTruthy()
+    const [steamTest, gridTest] = screen.getAllByLabelText('Testar conexão')
+    expect(gridTest.getAttribute('aria-disabled')).toBe('true')
+    expect(screen.getByText('Configure a chave para testar.')).toBeTruthy()
+
+    act(() => steamTest.click())
+    expect(await screen.findByText('Conectado como Jogador.')).toBeTruthy()
+    expect(testConnection).toHaveBeenCalledWith('steam')
+    act(() => steamTest.click())
+    expect(
+      await screen.findByText(/os detalhes de jogos do perfil são privados: o tempo/)
+    ).toBeTruthy()
+    act(() => steamTest.click())
+    expect(await screen.findByText('Chave inválida.')).toBeTruthy()
+  })
+
+  it('shows a successful sync', async () => {
+    installFakeApi([summary(1, 'Tidebound')], {
+      settings: {
+        get: async () =>
+          settingsInfo({
+            lastSync: { status: 'ok', error: null, games: 31, finishedAt: '2026-11-04T02:12:00Z' }
+          })
+      }
+    })
+    await openSettings()
+    expect(
+      await screen.findByText(/^Tempo de jogo sincronizado às .* \(31 jogos\)\.$/)
+    ).toBeTruthy()
+  })
+})

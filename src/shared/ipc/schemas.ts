@@ -3,6 +3,7 @@ import {
   ARTWORK_KINDS,
   type AppInfo,
   type BrowserListing,
+  type ConnectionTest,
   type EmulatorInfo,
   type EditableGame,
   type GameDetails,
@@ -11,6 +12,7 @@ import {
   type ManualGameForm,
   type OriginInfo,
   type SettingsInfo,
+  type SteamSyncInfo,
   type SystemInfo
 } from './contract'
 
@@ -86,6 +88,20 @@ export const libraryRefreshInfoSchema = z.strictObject({
   finishedAt: z.string()
 }) satisfies z.ZodType<LibraryRefreshInfo>
 
+export const steamSyncInfoSchema = z.strictObject({
+  status: z.enum(['ok', 'failed']),
+  error: z.string().nullable(),
+  games: z.number().int().nonnegative(),
+  finishedAt: z.string()
+}) satisfies z.ZodType<SteamSyncInfo>
+
+export const connectionTestSchema = z.strictObject({
+  personaName: z.string().nullable(),
+  gamesVisible: z.boolean()
+}) satisfies z.ZodType<ConnectionTest>
+
+export const settingsTestConnectionArgs = z.tuple([z.enum(['steam', 'steamgriddb'])])
+
 export const settingsInfoSchema = z.strictObject({
   steamId: z.string().nullable(),
   steamApiKey: z.boolean(),
@@ -93,7 +109,8 @@ export const settingsInfoSchema = z.strictObject({
   secretsAvailable: z.boolean(),
   steamPath: z.string().nullable(),
   refreshing: z.boolean(),
-  lastRefresh: libraryRefreshInfoSchema.nullable()
+  lastRefresh: libraryRefreshInfoSchema.nullable(),
+  lastSync: steamSyncInfoSchema.nullable()
 }) satisfies z.ZodType<SettingsInfo>
 
 export const originsCreateArgs = z.tuple([z.string().max(100)])

@@ -20,6 +20,8 @@ export interface SteamServiceDeps {
   readRunningAppId(): Promise<string | null>
   clock: { now(): Date }
   onLibraryChanged(): void
+  /** After each scan that read something; `first` is the startup scan. */
+  afterScan?(first: boolean): void
   onError?(error: unknown): void
 }
 
@@ -40,6 +42,7 @@ export function createSteamService(deps: SteamServiceDeps): SteamService {
   let last: LibraryRefreshInfo | null = null
   let timer: ReturnType<typeof setInterval> | null = null
   let polling = false
+  let scanned = false
 
   const refresh = (): Promise<LibraryRefreshInfo> => {
     pending ??= refreshSteamLibrary(deps, deps.adapter)
@@ -54,6 +57,8 @@ export function createSteamService(deps: SteamServiceDeps): SteamService {
           finishedAt: toUtcIso(deps.clock.now())
         }
         if (summary.status !== 'failed') deps.onLibraryChanged()
+        deps.afterScan?.(!scanned)
+        scanned = true
         return last
       })
       .finally(() => {

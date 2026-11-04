@@ -226,20 +226,24 @@ Delivered in three reviewed steps: 6a (local Steam, Play, Settings),
     in D-12. *(6a)*
 -   [x] Settings screen (gear in the top bar): Conexões (SteamID, keys,
     "Atualizar biblioteca") and Sobre. *(6a)*
--   [ ] Import metadata and genres from `appdetails` **only when a game
+-   [x] Import metadata and genres from `appdetails` **only when a game
     is discovered or added**; set `metadata_fetched_at` only after a
-    valid response and retry failures on later refreshes.
--   [ ] Normalize responses and handle missing fields.
--   [ ] Build the artwork pipeline: Steam `header_image` and
-    screenshots, SteamGridDB (square and portrait covers, logo; name search
+    valid response and retry failures on later refreshes. Portuguese
+    (`l=brazilian`); fields: `genres`, `developers`, `short_description`,
+    `required_age`. *(6b)*
+-   [x] Normalize responses and handle missing fields. *(6b)*
+-   [ ] Build the artwork pipeline: Steam `header_image` (Achievements
+    screen) and screenshots, SteamGridDB (square and portrait covers, logo; name search
     with user confirmation for manual games), throttled queue, local cache,
     validation of downloads, and no overwriting of user-selected art.
--   [ ] Sync Steam playtime and last played once per launcher start
-    with `GetOwnedGames` (after closing interrupted sessions), using the
-    repository support from Phase 2; a failed sync changes nothing.
+-   [x] Sync Steam playtime and last played once per launcher start
+    with `GetOwnedGames` (after closing interrupted sessions and the local
+    scan), using the repository support from Phase 2; a failed sync
+    changes nothing. *(6b)*
 -   [x] Securely store the Steam account ID and the Steam and
     SteamGridDB API keys (encrypted with `safeStorage`). *(6a)*
--   [ ] "Testar conexão" for the Steam Web API and SteamGridDB. *(6b)*
+-   [x] "Testar conexão" for the Steam Web API (`GetPlayerSummaries`:
+    profile name, private-profile warning) and SteamGridDB. *(6b)*
 -   [x] Implement the Steam adapter on the Phase 5 discovery contract
     and wire it to the repositories. *(6a)*
 -   [x] Add the "Atualizar biblioteca" action, scan progress (UI stays

@@ -24,11 +24,13 @@ import {
 import { createProcessLauncher } from '../infrastructure/process/process-launcher'
 import { readSteamRegistryValue } from '../integrations/steam/registry'
 import { createSteamAdapter } from '../integrations/steam/steam-adapter'
+import { fetchGet } from '../integrations/http'
 import { IpcEvent } from '../shared/ipc/contract'
 import { createManualGameService } from './games/manual-game-service'
 import type { IpcDeps } from './ipc/register'
 import type { SecretCipher } from './settings/settings-service'
 import { createSettingsService } from './settings/settings-service'
+import { createSteamOnline } from './steam/steam-online'
 import { createSteamService } from './steam/steam-service'
 
 /** Heartbeat interval for running sessions (DATA_BASE_CONTEXT.md §3.8). */
@@ -128,6 +130,34 @@ export function createServices(
     }
   })
 
+  const users = createUserRepository(db)
+  const genres = createGenreRepository(db)
+  const secret = (kind: 'steam-api-key' | 'steamgriddb-api-key'): string | null => {
+    const encrypted = users.getSecret(kind)
+    if (encrypted === null) return null
+    try {
+      return cipher.decrypt(encrypted)
+    } catch {
+      return null
+    }
+  }
+  const steamOnline = createSteamOnline({
+    games,
+    genres,
+    uow,
+    get: fetchGet,
+    credentials: () => ({
+      steamId: users.getSteamId(),
+      steamKey: secret('steam-api-key'),
+      gridKey: secret('steamgriddb-api-key')
+    }),
+    clock,
+    wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    onLibraryChanged: () => window()?.webContents.send(IpcEvent.libraryChanged),
+    // Messages only: request URLs (which may hold keys) are never logged.
+    onError: (error) => console.error('Steam request failed:', String(error))
+  })
+
   const steam = createSteamService({
     games,
     uow,
@@ -136,7 +166,15 @@ export function createServices(
     readRunningAppId: () => readSteamRegistryValue('RunningAppID'),
     clock,
     onLibraryChanged: () => window()?.webContents.send(IpcEvent.libraryChanged),
-    onError: (error) => console.error('Steam error:', error)
+    onError: (error) => console.error('Steam error:', error),
+    // Startup: playtime sync once (after interrupted sessions and the scan), then metadata.
+    afterScan: (first) => {
+      const sync = first ? steamOnline.syncPlaytime() : Promise.resolve(null)
+      void sync
+        .catch((error) => console.error('Steam sync failed:', String(error)))
+        .then(() => steamOnline.fetchMissingMetadata())
+        .catch((error) => console.error('Steam metadata failed:', String(error)))
+    }
   })
 
   return {
@@ -144,7 +182,7 @@ export function createServices(
       games,
       origins,
       artwork,
-      genres: createGenreRepository(db),
+      genres,
       achievements: createAchievementRepository(db),
       configs,
       emulators,
@@ -167,8 +205,10 @@ export function createServices(
     runner,
     window,
     steam,
+    steamOnline,
     settings: createSettingsService({
-      users: createUserRepository(db),
+      users,
+      lastSync: () => steamOnline.lastSync(),
       cipher,
       steam,
       steamPath: () => adapter.steamPath()

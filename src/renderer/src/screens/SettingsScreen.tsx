@@ -3,6 +3,7 @@ import type {
   LibraryRefreshInfo,
   SecretKind,
   SettingsInfo,
+  SteamSyncInfo,
   SystemInfo
 } from '../../../shared/ipc/contract'
 import checkIcon from '../assets/icons/check-circle.svg'
@@ -242,7 +243,12 @@ function Connections({
         }
         onRemove={() => remove('steam-api-key')}
       />
-      <TestButton id="settings:test-steam" />
+      <TestButton
+        id="settings:test-steam"
+        kind="steam"
+        ready={info.steamApiKey && info.steamId !== null}
+      />
+      <p className="settings__sync">{syncText(info.lastSync)}</p>
 
       <h2 className="settings__group">{t.settings.steamGridDb}</h2>
       <SecretRow
@@ -259,7 +265,7 @@ function Connections({
         }
         onRemove={() => remove('steamgriddb-api-key')}
       />
-      <TestButton id="settings:test-steamgriddb" />
+      <TestButton id="settings:test-steamgriddb" kind="steamgriddb" ready={info.steamGridDbKey} />
 
       <div className="settings__library">
         <div>
@@ -345,14 +351,79 @@ function SecretRow({
   )
 }
 
-/** Live connection tests need the network and arrive in Phase 6b. */
-function TestButton({ id }: { id: string }): React.JSX.Element {
+function syncText(sync: SteamSyncInfo | null): string {
+  if (sync === null) return t.settings.sync.never
+  if (sync.status === 'ok') {
+    const time = new Date(sync.finishedAt).toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+    return t.settings.sync.ok(time, sync.games)
+  }
+  return t.settings.sync.failed(
+    (
+      t.settings.testErrors[sync.error ?? ''] ?? t.settings.testErrors['invalid-response']
+    ).toLowerCase()
+  )
+}
+
+/** One live request with the stored credentials; the result stays next to the button. */
+function TestButton({
+  id,
+  kind,
+  ready
+}: {
+  id: string
+  kind: 'steam' | 'steamgriddb'
+  ready: boolean
+}): React.JSX.Element {
+  const [testing, setTesting] = useState(false)
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
+
+  const test = (): void => {
+    setTesting(true)
+    setResult(null)
+    void window.equon.settings
+      .testConnection(kind)
+      .then((outcome) => {
+        if (!outcome.ok) {
+          const text =
+            t.settings.testErrors[outcome.error.code] ?? t.settings.testErrors['invalid-response']
+          setResult({ ok: false, text })
+        } else if (kind === 'steamgriddb') {
+          setResult({ ok: true, text: t.settings.testOkGrid })
+        } else {
+          const name = outcome.data.personaName ?? ''
+          setResult(
+            outcome.data.gamesVisible
+              ? { ok: true, text: t.settings.testOkSteam(name) }
+              : { ok: false, text: t.settings.testPrivate(name) }
+          )
+        }
+      })
+      .catch(() => setResult({ ok: false, text: t.settings.testErrors.network }))
+      .finally(() => setTesting(false))
+  }
+
+  const hint = kind === 'steam' ? t.settings.testNeedsConfig : t.settings.testNeedsGridKey
   return (
     <div className="settings__test">
-      <Button id={id} variant="primary" label={t.settings.test} unavailable onConfirm={() => {}}>
-        {t.settings.test}
+      <Button
+        id={id}
+        variant="primary"
+        label={t.settings.test}
+        unavailable={!ready || testing}
+        onConfirm={test}
+      >
+        {testing ? t.settings.testing : t.settings.test}
       </Button>
-      <span className="settings__test-note">{t.settings.testSoon}</span>
+      <span
+        className="settings__test-note"
+        data-tone={result ? (result.ok ? 'success' : 'error') : undefined}
+        role={result && !result.ok ? 'alert' : undefined}
+      >
+        {result ? result.text : ready ? '' : hint}
+      </span>
     </div>
   )
 }

@@ -65,6 +65,7 @@ export const settingsInfo = (extra: Partial<SettingsInfo> = {}): SettingsInfo =>
   steamPath: 'C:\\Program Files (x86)\\Steam',
   refreshing: false,
   lastRefresh: null,
+  lastSync: null,
   ...extra
 })
 
@@ -116,6 +117,10 @@ export function installFakeApi(
           steamApiKey: kind === 'steam-api-key' && value !== null,
           steamGridDbKey: kind === 'steamgriddb-api-key' && value !== null
         })
+      }),
+      testConnection: async () => ({
+        ok: true,
+        data: { personaName: 'Jogador', gamesVisible: true }
       }),
       ...overrides.settings
     },

@@ -22,9 +22,11 @@ beforeEach(() => {
     // Reversible stand-in for safeStorage, enough to prove nothing is stored in clear text.
     cipher: {
       available: () => available,
-      encrypt: (plain) => new TextEncoder().encode([...plain].reverse().join(''))
+      encrypt: (plain) => new TextEncoder().encode([...plain].reverse().join('')),
+      decrypt: (bytes) => [...new TextDecoder().decode(bytes)].reverse().join('')
     },
     steam: { refreshing: () => false, lastRefresh: () => null },
+    lastSync: () => null,
     steamPath: () => 'C:\\Program Files (x86)\\Steam'
   })
 })
@@ -39,7 +41,8 @@ describe('settings service', () => {
       secretsAvailable: true,
       steamPath: 'C:\\Program Files (x86)\\Steam',
       refreshing: false,
-      lastRefresh: null
+      lastRefresh: null,
+      lastSync: null
     })
     expect(settingsInfoSchema.safeParse(info).success).toBe(true)
   })

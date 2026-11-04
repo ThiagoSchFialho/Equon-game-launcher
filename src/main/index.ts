@@ -97,7 +97,8 @@ app.whenReady().then(async () => {
   const services = createServices(db, artworkCacheDir, () => mainWindow, {
     // Windows DPAPI through safeStorage (D-04); keys never leave main in clear text.
     available: () => safeStorage.isEncryptionAvailable(),
-    encrypt: (plain) => safeStorage.encryptString(plain)
+    encrypt: (plain) => safeStorage.encryptString(plain),
+    decrypt: (encrypted) => safeStorage.decryptString(Buffer.from(encrypted))
   })
   registerIpcHandlers(appOrigin, {
     ...services,

@@ -42,7 +42,8 @@ const api: EquonApi = {
   settings: {
     get: () => ipcRenderer.invoke(IpcChannel.settingsGet),
     setSteamId: (steamId) => ipcRenderer.invoke(IpcChannel.settingsSetSteamId, steamId),
-    setSecret: (kind, value) => ipcRenderer.invoke(IpcChannel.settingsSetSecret, kind, value)
+    setSecret: (kind, value) => ipcRenderer.invoke(IpcChannel.settingsSetSecret, kind, value),
+    testConnection: (kind) => ipcRenderer.invoke(IpcChannel.settingsTestConnection, kind)
   },
   emulators: {
     list: () => ipcRenderer.invoke(IpcChannel.emulatorsList),
