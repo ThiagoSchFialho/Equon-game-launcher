@@ -1,0 +1,23 @@
+.back-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  align-self: flex-start;
+  padding: var(--space-1) var(--space-2) var(--space-1) 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-card-title);
+  border-radius: var(--radius-button);
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-gap);
+}
+
+.back-link img {
+  height: 1.875rem;
+  width: auto;
+  padding-right: var(--space-4);
+  border-right: 1px solid var(--color-border);
+}
+
+.back-link[data-focused='true'] {
+  outline-color: var(--color-focus);
+}

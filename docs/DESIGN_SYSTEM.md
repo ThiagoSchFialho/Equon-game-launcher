@@ -90,6 +90,10 @@ filtros do Início.
 -   Acesso pela engrenagem ao lado do relógio, na barra superior (alcançada
     com o direcional para cima a partir da tela; nunca recebe o foco
     inicial).
+-   Sem barra superior de navegação (decisão do dono do projeto, depois da
+    Fase 8): sai-se com Voltar (B) ou pelo link "← <tela anterior>" acima das
+    abas, igual ao da página do jogo e alcançado com o direcional para cima;
+    o trabalho em segundo plano aparece no rodapé.
 -   Layout (mockup `settings ideas2`): barra lateral com as abas
     "Conexões", "Emuladores" e "Sobre"; conteúdo à direita.
 -   Conexões: Steam (ID Steam; chave da Steam API com Alterar/Remover ou

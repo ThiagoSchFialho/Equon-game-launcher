@@ -13,16 +13,16 @@ import gamepadIcon from '../assets/icons/gamepad.svg'
 import infoIcon from '../assets/icons/info.svg'
 import steamIcon from '../assets/icons/steam-white.svg'
 import syncIcon from '../assets/icons/sync.svg'
-import { useNavigation, currentSection } from '../app/navigation'
+import { currentSection, useNavigation } from '../app/navigation'
 import { Button } from '../components/Button'
 import { ChoiceDialog } from '../components/Dialog'
 import { EmulatorsSettings } from '../components/EmulatorsSettings'
+import { BackLink } from '../components/BackLink'
 import { Footer, type Hint } from '../components/Footer'
 import { FormRow } from '../components/FormRow'
 import { OnScreenKeyboard } from '../components/OnScreenKeyboard'
 import { StateMessage } from '../components/StateMessage'
 import { useGames } from '../data/games'
-import { TopBar } from '../components/TopBar'
 import { useFocusable, useScreenActions } from '../focus/focus-context'
 import { FocusScope } from '../focus/FocusProvider'
 import { errorMessage, t } from '../strings'
@@ -102,37 +102,43 @@ export function SettingsScreen(): React.JSX.Element {
   return (
     <FocusScope id="screen:settings">
       <div className="screen">
-        <TopBar active={currentSection(navigation.route)} />
         <main className="screen__main settings">
-          <nav className="settings__tabs" aria-label={t.settings.title}>
-            <SettingsTab
-              id="connections"
-              icon={steamIcon}
-              label={t.settings.tabs.connections}
-              selected={tab === 'connections'}
-              onSelect={setTab}
+          <div className="settings__side">
+            <BackLink
+              id="settings:back"
+              label={t.nav[currentSection(navigation.route)]}
+              manualOnly
             />
-            <SettingsTab
-              id="emulators"
-              icon={gamepadIcon}
-              label={t.settings.tabs.emulators}
-              selected={tab === 'emulators'}
-              onSelect={setTab}
-            />
-            <SettingsTab
-              id="about"
-              icon={infoIcon}
-              label={t.settings.tabs.about}
-              selected={tab === 'about'}
-              onSelect={setTab}
-            />
-          </nav>
+            <nav className="settings__tabs" aria-label={t.settings.title}>
+              <SettingsTab
+                id="connections"
+                icon={steamIcon}
+                label={t.settings.tabs.connections}
+                selected={tab === 'connections'}
+                onSelect={setTab}
+              />
+              <SettingsTab
+                id="emulators"
+                icon={gamepadIcon}
+                label={t.settings.tabs.emulators}
+                selected={tab === 'emulators'}
+                onSelect={setTab}
+              />
+              <SettingsTab
+                id="about"
+                icon={infoIcon}
+                label={t.settings.tabs.about}
+                selected={tab === 'about'}
+                onSelect={setTab}
+              />
+            </nav>
+          </div>
           <section className="settings__content">
             <h1 className="settings__title">{t.settings.tabs[tab]}</h1>
             {content}
           </section>
         </main>
-        <Footer hints={HINTS} />
+        <Footer hints={HINTS} showActivity />
       </div>
 
       {overlay?.kind === 'steamId' && (

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import type { GameDetails } from '../../../shared/ipc/contract'
-import backIcon from '../assets/icons/game-page-back.svg'
 import calendarIcon from '../assets/icons/game-page-calendar.svg'
 import clockIcon from '../assets/icons/game-page-clock.svg'
 import moreIcon from '../assets/icons/game-page-more.svg'
@@ -17,6 +16,7 @@ import { useNavigation, type Section } from '../app/navigation'
 import { Artwork } from '../components/Artwork'
 import { Button } from '../components/Button'
 import { ConfirmDialog } from '../components/Dialog'
+import { BackLink } from '../components/BackLink'
 import { Footer, type Hint } from '../components/Footer'
 import { OptionsMenu } from '../components/OptionsMenu'
 import { SteamGridDbSearch } from '../components/SteamGridDbSearch'
@@ -30,7 +30,7 @@ import {
 } from '../data/format'
 import { useGameDetails, useGames } from '../data/games'
 import { useRunning } from '../data/running'
-import { useFocusable, useScreenActions } from '../focus/focus-context'
+import { useScreenActions } from '../focus/focus-context'
 import { FocusScope } from '../focus/FocusProvider'
 import { t } from '../strings'
 import './GameDetailsScreen.css'
@@ -56,19 +56,6 @@ const MENU_HINTS: Hint[] = [
 
 /** How often a game Steam is busy with is re-read. */
 const STEAM_BUSY_POLL_MS = 5000
-
-function BackLink({ from }: { from: Section }): React.JSX.Element {
-  const navigation = useNavigation()
-  const { setElement, focused, mouse } = useFocusable<HTMLButtonElement>('game:back', {
-    onConfirm: navigation.back
-  })
-  return (
-    <button ref={setElement} className="game__back" data-focused={focused} tabIndex={-1} {...mouse}>
-      <img src={backIcon} alt="" />
-      <span>{t.nav[from]}</span>
-    </button>
-  )
-}
 
 function Stat({
   icon,
@@ -147,7 +134,7 @@ function Details({
   return (
     <div className="game">
       <aside className="game__info">
-        <BackLink from={from} />
+        <BackLink id="game:back" label={t.nav[from]} />
         <Artwork
           gameId={game.id}
           kind="logo"

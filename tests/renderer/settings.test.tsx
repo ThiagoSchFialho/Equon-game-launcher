@@ -34,6 +34,34 @@ const openSettings = async (): Promise<void> => {
 }
 
 describe('settings', () => {
+  it('has a clickable way back, which does not take the initial focus', async () => {
+    installFakeApi([summary(1, 'Tidebound')])
+    await openSettings()
+    const back = screen.getByText('Início').closest('button') as HTMLElement
+    expect(back.className).toBe('back-link')
+    expect(document.querySelector('[data-focused="true"]')?.textContent).toContain('Conexões')
+    act(() => back.click())
+    await waitFor(() => expect(document.querySelector('.top-bar')).toBeTruthy())
+    expect(screen.queryByRole('heading', { name: 'Conexões' })).toBeNull()
+  })
+
+  it('has no navigation bar: B is the way back, and background work shows in the footer', async () => {
+    installFakeApi([summary(1, 'Tidebound')], {
+      activity: {
+        current: async () => ({ task: 'artwork', done: 3, total: 9 }),
+        onChanged: () => () => {}
+      }
+    })
+    await openSettings()
+    expect(document.querySelector('.top-bar')).toBeNull()
+    expect(document.querySelector('.footer .activity-indicator')?.textContent).toBe(
+      'Baixando artes… 3 de 9'
+    )
+    press('Escape')
+    await waitFor(() => expect(document.querySelector('.top-bar')).toBeTruthy())
+    expect(screen.queryByRole('heading', { name: 'Conexões' })).toBeNull()
+  })
+
   it('keeps the initial focus on the screen content, not on the gear', async () => {
     installFakeApi([summary(1, 'Tidebound')])
     render(<App />)
