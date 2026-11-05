@@ -1,4 +1,5 @@
 import { app, ipcMain, type BrowserWindow } from 'electron'
+import type { BackgroundActivityTracker } from '../background-activity'
 import type { GameRunner, UserRepository } from '../../core/application'
 import { IpcChannel, type SystemInfo } from '../../shared/ipc/contract'
 import {
@@ -36,6 +37,7 @@ import {
   settingsTestConnectionArgs,
   achievementsOverviewSchema,
   achievementSyncStatusSchema,
+  backgroundActivitySchema,
   gameAchievementsResultSchema,
   artworkApplyArgs,
   artworkKindListSchema,
@@ -72,6 +74,7 @@ export interface IpcDeps {
   steamOnline: SteamOnline
   artworkFetcher: ArtworkFetcher
   achievementSync: AchievementSync
+  activity: BackgroundActivityTracker
   users: UserRepository
   /** Where artwork files live; achievement icons are looked up there. */
   artworkCacheDir: string
@@ -106,6 +109,10 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
   }
 
   // Library and settings
+  ipcMain.handle(
+    IpcChannel.activityCurrent,
+    createValidatedHandler(noArgs, backgroundActivitySchema, trusted, () => deps.activity.current())
+  )
   ipcMain.handle(
     IpcChannel.libraryRefresh,
     createValidatedHandler(noArgs, libraryRefreshInfoSchema, trusted, () => deps.steam.refresh())

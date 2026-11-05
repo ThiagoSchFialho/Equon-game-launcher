@@ -106,7 +106,7 @@ export function GameAchievementsScreen({ id }: { id: number }): React.JSX.Elemen
     <FocusScope id={`screen:game-achievements:${id}`}>
       <div className="screen">
         <main className="screen__main game-achievements">{content}</main>
-        <Footer hints={HINTS} />
+        <Footer hints={HINTS} showActivity />
       </div>
     </FocusScope>
   )

@@ -1,3 +1,4 @@
+import { ActivityIndicator } from './ActivityIndicator'
 import './Footer.css'
 
 export type HintButton = 'A' | 'B' | 'X' | 'Y' | 'LB/RB' | 'menu'
@@ -31,10 +32,20 @@ function Glyph({ button }: { button: HintButton }): React.JSX.Element {
   )
 }
 
-/** Bottom bar with the controller hints that apply to the current screen. */
-export function Footer({ hints }: { hints: readonly Hint[] }): React.JSX.Element {
+/**
+ * Bottom bar with the controller hints that apply to the current screen.
+ * Screens without a top bar pass `showActivity`: background work is reported here.
+ */
+export function Footer({
+  hints,
+  showActivity = false
+}: {
+  hints: readonly Hint[]
+  showActivity?: boolean
+}): React.JSX.Element {
   return (
     <footer className="footer">
+      {showActivity && <ActivityIndicator className="footer__activity" />}
       <ul className="footer__hints">
         {hints.map((hint) => (
           <li key={hint.button} className="hint">

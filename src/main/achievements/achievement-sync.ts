@@ -42,6 +42,8 @@ export interface AchievementSyncDeps {
   clock: { now(): Date }
   wait(ms: number): Promise<void>
   onChanged(): void
+  /** Full sync progress; total 0 while only a closed game is syncing; null when all ended. */
+  onProgress?(progress: { done: number; total: number } | null): void
   onError?(error: unknown): void
 }
 
@@ -66,12 +68,18 @@ export function createAchievementSync(deps: AchievementSyncDeps): AchievementSyn
   const stale = new Map<number, string>()
   const iconRuns = new Map<number, Promise<void>>()
   let run: Promise<AchievementSyncStatus> | null = null
+  let closing = 0
   let status: AchievementSyncStatus = {
     running: false,
     done: 0,
     total: 0,
     failures: [],
     lastRun: null
+  }
+
+  const report = (): void => {
+    if (status.running) deps.onProgress?.({ done: status.done, total: status.total })
+    else deps.onProgress?.(closing > 0 ? { done: 0, total: 0 } : null)
   }
 
   const syncGame = async (game: Game): Promise<string | null> => {
@@ -117,16 +125,19 @@ export function createAchievementSync(deps: AchievementSyncDeps): AchievementSyn
       .list()
       .filter((g) => g.origin === BuiltinOrigin.steam && g.steamAppId !== null)
     status = { running: true, done: 0, total: games.length, failures: [], lastRun: status.lastRun }
+    report()
     deps.onChanged()
     const failures: AchievementSyncStatus['failures'] = []
     for (const game of games) {
       const failure = await attempt(game)
       if (failure !== null) failures.push({ title: game.title, reason: failure })
       status = { ...status, done: status.done + 1, failures: [...failures] }
+      report()
       deps.onChanged()
       await deps.wait(FULL_SYNC_INTERVAL_MS)
     }
     status = { ...status, running: false, lastRun: toUtcIso(deps.clock.now()) }
+    report()
     deps.onChanged()
     return status
   }
@@ -161,11 +172,19 @@ export function createAchievementSync(deps: AchievementSyncDeps): AchievementSyn
     async syncAfterClose(gameId) {
       const { steamId, steamKey } = deps.credentials()
       if (!steamId || !steamKey) return
-      await deps.wait(AFTER_CLOSE_DELAY_MS)
       const game = deps.games.getById(gameId)
       if (!game || game.origin !== BuiltinOrigin.steam || game.steamAppId === null) return
-      await attempt(game)
-      deps.onChanged()
+      // The indicator covers the wait too: the count only changes after it.
+      closing++
+      report()
+      try {
+        await deps.wait(AFTER_CLOSE_DELAY_MS)
+        await attempt(game)
+        deps.onChanged()
+      } finally {
+        closing--
+        report()
+      }
     },
 
     syncAll() {

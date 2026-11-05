@@ -233,6 +233,12 @@ apenas de animação para mostrar que uma ação foi ativada.
 
 ### Navegação
 
+-   Trabalho em segundo plano (sincronização de conquistas, inclusive a
+    espera depois de fechar um jogo; sincronização dos jogos da Steam;
+    download de artes) aparece à esquerda da barra superior (nas telas sem barra superior, como
+    a página do jogo, à esquerda do rodapé), com uma animação simples
+    de carregamento e o progresso ("Baixando artes… 12 de 225"). O indicador
+    nunca recebe foco, não bloqueia a tela e some ao terminar.
 -   Indicar a região atual.
 -   Manter uma ordem de foco previsível.
 -   Ao abrir um diálogo, mover o foco para dentro dele.

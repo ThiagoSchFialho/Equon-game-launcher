@@ -308,7 +308,7 @@ export function GameDetailsScreen({ id, from }: { id: number; from: Section }): 
             {removeError}
           </p>
         )}
-        <Footer hints={overlay ? MENU_HINTS : HINTS} />
+        <Footer hints={overlay ? MENU_HINTS : HINTS} showActivity />
       </div>
       {overlay === 'menu' && details.status === 'ready' && details.data && (
         <OptionsMenu

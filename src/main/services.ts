@@ -33,6 +33,7 @@ import { createManualGameService } from './games/manual-game-service'
 import type { IpcDeps } from './ipc/register'
 import type { SecretCipher } from './settings/settings-service'
 import { createSettingsService } from './settings/settings-service'
+import { createBackgroundActivity } from './background-activity'
 import { createSteamOnline } from './steam/steam-online'
 import { createSteamService } from './steam/steam-service'
 
@@ -150,6 +151,10 @@ export function createServices(
       return null
     }
   }
+  const activity = createBackgroundActivity((current) =>
+    window()?.webContents.send(IpcEvent.activityChanged, current)
+  )
+
   const steamOnline = createSteamOnline({
     games,
     genres,
@@ -163,6 +168,7 @@ export function createServices(
     clock,
     wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     onLibraryChanged: () => window()?.webContents.send(IpcEvent.libraryChanged),
+    onMetadataProgress: (progress) => activity.update('metadata', progress),
     // Messages only: request URLs (which may hold keys) are never logged.
     onError: (error) => console.error('Steam request failed:', String(error))
   })
@@ -180,6 +186,7 @@ export function createServices(
     clock,
     wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     onChanged: () => window()?.webContents.send(IpcEvent.achievementsChanged),
+    onProgress: (progress) => activity.update('achievements', progress),
     // Messages only: request URLs (which may hold keys) are never logged.
     onError: (error) => console.error('Achievement sync failed:', String(error))
   })
@@ -195,6 +202,7 @@ export function createServices(
     clock,
     wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     onLibraryChanged: () => window()?.webContents.send(IpcEvent.libraryChanged),
+    onProgress: (progress) => activity.update('artwork', progress),
     onError: (error) => console.error('Artwork download failed:', String(error))
   })
 
@@ -207,6 +215,8 @@ export function createServices(
     clock,
     onLibraryChanged: () => window()?.webContents.send(IpcEvent.libraryChanged),
     onError: (error) => console.error('Steam error:', error),
+    onRefreshing: (refreshing) =>
+      activity.update('library', refreshing ? { done: 0, total: 0 } : null),
     // Steam's play stats overwrite only once per launcher start (after interrupted sessions).
     syncOwned: ({ first, scanComplete }) =>
       steamOnline.syncOwnedGames({ updatePlaytime: first, scanComplete }),
@@ -250,6 +260,7 @@ export function createServices(
     steamOnline,
     artworkFetcher,
     achievementSync,
+    activity,
     users,
     artworkCacheDir,
     settings: createSettingsService({

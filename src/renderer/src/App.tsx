@@ -14,6 +14,7 @@ import {
 import { DEFAULT_LIBRARY_VIEW, type LibraryView } from '../../shared/library-view'
 import type { AchievementSort } from '../../shared/achievements-view'
 import { AchievementSortContext, type AchievementSortState } from './data/achievements'
+import { BackgroundActivityContext, useBackgroundActivityLoader } from './data/background-activity'
 import { GamesContext, useGamesLoader } from './data/games'
 import { LibraryViewContext, type LibraryViewState } from './data/library-view'
 import { RunningContext, useRunningLoader } from './data/running'
@@ -65,6 +66,7 @@ function App(): React.JSX.Element {
     () => ({ sort: achievementSort, setSort: setAchievementSort }),
     [achievementSort]
   )
+  const activity = useBackgroundActivityLoader()
   // Steam scans (startup, "Atualizar biblioteca") add or change games.
   useEffect(() => window.equon.library.onChanged(games.refresh), [games.refresh])
 
@@ -119,7 +121,9 @@ function App(): React.JSX.Element {
           <RunningContext.Provider value={running}>
             <LibraryViewContext.Provider value={libraryViewState}>
               <AchievementSortContext.Provider value={achievementSortState}>
-                <CurrentScreen route={route} />
+                <BackgroundActivityContext.Provider value={activity}>
+                  <CurrentScreen route={route} />
+                </BackgroundActivityContext.Provider>
               </AchievementSortContext.Provider>
             </LibraryViewContext.Provider>
           </RunningContext.Provider>

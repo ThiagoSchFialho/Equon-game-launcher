@@ -9,6 +9,7 @@ import settingsIcon from '../assets/icons/settings.svg'
 import { useNavigation, type Section } from '../app/navigation'
 import { formatClock } from '../data/format'
 import { useFocusable } from '../focus/focus-context'
+import { ActivityIndicator } from './ActivityIndicator'
 import { t } from '../strings'
 import './TopBar.css'
 
@@ -71,6 +72,7 @@ export function TopBar({ active }: { active: Section }): React.JSX.Element {
   const navigation = useNavigation()
   return (
     <header className="top-bar">
+      <ActivityIndicator className="top-bar__activity" />
       <nav className="top-bar__tabs" aria-label="Navegação principal">
         {TABS.map((tab) => {
           const selected = tab.section === active

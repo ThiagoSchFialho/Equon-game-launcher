@@ -17,6 +17,7 @@ describe('steam service: duplicate review', () => {
     const uow = createUnitOfWork(db)
     let result: DiscoveryResult = { status: 'complete', games: [] }
     const ownedCalls: { first: boolean; scanComplete: boolean }[] = []
+    const refreshes: boolean[] = []
     let owned = (): OwnedSyncOutcome => ({ added: 0, duplicates: [], error: null })
     const adapter = {
       source: 'steam',
@@ -50,6 +51,7 @@ describe('steam service: duplicate review', () => {
       readRunningAppId: async () => null,
       clock: { now: () => new Date('2026-11-04T03:00:00Z') },
       onLibraryChanged: () => {},
+      onRefreshing: (value) => refreshes.push(value),
       syncOwned: async (options) => {
         ownedCalls.push(options)
         return owned()
@@ -66,6 +68,7 @@ describe('steam service: duplicate review', () => {
       ]
     }
     expect(await service.refresh()).toMatchObject({ duplicates: 2 })
+    expect(refreshes).toEqual([true, false])
     expect(service.duplicates()).toEqual([
       { manualGameId: balatro, manualTitle: 'Balatro', steamTitle: 'Balatro' },
       { manualGameId: celeste, manualTitle: 'Celeste', steamTitle: 'Celeste' }

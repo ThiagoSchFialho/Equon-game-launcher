@@ -11,6 +11,7 @@ import {
   type GameAchievements,
   type GameDetails,
   type GameSummary,
+  type BackgroundActivity,
   type LibraryRefreshInfo,
   type ManualGameForm,
   type OriginInfo,
@@ -80,6 +81,14 @@ export const systemInfoSchema = z.strictObject({
   dataPath: z.string(),
   schemaVersion: z.number().int().nonnegative()
 }) satisfies z.ZodType<SystemInfo>
+
+export const backgroundActivitySchema = z
+  .strictObject({
+    task: z.enum(['achievements', 'library', 'metadata', 'artwork']),
+    done: z.number().int().nonnegative(),
+    total: z.number().int().nonnegative()
+  })
+  .nullable() satisfies z.ZodType<BackgroundActivity | null>
 
 export const libraryRefreshInfoSchema = z.strictObject({
   status: z.enum(['complete', 'partial', 'failed']),

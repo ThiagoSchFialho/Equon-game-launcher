@@ -1,5 +1,10 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
-import { IpcChannel, IpcEvent, type EquonApi } from '../shared/ipc/contract'
+import {
+  IpcChannel,
+  IpcEvent,
+  type BackgroundActivity,
+  type EquonApi
+} from '../shared/ipc/contract'
 
 // Only named, typed operations are exposed. Never expose ipcRenderer itself.
 const api: EquonApi = {
@@ -30,6 +35,15 @@ const api: EquonApi = {
     create: (name) => ipcRenderer.invoke(IpcChannel.originsCreate, name),
     rename: (key, name) => ipcRenderer.invoke(IpcChannel.originsRename, key, name),
     remove: (key) => ipcRenderer.invoke(IpcChannel.originsRemove, key)
+  },
+  activity: {
+    current: () => ipcRenderer.invoke(IpcChannel.activityCurrent),
+    onChanged: (listener) => {
+      const handler = (_: IpcRendererEvent, activity: BackgroundActivity | null): void =>
+        listener(activity)
+      ipcRenderer.on(IpcEvent.activityChanged, handler)
+      return () => ipcRenderer.removeListener(IpcEvent.activityChanged, handler)
+    }
   },
   library: {
     refresh: () => ipcRenderer.invoke(IpcChannel.libraryRefresh),

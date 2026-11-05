@@ -92,3 +92,12 @@
   font-size: var(--font-size-screen-title);
   font-weight: var(--font-weight-semibold);
 }
+
+/* Left of the tabs; never wider than the room they leave. */
+.top-bar__activity {
+  position: absolute;
+  left: var(--space-12);
+  top: var(--space-5);
+  height: 3.75rem;
+  max-width: calc(50% - 20rem - var(--space-12) - var(--space-4));
+}

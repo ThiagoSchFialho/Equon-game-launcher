@@ -34,6 +34,8 @@ export interface ArtworkFetcherDeps {
   clock: { now(): Date }
   wait(ms: number): Promise<void>
   onLibraryChanged(): void
+  /** Progress of the queue of missing art, in games; null when it ends. */
+  onProgress?(progress: { done: number; total: number } | null): void
   onError?(error: unknown): void
 }
 
@@ -107,15 +109,29 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
     return { saved, error: null }
   }
 
-  const fillSteamGame = async (game: Game, have: readonly ArtworkKind[]): Promise<boolean> => {
-    const appId = game.steamAppId as number
-    let changed = false
+  const missingCheck = (game: Game, have: readonly ArtworkKind[]) => {
     // A blurred store-generated background (stored before the screenshot rule) counts as missing.
     const stored = deps.artwork.get(game.id, 'background')
     const generated =
       stored !== null && !stored.userSelected && isGeneratedStoreBackground(stored.sourceUrl ?? '')
-    const missing = (kind: ArtworkKind): boolean =>
+    return (kind: ArtworkKind): boolean =>
       !have.includes(kind) || (kind === 'background' && generated)
+  }
+
+  /** Whether the queue has anything to try for this game; matches what fillSteamGame does. */
+  const hasWork = (game: Game, have: readonly ArtworkKind[]): boolean => {
+    const missing = missingCheck(game, have)
+    return (
+      missing('header') ||
+      missing('background') ||
+      (deps.gridKey() !== null && GRID_KINDS.some(missing))
+    )
+  }
+
+  const fillSteamGame = async (game: Game, have: readonly ArtworkKind[]): Promise<boolean> => {
+    const appId = game.steamAppId as number
+    let changed = false
+    const missing = missingCheck(game, have)
 
     if (missing('header') || missing('background')) {
       const urls = await fetchAppArtwork(deps.get, appId)
@@ -140,14 +156,24 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
 
   const fetchAll = async (): Promise<void> => {
     const kinds = deps.artwork.listKinds()
-    for (const game of deps.games.list()) {
-      if (game.origin !== BuiltinOrigin.steam || game.steamAppId === null) continue
+    const pending = deps.games
+      .list()
+      .filter(
+        (game) =>
+          game.origin === BuiltinOrigin.steam &&
+          game.steamAppId !== null &&
+          hasWork(game, kinds.get(game.id) ?? [])
+      )
+    if (pending.length === 0) return
+    for (const [done, game] of pending.entries()) {
+      deps.onProgress?.({ done, total: pending.length })
       try {
         if (await fillSteamGame(game, kinds.get(game.id) ?? [])) deps.onLibraryChanged()
       } catch (error) {
         deps.onError?.(error)
       }
     }
+    deps.onProgress?.(null)
   }
 
   return {

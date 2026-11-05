@@ -23,6 +23,8 @@ export interface SteamServiceDeps {
   onLibraryChanged(): void
   /** Runs after the local scan, inside every refresh; `first` is the startup one. */
   syncOwned(options: { first: boolean; scanComplete: boolean }): Promise<OwnedSyncOutcome>
+  /** A refresh started (true) or ended (false), for the activity indicator. */
+  onRefreshing?(refreshing: boolean): void
   /** Background work after each refresh (metadata and artwork of new games). */
   afterRefresh?(): void
   onError?(error: unknown): void
@@ -65,6 +67,15 @@ export function createSteamService(deps: SteamServiceDeps): SteamService {
   }
 
   const runRefresh = async (): Promise<LibraryRefreshInfo> => {
+    deps.onRefreshing?.(true)
+    try {
+      return await scanAndSync()
+    } finally {
+      deps.onRefreshing?.(false)
+    }
+  }
+
+  const scanAndSync = async (): Promise<LibraryRefreshInfo> => {
     const summary = await refreshSteamLibrary(deps, deps.adapter)
     const owned = await syncOwned(summary.status === 'complete')
     for (const candidate of [...summary.duplicates, ...owned.duplicates]) {

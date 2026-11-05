@@ -360,6 +360,13 @@ export const t = {
     loading: 'Carregando…',
     error: 'Não foi possível carregar as configurações.'
   },
+  activity: {
+    achievements: 'Sincronizando conquistas…',
+    library: 'Sincronizando jogos da Steam…',
+    metadata: 'Sincronizando jogos da Steam…',
+    artwork: 'Baixando artes…',
+    progress: (done: number, total: number) => `${done} de ${total}`
+  },
   achievements: {
     title: 'Conquistas',
     total: 'Total de conquistas',

@@ -1,6 +1,6 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.23
+**Version:** 0.24
 **Status:** Draft — Phase 7 (Achievements)
 **Last updated:** 2026-11-04
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
@@ -570,7 +570,7 @@ Per-game sync steps: fetch definitions, player state and global percentages → 
 5. Valid changes are persisted transactionally.
 6. The UI shows results and partial failures.
 
-A failed scan must not mark every game from that source as uninstalled. The planning part is the Phase 5 discovery contract (§8). Phase 6: refresh at startup and from Settings › "Atualizar biblioteca"; duplicate candidates (a newly found Steam game whose title matches a manual game) are kept in memory and reviewed in Settings: "Manter os dois", "Ocultar o jogo manual" or "Remover o jogo manual". A candidate only appears when the Steam game is first discovered, so no table is needed. Owner decision (Phase 7): every refresh, at startup and from the button, also reads `GetOwnedGames` after the local scan and creates the owned games the library is missing (`installed = 0` only after a complete scan, otherwise `NULL`); a failure there never affects the local scan and is reported next to its result.
+A failed scan must not mark every game from that source as uninstalled. The planning part is the Phase 5 discovery contract (§8). Phase 6: refresh at startup and from Settings › "Atualizar biblioteca"; duplicate candidates (a newly found Steam game whose title matches a manual game) are kept in memory and reviewed in Settings: "Manter os dois", "Ocultar o jogo manual" or "Remover o jogo manual". A candidate only appears when the Steam game is first discovered, so no table is needed. Owner decision (Phase 7): every refresh, at startup and from the button, also reads `GetOwnedGames` after the local scan and creates the owned games the library is missing (`installed = 0` only after a complete scan, otherwise `NULL`); a failure there never affects the local scan and is reported next to its result. Main keeps one background-activity state (achievements, library refresh, metadata, artwork; `src/main/background-activity.ts`), published over IPC to the top bar indicator.
 
 ### Library view (Phase 5)
 
@@ -675,6 +675,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-01 | 0.9 | Added a fifth art type: portrait cover 600×900 for the Home screen. Renamed `cover` to `cover_square`; added `cover_portrait` |
 | 2026-11-04 | 0.22 | Phase 7: achievements sync (after a close and manual), overview and per-game screens, `achievements_synced_at`, on-demand icons. |
 | 2026-11-04 | 0.23 | Owner decision: owned Steam games missing from the library are created from `GetOwnedGames`, at startup and on "Atualizar biblioteca"; Steam play stats still overwrite only once per start. |
+| 2026-11-04 | 0.24 | Top bar indicator for achievement sync, background Steam sync and artwork downloads, fed by one main-process activity state. |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

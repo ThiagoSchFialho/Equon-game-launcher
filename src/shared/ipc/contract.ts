@@ -12,6 +12,7 @@ export const IpcChannel = {
   settingsTestConnection: 'settings:test-connection',
   libraryDuplicates: 'library:duplicates',
   libraryDismissDuplicate: 'library:dismiss-duplicate',
+  activityCurrent: 'activity:current',
   achievementsOverview: 'achievements:overview',
   achievementsGame: 'achievements:game',
   achievementsSyncAll: 'achievements:sync-all',
@@ -48,7 +49,9 @@ export const IpcEvent = {
   /** No payload: games were added or changed by a library scan. */
   libraryChanged: 'library:changed',
   /** No payload: achievement data, sync progress or icons changed. */
-  achievementsChanged: 'achievements:changed'
+  achievementsChanged: 'achievements:changed',
+  /** Payload: the current BackgroundActivity, or null when nothing is running. */
+  activityChanged: 'activity:changed'
 } as const
 
 export interface AppInfo {
@@ -353,11 +356,26 @@ export interface BrowserListing {
   truncated: boolean
 }
 
+/** Background work the top bar reports. */
+export type BackgroundTask = 'achievements' | 'library' | 'metadata' | 'artwork'
+
+export interface BackgroundActivity {
+  task: BackgroundTask
+  done: number
+  /** 0 when there is no count to show. */
+  total: number
+}
+
 /** API exposed to the renderer as `window.equon`. */
 export interface EquonApi {
   app: {
     getInfo(): Promise<AppInfo>
     getSystemInfo(): Promise<SystemInfo>
+  }
+  activity: {
+    current(): Promise<BackgroundActivity | null>
+    /** Subscribes to changes; returns the unsubscribe function. */
+    onChanged(listener: (activity: BackgroundActivity | null) => void): () => void
   }
   library: {
     /** Scans Steam again (also done at startup); concurrent calls share one scan. */

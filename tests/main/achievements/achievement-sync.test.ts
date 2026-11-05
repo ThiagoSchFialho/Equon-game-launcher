@@ -32,6 +32,7 @@ const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0])
 let dir: string
 let db: SqliteDatabase
 let sync: AchievementSync
+let progress: ({ done: number; total: number } | null)[]
 let credentials: { steamId: string | null; steamKey: string | null }
 let requested: string[]
 let waits: number[]
@@ -109,6 +110,7 @@ beforeEach(() => {
   waits = []
   broken = new Set()
   clock = new Date('2026-11-04T12:00:00Z')
+  progress = []
   sync = createAchievementSync({
     games: games(),
     achievements: achievements(),
@@ -123,7 +125,8 @@ beforeEach(() => {
     wait: async (ms) => {
       waits.push(ms)
     },
-    onChanged: () => {}
+    onChanged: () => {},
+    onProgress: (value) => progress.push(value)
   })
 })
 
@@ -256,16 +259,34 @@ describe('sync after a game closes', () => {
     expect(requested.some((u) => /(appid|gameid)=200/.test(u))).toBe(false)
   })
 
+  it('reports activity during the wait and the sync, and ends even after a failure', async () => {
+    const id = addSteam(300, 'Game')
+    broken.add(300)
+    await sync.syncAfterClose(id)
+    expect(progress).toEqual([{ done: 0, total: 0 }, null])
+    expect(sync.isStale(id)).toBe(true)
+  })
+
+  it('stays active until both a closed game and a full sync have ended', async () => {
+    const id = addSteam(300, 'Game')
+    addSteam(301, 'Other')
+    await Promise.all([sync.syncAfterClose(id), sync.syncAll()])
+    expect(progress.indexOf(null)).toBe(progress.length - 1)
+    expect(progress).toContainEqual({ done: 2, total: 2 })
+  })
+
   it('is silent without credentials and ignores non-Steam games', async () => {
     const id = addSteam(300, 'Game')
     credentials = { steamId: null, steamKey: null }
     await sync.syncAfterClose(id)
     expect(requested).toEqual([])
     expect(sync.isStale(id)).toBe(false)
+    expect(progress).toEqual([])
 
     credentials = { steamId: STEAM_ID, steamKey: KEY }
     await sync.syncAfterClose(games().create({ origin: 'manual', title: 'M' }).id)
     expect(requested).toEqual([])
+    expect(progress).toEqual([])
   })
 })
 

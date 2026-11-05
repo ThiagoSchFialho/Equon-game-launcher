@@ -24,6 +24,7 @@ let images: Map<string, { bytes: Uint8Array; size: [number, number] }>
 let requested: string[]
 let gridKey: string | null
 let fetcher: ArtworkFetcher
+let progress: ({ done: number; total: number } | null)[]
 
 const games = (): ReturnType<typeof createGameRepository> => createGameRepository(db)
 const artwork = (): ReturnType<typeof createArtworkRepository> => createArtworkRepository(db)
@@ -39,6 +40,7 @@ beforeEach(() => {
   images = new Map()
   requested = []
   gridKey = null
+  progress = []
   const get: HttpGet = async (url) => {
     requested.push(url)
     for (const [match, response] of json) if (url.includes(match)) return response
@@ -62,7 +64,8 @@ beforeEach(() => {
     },
     clock: { now: () => new Date('2026-11-04T03:00:00Z') },
     wait: async () => {},
-    onLibraryChanged: () => {}
+    onLibraryChanged: () => {},
+    onProgress: (value) => progress.push(value)
   })
 })
 
@@ -87,6 +90,21 @@ describe('artwork fetcher: Steam games', () => {
     expect(artwork().get(id, 'header')).toMatchObject({ source: 'steam', userSelected: false })
     expect(artwork().get(id, 'background')).toMatchObject({ width: 1438, height: 810 })
     expect(requested.some((u) => u.includes('steamgriddb'))).toBe(false)
+  })
+
+  it('reports progress per game with work, and stays silent when nothing is missing', async () => {
+    games().upsertSteamGame({ steamAppId: 2379780, title: 'Balatro' })
+    games().create({ origin: 'manual', title: 'Not in the queue' })
+    steamArt(2379780, 'https://x.steamstatic.com/h.jpg', 'https://x.steamstatic.com/bg.jpg')
+    image('https://x.steamstatic.com/h.jpg', 460, 215)
+    image('https://x.steamstatic.com/bg.jpg', 1438, 810)
+
+    await fetcher.fetchMissing()
+    expect(progress).toEqual([{ done: 0, total: 1 }, null])
+
+    progress = []
+    await fetcher.fetchMissing()
+    expect(progress).toEqual([])
   })
 
   it('takes the best-voted SteamGridDB images and skips a wrong proportion', async () => {

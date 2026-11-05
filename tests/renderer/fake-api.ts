@@ -83,6 +83,7 @@ export function installFakeApi(
     library?: Partial<EquonApi['library']>
     artwork?: Partial<EquonApi['artwork']>
     achievements?: Partial<EquonApi['achievements']>
+    activity?: Partial<EquonApi['activity']>
   } = {}
 ): EquonApi {
   const runningListeners = new Set<(ids: number[]) => void>()
@@ -98,6 +99,11 @@ export function installFakeApi(
         dataPath: 'C:\\Users\\u\\AppData\\Roaming\\equon-game-launcher-dev',
         schemaVersion: 7
       })
+    },
+    activity: {
+      current: async () => null,
+      onChanged: () => () => {},
+      ...overrides.activity
     },
     library: {
       refresh: async () => ({

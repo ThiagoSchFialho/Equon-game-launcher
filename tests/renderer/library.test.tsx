@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from '../../src/renderer/src/App'
-import type { EquonApi, GameSummary } from '../../src/shared/ipc/contract'
+import type { BackgroundActivity, EquonApi, GameSummary } from '../../src/shared/ipc/contract'
 import { installFakeApi, summary } from './fake-api'
 
 afterEach(cleanup)
@@ -47,6 +47,66 @@ const openLibrary = async (): Promise<void> => {
   press('e')
   await screen.findByRole('heading', { name: 'Biblioteca' })
 }
+
+describe('background activity indicator', () => {
+  const indicator = (): string | null =>
+    document.querySelector('.activity-indicator')?.textContent ?? null
+
+  it('shows what is running with its progress, on every section, then goes away', async () => {
+    let send: (activity: BackgroundActivity | null) => void = () => {}
+    installFakeApi(games, {
+      activity: {
+        current: async () => ({ task: 'library', done: 0, total: 0 }),
+        onChanged: (listener) => {
+          send = listener
+          return () => {}
+        }
+      }
+    })
+    await openLibrary()
+    expect(await screen.findByText('Sincronizando jogos da Steam…')).toBeTruthy()
+
+    act(() => send({ task: 'artwork', done: 12, total: 225 }))
+    expect(indicator()).toBe('Baixando artes… 12 de 225')
+    // It never takes the focus away from the list.
+    expect(document.querySelector('[data-focused="true"]')?.getAttribute('aria-label')).toBe(
+      'Celeste'
+    )
+
+    press('e')
+    await screen.findByRole('heading', { name: 'Conquistas' })
+    expect(indicator()).toBe('Baixando artes… 12 de 225')
+    press('q')
+    press('q')
+    await waitFor(() => expect(indicator()).toContain('12 de 225'))
+
+    act(() => send({ task: 'achievements', done: 0, total: 0 }))
+    expect(indicator()).toBe('Sincronizando conquistas…')
+
+    act(() => send(null))
+    expect(indicator()).toBeNull()
+  })
+})
+
+describe('background activity on screens without a top bar', () => {
+  it('appears in the footer of the game page', async () => {
+    installFakeApi(games, {
+      activity: {
+        current: async () => ({ task: 'achievements', done: 0, total: 0 }),
+        onChanged: () => () => {}
+      }
+    })
+    await openLibrary()
+    expect(document.querySelector('.top-bar .activity-indicator')).toBeTruthy()
+    press('Enter')
+    await waitFor(() =>
+      expect(document.querySelector('.footer .activity-indicator')?.textContent).toBe(
+        'Sincronizando conquistas…'
+      )
+    )
+    expect(document.querySelector('.top-bar')).toBeNull()
+  })
+})
 
 describe('library organization', () => {
   it('lists non-hidden games alphabetically by default', async () => {

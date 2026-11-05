@@ -30,6 +30,8 @@ export interface SteamOnlineDeps {
   clock: { now(): Date }
   wait(ms: number): Promise<void>
   onLibraryChanged(): void
+  /** Metadata queue progress; null when it ends. */
+  onMetadataProgress?(progress: { done: number; total: number } | null): void
   onError?(error: unknown): void
 }
 
@@ -83,7 +85,10 @@ export function createSteamOnline(deps: SteamOnlineDeps): SteamOnline {
 
   const fetchMissing = async (): Promise<void> => {
     let changed = false
-    for (const game of gamesMissingMetadata(deps.games.list())) {
+    const pending = gamesMissingMetadata(deps.games.list())
+    if (pending.length === 0) return
+    for (const [done, game] of pending.entries()) {
+      deps.onMetadataProgress?.({ done, total: pending.length })
       try {
         const result = await fetchAppDetails(deps.get, game.steamAppId as number)
         // Failures keep metadata_fetched_at NULL, so the next scan retries.
@@ -96,6 +101,7 @@ export function createSteamOnline(deps: SteamOnlineDeps): SteamOnline {
       }
       await deps.wait(METADATA_INTERVAL_MS)
     }
+    deps.onMetadataProgress?.(null)
     if (changed) deps.onLibraryChanged()
   }
 

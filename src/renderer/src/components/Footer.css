@@ -11,6 +11,12 @@
   flex-shrink: 0;
 }
 
+.footer__activity {
+  position: absolute;
+  left: var(--space-12);
+  max-width: 50%;
+}
+
 .footer__hints {
   display: flex;
   gap: var(--space-8);

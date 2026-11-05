@@ -20,6 +20,7 @@ let urls: string[]
 let credentials: { steamId: string | null; steamKey: string | null; gridKey: string | null }
 let changes: number
 let online: SteamOnline
+let metadataProgress: ({ done: number; total: number } | null)[]
 
 const games = (): ReturnType<typeof createGameRepository> => createGameRepository(db)
 const answer = (match: string, status: number, json: unknown): void => {
@@ -31,6 +32,7 @@ beforeEach(() => {
   responses = new Map()
   urls = []
   changes = 0
+  metadataProgress = []
   credentials = { steamId: STEAM_ID, steamKey: KEY, gridKey: null }
   const get: HttpGet = async (url) => {
     urls.push(url)
@@ -45,7 +47,8 @@ beforeEach(() => {
     credentials: () => credentials,
     clock: { now: () => new Date('2026-11-04T02:00:00Z') },
     wait: async () => {},
-    onLibraryChanged: () => changes++
+    onLibraryChanged: () => changes++,
+    onMetadataProgress: (value) => metadataProgress.push(value)
   })
 })
 
@@ -184,6 +187,18 @@ describe('steam online: owned games', () => {
 })
 
 describe('steam online: metadata', () => {
+  it('reports its progress and ends, even when a game fails', async () => {
+    games().upsertSteamGame({ steamAppId: 620, title: 'Portal 2' })
+    games().upsertSteamGame({ steamAppId: 730, title: 'Counter-Strike 2' })
+    await online.fetchMissingMetadata()
+    expect(metadataProgress).toEqual([{ done: 0, total: 2 }, { done: 1, total: 2 }, null])
+  })
+
+  it('reports nothing when no game needs metadata', async () => {
+    await online.fetchMissingMetadata()
+    expect(metadataProgress).toEqual([])
+  })
+
   it('fetches only games without metadata and retries failures later', async () => {
     const balatro = games().upsertSteamGame({ steamAppId: 2379780, title: 'Balatro' }).id
     const broken = games().upsertSteamGame({ steamAppId: 730, title: 'Counter-Strike 2' }).id
