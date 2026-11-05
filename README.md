@@ -88,6 +88,14 @@ Library → "Adicionar jogo": pick the game's `.exe` or a store `.url` shortcut,
 
 Library → "Adicionar emulador": configure `yuzu.exe` once; Yuzu games then only need the ROM.
 
+### Installing
+
+`npm run build:win` creates `dist/equon-game-launcher-<version>-setup.exe`. Run it: it installs for the current user, with no administrator rights, and creates the shortcuts. To update, run the new installer over the old one.
+
+The installer is not signed: Windows SmartScreen may warn about it ("More info" → "Run anyway"), and an antivirus may hold the new program for a scan, so the first launch can take a while.
+
+Your library stays in `%APPDATA%\equon-game-launcher`. Installing, updating and uninstalling never touch it. To recover from a backup, see `docs/DATA_BASE_CONTEXT.md` §6.
+
 ### Development data
 
 Unpackaged runs (`npm run dev`, `npm start`) keep their data in `%APPDATA%\equon-game-launcher-dev`, separate from the real library (`%APPDATA%\equon-game-launcher`, used by the packaged app). `npm run dev:seed` only ever writes to the dev folder.

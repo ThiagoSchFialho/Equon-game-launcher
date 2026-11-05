@@ -320,7 +320,7 @@ hardcoded from illustrative mockups.
 -   [x] Test network failures, malformed API responses, permissions, and
     interrupted sync.
 -   [x] Verify migration and backup/recovery approach.
--   [ ] Decide and configure Windows packaging/installer (D-13),
+-   [x] Decide and configure Windows packaging/installer (D-13),
     including correct packaging of the `better-sqlite3` native module.
 -   [ ] Review security, logging, API key handling, and dependencies.
 -   [ ] Update README with implemented features, setup, limitations, and

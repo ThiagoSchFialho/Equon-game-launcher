@@ -20,9 +20,9 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 
 ## Current status and scope of work
 
-- Phases 0–7 are complete (Phase 1 spike results: `docs/ARCHITECTURE.md` §3.1). **Work only on the phase the owner names** (current: Phase 8 — Hardening and release preparation; 8a measurements and 8b failure tests done; next 8c installer, then 8d review and README). Do not start the next phase on your own.
+- Phases 0–7 are complete (Phase 1 spike results: `docs/ARCHITECTURE.md` §3.1). **Work only on the phase the owner names** (current: Phase 8 — Hardening and release preparation; 8a measurements, 8b failure tests and 8c installer done; next 8d review and README). Do not start the next phase on your own.
 - Before non-trivial work, propose a short plan and wait for approval.
-- Open decisions: D-13 (installer, Phase 8), where to persist preferences. If a task depends on an open item, ask instead of deciding.
+- No open decisions at the moment. If a task depends on one, ask instead of deciding.
 
 ## Stack and tooling (accepted)
 
@@ -34,7 +34,7 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 - Scripts: `npm run dev`, `npm run dev:seed` (dev library with sample games), `npm run build`, `npm start` (preview build), `npm test` (Vitest, run once), `npm run lint`, `npm run typecheck`, `npm run format`. Node 24.18.0 (`.nvmrc`), Electron 44.10.1 (exact).
 - If Electron fails with `electron.app` undefined, `ELECTRON_RUN_AS_NODE=1` is set in the shell (VS Code sets it); unset it for `dev`/`start`.
 - If Vitest fails with "failed to find the runner" / "reading 'config'", the shell is in `d:\` in lower case (the VS Code terminal can be); run it from `D:\`.
-- Unpackaged runs use the `equon-game-launcher-dev` data folder; never seed or test against the real one.
+- Unpackaged runs use the `equon-game-launcher-dev` data folder; never seed or test against the real one. To test the packaged app, pass `--user-data-dir=<temp folder>`. Installer: `npm run build:win` (NSIS, per user, unsigned; `ARCHITECTURE.md` §3.16).
 - Renderer: one `FocusManager` (`src/renderer/src/focus`); components use `useFocusable` / `useScreenActions` and semantic actions from `src/renderer/src/input`, never raw buttons or keys. UI text lives in `src/renderer/src/strings.ts` (pt-BR). Artwork is loaded only via `artworkUrl()` (`equon-art://game/<id>/<kind>`). Renderer tests use `// @vitest-environment jsdom`.
 - Sandboxed preload can only load `electron`; it imports constants/types from `src/shared/ipc/contract.ts` (no runtime deps). zod schemas live in `src/shared/ipc/schemas.ts` and are used by main.
 - **Native module rule:** `better-sqlite3` ≥ 13 ships N-API prebuilds, so one binary serves Node (tests) and Electron (app); there are no rebuild scripts. `tests/native/better-sqlite3.test.ts` guards this; if it fails with a load / `NODE_MODULE_VERSION` error, the prebuilds changed and rebuild scripts must come back (`ARCHITECTURE.md` §3.15). Run tests through `npm test`.

@@ -31,6 +31,10 @@ app.commandLine.appendSwitch('disable-checker-imaging')
 // touch the real library.
 if (is.dev) {
   app.setPath('userData', join(app.getPath('appData'), 'equon-game-launcher-dev'))
+} else if (!app.commandLine.hasSwitch('user-data-dir')) {
+  // Fixed here: by default it would follow the product name in the installer settings,
+  // and renaming the product would look like losing the whole library.
+  app.setPath('userData', join(app.getPath('appData'), 'equon-game-launcher'))
 }
 
 // One launcher per data folder: a second one would close the first one's running

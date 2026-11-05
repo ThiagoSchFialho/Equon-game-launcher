@@ -1,6 +1,6 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.28
+**Version:** 0.29
 **Status:** Draft — Phase 8 (Hardening and release preparation)
 **Last updated:** 2026-11-04
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
@@ -64,7 +64,7 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-10 | Enforcing a single `USERS` row | Accepted | `CHECK (id = 1)` at the database level (§3.10) |
 | D-11 | Controller input approach | Accepted | Browser Gamepad API (polled) behind an input abstraction; validate on hardware (§3.11) |
 | D-12 | Steam discovery, installation state and running state | Accepted | Read `libraryfolders.vdf` + `appmanifest_*.acf` `StateFlags`, with the safeguards in §3.12 |
-| D-13 | Windows packaging / installer | Open | Decide in Phase 8; do not block earlier phases |
+| D-13 | Windows packaging / installer | Accepted | NSIS through electron-builder: per user, no administrator, not signed, no automatic updates (§3.16) |
 | D-14 | Package manager, build tool, test framework, lint/format | Accepted | npm; electron-vite; Vitest; ESLint + Prettier; TypeScript `strict` (§3.15) |
 | D-15 | Artwork sources and cache policy | Accepted | SteamGridDB (API key) + Steam `appdetails`; local file picker as fallback; Google Images not adopted (§3.13) |
 | D-16 | Refresh frequency for `appdetails` metadata | Accepted | Fetched only when a game is discovered/added; failed fetches are retried (§3.14) |
@@ -75,7 +75,7 @@ Decisions that **block Phase 2** (database): D-02, D-03, D-05, D-06, D-08, D-09,
 Decisions that **block Phase 4** (manual-game slice): D-07, D-08.
 Decisions that **block Phase 6** (Steam library and metadata): D-12, D-16, D-17 (all accepted).
 
-**Phase 1 is unblocked:** D-01, D-02, D-03 and D-14 are all accepted. The only decision still open is D-13 (installer, Phase 8). The Home cover question is settled: a separate `cover_portrait` art type (§3.13).
+**Phase 1 is unblocked:** D-01, D-02, D-03 and D-14 are all accepted. D-13 (installer) was decided in Phase 8. The Home cover question is settled: a separate `cover_portrait` art type (§3.13).
 
 ---
 
@@ -334,9 +334,19 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 - There are no rebuild scripts, and `postinstall` does not run `electron-builder install-app-deps` (it compiled the module from source with node-gyp for no benefit and would fail on machines without a C++ toolchain).
 - `tests/native/better-sqlite3.test.ts` loads the module under Node and under the pinned Electron runtime. If a future version drops the N-API prebuilds, that test fails, and rebuild scripts (`@electron/rebuild` for Electron, `npm rebuild` for Node) must be reinstated.
 - A `NODE_MODULE_VERSION` error would mean the above changed; it is not a code bug.
-- Packaging the module (asar unpack) is verified in Phase 8 (D-13).
+- Packaging the module: `*.node` files are unpacked from the asar, and only the `win32-x64` prebuild ships (verified in Phase 8, D-13).
 
 ---
+
+### 3.16 D-13 — Windows packaging (Accepted, Phase 8c)
+
+**Owner decisions:** an NSIS installer built by electron-builder, installed per user with no administrator rights. Not the portable version, which would extract itself on every launch. No code signing for now: the certificate costs money, the use is personal, and the price is a Windows SmartScreen warning at install time and antivirus programs (Avast, measured) holding each new unsigned executable for a scan, so the first launch after a new build can take a while. No automatic updates: a new version is the new installer run over the old one.
+
+**Data folder.** Installed runs always use `%APPDATA%\equon-game-launcher`, set in code: by default Electron would derive it from `productName` (`Equon`), so renaming the product would look like losing the library. Unpackaged runs keep `equon-game-launcher-dev`. Installing, updating and uninstalling never touch the data folder. `--user-data-dir` overrides the folder, which is how the packaged app is tested without touching the real one.
+
+**Verified on the packaged app with a throwaway data folder:** the native module loads from the unpacked folder; a new database reaches the latest schema; the local scan finds the installed games; keys are encrypted and removed; with no keys it reports the reason and keeps working; artwork comes through the custom protocol; the real data folder is not touched.
+
+**Preferences:** nothing is persisted for now. The Library view and the sorts reset at every start by owner decision; keys and paths already have their own storage.
 
 ## 4. Inconsistencies found across the project docs
 
@@ -688,6 +698,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-04 | 0.26 | Phase 8a: performance measurements (§12); no cache eviction and no limit on stored artwork sizes (§3.13). |
 | 2026-11-05 | 0.27 | Phase 8b: single instance, renderer crash recovery, screen error boundary, atomic artwork writes, database failure messages and verified recovery (§13). |
 | 2026-11-05 | 0.28 | SteamGridDB search for Steam games; artwork not retried at startup once answered (`artwork_checked_at`); queues stop with no network (§3.13). |
+| 2026-11-05 | 0.29 | D-13 accepted: NSIS per user, unsigned, no automatic updates; fixed data folder (§3.16). Preferences: nothing to persist for now. |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

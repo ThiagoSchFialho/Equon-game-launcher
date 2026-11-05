@@ -1,5 +1,6 @@
-# Packaging/installer is an open decision (D-13, Phase 8). This file only keeps
-# `build:unpack` / `build:win` working for local checks.
+# Windows installer (D-13, ARCHITECTURE.md §3): NSIS, per user, no administrator, not signed,
+# no automatic updates. A new version is the new installer run over the old one, and the
+# user data folder is never touched by installing or uninstalling.
 appId: com.equon.launcher
 productName: Equon
 directories:
@@ -15,11 +16,21 @@ files:
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,.nvmrc,CHANGELOG.md,README.md,CLAUDE.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  # better-sqlite3 ships a prebuilt binary per platform; only this one is ever loaded.
+  - '!node_modules/better-sqlite3/prebuilds/{darwin,linux}*'
+  - '!node_modules/better-sqlite3/prebuilds/win32-arm64*'
+# A native module cannot be loaded from inside the asar archive.
 asarUnpack:
   - resources/**
+  - '**/*.node'
 win:
   executableName: equon
+  target: nsis
 nsis:
+  oneClick: true
+  perMachine: false
+  allowElevation: false
+  deleteAppDataOnUninstall: false
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
