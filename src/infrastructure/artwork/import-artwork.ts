@@ -1,6 +1,7 @@
-import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import type { ArtworkKind } from '../../core/domain'
+import { writeFileAtomic } from './write-atomic'
 
 export const MAX_ARTWORK_BYTES = 20 * 1024 * 1024
 
@@ -116,11 +117,12 @@ export function writeArtwork(
 ): ImportedArtwork {
   const folder = join(cacheDir, String(gameId))
   mkdirSync(folder, { recursive: true })
+  const localPath = `${gameId}/${kind}.${artwork.type}`
+  writeFileAtomic(join(cacheDir, localPath), artwork.bytes)
+  // Only now: a failed write must not lose the image the database still points to.
   for (const other of ['png', 'jpg', 'webp']) {
     if (other !== artwork.type) rmSync(join(folder, `${kind}.${other}`), { force: true })
   }
-  const localPath = `${gameId}/${kind}.${artwork.type}`
-  writeFileSync(join(cacheDir, localPath), artwork.bytes)
   return { localPath, width: artwork.width, height: artwork.height }
 }
 

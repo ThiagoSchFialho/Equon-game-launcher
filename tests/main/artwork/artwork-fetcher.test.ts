@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -90,6 +90,40 @@ describe('artwork fetcher: Steam games', () => {
     expect(artwork().get(id, 'header')).toMatchObject({ source: 'steam', userSelected: false })
     expect(artwork().get(id, 'background')).toMatchObject({ width: 1438, height: 810 })
     expect(requested.some((u) => u.includes('steamgriddb'))).toBe(false)
+  })
+
+  it('survives a cache folder it cannot write to, and tries again later', async () => {
+    const errors: unknown[] = []
+    const blocked = join(dir, 'blocked')
+    writeFileSync(blocked, 'a file where the cache folder should be')
+    const denied = createArtworkFetcher({
+      games: games(),
+      artwork: artwork(),
+      get: async (url) =>
+        json.get([...json.keys()].find((k) => url.includes(k)) ?? '') ?? {
+          status: 404,
+          json: undefined
+        },
+      getBytes: async (url) => images.get(url)?.bytes ?? null,
+      gridKey: () => null,
+      cacheDir: blocked,
+      decode: () => ({ width: 460, height: 215 }),
+      clock: { now: () => new Date('2026-11-04T03:00:00Z') },
+      wait: async () => {},
+      onLibraryChanged: () => {},
+      onError: (error) => errors.push(error)
+    })
+    const id = games().upsertSteamGame({ steamAppId: 620, title: 'Portal 2' }).id
+    steamArt(620, 'https://x.steamstatic.com/h.jpg', '')
+    image('https://x.steamstatic.com/h.jpg', 460, 215)
+
+    await expect(denied.fetchMissing()).resolves.toBeUndefined()
+    expect(artwork().get(id, 'header')).toBeNull()
+    expect(errors.length).toBeGreaterThan(0)
+
+    // With a usable folder the same game works: nothing was recorded as done.
+    await fetcher.fetchMissing()
+    expect(artwork().get(id, 'header')).toMatchObject({ source: 'steam' })
   })
 
   it('reports progress per game with work, and stays silent when nothing is missing', async () => {

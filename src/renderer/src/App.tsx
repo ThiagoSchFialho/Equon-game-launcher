@@ -13,6 +13,7 @@ import {
 } from './app/navigation'
 import { DEFAULT_LIBRARY_VIEW, type LibraryView } from '../../shared/library-view'
 import type { AchievementSort } from '../../shared/achievements-view'
+import { ScreenErrorBoundary } from './components/ScreenErrorBoundary'
 import { AchievementSortContext, type AchievementSortState } from './data/achievements'
 import { BackgroundActivityContext, useBackgroundActivityLoader } from './data/background-activity'
 import { GamesContext, useGamesLoader } from './data/games'
@@ -122,7 +123,9 @@ function App(): React.JSX.Element {
             <LibraryViewContext.Provider value={libraryViewState}>
               <AchievementSortContext.Provider value={achievementSortState}>
                 <BackgroundActivityContext.Provider value={activity}>
-                  <CurrentScreen route={route} />
+                  <ScreenErrorBoundary key={JSON.stringify(route)}>
+                    <CurrentScreen route={route} />
+                  </ScreenErrorBoundary>
                 </BackgroundActivityContext.Provider>
               </AchievementSortContext.Provider>
             </LibraryViewContext.Provider>

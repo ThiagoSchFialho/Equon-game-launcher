@@ -11,7 +11,9 @@ import {
   type SqliteDatabase
 } from '../infrastructure/persistence'
 import { handleArtworkProtocol, registerArtworkScheme } from './artwork/artwork-protocol'
+import { describeDatabaseFailure } from './database-failure'
 import { registerIpcHandlers } from './ipc/register'
+import { createCrashPolicy } from './renderer-recovery'
 import { hardenApp } from './security/harden'
 import { createServices } from './services'
 import type { SteamService } from './steam/steam-service'
@@ -31,6 +33,11 @@ if (is.dev) {
   app.setPath('userData', join(app.getPath('appData'), 'equon-game-launcher-dev'))
 }
 
+// One launcher per data folder: a second one would close the first one's running
+// sessions as interrupted and count everything twice. Comes after the folder is chosen.
+const isPrimaryInstance = app.requestSingleInstanceLock()
+if (!isPrimaryInstance) app.quit()
+
 registerArtworkScheme()
 
 const rendererFile = join(__dirname, '../renderer/index.html')
@@ -42,6 +49,15 @@ const appOrigin: AppOrigin = {
 }
 
 let mainWindow: BrowserWindow | null = null
+const crashPolicy = createCrashPolicy(() => Date.now())
+
+// Launching it again brings back the one already open.
+app.on('second-instance', () => {
+  if (!mainWindow) return
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  mainWindow.show()
+  mainWindow.focus()
+})
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -65,27 +81,39 @@ function createWindow(): void {
     mainWindow = null
   })
 
-  if (devServerUrl !== undefined) {
-    window.loadURL(devServerUrl)
-  } else {
-    window.loadFile(rendererFile)
+  const load = (): void => {
+    if (devServerUrl !== undefined) void window.loadURL(devServerUrl)
+    else void window.loadFile(rendererFile)
   }
+  window.webContents.on('render-process-gone', (_, { reason }) => {
+    if (reason === 'clean-exit') return
+    console.error('Renderer process gone:', reason)
+    if (crashPolicy.onCrash() === 'reload') {
+      load()
+      return
+    }
+    dialog.showErrorBox('Equon', 'A tela do Equon parou de funcionar. Abra o Equon novamente.')
+    app.quit()
+  })
+  load()
 }
 
 let db: SqliteDatabase | undefined
 let steam: SteamService | undefined
 
 app.whenReady().then(async () => {
+  if (!isPrimaryInstance) return
   electronApp.setAppUserModelId('com.equon.launcher')
 
   const userData = app.getPath('userData')
   const artworkCacheDir = join(userData, 'artwork-cache')
 
   // The database is required; without it the launcher cannot work.
+  const databaseFile = join(userData, 'equon.sqlite')
   try {
-    db = openAppDatabase(join(userData, 'equon.sqlite')).db
+    db = openAppDatabase(databaseFile).db
   } catch (error) {
-    dialog.showErrorBox('Equon', `Could not open the local database.\n\n${String(error)}`)
+    dialog.showErrorBox('Equon', describeDatabaseFailure(error, databaseFile))
     app.quit()
     return
   }

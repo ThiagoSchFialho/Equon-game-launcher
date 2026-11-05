@@ -1,6 +1,6 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.26
+**Version:** 0.27
 **Status:** Draft — Phase 8 (Hardening and release preparation)
 **Last updated:** 2026-11-04
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
@@ -624,6 +624,10 @@ On startup, reconcile sessions left `running` by a previous crash: mark them `in
 - Treat failures as partial failures; never delete valid data because a request failed.
 - Make synchronization safe to repeat.
 - Use migrations for every schema change.
+- One launcher per data folder (`requestSingleInstanceLock`): a second launch brings back the open window, since a second instance would close the first one's running sessions as interrupted.
+- A dead renderer process reloads the window once; a second crash within 60 s tells the user and quits. A screen that throws while rendering shows a message with a way home, reachable by controller (`ScreenErrorBoundary`).
+- Artwork and achievement icons are written through a temporary file: a crash or a full disk never leaves a cut image taken as cached, and a failed write keeps the previous image.
+- **Measured in Phase 8b (dev data folder, real app):** closing during sync exits in under 1 s; killing the process during a full sync leaves the database intact (`integrity_check`, foreign keys) and it reopens normally; with every request failing, the window opens in about 0.4 s, local flows work, the reason appears next to the refresh result and the database does not change. With no network the artwork queue still walks every game with missing art, so the indicator can stay for minutes; this is harmless and was left as is.
 
 ---
 
@@ -680,6 +684,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-04 | 0.24 | Top bar indicator for achievement sync, background Steam sync and artwork downloads, fed by one main-process activity state. |
 | 2026-11-04 | 0.25 | Fullscreen blank covers fix: `disable-checker-imaging` at startup (§12). |
 | 2026-11-04 | 0.26 | Phase 8a: performance measurements (§12); no cache eviction and no limit on stored artwork sizes (§3.13). |
+| 2026-11-05 | 0.27 | Phase 8b: single instance, renderer crash recovery, screen error boundary, atomic artwork writes, database failure messages and verified recovery (§13). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

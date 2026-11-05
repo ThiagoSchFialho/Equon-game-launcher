@@ -360,6 +360,11 @@ export const t = {
     loading: 'Carregando…',
     error: 'Não foi possível carregar as configurações.'
   },
+  failure: {
+    message: 'Algo deu errado nesta tela.',
+    hint: 'Seus dados não foram afetados.',
+    home: 'Voltar para o início'
+  },
   activity: {
     achievements: 'Sincronizando conquistas…',
     library: 'Sincronizando jogos da Steam…',

@@ -395,7 +395,8 @@ API REST v2 com chave pessoal gratuita. Fornece capa quadrada e logo (e, para jo
 - Excluir um jogo remove, em cascata, conquistas, ligações de gênero, configuração de lançamento, sessões e artes. Os arquivos de arte no cache devem ser removidos pela aplicação.
 - Gêneros órfãos podem permanecer; limpeza é opcional e nunca urgente.
 - Toda mudança de schema exige migração versionada. Alterações que o SQLite não faz no lugar usam o padrão criar-copiar-renomear, com chaves estrangeiras desligadas fora da transação.
-- Fazer cópia do arquivo do banco antes de aplicar migrações: quando há migração pendente em um banco existente, o launcher grava `equon.sqlite.v<versão>.bak` com `VACUUM INTO` (estratégia de recuperação a verificar na Fase 8).
+- Fazer cópia do arquivo do banco antes de aplicar migrações: quando há migração pendente em um banco existente, o launcher grava `equon.sqlite.v<versão>.bak` com `VACUUM INTO`; se essa cópia falhar, nenhuma migração roda.
+- **Recuperação (verificada na Fase 8, com teste automatizado):** um arquivo danificado ou de versão mais nova impede a abertura, com uma mensagem explicando o motivo, e nunca é alterado. Para restaurar: fechar o Equon; apagar `equon.sqlite`, `equon.sqlite-wal` e `equon.sqlite-shm`; copiar o `.bak` mais recente como `equon.sqlite`. Na abertura, as migrações levam a cópia até a versão atual. Perde-se o que mudou depois da cópia; os jogos da Steam, o tempo de jogo e as conquistas voltam nas próximas sincronizações.
 - Testes de banco devem cobrir: migrações, restrições, upserts (preservando `hidden`/`beated`), cascatas, transações, chaves estrangeiras realmente ativas e ordenações com `NULL`.
 
 ---

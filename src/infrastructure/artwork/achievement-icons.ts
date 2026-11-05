@@ -1,6 +1,7 @@
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import type { PreparedArtwork } from './import-artwork'
+import { writeFileAtomic } from './write-atomic'
 
 const TYPES = ['jpg', 'png', 'webp'] as const
 
@@ -38,5 +39,5 @@ export function writeAchievementIcon(
 ): void {
   const folder = folderOf(cacheDir, gameId)
   mkdirSync(folder, { recursive: true })
-  writeFileSync(join(folder, `${baseName(achievementId, locked)}.${icon.type}`), icon.bytes)
+  writeFileAtomic(join(folder, `${baseName(achievementId, locked)}.${icon.type}`), icon.bytes)
 }

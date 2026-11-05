@@ -317,9 +317,9 @@ hardcoded from illustrative mockups.
     measurements; decide artwork cache eviction and stored sizes.
 -   [ ] Test controller disconnect/reconnect and input edge cases.
 -   [ ] Test 1920×1080 and 1280×720.
--   [ ] Test network failures, malformed API responses, permissions, and
+-   [x] Test network failures, malformed API responses, permissions, and
     interrupted sync.
--   [ ] Verify migration and backup/recovery approach.
+-   [x] Verify migration and backup/recovery approach.
 -   [ ] Decide and configure Windows packaging/installer (D-13),
     including correct packaging of the `better-sqlite3` native module.
 -   [ ] Review security, logging, API key handling, and dependencies.
