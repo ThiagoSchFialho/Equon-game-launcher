@@ -14,6 +14,7 @@ import {
   type SteamGridDbTarget
 } from '../../integrations/steamgriddb/assets'
 import type { Result, SteamGridDbGameInfo } from '../../shared/ipc/contract'
+import { UNAVAILABLE_LIMIT, UNAVAILABLE_WAIT_MS } from '../queue-pacing'
 
 /** API requests are spaced like the metadata queue (SteamGridDB: about 500/hour, unconfirmed). */
 export const ARTWORK_INTERVAL_MS = 1500
@@ -22,8 +23,11 @@ const GRID_KINDS: SteamGridDbKind[] = ['cover_square', 'cover_portrait', 'logo']
 /** What the user's own search replaces, for any game (D-15). */
 const CHOSEN_KINDS: SteamGridDbKind[] = ['cover_square', 'cover_portrait', 'logo', 'header']
 
-/** How one game went: without an answer it stays to try; with no network the queue stops. */
-type QueueOutcome = 'answered' | 'no-answer' | 'no-network'
+/**
+ * How one game went: without an answer it stays to try. With no network the queue stops;
+ * a server that answers but cannot serve makes it wait (see queue-pacing).
+ */
+type QueueOutcome = 'answered' | 'no-answer' | 'no-network' | 'unavailable'
 
 export interface ArtworkFetcherDeps {
   games: GameRepository
@@ -155,6 +159,7 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
     if (missing('header') || missing('background')) {
       const urls = await fetchAppArtwork(deps.get, appId)
       if (!urls.ok && urls.error === 'network') return { changed, outcome: 'no-network' }
+      if (!urls.ok && urls.error === 'unavailable') return { changed, outcome: 'unavailable' }
       await deps.wait(ARTWORK_INTERVAL_MS)
       // "not-found" is an answer: the store has no page for this game.
       if (!urls.ok && urls.error !== 'not-found') outcome = 'no-answer'
@@ -173,6 +178,7 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
       const result = await fromSteamGridDb(game, { steamAppId: appId }, gridKinds, false)
       changed = result.saved.length > 0 || changed
       if (result.error === 'network') return { changed, outcome: 'no-network' }
+      if (result.error === 'unavailable') return { changed, outcome: 'unavailable' }
       if (result.error) outcome = 'no-answer'
     }
     return { changed, outcome: storageFailed ? 'no-answer' : outcome }
@@ -190,12 +196,19 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
           hasWork(game, kinds.get(game.id) ?? [])
       )
     if (pending.length === 0) return
+    let unavailable = 0
     for (const [done, game] of pending.entries()) {
       deps.onProgress?.({ done, total: pending.length })
       try {
         const { changed, outcome } = await fillSteamGame(game, kinds.get(game.id) ?? [])
         if (changed) deps.onLibraryChanged()
         if (outcome === 'no-network') break
+        if (outcome === 'unavailable') {
+          if (++unavailable >= UNAVAILABLE_LIMIT) break
+          await deps.wait(UNAVAILABLE_WAIT_MS)
+          continue
+        }
+        unavailable = 0
         if (outcome === 'answered') {
           deps.games.setArtworkChecked(game.id, toUtcIso(deps.clock.now()))
         }

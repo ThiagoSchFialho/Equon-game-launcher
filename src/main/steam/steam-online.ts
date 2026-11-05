@@ -16,6 +16,7 @@ import {
 } from '../../integrations/steam/steam-web'
 import { testSteamGridDbKey } from '../../integrations/steamgriddb/steamgriddb'
 import type { ConnectionTest, Result, SteamSyncInfo } from '../../shared/ipc/contract'
+import { UNAVAILABLE_LIMIT, UNAVAILABLE_WAIT_MS } from '../queue-pacing'
 
 /** appdetails is limited to about 200 requests per 5 minutes: one every 1.5 s. */
 export const METADATA_INTERVAL_MS = 1500
@@ -87,12 +88,19 @@ export function createSteamOnline(deps: SteamOnlineDeps): SteamOnline {
     let changed = false
     const pending = gamesMissingMetadata(deps.games.list())
     if (pending.length === 0) return
+    let unavailable = 0
     for (const [done, game] of pending.entries()) {
       deps.onMetadataProgress?.({ done, total: pending.length })
       try {
         const result = await fetchAppDetails(deps.get, game.steamAppId as number)
         // No network: the rest would only fail too. The next start tries again.
         if (!result.ok && result.error === 'network') break
+        if (!result.ok && result.error === 'unavailable') {
+          if (++unavailable >= UNAVAILABLE_LIMIT) break
+          await deps.wait(UNAVAILABLE_WAIT_MS)
+          continue
+        }
+        unavailable = 0
         // Failures keep metadata_fetched_at NULL, so the next scan retries.
         if (result.ok) {
           applySteamMetadata(deps, game, result.data, now())

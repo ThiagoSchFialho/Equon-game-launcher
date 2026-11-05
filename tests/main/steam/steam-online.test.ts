@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { HttpGet } from '../../../src/integrations/http'
+import { NetworkError, type HttpGet } from '../../../src/integrations/http'
+import { UNAVAILABLE_LIMIT, UNAVAILABLE_WAIT_MS } from '../../../src/main/queue-pacing'
 import {
   createGameRepository,
   createGenreRepository,
@@ -20,6 +21,8 @@ let urls: string[]
 let credentials: { steamId: string | null; steamKey: string | null; gridKey: string | null }
 let changes: number
 let online: SteamOnline
+let offline: boolean
+let waits: number[]
 let metadataProgress: ({ done: number; total: number } | null)[]
 
 const games = (): ReturnType<typeof createGameRepository> => createGameRepository(db)
@@ -34,8 +37,11 @@ beforeEach(() => {
   changes = 0
   metadataProgress = []
   credentials = { steamId: STEAM_ID, steamKey: KEY, gridKey: null }
+  offline = false
+  waits = []
   const get: HttpGet = async (url) => {
     urls.push(url)
+    if (offline) throw new NetworkError()
     for (const [match, response] of responses) if (url.includes(match)) return response
     return { status: 404, json: undefined }
   }
@@ -46,7 +52,9 @@ beforeEach(() => {
     get,
     credentials: () => credentials,
     clock: { now: () => new Date('2026-11-04T02:00:00Z') },
-    wait: async () => {},
+    wait: async (ms) => {
+      waits.push(ms)
+    },
     onLibraryChanged: () => changes++,
     onMetadataProgress: (value) => metadataProgress.push(value)
   })
@@ -199,11 +207,29 @@ describe('steam online: metadata', () => {
   it('stops at the first network failure, and the next start tries again', async () => {
     const first = games().upsertSteamGame({ steamAppId: 620, title: 'Portal 2' }).id
     games().upsertSteamGame({ steamAppId: 730, title: 'Counter-Strike 2' })
-    answer('appids=', 503, undefined)
+    offline = true
     await online.fetchMissingMetadata()
     expect(urls.filter((u) => u.includes('appids='))).toHaveLength(1)
     expect(metadataProgress).toEqual([{ done: 0, total: 2 }, null])
     expect(games().getById(first)?.metadataFetchedAt).toBeNull()
+  })
+
+  it('a rate limit is not "no network": it waits and goes on', async () => {
+    const first = games().upsertSteamGame({ steamAppId: 620, title: 'Portal 2' }).id
+    games().upsertSteamGame({ steamAppId: 730, title: 'Counter-Strike 2' })
+    answer('appids=', 429, undefined)
+    await online.fetchMissingMetadata()
+    expect(urls.filter((u) => u.includes('appids='))).toHaveLength(2)
+    expect(waits).toContain(UNAVAILABLE_WAIT_MS)
+    expect(games().getById(first)?.metadataFetchedAt).toBeNull()
+  })
+
+  it('gives up after several in a row, and the indicator ends', async () => {
+    for (let i = 0; i < 20; i++) games().upsertSteamGame({ steamAppId: 1000 + i, title: `G${i}` })
+    answer('appids=', 503, undefined)
+    await online.fetchMissingMetadata()
+    expect(urls.filter((u) => u.includes('appids='))).toHaveLength(UNAVAILABLE_LIMIT)
+    expect(metadataProgress.at(-1)).toBeNull()
   })
 
   it('reports nothing when no game needs metadata', async () => {

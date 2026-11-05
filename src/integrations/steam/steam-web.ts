@@ -8,6 +8,8 @@ export type SteamWebError =
   | 'invalid-steam-id'
   | 'private-profile'
   | 'network'
+  /** The store answered, but could not serve: rate limit or outage. */
+  | 'unavailable'
   | 'invalid-response'
   | 'not-found'
 
@@ -116,7 +118,7 @@ export async function fetchAppDetails(
     if (error instanceof NetworkError) return { ok: false, error: 'network' }
     throw error
   }
-  if (response.status !== 200) return { ok: false, error: 'network' }
+  if (response.status !== 200) return { ok: false, error: 'unavailable' }
   const parsed = appDetailsSchema.safeParse(response.json)
   const entry = parsed.success ? parsed.data[String(appId)] : undefined
   if (!entry) return { ok: false, error: 'invalid-response' }
@@ -292,7 +294,7 @@ export async function fetchAppArtwork(
     if (error instanceof NetworkError) return { ok: false, error: 'network' }
     throw error
   }
-  if (response.status !== 200) return { ok: false, error: 'network' }
+  if (response.status !== 200) return { ok: false, error: 'unavailable' }
   const parsed = appArtworkSchema.safeParse(response.json)
   const entry = parsed.success ? parsed.data[String(appId)] : undefined
   if (!entry) return { ok: false, error: 'invalid-response' }

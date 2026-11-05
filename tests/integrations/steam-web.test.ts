@@ -92,7 +92,9 @@ describe('fetchAppDetails', () => {
       ok: false,
       error: 'invalid-response'
     })
-    expect(await fetchAppDetails(fake(429, null), 5)).toEqual({ ok: false, error: 'network' })
+    // The server answered: that is not the same as having no network.
+    expect(await fetchAppDetails(fake(429, null), 5)).toEqual({ ok: false, error: 'unavailable' })
+    expect(await fetchAppDetails(fake(503, null), 5)).toEqual({ ok: false, error: 'unavailable' })
     expect(await fetchAppDetails(offline, 5)).toEqual({ ok: false, error: 'network' })
   })
 })

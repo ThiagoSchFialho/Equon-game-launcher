@@ -12,6 +12,7 @@ import {
   createArtworkFetcher,
   type ArtworkFetcher
 } from '../../../src/main/artwork/artwork-fetcher'
+import { UNAVAILABLE_LIMIT, UNAVAILABLE_WAIT_MS } from '../../../src/main/queue-pacing'
 import { createTestDb } from '../../helpers/db'
 
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0])
@@ -25,6 +26,7 @@ let requested: string[]
 let gridKey: string | null
 let fetcher: ArtworkFetcher
 let progress: ({ done: number; total: number } | null)[]
+let waits: number[]
 
 const games = (): ReturnType<typeof createGameRepository> => createGameRepository(db)
 const artwork = (): ReturnType<typeof createArtworkRepository> => createArtworkRepository(db)
@@ -41,6 +43,7 @@ beforeEach(() => {
   requested = []
   gridKey = null
   progress = []
+  waits = []
   const get: HttpGet = async (url) => {
     requested.push(url)
     for (const [match, response] of json) if (url.includes(match)) return response
@@ -63,7 +66,9 @@ beforeEach(() => {
       return null
     },
     clock: { now: () => new Date('2026-11-04T03:00:00Z') },
-    wait: async () => {},
+    wait: async (ms) => {
+      waits.push(ms)
+    },
     onLibraryChanged: () => {},
     onProgress: (value) => progress.push(value)
   })
@@ -200,17 +205,59 @@ describe('artwork fetcher: Steam games', () => {
       expect(games().getById(first)?.artworkCheckedAt).toBeNull()
       expect(games().getById(second)?.artworkCheckedAt).toBeNull()
     })
+  })
 
-    it('SteamGridDB failing stops it too', async () => {
-      games().upsertSteamGame({ steamAppId: 620, title: 'A' })
-      games().upsertSteamGame({ steamAppId: 730, title: 'B' })
-      steamArt(620, '', '')
-      steamArt(730, '', '')
-      gridKey = KEY
-      json.set('steamgriddb.com', { status: 503, json: undefined })
+  describe('when a server answers but cannot serve', () => {
+    const addGames = (count: number): number[] =>
+      Array.from(
+        { length: count },
+        (_, i) => games().upsertSteamGame({ steamAppId: 1000 + i, title: `Game ${i}` }).id
+      )
+    const asked = (): number => requested.filter((u) => u.includes('appids=')).length
+
+    it('is not "no network": it waits and goes on, leaving those games to try', async () => {
+      const [limited, next] = addGames(2)
+      json.set('appids=1000&', { status: 429, json: undefined })
+      steamArt(1001, '', '')
       await fetcher.fetchMissing()
-      expect(requested.filter((u) => u.includes('appids=730'))).toHaveLength(0)
+      expect(asked()).toBe(2)
+      expect(waits).toContain(UNAVAILABLE_WAIT_MS)
+      expect(games().getById(limited)?.artworkCheckedAt).toBeNull()
+      expect(games().getById(next)?.artworkCheckedAt).not.toBeNull()
       expect(progress.at(-1)).toBeNull()
+    })
+
+    it('gives up after several in a row, and the indicator ends', async () => {
+      addGames(20)
+      json.set('appids=', { status: 503, json: undefined })
+      await fetcher.fetchMissing()
+      expect(asked()).toBe(UNAVAILABLE_LIMIT)
+      expect(progress.at(-1)).toBeNull()
+    })
+
+    it('a success in between restarts the count', async () => {
+      addGames(UNAVAILABLE_LIMIT + 3)
+      json.set('appids=1000&', { status: 429, json: undefined })
+      json.set('appids=1001&', { status: 429, json: undefined })
+      steamArt(1002, '', '')
+      for (let i = 3; i < UNAVAILABLE_LIMIT + 3; i++) {
+        json.set(`appids=${1000 + i}&`, { status: 429, json: undefined })
+      }
+      await fetcher.fetchMissing()
+      // 2 failures, 1 success, then the limit: all of them were asked.
+      expect(asked()).toBe(UNAVAILABLE_LIMIT + 3)
+    })
+
+    it('SteamGridDB limiting behaves the same', async () => {
+      const [first] = addGames(2)
+      steamArt(1000, '', '')
+      steamArt(1001, '', '')
+      gridKey = KEY
+      json.set('steamgriddb.com', { status: 429, json: undefined })
+      await fetcher.fetchMissing()
+      expect(asked()).toBe(2)
+      expect(waits).toContain(UNAVAILABLE_WAIT_MS)
+      expect(games().getById(first)?.artworkCheckedAt).toBeNull()
     })
   })
 

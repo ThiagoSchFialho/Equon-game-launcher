@@ -13,7 +13,8 @@ const GRID_DIMENSIONS: Record<Exclude<SteamGridDbKind, 'logo'>, string> = {
   header: '460x215,920x430'
 }
 
-export type SteamGridDbError = 'invalid-key' | 'network' | 'invalid-response' | 'not-found'
+export type SteamGridDbError =
+  'invalid-key' | 'network' | 'unavailable' | 'invalid-response' | 'not-found'
 export type SteamGridDbResult<T> = { ok: true; data: T } | { ok: false; error: SteamGridDbError }
 
 /** A game on SteamGridDB, for the manual-game search. */
@@ -57,7 +58,7 @@ async function call(get: HttpGet, key: string, path: string): Promise<SteamGridD
       return { ok: false, error: 'invalid-key' }
     }
     if (response.status === 404) return { ok: false, error: 'not-found' }
-    if (response.status !== 200) return { ok: false, error: 'network' }
+    if (response.status !== 200) return { ok: false, error: 'unavailable' }
     return { ok: true, data: response.json }
   } catch (error) {
     if (error instanceof NetworkError) return { ok: false, error: 'network' }
