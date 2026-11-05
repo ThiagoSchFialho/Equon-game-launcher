@@ -315,8 +315,8 @@ hardcoded from illustrative mockups.
     performance on reference hardware.
 -   [x] Optimize caching and progressive image loading based on
     measurements; decide artwork cache eviction and stored sizes.
--   [ ] Test controller disconnect/reconnect and input edge cases.
--   [ ] Test 1920×1080 and 1280×720.
+-   [x] Test controller disconnect/reconnect and input edge cases.
+-   [x] Test 1920×1080 and 1280×720.
 -   [x] Test network failures, malformed API responses, permissions, and
     interrupted sync.
 -   [x] Verify migration and backup/recovery approach.
