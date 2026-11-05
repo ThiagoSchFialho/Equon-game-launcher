@@ -311,9 +311,9 @@ hardcoded from illustrative mockups.
 
 ### Tasks
 
--   [ ] Measure startup, library rendering, image loading, and scan
+-   [x] Measure startup, library rendering, image loading, and scan
     performance on reference hardware.
--   [ ] Optimize caching and progressive image loading based on
+-   [x] Optimize caching and progressive image loading based on
     measurements; decide artwork cache eviction and stored sizes.
 -   [ ] Test controller disconnect/reconnect and input edge cases.
 -   [ ] Test 1920×1080 and 1280×720.
