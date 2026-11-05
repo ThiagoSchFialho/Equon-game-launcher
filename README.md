@@ -1,67 +1,47 @@
 # Equon Game Launcher
 
-A controller-first PC game launcher designed to bring your game library together in one place, delivering a console-like experience on PC.
+A controller-first game launcher for Windows: your Steam library, your other PC games and your emulated games in one place, with a console-like experience. The interface is in Brazilian Portuguese.
 
-## About
+![Home screen](docs/screenshots/home.jpg)
 
-Equon is a desktop application for Windows focused on simplifying how players organize, browse, and launch their games.
+*Screenshots use the built-in sample library, with fictional games and generated artwork.*
 
-Inspired by the convenience of console interfaces, Equon aims to provide a unified gaming library with a distinctive visual identity, intuitive controller navigation, and useful information about each game.
+## Features
 
-The project is currently under development.
+- **Controller first.** The whole app works with a gamepad, and also with keyboard and mouse. Focus is always visible, including at a distance on a TV.
+- **Steam.** Games you own appear on their own, installed or not. Installing or removing a game in Steam shows up within seconds. Playtime and last session come from Steam, and sessions observed by the launcher add on top.
+- **Other games.** Add any game by its executable or a store `.url` shortcut, which is how Epic Games Store and GOG games are added. Yuzu games only need the ROM. You can create your own origins, such as Nintendo 64.
+- **Library.** Search, filters by origin and install state, hidden games, games marked as beaten, and sorting by title, recent activity or playtime.
+- **Achievements.** Steam achievements by game, with rarity tiers and a platinum for completed games. A game is synced when it closes, and a manual action syncs the whole library.
+- **Artwork.** Downloaded from Steam and, with your own key, from SteamGridDB, and kept on disk. You can search SteamGridDB for any game; what you choose is never overwritten. Everything works with placeholders too.
+- **Local and private.** One local user and an embedded SQLite database, with no account or server of its own. API keys are encrypted with Windows' own protection and never leave the main process.
 
-## Goals
+| | |
+| --- | --- |
+| ![Library](docs/screenshots/library.jpg) | ![Game page](docs/screenshots/game.jpg) |
+| ![Achievements](docs/screenshots/achievements.jpg) | ![Achievements of a game](docs/screenshots/game-achievements.jpg) |
 
-- **Unified Library:** Bring games from different platforms and local installations into one organized collection.
-- **Controller-First Experience:** Navigate the interface and launch games using a gamepad, without relying on a mouse or keyboard.
-- **Game Tracking:** Track playtime and recent gaming activity.
-- **Achievement Integration:** Synchronize and display Steam achievements when supported.
-- **Personalization:** Organize the library with favorites, hidden games, and completion status.
-- **Performance:** Deliver a responsive interface with efficient asset loading and reliable local data storage.
+## Limitations
 
-## Planned Features
-
-- Steam game library integration (local installs, launch, and installation status).
-- Manually added games. This is how games from the Epic Games Store, GOG, or any other launcher are added; there is no automatic Epic or GOG integration.
-- Origins for emulated games (built-in Yuzu and PlayStation 2), plus origins you create yourself, such as Nintendo 64 for a new emulator.
-- Game details, artwork (via Steam, SteamGridDB, or local files), and metadata.
-- Playtime tracking.
-- Steam achievement synchronization.
-- Search, filtering, and sorting.
-- Game installation status detection.
-- Gamepad navigation and keyboard/mouse support.
-- Local persistence for game data and preferences.
-
-Features will be implemented progressively, and availability may vary depending on the game source and its supported integrations.
-
-## Design Philosophy
-
-Equon follows a hybrid visual direction that combines large game artwork, editorial organization, and subtle retro-gaming influences.
-
-The interface is designed primarily for conventional 16:9 displays, including setups connected to a television, with readability at a distance and consistent controller focus as key priorities.
-
-Design on Figma: https://www.figma.com/design/DIkoemv1pnAg8px8TZchNG/Untitled?node-id=0-1&p=f&t=4hBnYoyVth7OYjoR-0
-
-## Platform
-
-- **Initial target:** Windows
-- **Primary input:** Game controller
-- **Additional input:** Mouse and keyboard
+- **Windows only**, with the Xbox controller layout. Validated at 1920×1080 and 1280×720.
+- **The installer is not signed**, so Windows SmartScreen may warn and an antivirus may hold the program for a scan. There are no automatic updates: a new version is a new installer.
+- **Epic Games Store, GOG and others have no automatic integration:** their games are added by hand. Yuzu is the only emulator with its own launch support.
+- **Achievements come from Steam only.**
+- **Steam Web API features need your own key, your SteamID and a public game list:** owned games that are not installed, playtime and achievements. Without them the launcher still finds installed games and opens them.
+- **Playtime has limits:** programs that hand off to another launcher and exit right away are not timed, and neither are `.url` shortcuts.
+- **Artwork takes disk space and time:** about 3 MB per game, and a large library takes a while to fill in the background. The cache is never cleaned automatically, and a game with no art available is only tried again through "Atualizar biblioteca".
+- **Not done:** cloud sync, several users or several Steam accounts on one install.
 
 ## Tech Stack
 
-Recorded in `docs/ARCHITECTURE.md`. Phases 1–7 are implemented (skeleton, database, controller UI, manual games, library organization, Steam library and metadata, achievements); hardening and release preparation come next.
-
-- **Desktop:** Electron, React, and TypeScript, built with electron-vite.
-- **Local database:** SQLite (embedded, no separate server) via `better-sqlite3`.
-- **Tooling:** npm, Vitest, ESLint, and Prettier.
+Electron, React and TypeScript, built with electron-vite; SQLite through `better-sqlite3`, with hand-written SQL and versioned migrations; npm, Vitest, ESLint and Prettier. Decisions and their reasons are in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Local Setup
 
 Requirements: Windows, Node.js **24.18.0** (see `.nvmrc`) and npm. No C++ toolchain is needed.
 
 ```sh
-npm install      # installs dependencies and downloads the pinned Electron (44.10.1)
+npm install      # installs dependencies and downloads the pinned Electron (44.10.2)
 npm run dev      # starts the app with hot reload
 ```
 
@@ -69,14 +49,13 @@ npm run dev      # starts the app with hot reload
 | --- | --- |
 | `npm run dev` | Start the app in development mode |
 | `npm run dev:seed` | Same, after replacing the dev library with ~40 sample games and generated artwork |
+| `npm run build:win` | Create the installer in `dist/` |
 | `npm run build` | Typecheck and build main, preload and renderer into `out/` |
 | `npm start` | Preview the production build |
 | `npm test` | Run the Vitest suite once |
 | `npm run lint` | ESLint, including the layer-boundary rules |
 | `npm run typecheck` | `tsc --noEmit` for the Node and web projects |
 | `npm run format` | Prettier |
-
-Packaging (`build:unpack`, `build:win`) exists but the installer is not decided yet (D-13).
 
 ### Native module (`better-sqlite3`)
 
@@ -86,11 +65,13 @@ Packaging (`build:unpack`, `build:win`) exists but the installer is not decided 
 
 Library → "Adicionar jogo": pick the game's `.exe` or a store `.url` shortcut, optional arguments, working folder and a 1920×1080 background. The launcher starts the executable directly and adds the time of each observed session to the game. Executables that hand off to another launcher and exit right away are not tracked, and `.url` shortcuts are never tracked (see `docs/ARCHITECTURE.md` §11).
 
-Library → "Adicionar emulador": configure `yuzu.exe` once; Yuzu games then only need the ROM.
+Settings → "Emuladores": configure `yuzu.exe` once; Yuzu games then only need the ROM.
 
 ### Installing
 
 `npm run build:win` creates `dist/equon-game-launcher-<version>-setup.exe`. Run it: it installs for the current user, with no administrator rights, and creates the shortcuts. To update, run the new installer over the old one.
+
+Then, in Settings → "Conexões", fill in your SteamID and your [Steam Web API key](https://steamcommunity.com/dev/apikey), and optionally a [SteamGridDB key](https://www.steamgriddb.com/profile/preferences/api). Your Steam game details must be public for the launcher to read them.
 
 The installer is not signed: Windows SmartScreen may warn about it ("More info" → "Run anyway"), and an antivirus may hold the new program for a scan, so the first launch can take a while.
 
@@ -106,6 +87,9 @@ Controller (Xbox layout): A confirm, B back, D-pad / left stick move, right stic
 
 ### Troubleshooting
 
+- **The launcher takes long to open after installing:** an antivirus may be scanning the new unsigned program. This only happens on the first launch of each new version.
+- **Owned games or playtime do not appear:** check Settings → "Conexões" → "Testar conexão". A private profile hides the game list.
+- **The database cannot be opened:** the message says why and where the data is. Nothing was deleted; backups and how to restore them are in `docs/DATA_BASE_CONTEXT.md` §6.
 - **`Cannot read properties of undefined (reading 'isPackaged')` on `npm run dev`:** the terminal has `ELECTRON_RUN_AS_NODE=1` set (VS Code's integrated terminal can set it). Clear it for the session: `Remove-Item Env:ELECTRON_RUN_AS_NODE` in PowerShell, or `unset ELECTRON_RUN_AS_NODE` in Git Bash.
 
 ## Documentation

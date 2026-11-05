@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, safeStorage } from 'electron'
+import { app, BrowserWindow, dialog, Menu, safeStorage } from 'electron'
 import { release, version } from 'os'
 import { join } from 'path'
 import { pathToFileURL } from 'url'
@@ -10,6 +10,7 @@ import {
   schemaVersion,
   type SqliteDatabase
 } from '../infrastructure/persistence'
+import { APP_MENU } from './app-menu'
 import { handleArtworkProtocol, registerArtworkScheme } from './artwork/artwork-protocol'
 import { describeDatabaseFailure } from './database-failure'
 import { registerIpcHandlers } from './ipc/register'
@@ -68,7 +69,6 @@ function createWindow(): void {
     width: 1280,
     height: 720,
     show: false,
-    autoHideMenuBar: true,
     backgroundColor: '#101216',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -80,6 +80,8 @@ function createWindow(): void {
   })
 
   const window = mainWindow
+  // Hidden for good, even with Alt; the shortcuts of the menu keep working.
+  window.setMenuBarVisibility(false)
   window.on('ready-to-show', () => window.show())
   // Coming back from Steam: no need to wait for the next check.
   window.on('focus', () => void steam?.rescan())
@@ -110,6 +112,7 @@ let steam: SteamService | undefined
 app.whenReady().then(async () => {
   if (!isPrimaryInstance) return
   electronApp.setAppUserModelId('com.equon.launcher')
+  if (!is.dev) Menu.setApplicationMenu(Menu.buildFromTemplate(APP_MENU))
 
   const userData = app.getPath('userData')
   const artworkCacheDir = join(userData, 'artwork-cache')

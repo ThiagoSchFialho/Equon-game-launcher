@@ -55,6 +55,31 @@ export function isAllowedImageUrl(url: string): boolean {
   }
 }
 
+/** Reads a body and gives up at the limit: a server need not declare, or tell the truth about, its size. */
+async function readCapped(response: Response, maxBytes: number): Promise<Uint8Array | null> {
+  const reader = response.body?.getReader()
+  if (!reader) return null
+  const chunks: Uint8Array[] = []
+  let total = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    total += value.length
+    if (total > maxBytes) {
+      await reader.cancel()
+      return null
+    }
+    chunks.push(value)
+  }
+  const bytes = new Uint8Array(total)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.length
+  }
+  return bytes
+}
+
 /** HttpGetBytes over the global fetch: allowlisted hosts only, size capped, 20 s timeout. */
 export function createFetchBytes(maxBytes: number): HttpGetBytes {
   return async (url) => {
@@ -64,9 +89,11 @@ export function createFetchBytes(maxBytes: number): HttpGetBytes {
       // A redirect must not leave the allowlist either.
       if (response.status !== 200 || !isAllowedImageUrl(response.url || url)) return null
       const declared = Number(response.headers.get('content-length') ?? 0)
-      if (declared > maxBytes) return null
-      const bytes = new Uint8Array(await response.arrayBuffer())
-      return bytes.length > maxBytes ? null : bytes
+      if (declared > maxBytes) {
+        await response.body?.cancel()
+        return null
+      }
+      return await readCapped(response, maxBytes)
     } catch {
       return null
     }

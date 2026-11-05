@@ -20,7 +20,7 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 
 ## Current status and scope of work
 
-- Phases 0–7 are complete (Phase 1 spike results: `docs/ARCHITECTURE.md` §3.1). **Work only on the phase the owner names** (current: Phase 8 — Hardening and release preparation; 8a measurements, 8b failure tests and 8c installer done; next 8d review and README). Do not start the next phase on your own.
+- All roadmap phases (0–8) are complete (Phase 1 spike results: `docs/ARCHITECTURE.md` §3.1). **Work only on what the owner asks for**; do not start anything new on your own.
 - Before non-trivial work, propose a short plan and wait for approval.
 - No open decisions at the moment. If a task depends on one, ask instead of deciding.
 
@@ -31,7 +31,7 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 - Vitest for tests; ESLint (flat config) + Prettier.
 - SQLite via `better-sqlite3`, hand-written SQL in repositories, no ORM, versioned `.sql` migrations tracked with `PRAGMA user_version`.
 - Persistence lives in `src/infrastructure/persistence` (the only place allowed to import `better-sqlite3`, enforced by lint). Add a schema change as a new `migrations/000N_*.sql` plus an entry in `migrations/index.ts`; never edit a released migration. Repositories implement the sync ports in `src/core/application/ports.ts`; tests use `tests/helpers/db.ts` (in-memory, migrated).
-- Scripts: `npm run dev`, `npm run dev:seed` (dev library with sample games), `npm run build`, `npm start` (preview build), `npm test` (Vitest, run once), `npm run lint`, `npm run typecheck`, `npm run format`. Node 24.18.0 (`.nvmrc`), Electron 44.10.1 (exact).
+- Scripts: `npm run dev`, `npm run dev:seed` (dev library with sample games), `npm run build`, `npm start` (preview build), `npm test` (Vitest, run once), `npm run lint`, `npm run typecheck`, `npm run format`. Node 24.18.0 (`.nvmrc`), Electron 44.10.2 (exact).
 - If Electron fails with `electron.app` undefined, `ELECTRON_RUN_AS_NODE=1` is set in the shell (VS Code sets it); unset it for `dev`/`start`.
 - If Vitest fails with "failed to find the runner" / "reading 'config'", the shell is in `d:\` in lower case (the VS Code terminal can be); run it from `D:\`.
 - Unpackaged runs use the `equon-game-launcher-dev` data folder; never seed or test against the real one. To test the packaged app, pass `--user-data-dir=<temp folder>`. Installer: `npm run build:win` (NSIS, per user, unsigned; `ARCHITECTURE.md` §3.16).

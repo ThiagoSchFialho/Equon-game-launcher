@@ -322,8 +322,8 @@ hardcoded from illustrative mockups.
 -   [x] Verify migration and backup/recovery approach.
 -   [x] Decide and configure Windows packaging/installer (D-13),
     including correct packaging of the `better-sqlite3` native module.
--   [ ] Review security, logging, API key handling, and dependencies.
--   [ ] Update README with implemented features, setup, limitations, and
+-   [x] Review security, logging, API key handling, and dependencies.
+-   [x] Update README with implemented features, setup, limitations, and
     screenshots.
 
 **Acceptance:** A fresh installation can follow documented steps; core

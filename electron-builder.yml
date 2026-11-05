@@ -36,3 +36,11 @@ nsis:
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 npmRebuild: false
+# Fixed in the binary: it cannot be used as a plain Node.js, or run code other than this
+# package. --remote-debugging-port still works (local only): it is how the package is tested.
+electronFuses:
+  runAsNode: false
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
