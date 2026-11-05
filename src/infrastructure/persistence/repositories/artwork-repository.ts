@@ -34,6 +34,9 @@ export function createArtworkRepository(db: SqliteDatabase): ArtworkRepository {
   const selectKinds = db.prepare<[], { game_id: number; kind: ArtworkKind }>(
     'SELECT game_id, kind FROM game_artwork ORDER BY game_id, kind'
   )
+  const selectVersions = db.prepare<[], { game_id: number; version: string | null }>(
+    'SELECT game_id, max(fetched_at) AS version FROM game_artwork GROUP BY game_id'
+  )
   // User-selected art is replaced only by another user selection (D-15).
   const upsert = db.prepare<Record<string, unknown>>(`
     INSERT INTO game_artwork
@@ -54,6 +57,14 @@ export function createArtworkRepository(db: SqliteDatabase): ArtworkRepository {
     get: (gameId, kind) => {
       const row = selectOne.get(gameId, kind)
       return row ? toArtwork(row) : null
+    },
+
+    listVersions: () => {
+      const versions = new Map<number, string>()
+      for (const { game_id, version } of selectVersions.all()) {
+        if (version !== null) versions.set(game_id, version)
+      }
+      return versions
     },
 
     listKinds: () => {

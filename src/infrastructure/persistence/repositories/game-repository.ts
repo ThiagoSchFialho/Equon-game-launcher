@@ -22,6 +22,7 @@ interface GameRow {
   steam_synced_at: string | null
   playtime_offset: number
   achievements_synced_at: string | null
+  artwork_checked_at: string | null
 }
 
 const toGame = (row: GameRow): Game => ({
@@ -40,6 +41,7 @@ const toGame = (row: GameRow): Game => ({
   beated: toBool(row.beated),
   requiredAge: row.required_age,
   metadataFetchedAt: row.metadata_fetched_at,
+  artworkCheckedAt: row.artwork_checked_at,
   achievementsSyncedAt: row.achievements_synced_at
 })
 
@@ -72,6 +74,10 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
     RETURNING *`)
 
   const selectBySteamAppId = db.prepare<[number], GameRow>('SELECT * FROM games WHERE steam_id = ?')
+
+  const updateArtworkChecked = db.prepare<[string, number]>(
+    'UPDATE games SET artwork_checked_at = ? WHERE id = ?'
+  )
 
   const updateAchievementsSynced = db.prepare<[string, number]>(
     'UPDATE games SET achievements_synced_at = ? WHERE id = ?'
@@ -189,6 +195,10 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
     delete: (id) => remove.run(id).changes > 0,
 
     recomputePlayStats: (id) => recomputePlayStats(id),
+
+    setArtworkChecked: (id, checkedAt) => {
+      updateArtworkChecked.run(checkedAt, id)
+    },
 
     setAchievementsSynced: (id, syncedAt) => {
       updateAchievementsSynced.run(syncedAt, id)

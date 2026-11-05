@@ -180,6 +180,7 @@ function GameRow({
         gameId={game.id}
         kind="header"
         available={game.artwork}
+        version={game.artworkVersion}
         title={game.title}
         className="achievement-game__art"
       />

@@ -26,4 +26,6 @@ export interface Game {
   metadataFetchedAt: string | null
   /** ISO-8601 UTC; null = achievements never synced successfully. */
   achievementsSyncedAt: string | null
+  /** When the artwork queue last got answers for this game; null = still to try. */
+  artworkCheckedAt: string | null
 }

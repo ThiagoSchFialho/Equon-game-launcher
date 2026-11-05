@@ -190,8 +190,20 @@ describe('steam online: metadata', () => {
   it('reports its progress and ends, even when a game fails', async () => {
     games().upsertSteamGame({ steamAppId: 620, title: 'Portal 2' })
     games().upsertSteamGame({ steamAppId: 730, title: 'Counter-Strike 2' })
+    // The store answered that it does not know these games: the queue goes on.
+    answer('appids=', 200, { 620: { success: false }, 730: { success: false } })
     await online.fetchMissingMetadata()
     expect(metadataProgress).toEqual([{ done: 0, total: 2 }, { done: 1, total: 2 }, null])
+  })
+
+  it('stops at the first network failure, and the next start tries again', async () => {
+    const first = games().upsertSteamGame({ steamAppId: 620, title: 'Portal 2' }).id
+    games().upsertSteamGame({ steamAppId: 730, title: 'Counter-Strike 2' })
+    answer('appids=', 503, undefined)
+    await online.fetchMissingMetadata()
+    expect(urls.filter((u) => u.includes('appids='))).toHaveLength(1)
+    expect(metadataProgress).toEqual([{ done: 0, total: 2 }, null])
+    expect(games().getById(first)?.metadataFetchedAt).toBeNull()
   })
 
   it('reports nothing when no game needs metadata', async () => {

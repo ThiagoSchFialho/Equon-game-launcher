@@ -31,6 +31,7 @@ const row = (
   hidden: false,
   timeLastPlayed,
   artwork: [],
+  artworkVersion: null,
   unlocked: percent,
   total: 100,
   percent,

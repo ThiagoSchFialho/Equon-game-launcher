@@ -131,9 +131,10 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
     IpcChannel.settingsSetSecret,
     createValidatedHandler(settingsSetSecretArgs, settingsResult, trusted, (kind, value) => {
       const result = deps.settings.setSecret(kind, value)
-      // A new SteamGridDB key fills the art that was missing.
+      // A new SteamGridDB key fills the art that was missing, even for games already
+      // tried: until now SteamGridDB may never have been asked about them.
       if (result.ok && kind === 'steamgriddb-api-key' && value !== null) {
-        void deps.artworkFetcher.fetchMissing()
+        void deps.artworkFetcher.fetchMissing({ retry: true })
       }
       return result
     })

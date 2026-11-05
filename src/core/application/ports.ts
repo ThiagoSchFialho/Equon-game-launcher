@@ -120,6 +120,7 @@ export interface GameRepository {
     options?: { onlyUnsynced?: boolean }
   ): number
   setAchievementsSynced(id: number, syncedAt: string): void
+  setArtworkChecked(id: number, checkedAt: string): void
 }
 
 export interface LaunchConfigRepository {
@@ -182,6 +183,8 @@ export interface ArtworkRepository {
   get(gameId: number, kind: ArtworkKind): GameArtwork | null
   /** Kinds with cached artwork, per game id. */
   listKinds(): Map<number, ArtworkKind[]>
+  /** When each game's art last changed, per game id. */
+  listVersions(): Map<number, string>
   /**
    * Inserts or replaces the artwork of (game, kind). An automatic save
    * (userSelected = false) never replaces art the user selected.

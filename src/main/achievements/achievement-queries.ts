@@ -33,6 +33,7 @@ export interface AchievementQueryDeps {
 export function getAchievementsOverview(deps: AchievementQueryDeps): AchievementsOverview {
   const names = new Map(deps.origins.list().map((o) => [o.key, o.name]))
   const kinds = deps.artwork.listKinds()
+  const versions = deps.artwork.listVersions()
   const trophies = deps.users.getTrophyCounters()
   const games: AchievementsOverview['games'] = []
   let neverSynced = true
@@ -48,6 +49,7 @@ export function getAchievementsOverview(deps: AchievementQueryDeps): Achievement
       hidden: game.hidden,
       timeLastPlayed: game.timeLastPlayed,
       artwork: kinds.get(game.id) ?? [],
+      artworkVersion: versions.get(game.id) ?? null,
       unlocked: progress.unlocked,
       total: progress.total,
       percent: progress.percent ?? 0,

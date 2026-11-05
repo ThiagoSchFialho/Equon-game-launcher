@@ -13,8 +13,8 @@ type Step =
   | { kind: 'done'; message: string; tone: 'success' | 'error' }
 
 /**
- * "Buscar artes no SteamGridDB" for a manual game (D-15, owner decision of
- * Phase 6c): search by title, the user confirms the right game, then main
+ * "Buscar artes no SteamGridDB" for any game (D-15, owner decisions of Phases
+ * 6c and 8): search by title, the user confirms the right game, then main
  * downloads its best-voted covers, logo and header.
  */
 export function SteamGridDbSearch({

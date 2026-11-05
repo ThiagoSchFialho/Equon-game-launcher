@@ -68,6 +68,7 @@ Um registro por jogo, de qualquer origem.
 | `required_age` | `TEXT` | Classificação indicativa |
 | `origin` | `TEXT NOT NULL` | FK para `ORIGINS(key)` com `ON DELETE RESTRICT` (D-05) |
 | `metadata_fetched_at` | `TEXT` | Preenchido somente após salvar uma resposta válida de metadados (D-16) |
+| `artwork_checked_at` | `TEXT` | UTC de quando a fila de artes obteve respostas para o jogo (Fase 8). Com data, não se tenta de novo ao abrir, mesmo sem arte disponível; "Atualizar biblioteca" e salvar uma chave do SteamGridDB tentam de novo. `NULL` = falta tentar; sem rede ou com chave inválida continua `NULL` |
 | `achievements_synced_at` | `TEXT` | UTC da última sincronização de conquistas que deu certo (Fase 7). `NULL` = nunca sincronizado; data preenchida e nenhuma linha em `ACHIEVEMENTS` = o jogo não tem conquistas |
 | `steam_playtime_baseline` | `INTEGER` | Minutos informados pela Steam na última sincronização de tempo de jogo (3.11); `CHECK (>= 0)`; `NULL` se nunca sincronizado |
 | `steam_synced_at` | `TEXT` | UTC da última sincronização de tempo de jogo com a Steam; preenchido junto com `steam_playtime_baseline` (`CHECK`: os dois nulos ou os dois preenchidos) |

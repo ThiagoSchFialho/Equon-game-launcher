@@ -46,7 +46,7 @@ export interface SteamOnline {
     scanComplete: boolean
   }): Promise<OwnedSyncOutcome>
   lastSync(): SteamSyncInfo | null
-  /** Fetches appdetails for Steam games still without metadata (D-16), one at a time. */
+  /** Fetches appdetails for Steam games still without metadata (D-16), one at a time; stops with no network. */
   fetchMissingMetadata(): Promise<void>
   testConnection(kind: 'steam' | 'steamgriddb'): Promise<Result<ConnectionTest>>
 }
@@ -91,6 +91,8 @@ export function createSteamOnline(deps: SteamOnlineDeps): SteamOnline {
       deps.onMetadataProgress?.({ done, total: pending.length })
       try {
         const result = await fetchAppDetails(deps.get, game.steamAppId as number)
+        // No network: the rest would only fail too. The next start tries again.
+        if (!result.ok && result.error === 'network') break
         // Failures keep metadata_fetched_at NULL, so the next scan retries.
         if (result.ok) {
           applySteamMetadata(deps, game, result.data, now())

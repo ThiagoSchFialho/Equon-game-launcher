@@ -20,6 +20,7 @@ const game = (id: number, title: string, extra: Partial<GameSummary> = {}): Game
   beated: false,
   hidden: false,
   artwork: [],
+  artworkVersion: null,
   ...extra
 })
 

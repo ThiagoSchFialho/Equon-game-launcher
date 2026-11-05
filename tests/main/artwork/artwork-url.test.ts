@@ -7,6 +7,28 @@ import {
 } from '../../../src/shared/ipc/contract'
 import { ARTWORK_KINDS as DOMAIN_KINDS } from '../../../src/core/domain'
 
+describe('artwork URL version', () => {
+  it('survives the address and tells nothing else to main', () => {
+    const url = artworkUrl(42, 'logo', '2026-11-05T19:25:41Z')
+    expect(url).not.toBe(artworkUrl(42, 'logo'))
+    expect(url).not.toBe(artworkUrl(42, 'logo', '2026-11-05T19:25:42Z'))
+    expect(parseArtworkUrl(url)).toEqual({ gameId: 42, kind: 'logo' })
+    expect(artworkUrl(42, 'logo', null)).toBe(artworkUrl(42, 'logo'))
+  })
+
+  it('accepts nothing else in the query', () => {
+    for (const bad of [
+      'equon-art://game/42/logo?x=1',
+      'equon-art://game/42/logo?v=1&x=2',
+      'equon-art://game/42/logo?v=',
+      'equon-art://game/42/logo?v=' + 'a'.repeat(65),
+      'equon-art://game/42/logo?v=../../secret'
+    ]) {
+      expect(parseArtworkUrl(bad), bad).toBeNull()
+    }
+  })
+})
+
 describe('achievement icon URLs', () => {
   it('round-trips and rejects anything else', () => {
     expect(parseAchievementIconUrl(achievementIconUrl(42, true))).toEqual({ id: 42, locked: true })

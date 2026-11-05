@@ -31,7 +31,8 @@ describe('GameRepository basics', () => {
       beated: false,
       requiredAge: null,
       metadataFetchedAt: null,
-      achievementsSyncedAt: null
+      achievementsSyncedAt: null,
+      artworkCheckedAt: null
     })
     expect(games.getById(game.id)).toEqual(game)
     expect(games.getById(9999)).toBeNull()

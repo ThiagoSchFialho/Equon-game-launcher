@@ -152,6 +152,7 @@ function Details({
           gameId={game.id}
           kind="logo"
           available={game.artwork}
+          version={game.artworkVersion}
           title={game.title}
           className="game__logo"
           loading="eager"
@@ -170,6 +171,7 @@ function Details({
         gameId={game.id}
         kind="background"
         available={game.artwork}
+        version={game.artworkVersion}
         title={game.title}
         className="game__hero"
         loading="eager"
@@ -325,7 +327,7 @@ export function GameDetailsScreen({ id, from }: { id: number; from: Section }): 
           onClose={() => setOverlay(null)}
           onAchievements={() => navigation.openGameAchievements(id)}
           onEdit={details.data.editable ? () => navigation.openGameForm(id) : undefined}
-          onArtwork={details.data.editable ? () => setOverlay('artwork') : undefined}
+          onArtwork={() => setOverlay('artwork')}
           onRemove={details.data.editable && !running ? () => setOverlay('remove') : undefined}
         />
       )}

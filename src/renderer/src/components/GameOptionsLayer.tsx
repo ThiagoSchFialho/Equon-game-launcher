@@ -69,7 +69,7 @@ export function GameOptionsLayer({
       onClose={onClose}
       onAchievements={() => navigation.openGameAchievements(game.id)}
       onEdit={editable ? () => navigation.openGameForm(game.id) : undefined}
-      onArtwork={editable ? () => setSearching(true) : undefined}
+      onArtwork={() => setSearching(true)}
       onRemove={editable && !running ? () => setConfirming(true) : undefined}
     />
   )

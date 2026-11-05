@@ -19,8 +19,11 @@ import type { Result, SteamGridDbGameInfo } from '../../shared/ipc/contract'
 export const ARTWORK_INTERVAL_MS = 1500
 
 const GRID_KINDS: SteamGridDbKind[] = ['cover_square', 'cover_portrait', 'logo']
-/** For manual games the header also comes from SteamGridDB (D-15). */
-const MANUAL_KINDS: SteamGridDbKind[] = ['cover_square', 'cover_portrait', 'logo', 'header']
+/** What the user's own search replaces, for any game (D-15). */
+const CHOSEN_KINDS: SteamGridDbKind[] = ['cover_square', 'cover_portrait', 'logo', 'header']
+
+/** How one game went: without an answer it stays to try; with no network the queue stops. */
+type QueueOutcome = 'answered' | 'no-answer' | 'no-network'
 
 export interface ArtworkFetcherDeps {
   games: GameRepository
@@ -40,10 +43,14 @@ export interface ArtworkFetcherDeps {
 }
 
 export interface ArtworkFetcher {
-  /** Steam games: fills missing art only (never replaces what exists or what the user chose). */
-  fetchMissing(): Promise<void>
+  /**
+   * Steam games: fills missing art only (never replaces what exists or what the
+   * user chose). Games already answered are skipped, unless `retry` is set: an
+   * explicit action, like the refresh button or saving a SteamGridDB key.
+   */
+  fetchMissing(options?: { retry?: boolean }): Promise<void>
   search(term: string): Promise<Result<SteamGridDbGameInfo[]>>
-  /** Manual games: the user picked the SteamGridDB game; its art replaces covers, logo and header. */
+  /** The user picked the SteamGridDB game; its art replaces covers, logo and header. */
   applySteamGridDb(gameId: number, steamGridDbGameId: number): Promise<Result<ArtworkKind[]>>
 }
 
@@ -52,11 +59,15 @@ export interface ArtworkFetcher {
  * games get `header_image` and `background_raw` from appdetails, and the
  * best-voted square cover, portrait cover and logo from SteamGridDB when a
  * key is set. Every download is validated (type, size, decoded dimensions,
- * proportion) before it reaches the cache; failures keep the placeholder
- * and are retried on the next scan.
+ * proportion) before it reaches the cache; failures keep the placeholder.
+ * A game that got answers is not tried again at the next start, even with no art
+ * to show; one that got none stays to try. With no network the queue just stops.
  */
 export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
   let run: Promise<void> | null = null
+  let runIsRetry = false
+  /** A disk that cannot be written is not an answer about the game. */
+  let storageFailed = false
 
   /** Downloads, validates and stores one image; false when anything failed. */
   const store = async (
@@ -83,7 +94,10 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
         fetchedAt: toUtcIso(deps.clock.now())
       })
     } catch (error) {
-      if (!(error instanceof ArtworkImportFailure)) deps.onError?.(error)
+      if (!(error instanceof ArtworkImportFailure)) {
+        storageFailed = true
+        deps.onError?.(error)
+      }
       return false
     }
   }
@@ -128,14 +142,22 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
     )
   }
 
-  const fillSteamGame = async (game: Game, have: readonly ArtworkKind[]): Promise<boolean> => {
+  const fillSteamGame = async (
+    game: Game,
+    have: readonly ArtworkKind[]
+  ): Promise<{ changed: boolean; outcome: QueueOutcome }> => {
     const appId = game.steamAppId as number
     let changed = false
+    let outcome: QueueOutcome = 'answered'
+    storageFailed = false
     const missing = missingCheck(game, have)
 
     if (missing('header') || missing('background')) {
       const urls = await fetchAppArtwork(deps.get, appId)
+      if (!urls.ok && urls.error === 'network') return { changed, outcome: 'no-network' }
       await deps.wait(ARTWORK_INTERVAL_MS)
+      // "not-found" is an answer: the store has no page for this game.
+      if (!urls.ok && urls.error !== 'not-found') outcome = 'no-answer'
       if (urls.ok) {
         if (missing('header') && urls.data.header) {
           changed = (await store(game, 'header', urls.data.header, 'steam', false)) || changed
@@ -150,11 +172,13 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
     if (gridKinds.length > 0 && deps.gridKey()) {
       const result = await fromSteamGridDb(game, { steamAppId: appId }, gridKinds, false)
       changed = result.saved.length > 0 || changed
+      if (result.error === 'network') return { changed, outcome: 'no-network' }
+      if (result.error) outcome = 'no-answer'
     }
-    return changed
+    return { changed, outcome: storageFailed ? 'no-answer' : outcome }
   }
 
-  const fetchAll = async (): Promise<void> => {
+  const fetchAll = async (retry: boolean): Promise<void> => {
     const kinds = deps.artwork.listKinds()
     const pending = deps.games
       .list()
@@ -162,13 +186,19 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
         (game) =>
           game.origin === BuiltinOrigin.steam &&
           game.steamAppId !== null &&
+          (retry || game.artworkCheckedAt === null) &&
           hasWork(game, kinds.get(game.id) ?? [])
       )
     if (pending.length === 0) return
     for (const [done, game] of pending.entries()) {
       deps.onProgress?.({ done, total: pending.length })
       try {
-        if (await fillSteamGame(game, kinds.get(game.id) ?? [])) deps.onLibraryChanged()
+        const { changed, outcome } = await fillSteamGame(game, kinds.get(game.id) ?? [])
+        if (changed) deps.onLibraryChanged()
+        if (outcome === 'no-network') break
+        if (outcome === 'answered') {
+          deps.games.setArtworkChecked(game.id, toUtcIso(deps.clock.now()))
+        }
       } catch (error) {
         deps.onError?.(error)
       }
@@ -177,10 +207,19 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
   }
 
   return {
-    fetchMissing() {
-      run ??= fetchAll().finally(() => {
-        run = null
-      })
+    fetchMissing(options = {}) {
+      const retry = options.retry ?? false
+      const start = (): Promise<void> => {
+        runIsRetry = retry
+        const current: Promise<void> = fetchAll(retry).finally(() => {
+          if (run === current) run = null
+        })
+        run = current
+        return current
+      }
+      if (!run) return start()
+      // An explicit retry must not be swallowed by a run that skips answered games.
+      if (retry && !runIsRetry) return run.then(start)
       return run
     },
 
@@ -195,10 +234,8 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
 
     async applySteamGridDb(gameId, steamGridDbGameId) {
       const game = deps.games.getById(gameId)
-      if (!game || game.origin === BuiltinOrigin.steam) {
-        return { ok: false, error: { code: 'not-found' } }
-      }
-      const result = await fromSteamGridDb(game, { gameId: steamGridDbGameId }, MANUAL_KINDS, true)
+      if (!game) return { ok: false, error: { code: 'not-found' } }
+      const result = await fromSteamGridDb(game, { gameId: steamGridDbGameId }, CHOSEN_KINDS, true)
       if (result.saved.length > 0) deps.onLibraryChanged()
       if (result.error) return { ok: false, error: { code: result.error } }
       return { ok: true, data: result.saved }

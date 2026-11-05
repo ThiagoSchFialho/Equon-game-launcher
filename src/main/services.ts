@@ -220,11 +220,12 @@ export function createServices(
     // Steam's play stats overwrite only once per launcher start (after interrupted sessions).
     syncOwned: ({ first, scanComplete }) =>
       steamOnline.syncOwnedGames({ updatePlaytime: first, scanComplete }),
-    afterRefresh: () => {
+    afterRefresh: ({ startup }) => {
       void steamOnline
         .fetchMissingMetadata()
         .catch((error) => console.error('Steam metadata failed:', String(error)))
-        .then(() => artworkFetcher.fetchMissing())
+        // The button is an explicit request: it also tries games already answered.
+        .then(() => artworkFetcher.fetchMissing({ retry: !startup }))
         .catch((error) => console.error('Artwork queue failed:', String(error)))
     }
   })

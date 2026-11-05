@@ -273,6 +273,18 @@ describe('SessionRepository', () => {
   })
 })
 
+describe('migration 0008', () => {
+  it('adds artwork_checked_at: every existing game still gets one try', () => {
+    const fresh = openDatabase(':memory:')
+    migrate(fresh, migrations.slice(0, 7))
+    fresh.prepare("INSERT INTO games (title, origin, steam_id) VALUES ('S', 'steam', 620)").run()
+    migrate(fresh, migrations)
+    expect(fresh.prepare('SELECT artwork_checked_at FROM games').get()).toEqual({
+      artwork_checked_at: null
+    })
+  })
+})
+
 describe('migration 0007', () => {
   it('adds icon_locked, empty until the next sync', () => {
     const fresh = openDatabase(':memory:')

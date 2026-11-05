@@ -30,6 +30,7 @@ export function GameCard({ game, variant, ...focusOptions }: Props): React.JSX.E
         gameId={game.id}
         kind={variant === 'square' ? 'cover_square' : 'cover_portrait'}
         available={game.artwork}
+        version={game.artworkVersion}
         title={game.title}
         className="game-card__art"
       />

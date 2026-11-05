@@ -26,7 +26,7 @@ export interface SteamServiceDeps {
   /** A refresh started (true) or ended (false), for the activity indicator. */
   onRefreshing?(refreshing: boolean): void
   /** Background work after each refresh (metadata and artwork of new games). */
-  afterRefresh?(): void
+  afterRefresh?(options: { startup: boolean }): void
   onError?(error: unknown): void
 }
 
@@ -76,6 +76,7 @@ export function createSteamService(deps: SteamServiceDeps): SteamService {
   }
 
   const scanAndSync = async (): Promise<LibraryRefreshInfo> => {
+    const startup = !scanned
     const summary = await refreshSteamLibrary(deps, deps.adapter)
     const owned = await syncOwned(summary.status === 'complete')
     for (const candidate of [...summary.duplicates, ...owned.duplicates]) {
@@ -92,7 +93,7 @@ export function createSteamService(deps: SteamServiceDeps): SteamService {
       finishedAt: toUtcIso(deps.clock.now())
     }
     if (summary.status !== 'failed' || owned.added > 0) deps.onLibraryChanged()
-    deps.afterRefresh?.()
+    deps.afterRefresh?.({ startup })
     return last
   }
 

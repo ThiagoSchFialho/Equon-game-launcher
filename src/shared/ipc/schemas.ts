@@ -131,6 +131,7 @@ export const achievementsOverviewSchema = z.strictObject({
       hidden: z.boolean(),
       timeLastPlayed: z.string().nullable(),
       artwork: z.array(z.enum(ARTWORK_KINDS)),
+      artworkVersion: z.string().nullable(),
       unlocked: z.number().int().nonnegative(),
       total: z.number().int().positive(),
       percent: z.number().min(0).max(100),
@@ -229,7 +230,8 @@ const gameSummaryShape = {
   timeLastPlayed: z.string().nullable(),
   beated: z.boolean(),
   hidden: z.boolean(),
-  artwork: z.array(artworkKindSchema)
+  artwork: z.array(artworkKindSchema),
+  artworkVersion: z.string().nullable()
 }
 
 export const gameSummarySchema = z.strictObject(gameSummaryShape) satisfies z.ZodType<GameSummary>

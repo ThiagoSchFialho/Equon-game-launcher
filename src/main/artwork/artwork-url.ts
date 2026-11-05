@@ -24,7 +24,7 @@ export function parseAchievementIconUrl(url: string): { id: number; locked: bool
 }
 
 /**
- * Parses `equon-art://game/<gameId>/<kind>`; anything else is rejected. The id
+ * Parses `equon-art://game/<gameId>/<kind>[?v=<version>]`; anything else is rejected. The id
  * lives in the path because the scheme is "standard" and Chromium would turn
  * a numeric host into an IPv4 address (1 → 0.0.0.1).
  */
@@ -40,7 +40,8 @@ export function parseArtworkUrl(url: string): { gameId: number; kind: ArtworkKin
     parsed.hostname !== 'game' ||
     parsed.port !== '' ||
     parsed.username !== '' ||
-    parsed.search !== '' ||
+    // Only tells the browser the image changed; nothing here reads it.
+    !/^(\?v=[\w%.:-]{1,64})?$/.test(parsed.search) ||
     parsed.hash !== ''
   ) {
     return null

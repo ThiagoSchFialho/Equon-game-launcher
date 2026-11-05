@@ -119,6 +119,7 @@ export interface AchievementGameSummary {
   /** ISO-8601 UTC */
   timeLastPlayed: string | null
   artwork: ArtworkKind[]
+  artworkVersion: string | null
   unlocked: number
   total: number
   /** 0–100, never rounded up to look complete. */
@@ -227,8 +228,13 @@ export function achievementIconUrl(achievementId: number, locked: boolean): stri
   return `${ARTWORK_SCHEME}://achievement/${achievementId}/${locked ? 'locked' : 'unlocked'}`
 }
 
-export function artworkUrl(gameId: number, kind: ArtworkKind): string {
-  return `${ARTWORK_SCHEME}://game/${gameId}/${kind}`
+/**
+ * `version` changes when the game's art is replaced: same address, new file, and
+ * Chromium would keep showing the image it already has.
+ */
+export function artworkUrl(gameId: number, kind: ArtworkKind, version?: string | null): string {
+  const url = `${ARTWORK_SCHEME}://game/${gameId}/${kind}`
+  return version ? `${url}?v=${encodeURIComponent(version)}` : url
 }
 
 /** Expected failures come back as data so the UI can explain them (codes, not text). */
@@ -255,6 +261,8 @@ export interface GameSummary {
   hidden: boolean
   /** Kinds with cached artwork. */
   artwork: ArtworkKind[]
+  /** Changes when any of this game's art is replaced. */
+  artworkVersion: string | null
 }
 
 export interface AchievementSummary {

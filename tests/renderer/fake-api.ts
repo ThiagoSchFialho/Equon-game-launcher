@@ -23,6 +23,7 @@ export const summary = (
   beated: false,
   hidden: false,
   artwork: [],
+  artworkVersion: null,
   ...extra
 })
 
@@ -97,7 +98,7 @@ export function installFakeApi(
         node: '24.18.0',
         os: 'Windows 11 Pro (10.0.26300)',
         dataPath: 'C:\\Users\\u\\AppData\\Roaming\\equon-game-launcher-dev',
-        schemaVersion: 7
+        schemaVersion: 8
       })
     },
     activity: {

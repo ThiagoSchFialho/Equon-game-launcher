@@ -36,6 +36,7 @@ describe('ArtworkRepository', () => {
 
     expect(artwork.get(a, 'cover_square')).toEqual(art(a))
     expect(artwork.get(a, 'background')).toBeNull()
+    expect(artwork.listVersions().size).toBeGreaterThan(0)
     expect(artwork.listKinds()).toEqual(
       new Map([
         [a, ['cover_square', 'logo']],

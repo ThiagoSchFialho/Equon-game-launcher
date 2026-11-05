@@ -1,6 +1,6 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.27
+**Version:** 0.28
 **Status:** Draft — Phase 8 (Hardening and release preparation)
 **Last updated:** 2026-11-04
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
@@ -290,6 +290,8 @@ Each game needs five images: a **square cover** (Library), a **portrait cover 60
 - Do not bundle or redistribute fetched images; the cache is personal and local.
 
 **Implemented in Phase 6c:** a main-process queue (`src/main/artwork/artwork-fetcher.ts`) runs after the startup scan, the metadata queue and every "Atualizar biblioteca", and when a SteamGridDB key is saved. It fills only missing kinds: `header` and `background` from `appdetails` (`filters=basic,background`), and `cover_square` (512×512/1024×1024), `cover_portrait` (600×900) and `logo` from SteamGridDB by App ID, taking the highest-scored static, non-NSFW, non-humor image (owner decision). API calls are spaced 1.5 s apart. Downloads are allowed only over https from `*.steamstatic.com` and `cdn2.steamgriddb.com` (redirects included), capped at 20 MB, then validated like local files; WebP, which Electron's `nativeImage` cannot decode, is checked through its VP8/VP8L/VP8X header instead of a full decode (displayed by the sandboxed renderer). Manual games: "Buscar artes no SteamGridDB" in the game options menu searches by title (`/search/autocomplete`), the user picks the game, and its covers, logo and header (460×215/920×430 grid) are stored as user-selected art; the background stays a local file.
+
+**Owner decisions of Phase 8:** "Buscar artes no SteamGridDB" also works for Steam games: the same search, replacing covers, logo and header as user-selected art, which no sync overwrites. A game the queue got answers for is not tried again at startup, even with no art to show (`GAMES.artwork_checked_at`); "Atualizar biblioteca" and saving a SteamGridDB key are explicit and try again. The image address carries a version (`?v=<last fetched_at of the game>`), since Chromium would otherwise keep showing the old file until a restart. A network failure stops the metadata and artwork queues, ending the indicator, and marks nothing, so the next start tries again. Non-200 answers (429, 5xx) count as network failures here.
 
 **Decided after measuring (Phase 8a, owner decision):** no automatic cache eviction, and artwork is stored as downloaded, with no size limit or variants; see §12. **Open sub-decisions:** the fallback look when a game has no 1920×1080 image; Picking files (decided in Phase 4): an **own controller-friendly file browser**. Main lists drives, a few known folders, folder names and only files with the allowed extensions (`.exe`/`.url` for game executables, `.exe` for emulators, Yuzu ROM formats for ROMs, `.png`/`.jpg`/`.jpeg`/`.webp` for images); it never returns file contents, and the chosen path is validated again in main when saving. A "Usar janela do Windows" button opens the native dialog for mouse users. Local artwork import: main reads the file (max 20 MB), checks the real type by its magic bytes, decodes it to get the dimensions, checks the kind's proportion (background 16:9, ±5%), copies it into the cache and saves it with `user_selected = 1`.
 
@@ -627,7 +629,7 @@ On startup, reconcile sessions left `running` by a previous crash: mark them `in
 - One launcher per data folder (`requestSingleInstanceLock`): a second launch brings back the open window, since a second instance would close the first one's running sessions as interrupted.
 - A dead renderer process reloads the window once; a second crash within 60 s tells the user and quits. A screen that throws while rendering shows a message with a way home, reachable by controller (`ScreenErrorBoundary`).
 - Artwork and achievement icons are written through a temporary file: a crash or a full disk never leaves a cut image taken as cached, and a failed write keeps the previous image.
-- **Measured in Phase 8b (dev data folder, real app):** closing during sync exits in under 1 s; killing the process during a full sync leaves the database intact (`integrity_check`, foreign keys) and it reopens normally; with every request failing, the window opens in about 0.4 s, local flows work, the reason appears next to the refresh result and the database does not change. With no network the artwork queue still walks every game with missing art, so the indicator can stay for minutes; this is harmless and was left as is.
+- **Measured in Phase 8b (dev data folder, real app):** closing during sync exits in under 1 s; killing the process during a full sync leaves the database intact (`integrity_check`, foreign keys) and it reopens normally; with every request failing, the window opens in about 0.4 s, local flows work, the reason appears next to the refresh result and the database does not change. With no network the background queues stop at the first failure (§3.13).
 
 ---
 
@@ -685,6 +687,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-04 | 0.25 | Fullscreen blank covers fix: `disable-checker-imaging` at startup (§12). |
 | 2026-11-04 | 0.26 | Phase 8a: performance measurements (§12); no cache eviction and no limit on stored artwork sizes (§3.13). |
 | 2026-11-05 | 0.27 | Phase 8b: single instance, renderer crash recovery, screen error boundary, atomic artwork writes, database failure messages and verified recovery (§13). |
+| 2026-11-05 | 0.28 | SteamGridDB search for Steam games; artwork not retried at startup once answered (`artwork_checked_at`); queues stop with no network (§3.13). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

@@ -325,7 +325,45 @@ describe('duplicate review', () => {
   })
 })
 
-describe('SteamGridDB artwork for manual games', () => {
+describe('SteamGridDB artwork', () => {
+  it('shows the new image when the art was replaced, with no restart', async () => {
+    const steam = summary(1, 'Tidebound', { artwork: ['cover_portrait'], artworkVersion: 'one' })
+    const list = vi.fn<EquonApi['games']['list']>(async () => [steam])
+    let changed = (): void => {}
+    installFakeApi([steam], {
+      games: { list },
+      library: {
+        onChanged: (listener) => {
+          changed = listener
+          return () => {}
+        }
+      }
+    })
+    render(<App />)
+    const source = (): string | null =>
+      document.querySelector('.home__track img')?.getAttribute('src') ?? null
+    await waitFor(() => expect(source()).toBe('equon-art://game/1/cover_portrait?v=one'))
+
+    list.mockResolvedValue([{ ...steam, artworkVersion: 'two' }])
+    act(() => changed())
+    await waitFor(() => expect(source()).toBe('equon-art://game/1/cover_portrait?v=two'))
+  })
+
+  it('is offered for Steam games too, which still cannot be edited or removed', async () => {
+    const search = vi.fn<EquonApi['artwork']['search']>(async () => ({ ok: true, data: [] }))
+    installFakeApi([summary(1, 'Tidebound', { origin: 'steam', originName: 'Steam' })], {
+      artwork: { search }
+    })
+    render(<App />)
+    await screen.findByText('12h 22m')
+    press('m')
+    expect(await screen.findByText('Buscar artes no SteamGridDB')).toBeTruthy()
+    expect(screen.queryByText(/^Editar/)).toBeNull()
+    expect(screen.queryByText(/^Remover/)).toBeNull()
+    await clickText('Buscar artes no SteamGridDB')
+    expect(search).toHaveBeenCalledWith('Tidebound')
+  })
+
   it('searches by title, applies the chosen game and reports the result', async () => {
     const search = vi.fn<EquonApi['artwork']['search']>(async () => ({
       ok: true,

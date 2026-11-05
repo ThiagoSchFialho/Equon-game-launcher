@@ -65,7 +65,8 @@ describe('game queries', () => {
           timeLastPlayed: null,
           beated: false,
           hidden: false,
-          artwork: ['cover_square']
+          artwork: ['cover_square'],
+          artworkVersion: null
         },
         {
           id: hidden.id,
@@ -77,7 +78,8 @@ describe('game queries', () => {
           timeLastPlayed: null,
           beated: false,
           hidden: true,
-          artwork: []
+          artwork: [],
+          artworkVersion: null
         }
       ].sort((a, b) => a.title.localeCompare(b.title))
     )

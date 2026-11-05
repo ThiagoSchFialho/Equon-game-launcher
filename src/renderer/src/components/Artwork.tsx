@@ -7,6 +7,8 @@ interface Props {
   kind: ArtworkKind
   /** Kinds the game has in the cache (from GameSummary.artwork). */
   available: readonly ArtworkKind[]
+  /** From the game summary: a new value means the image was replaced. */
+  version?: string | null
   /** Shown inside the placeholder when there is no image. */
   title: string
   className?: string
@@ -23,6 +25,7 @@ export function Artwork({
   gameId,
   kind,
   available,
+  version,
   title,
   className = '',
   loading = 'lazy'
@@ -40,7 +43,7 @@ export function Artwork({
       {hasImage && (
         <img
           className="artwork__image"
-          src={artworkUrl(gameId, kind)}
+          src={artworkUrl(gameId, kind, version)}
           alt=""
           loading={loading}
           decoding="async"

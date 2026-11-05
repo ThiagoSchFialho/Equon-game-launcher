@@ -61,7 +61,8 @@ function launchIssueOf(
 function toSummary(
   game: Game,
   originNames: Map<string, string>,
-  artworkKinds: Map<number, GameSummary['artwork']>
+  artworkKinds: Map<number, GameSummary['artwork']>,
+  artworkVersions: Map<number, string>
 ): GameSummary {
   return {
     id: game.id,
@@ -73,7 +74,8 @@ function toSummary(
     timeLastPlayed: game.timeLastPlayed,
     beated: game.beated,
     hidden: game.hidden,
-    artwork: artworkKinds.get(game.id) ?? []
+    artwork: artworkKinds.get(game.id) ?? [],
+    artworkVersion: artworkVersions.get(game.id) ?? null
   }
 }
 
@@ -88,7 +90,8 @@ export function listGameSummaries(deps: GameQueryDeps): GameSummary[] {
   refreshManualInstallStates(deps, deps.inspector)
   const names = originNameMap(deps)
   const kinds = deps.artwork.listKinds()
-  return deps.games.list().map((g) => toSummary(g, names, kinds))
+  const versions = deps.artwork.listVersions()
+  return deps.games.list().map((g) => toSummary(g, names, kinds, versions))
 }
 
 export function getGameDetails(deps: GameQueryDeps, id: number): GameDetails | null {
@@ -99,7 +102,7 @@ export function getGameDetails(deps: GameQueryDeps, id: number): GameDetails | n
   const config = deps.configs.get(id)
   const launchIssue = launchIssueOf(deps, game, config)
   return {
-    ...toSummary(game, originNameMap(deps), deps.artwork.listKinds()),
+    ...toSummary(game, originNameMap(deps), deps.artwork.listKinds(), deps.artwork.listVersions()),
     description: game.description,
     developer: game.developer,
     releaseDate: game.releaseDate,
