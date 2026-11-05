@@ -1,6 +1,6 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.24
+**Version:** 0.25
 **Status:** Draft — Phase 7 (Achievements)
 **Last updated:** 2026-11-04
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
@@ -603,6 +603,7 @@ On startup, reconcile sessions left `running` by a previous crash: mark them `in
 ## 12. UI architecture and performance
 
 - **Fullscreen presentation (fix after Phase 6):** in fullscreen on Windows, one-off updates with no animation after them (Settings tabs, the Achievements screen) could stay off screen until the next change, although the DOM had updated within 8 ms. Measured on the owner's machine with a real controller: a permanent 2 px animation made the problem disappear, and so did `--disable-direct-composition` without it (36 presses in fullscreen, no failure). The launcher sets that Chromium switch at startup because it has no continuous GPU cost. The failure is intermittent, so these results are strong evidence, not proof; other GPUs were not tested.
+- **Blank covers in fullscreen (found in Phase 8):** in fullscreen, a cover drawn for the first time could stay blank until something changed on it, although the page had it loaded with no error; rows already drawn never failed. Reproduced on the owner's machine by reading the real monitor during one descent of the Library (F11 on a fresh launch): 10 blank covers in 3 of 14 stops without the fix, none in 35 stops with `--disable-checker-imaging`, which makes raster wait for the image decode. The worst frames did not change in a way that matters (at most 22 ms against 17 ms, nothing above 33 ms), and the owner confirmed it with a real controller. Why this prevents the blank frame inside Chromium was not proven. Windowed runs showed nothing, but they were checked before this walk existed.
 - Screens: Home (continue playing, recent games, shortcut to the library), Library, Achievements, Game Details, Settings. Navigation is hybrid: compact global navigation plus contextual navigation where needed.
 - One focus manager owns focus. Focus must never disappear when a list updates, a filter changes, or images load; dialogs move focus in and return it on close; the app must never trap focus.
 - Every screen defines default, focus, unavailable, empty, loading and error states (`DESIGN_SYSTEM.md` §11).
@@ -676,6 +677,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-04 | 0.22 | Phase 7: achievements sync (after a close and manual), overview and per-game screens, `achievements_synced_at`, on-demand icons. |
 | 2026-11-04 | 0.23 | Owner decision: owned Steam games missing from the library are created from `GetOwnedGames`, at startup and on "Atualizar biblioteca"; Steam play stats still overwrite only once per start. |
 | 2026-11-04 | 0.24 | Top bar indicator for achievement sync, background Steam sync and artwork downloads, fed by one main-process activity state. |
+| 2026-11-04 | 0.25 | Fullscreen blank covers fix: `disable-checker-imaging` at startup (§12). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

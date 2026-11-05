@@ -21,6 +21,9 @@ import type { AppOrigin } from './security/navigation'
 // screen without focus animation) unpresented until the next change on screen
 // (ARCHITECTURE.md §12). Must be set before the app is ready.
 app.commandLine.appendSwitch('disable-direct-composition')
+// Also in fullscreen, an image drawn for the first time could stay blank until the next
+// change on it, although it had loaded: raster now waits for the decode (ARCHITECTURE.md §12).
+app.commandLine.appendSwitch('disable-checker-imaging')
 
 // Unpackaged runs (dev, preview) use their own data folder so they never
 // touch the real library.
