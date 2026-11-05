@@ -98,6 +98,7 @@ Regras de gravação em `GAMES.installed`:
 - Uma leitura que falhou **nunca** pode gravar `0`.
 - Estados transitórios (rodando, instalando, atualizando, pausado, atualização necessária, arquivos corrompidos) **não são gravados**; são lidos ao vivo e exibidos na interface.
 - A varredura local só enxerga jogos com manifesto (instalados ou em instalação). Os jogos comprados e não instalados vêm do `GetOwnedGames` (precisa de chave; seção 3.11).
+- **Checagem local (decisão do dono do projeto, Fase 8):** além da abertura e de "Atualizar biblioteca", a varredura local se repete a cada 10 s e quando a janela volta ao foco, para perceber jogos instalados ou removidos na Steam. Não usa a rede, grava só o que mudou, não atualiza títulos de jogos já conhecidos e segue as mesmas regras acima. Não roda enquanto houver jogo aberto. Um jogo novo entra na biblioteca e recebe metadados e artes pela fila normal.
 - Não reutilizar o método da Steam para jogos manuais.
 
 **Jogos de outras origens (decidido na Fase 4):** o estado vem da existência do executável da configuração de lançamento (3.7), conferida no processo principal sempre que a biblioteca ou o jogo é carregado:

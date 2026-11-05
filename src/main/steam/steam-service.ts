@@ -1,5 +1,6 @@
 import {
   refreshSteamLibrary,
+  rescanSteamLibrary,
   type GameRepository,
   type OwnedSyncOutcome,
   type SteamSessions,
@@ -11,6 +12,8 @@ import type { DuplicateInfo, LibraryRefreshInfo } from '../../shared/ipc/contrac
 
 /** How often the registry RunningAppID is read (D-12). */
 export const RUNNING_POLL_MS = 2000
+/** How often the local check looks for games installed or removed in Steam (owner decision). */
+export const RESCAN_MS = 10_000
 
 export interface SteamServiceDeps {
   games: GameRepository
@@ -25,8 +28,13 @@ export interface SteamServiceDeps {
   syncOwned(options: { first: boolean; scanComplete: boolean }): Promise<OwnedSyncOutcome>
   /** A refresh started (true) or ended (false), for the activity indicator. */
   onRefreshing?(refreshing: boolean): void
-  /** Background work after each refresh (metadata and artwork of new games). */
-  afterRefresh?(options: { startup: boolean }): void
+  /** The local check stays out of the way while the user plays. */
+  isGameRunning(): boolean
+  /**
+   * Background work after a refresh or a check that found new games (metadata and
+   * artwork). `retryArtwork`: an explicit request, which also tries answered games.
+   */
+  afterRefresh?(options: { retryArtwork: boolean }): void
   onError?(error: unknown): void
 }
 
@@ -34,6 +42,11 @@ export interface SteamService {
   /** Startup: one refresh (local scan and owned games), then the running-game watcher. */
   start(): void
   stop(): void
+  /**
+   * The local check, every RESCAN_MS and when the window gets focus: notices games
+   * installed or removed in Steam. No network; skipped while a game is running.
+   */
+  rescan(): Promise<void>
   /** Concurrent calls share the refresh in progress. */
   refresh(): Promise<LibraryRefreshInfo>
   refreshing(): boolean
@@ -49,6 +62,8 @@ export function createSteamService(deps: SteamServiceDeps): SteamService {
   let pending: Promise<LibraryRefreshInfo> | null = null
   let last: LibraryRefreshInfo | null = null
   let timer: ReturnType<typeof setInterval> | null = null
+  let rescanTimer: ReturnType<typeof setInterval> | null = null
+  let rescanning: Promise<void> | null = null
   let polling = false
   let scanned = false
   // manual game id → Steam title; a candidate only appears when the Steam game is first found.
@@ -77,6 +92,8 @@ export function createSteamService(deps: SteamServiceDeps): SteamService {
 
   const scanAndSync = async (): Promise<LibraryRefreshInfo> => {
     const startup = !scanned
+    // A check in progress read the disk earlier: it must not write after this scan.
+    await rescanning
     const summary = await refreshSteamLibrary(deps, deps.adapter)
     const owned = await syncOwned(summary.status === 'complete')
     for (const candidate of [...summary.duplicates, ...owned.duplicates]) {
@@ -93,7 +110,7 @@ export function createSteamService(deps: SteamServiceDeps): SteamService {
       finishedAt: toUtcIso(deps.clock.now())
     }
     if (summary.status !== 'failed' || owned.added > 0) deps.onLibraryChanged()
-    deps.afterRefresh?.({ startup })
+    deps.afterRefresh?.({ retryArtwork: !startup })
     return last
   }
 
@@ -102,6 +119,23 @@ export function createSteamService(deps: SteamServiceDeps): SteamService {
       pending = null
     })
     return pending
+  }
+
+  const rescan = (): Promise<void> => {
+    if (!scanned || pending || deps.isGameRunning()) return Promise.resolve()
+    rescanning ??= rescanSteamLibrary(deps, deps.adapter)
+      .then((summary) => {
+        for (const candidate of summary.duplicates) {
+          duplicates.set(candidate.existingGameId, candidate.discovered.title)
+        }
+        if (summary.changed) deps.onLibraryChanged()
+        if (summary.added > 0) deps.afterRefresh?.({ retryArtwork: false })
+      })
+      .catch((error) => deps.onError?.(error))
+      .finally(() => {
+        rescanning = null
+      })
+    return rescanning
   }
 
   const poll = async (): Promise<void> => {
@@ -123,12 +157,16 @@ export function createSteamService(deps: SteamServiceDeps): SteamService {
       void refresh().catch((error) => deps.onError?.(error))
       void poll()
       timer ??= setInterval(() => void poll(), RUNNING_POLL_MS)
+      rescanTimer ??= setInterval(() => void rescan(), RESCAN_MS)
     },
     stop() {
       if (timer) clearInterval(timer)
+      if (rescanTimer) clearInterval(rescanTimer)
       timer = null
+      rescanTimer = null
     },
     refresh,
+    rescan,
     refreshing: () => pending !== null,
     lastRefresh: () => last,
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSteamSessions, type DiscoveryResult } from '../../../src/core/application'
 import type { SteamAdapter } from '../../../src/integrations/steam/steam-adapter'
 import {
@@ -7,7 +7,7 @@ import {
   createUnitOfWork
 } from '../../../src/infrastructure/persistence'
 import type { OwnedSyncOutcome } from '../../../src/core/application'
-import { createSteamService } from '../../../src/main/steam/steam-service'
+import { createSteamService, RESCAN_MS } from '../../../src/main/steam/steam-service'
 import { createTestDb } from '../../helpers/db'
 
 describe('steam service: duplicate review', () => {
@@ -51,6 +51,7 @@ describe('steam service: duplicate review', () => {
       readRunningAppId: async () => null,
       clock: { now: () => new Date('2026-11-04T03:00:00Z') },
       onLibraryChanged: () => {},
+      isGameRunning: () => false,
       onRefreshing: (value) => refreshes.push(value),
       syncOwned: async (options) => {
         ownedCalls.push(options)
@@ -112,5 +113,166 @@ describe('steam service: duplicate review', () => {
     owned = () => ({ added: 0, duplicates: [], error: null })
     expect(await service.refresh()).toMatchObject({ status: 'failed', reason: 'steam-not-found' })
     expect(ownedCalls[ownedCalls.length - 1]).toEqual({ first: false, scanComplete: false })
+  })
+})
+
+describe('steam service: local check', () => {
+  const STEAM = { externalId: '620', title: 'Portal 2' }
+  let result: DiscoveryResult
+  let running: boolean
+  let changes: number
+  let after: { retryArtwork: boolean }[]
+  let discovered: number
+  let games: ReturnType<typeof createGameRepository>
+  let service: ReturnType<typeof createSteamService>
+
+  const tick = async (): Promise<void> => {
+    await vi.advanceTimersByTimeAsync(RESCAN_MS)
+  }
+  const portal = (): ReturnType<typeof games.findBySteamAppId> => games.findBySteamAppId(620)
+
+  beforeEach(async () => {
+    vi.useFakeTimers()
+    const db = createTestDb()
+    games = createGameRepository(db)
+    const uow = createUnitOfWork(db)
+    result = { status: 'complete', games: [{ ...STEAM, installed: false }] }
+    running = false
+    discovered = 0
+    service = createSteamService({
+      games,
+      uow,
+      adapter: {
+        source: 'steam',
+        capabilities: {
+          installState: true,
+          launch: true,
+          playtime: true,
+          achievements: true,
+          metadata: true
+        },
+        discover: async () => {
+          discovered++
+          return result
+        },
+        steamPath: () => null,
+        libraries: () => [],
+        liveState: () => null,
+        readGame: async () => null
+      } satisfies SteamAdapter,
+      sessions: createSteamSessions({
+        games,
+        sessions: createSessionRepository(db),
+        uow,
+        clock: { now: () => new Date() },
+        repeat: () => () => {},
+        after: () => () => {},
+        heartbeatMs: 30_000,
+        onChange: () => {}
+      }),
+      readRunningAppId: async () => null,
+      clock: { now: () => new Date('2026-11-05T03:00:00Z') },
+      onLibraryChanged: () => changes++,
+      isGameRunning: () => running,
+      syncOwned: async () => ({ added: 0, duplicates: [], error: null }),
+      afterRefresh: (options) => after.push(options)
+    })
+    service.start()
+    await vi.advanceTimersByTimeAsync(0)
+    changes = 0
+    after = []
+    discovered = 0
+  })
+
+  afterEach(() => {
+    service.stop()
+    vi.useRealTimers()
+  })
+
+  it('notices a game installed in Steam within one interval, with no network step', async () => {
+    expect(portal()?.installed).toBe(false)
+    result = { status: 'complete', games: [{ ...STEAM, installed: true }] }
+    await tick()
+    expect(portal()?.installed).toBe(true)
+    expect(changes).toBe(1)
+    expect(after).toEqual([]) // nothing new to fetch
+  })
+
+  it('notices a game removed in Steam', async () => {
+    result = { status: 'complete', games: [{ ...STEAM, installed: true }] }
+    await tick()
+    result = { status: 'complete', games: [] }
+    await tick()
+    expect(portal()?.installed).toBe(false)
+  })
+
+  it('writes and announces nothing when nothing changed', async () => {
+    const upsert = vi.spyOn(games, 'upsertSteamGame')
+    const setInstalled = vi.spyOn(games, 'setInstalled')
+    await tick()
+    await tick()
+    expect(discovered).toBe(2)
+    expect(upsert).not.toHaveBeenCalled()
+    expect(setInstalled).not.toHaveBeenCalled()
+    expect(changes).toBe(0)
+  })
+
+  it('does not look while a game is running, and resumes after it closes', async () => {
+    running = true
+    result = { status: 'complete', games: [{ ...STEAM, installed: true }] }
+    await tick()
+    await service.rescan() // the window getting focus
+    expect(discovered).toBe(0)
+    expect(portal()?.installed).toBe(false)
+
+    running = false
+    await tick()
+    expect(portal()?.installed).toBe(true)
+  })
+
+  it('a new game enters the library and gets its data, without retrying artwork', async () => {
+    result = {
+      status: 'complete',
+      games: [
+        { ...STEAM, installed: false },
+        { externalId: '730', title: 'Counter-Strike 2', installed: true }
+      ]
+    }
+    await tick()
+    expect(games.findBySteamAppId(730)?.installed).toBe(true)
+    expect(after).toEqual([{ retryArtwork: false }])
+  })
+
+  it('keeps the rules of a scan: a failed read changes nothing, a partial one means unknown', async () => {
+    result = { status: 'complete', games: [{ ...STEAM, installed: true }] }
+    await tick()
+
+    result = { status: 'failed', reason: 'libraryfolders-unreadable' }
+    await tick()
+    expect(portal()?.installed).toBe(true)
+
+    result = { status: 'partial', games: [], reason: 'library-unreadable' }
+    await tick()
+    expect(portal()?.installed).toBeNull()
+  })
+
+  it('does not touch hidden, beaten or a title that came from the store', async () => {
+    const id = portal()?.id as number
+    games.setFlags(id, { hidden: true, beated: true })
+    games.upsertSteamGame({ steamAppId: 620, title: 'Portal 2: Store Name' })
+    result = { status: 'complete', games: [{ ...STEAM, installed: true }] }
+    await tick()
+    expect(games.getById(id)).toMatchObject({
+      title: 'Portal 2: Store Name',
+      hidden: true,
+      beated: true,
+      installed: true
+    })
+  })
+
+  it('stops with the service', async () => {
+    service.stop()
+    await tick()
+    expect(discovered).toBe(0)
   })
 })

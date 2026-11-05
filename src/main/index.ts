@@ -81,6 +81,8 @@ function createWindow(): void {
 
   const window = mainWindow
   window.on('ready-to-show', () => window.show())
+  // Coming back from Steam: no need to wait for the next check.
+  window.on('focus', () => void steam?.rescan())
   window.on('closed', () => {
     mainWindow = null
   })

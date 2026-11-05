@@ -62,6 +62,52 @@ export async function refreshSteamLibrary(
   }
 }
 
+export interface LibraryRescanSummary {
+  added: number
+  /** Whether anything was written. */
+  changed: boolean
+  duplicates: DuplicateCandidate[]
+}
+
+/**
+ * The periodic local check: applies only what differs, so a repeat with nothing new
+ * writes nothing. Known games keep their title (the full refresh updates it) and all
+ * the rules of a scan hold: a failed read changes nothing, a partial one means unknown.
+ */
+export async function rescanSteamLibrary(
+  deps: { games: GameRepository; uow: UnitOfWork },
+  adapter: IntegrationAdapter
+): Promise<LibraryRescanSummary> {
+  const result = await runDiscovery(adapter)
+  const existing = deps.games.list()
+  const plan = planDiscovery(BuiltinOrigin.steam, result, existing, appIdOf)
+  const known = new Map(
+    existing.flatMap((g) => (appIdOf(g) === null ? [] : ([[appIdOf(g), g]] as const)))
+  )
+  const fresh = plan.upserts.filter((game) => !known.has(game.externalId))
+  const flipped = plan.upserts.flatMap((game) => {
+    const stored = known.get(game.externalId)
+    return stored && stored.installed !== game.installed
+      ? [{ gameId: stored.id, installed: game.installed }]
+      : []
+  })
+  const changes = [...flipped, ...plan.installChanges]
+  if (fresh.length === 0 && changes.length === 0) {
+    return { added: 0, changed: false, duplicates: [] }
+  }
+  deps.uow.transaction(() => {
+    for (const game of fresh) {
+      const saved = deps.games.upsertSteamGame({
+        steamAppId: Number(game.externalId),
+        title: game.title
+      })
+      if (saved.installed !== game.installed) deps.games.setInstalled(saved.id, game.installed)
+    }
+    for (const change of changes) deps.games.setInstalled(change.gameId, change.installed)
+  })
+  return { added: fresh.length, changed: true, duplicates: plan.duplicates }
+}
+
 /** One game the account owns; without a title it can only update a stored game. */
 export interface OwnedSteamGame extends SteamPlayStats {
   title: string | null
