@@ -1,7 +1,11 @@
 import { ESLint } from 'eslint'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 // Guards the lint config itself: if a layer rule is removed or broken, these fail.
+
+// The first test loads all of ESLint: about 3 s alone, over the default 5 s limit when the
+// whole suite runs in parallel on a busy machine.
+vi.setConfig({ testTimeout: 30_000 })
 
 const eslint = new ESLint({ cache: false })
 
