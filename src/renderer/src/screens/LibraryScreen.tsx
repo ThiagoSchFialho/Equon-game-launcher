@@ -137,7 +137,7 @@ export function LibraryScreen(): React.JSX.Element {
             key={game.id}
             game={game}
             variant="square"
-            scroll="center"
+            scroll="follow"
             autoFocus={index === 0}
             onConfirm={() => navigation.openGame(game.id)}
             onMenu={() => setOverlay({ kind: 'menu', game })}

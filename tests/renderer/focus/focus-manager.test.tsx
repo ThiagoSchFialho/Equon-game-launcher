@@ -31,6 +31,52 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+describe('scroll animation', () => {
+  it('jumps when focus is restored and animates when the user moves it', async () => {
+    const scroll = vi.fn()
+    HTMLElement.prototype.scrollIntoView = scroll
+    const manager = new FocusManager()
+    const Screen = ({ show }: { show: boolean }): React.JSX.Element =>
+      show ? (
+        <FocusScope id="screen">
+          <Item id="a" x={0} />
+          <Item id="b" x={1} />
+        </FocusScope>
+      ) : (
+        <FocusScope id="details">
+          <Item id="c" x={0} />
+        </FocusScope>
+      )
+    const { rerender } = render(
+      <FocusProvider manager={manager}>
+        <Screen show />
+      </FocusProvider>
+    )
+    await act(async () => {})
+    expect(scroll.mock.lastCall?.[0].behavior).toBe('auto')
+
+    act(() => void manager.handle('right'))
+    expect(manager.focusedId).toBe('b')
+    expect(scroll.mock.lastCall?.[0].behavior).toBe('smooth')
+    expect(manager.rememberedFocus('screen')).toBe('b')
+
+    rerender(
+      <FocusProvider manager={manager}>
+        <Screen show={false} />
+      </FocusProvider>
+    )
+    await act(async () => {})
+    rerender(
+      <FocusProvider manager={manager}>
+        <Screen show />
+      </FocusProvider>
+    )
+    await act(async () => {})
+    expect(manager.focusedId).toBe('b')
+    expect(scroll.mock.lastCall?.[0].behavior).toBe('auto')
+  })
+})
+
 function Item({
   id,
   x,

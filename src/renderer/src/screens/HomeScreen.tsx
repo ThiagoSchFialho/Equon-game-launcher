@@ -9,7 +9,7 @@ import { StateMessage } from '../components/StateMessage'
 import { TopBar } from '../components/TopBar'
 import { formatPlaytime } from '../data/format'
 import { useGames } from '../data/games'
-import { useScreenActions } from '../focus/focus-context'
+import { useFocusManager, useScreenActions } from '../focus/focus-context'
 import { FocusScope } from '../focus/FocusProvider'
 import { homeGames } from '../../../shared/library-view'
 import { t } from '../strings'
@@ -25,6 +25,8 @@ const MENU_HINTS: Hint[] = [
   { button: 'B', label: t.hints.back }
 ]
 
+const HOME_SCOPE = 'screen:home'
+
 function Carousel({
   games,
   onMenu
@@ -33,7 +35,15 @@ function Carousel({
   onMenu: (game: GameSummary) => void
 }): React.JSX.Element {
   const navigation = useNavigation()
-  const [index, setIndex] = useState(0)
+  const manager = useFocusManager()
+  // Coming back: starts on the restored game, so the track does not travel to it on screen.
+  const [index, setIndex] = useState(() => {
+    const restored = manager.rememberedFocus(HOME_SCOPE)
+    return Math.max(
+      games.findIndex((game) => `game-card:portrait:${game.id}` === restored),
+      0
+    )
+  })
   const focusedGame = games[Math.min(index, games.length - 1)]
   return (
     <div className="home__carousel">
@@ -106,7 +116,7 @@ export function HomeScreen(): React.JSX.Element {
   }
 
   return (
-    <FocusScope id="screen:home">
+    <FocusScope id={HOME_SCOPE}>
       <div className="screen">
         <TopBar active="home" />
         <main className="screen__main">{content}</main>

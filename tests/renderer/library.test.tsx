@@ -269,6 +269,40 @@ describe('manual flags from the options menu', () => {
 })
 
 describe('home rules', () => {
+  it('comes back from a game already on its card, without the track travelling', async () => {
+    installFakeApi([summary(1, 'A'), summary(2, 'B'), summary(3, 'C')])
+    render(<App />)
+    await screen.findByText('Início')
+    const cardsOnTrack = (): HTMLElement[] =>
+      Array.from(document.querySelectorAll<HTMLElement>('.home__track .game-card'))
+    await waitFor(() => expect(cardsOnTrack()).toHaveLength(3))
+    const chosen = cardsOnTrack()[2]
+    const label = chosen.getAttribute('aria-label')
+    act(() => chosen.click())
+    await waitFor(() => expect(document.querySelector('.home__track')).toBeNull())
+
+    // The index the track has the moment it enters the page.
+    const first: (string | undefined)[] = []
+    const observer = new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          const track = (node as Element).querySelector?.<HTMLElement>('.home__track')
+          if (track) first.push(track.style.getPropertyValue('--index'))
+        }
+      }
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
+    press('Escape')
+    await waitFor(() => expect(document.querySelector('.home__track')).toBeTruthy())
+    observer.disconnect()
+    expect(first).toEqual(['2'])
+    await waitFor(() =>
+      expect(document.querySelector('[data-focused="true"]')?.getAttribute('aria-label')).toBe(
+        label
+      )
+    )
+  })
+
   it('shows only installed, non-hidden games, most recent first', async () => {
     installFakeApi([
       summary(1, 'Old', { timeLastPlayed: '2026-10-01T10:00:00Z' }),

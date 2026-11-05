@@ -59,6 +59,8 @@ filtros do Início.
 -   Densidade equilibrada: cards grandes o suficiente para reconhecer a
     arte, com quantidade suficiente para navegar pela coleção.
 -   Busca, filtro e ordenação acessíveis sem abandonar o contexto.
+-   O card em foco fica no centro da lista, e a rolagem acompanha o foco
+    mesmo com o direcional segurado.
 -   Barra: campo de busca, "Origem" e "Ordenar" à esquerda;
     "Adicionar jogo" à direita. Y abre a busca (teclado
     virtual) e X (controle ou teclado) abre o diálogo de filtros
@@ -255,7 +257,8 @@ apenas de animação para mostrar que uma ação foi ativada.
     houver resultados.
 -   Ao mudar ordenação, filtro ou busca, e ao trocar de seção ou abrir uma
     tela, o foco vai para o primeiro item da lista. Voltar (B) devolve o
-    foco ao item de onde o usuário saiu.
+    foco ao item de onde o usuário saiu, que já aparece na tela de imediato,
+    sem animação de rolagem.
 -   O acesso às opções deve ser possível por controle.
 -   Não exigir digitação por teclado físico para realizar tarefas
     básicas; considerar um teclado virtual ou um fluxo alternativo se a

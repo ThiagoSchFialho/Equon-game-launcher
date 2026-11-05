@@ -1,4 +1,5 @@
 import { isDirection, type Action, type Direction } from '../input/actions'
+import { createScrollFollower } from './scroll-follow'
 import { centerDistance, findNext, type Rect } from './spatial'
 
 export interface FocusableOptions {
@@ -11,10 +12,11 @@ export interface FocusableOptions {
   autoFocus?: boolean
   /**
    * How a scroll container brings the element into view: "nearest" (default),
-   * "center" (keeps it mid-screen, e.g. the Library grid) or "none" when the
-   * container positions it itself (e.g. a transform carousel).
+   * "center" (keeps it mid-screen), "follow" (centers it and keeps up with a
+   * held direction, e.g. the Library grid) or "none" when the container
+   * positions it itself (e.g. a transform carousel).
    */
-  scroll?: 'nearest' | 'center' | 'none'
+  scroll?: 'nearest' | 'center' | 'follow' | 'none'
   /** Never chosen automatically (initial focus, re-homing); reached by direction or mouse only. */
   manualOnly?: boolean
 }
@@ -60,6 +62,7 @@ export class FocusManager {
   private lost: { scope: string; rect: Rect } | null = null
   private listeners = new Set<() => void>()
   private ensureQueued = false
+  private follower = createScrollFollower()
   focusedId: string | null = null
 
   subscribe = (listener: () => void): (() => void) => {
@@ -118,17 +121,22 @@ export class FocusManager {
     this.handlers = this.handlers.filter((h) => h.key !== key)
   }
 
-  focus(id: string): void {
+  /** `instant`: no scroll animation, for focus the user did not move (e.g. coming back). */
+  focus(id: string, options: { instant?: boolean } = {}): void {
     const entry = this.entries.get(id)
     if (!entry) return
     const changed = this.focusedId !== id
     this.focusedId = id
     this.remembered.set(entry.scope, id)
-    if (entry.scroll !== 'none') {
+    const animate = !options.instant && !prefersReducedMotion()
+    if (entry.scroll === 'follow' && animate) {
+      this.follower.follow(entry.el)
+    } else if (entry.scroll !== 'none') {
+      this.follower.cancel()
       entry.el.scrollIntoView?.({
-        block: entry.scroll === 'center' ? 'center' : 'nearest',
+        block: entry.scroll === 'nearest' || entry.scroll === undefined ? 'nearest' : 'center',
         inline: 'nearest',
-        behavior: prefersReducedMotion() ? 'auto' : 'smooth'
+        behavior: animate ? 'smooth' : 'auto'
       })
     }
     if (changed) {
@@ -146,6 +154,11 @@ export class FocusManager {
     if (!entry) return
     if (entry.scope === this.activeScope) this.focus(id)
     else this.remembered.set(entry.scope, id)
+  }
+
+  /** What a scope will restore; lets a screen open already positioned on that element. */
+  rememberedFocus(scope: string): string | null {
+    return this.remembered.get(scope) ?? null
   }
 
   /** Forward navigation: this screen starts from its first item, not from the last focus. */
@@ -241,7 +254,8 @@ export class FocusManager {
       inScope.find((e) => e.autoFocus)?.id ??
       this.firstInDocumentOrder(inScope)
     this.lost = null
-    this.focus(target)
+    // The screen must already be there when it appears, not scroll its way to the focus.
+    this.focus(target, { instant: true })
   }
 
   private nearest(entries: Entry[], rect: Rect): string {
