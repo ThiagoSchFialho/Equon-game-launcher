@@ -35,7 +35,8 @@ const BUTTONS: readonly [number, Action][] = [
   [12, 'up'],
   [13, 'down'],
   [14, 'left'],
-  [15, 'right']
+  [15, 'right'],
+  [16, 'system'] // Xbox; measured on the owner's controller (ARCHITECTURE.md §3.20)
 ]
 
 function heldActions(pads: readonly (GamepadLike | null)[], threshold: number): Set<Action> {

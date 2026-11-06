@@ -81,6 +81,7 @@ const syncStatus = { running: false, done: 0, total: 0, failures: [], lastRun: n
 export function installFakeApi(
   games: GameSummary[],
   overrides: {
+    app?: Partial<EquonApi['app']>
     games?: Partial<EquonApi['games']>
     origins?: Partial<EquonApi['origins']>
     emulators?: Partial<EquonApi['emulators']>
@@ -106,7 +107,12 @@ export function installFakeApi(
         os: 'Windows 11 Pro (10.0.26300)',
         dataPath: 'C:\\Users\\u\\AppData\\Roaming\\equon-game-launcher-dev',
         schemaVersion: 12
-      })
+      }),
+      isFullscreen: async () => false,
+      toggleFullscreen: async () => true,
+      shutdown: async () => ({ ok: true, data: null }),
+      quit: async () => null,
+      ...overrides.app
     },
     igdb: {
       search: async () => ({ ok: true, data: [] }),

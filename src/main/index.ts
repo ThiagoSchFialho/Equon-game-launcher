@@ -1,4 +1,5 @@
 import { app, BrowserWindow, dialog, Menu, safeStorage } from 'electron'
+import { execFile } from 'child_process'
 import { release, version } from 'os'
 import { join } from 'path'
 import { pathToFileURL } from 'url'
@@ -17,6 +18,7 @@ import { registerIpcHandlers } from './ipc/register'
 import { createCrashPolicy } from './renderer-recovery'
 import { hardenApp } from './security/harden'
 import { createServices } from './services'
+import { createSystemControl } from './system/system-control'
 import type { SteamService } from './steam/steam-service'
 import type { AppOrigin } from './security/navigation'
 
@@ -166,6 +168,17 @@ app.whenReady().then(async () => {
   )
   registerIpcHandlers(appOrigin, {
     ...services,
+    system: createSystemControl({
+      window: () => mainWindow,
+      run: (file, args) =>
+        new Promise((resolve, reject) => {
+          execFile(file, [...args], { windowsHide: true }, (error) =>
+            error ? reject(error) : resolve()
+          )
+        }),
+      quit: () => app.quit(),
+      systemRoot: process.env['SystemRoot']
+    }),
     systemInfo: () => ({
       appVersion: app.getVersion(),
       electron: process.versions.electron,

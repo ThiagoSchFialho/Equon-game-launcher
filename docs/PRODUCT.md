@@ -196,6 +196,9 @@ limitações, condições de teste e método de inicialização suportado.
 
 ### 6.7 Configurações
 
+-   Acesso pelo menu do sistema: botão Xbox do controle ou ícone no canto
+    esquerdo do rodapé. O menu também alterna tela cheia e modo janela,
+    desliga o computador e fecha o Equon; desligar e sair pedem confirmação.
 -   Preferências visuais essenciais.
 -   Configurações de navegação/entrada necessárias ao MVP.
 -   Gerenciamento de caminhos e atualização das bibliotecas. A pasta da

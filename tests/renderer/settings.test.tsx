@@ -23,13 +23,11 @@ const clickText = async (text: string | RegExp): Promise<void> => {
   const [element] = await screen.findAllByText(text)
   act(() => (element.closest('button') ?? element).click())
 }
-const focusedLabel = (): string | null =>
-  document.querySelector('[data-focused="true"]')?.getAttribute('aria-label') ?? null
-
 const openSettings = async (): Promise<void> => {
   render(<App />)
   await screen.findByText('12h 22m')
-  await click('Configurações')
+  await click('Menu do sistema')
+  await clickText('Configurações')
   await screen.findByRole('heading', { name: 'Conexões' })
 }
 
@@ -118,13 +116,6 @@ describe('settings', () => {
       'O Windows não aceitou esta alteração. Tente de novo.'
     )
     expect(login.getAttribute('aria-checked')).toBe('false')
-  })
-
-  it('keeps the initial focus on the screen content, not on the gear', async () => {
-    installFakeApi([summary(1, 'Tidebound')])
-    render(<App />)
-    await screen.findByText('12h 22m')
-    await waitFor(() => expect(focusedLabel()).toBe('Tidebound'))
   })
 
   it('saves the SteamID with the on-screen keyboard and shows key states only', async () => {

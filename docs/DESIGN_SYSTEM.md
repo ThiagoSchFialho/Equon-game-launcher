@@ -87,9 +87,7 @@ filtros do Início.
 -   Explicar consequências de configurações potencialmente disruptivas.
 -   Evitar diálogos complexos que sejam difíceis de operar por controle.
 -   Sempre indicar como voltar e onde o foco está.
--   Acesso pela engrenagem ao lado do relógio, na barra superior (alcançada
-    com o direcional para cima a partir da tela; nunca recebe o foco
-    inicial).
+-   Acesso pelo menu do sistema (botão Xbox ou ícone no rodapé).
 -   Sem barra superior de navegação (decisão do dono do projeto, depois da
     Fase 8): sai-se com Voltar (B) ou pelo link "← <tela anterior>" acima das
     abas, igual ao da página do jogo e alcançado com o direcional para cima;
@@ -216,6 +214,21 @@ todos os espaços.
     `overflow: hidden`.
 
 ## 4. Componentes e estados
+
+### Menu do sistema
+
+Ícone do Xbox no canto esquerdo do rodapé, em todas as telas. O botão Xbox do
+controle, o clique no ícone ou a tecla Home abrem o menu logo acima do ícone,
+inclusive sobre um diálogo; B, o botão Xbox ou um clique fora fecham, e o foco
+volta para onde estava. O ícone não entra na navegação por direcional, para o
+rodapé não atrapalhar as grades.
+
+Itens, nesta ordem: "Mudar para tela cheia" ou "Mudar para modo janela",
+conforme o estado atual; "Configurações"; "Desligar sistema", em vermelho;
+"Sair". "Configurações" fica indisponível, com o motivo, no formulário de jogo
+e em "Editar artes", para não perder o que não foi salvo. "Desligar sistema" e
+"Sair" pedem confirmação, com o foco inicial em "Cancelar", que volta à lista;
+se houver um jogo aberto, a confirmação avisa.
 
 ### Checkbox
 
@@ -383,6 +396,7 @@ comportamento para escalonamento de interface e DPI do Windows.
     | Analógico direito | `scroll` | Page Up / Page Down |
     | LB / RB | `previousSection` / `nextSection` | Q / E |
     | ☰ (Menu) | `menu` | M, tecla de menu de contexto |
+    | Xbox | `system`: abre e fecha o menu do sistema, em qualquer tela | Home |
     | X / Y | `secondary` / `tertiary`: no teclado virtual, apagar / espaço; na Biblioteca, filtros / busca | X (filtros na Biblioteca) |
     | LT / RT | `leftTrigger` / `rightTrigger`: no teclado virtual, maiúsculas / pronto | — |
 

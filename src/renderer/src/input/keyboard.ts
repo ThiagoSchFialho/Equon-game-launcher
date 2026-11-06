@@ -14,6 +14,7 @@ const KEYS: Record<string, Action> = {
   ContextMenu: 'menu',
   m: 'menu',
   M: 'menu',
+  Home: 'system',
   q: 'previousSection',
   Q: 'previousSection',
   e: 'nextSection',

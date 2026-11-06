@@ -49,7 +49,7 @@ export interface ChoiceItem {
   compact?: boolean
 }
 
-function ChoiceRow({
+export function ChoiceRow({
   dialogId,
   item,
   autoFocus
@@ -121,6 +121,7 @@ export function ChoiceDialog({
 
 /** Yes/no confirmation; the safe choice has the initial focus. */
 export function ConfirmDialog({
+  id = 'confirm',
   title,
   message,
   confirmLabel,
@@ -129,6 +130,8 @@ export function ConfirmDialog({
   onConfirm,
   onCancel
 }: {
+  /** Needed when it can open above another confirmation. */
+  id?: string
   title: string
   message: string
   confirmLabel: string
@@ -139,7 +142,7 @@ export function ConfirmDialog({
 }): React.JSX.Element {
   return (
     <ChoiceDialog
-      id="confirm"
+      id={id}
       title={title}
       onClose={onCancel}
       footer={<p className="dialog__message">{message}</p>}

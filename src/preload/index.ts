@@ -10,7 +10,11 @@ import {
 const api: EquonApi = {
   app: {
     getInfo: () => ipcRenderer.invoke(IpcChannel.appGetInfo),
-    getSystemInfo: () => ipcRenderer.invoke(IpcChannel.appGetSystemInfo)
+    getSystemInfo: () => ipcRenderer.invoke(IpcChannel.appGetSystemInfo),
+    isFullscreen: () => ipcRenderer.invoke(IpcChannel.appIsFullscreen),
+    toggleFullscreen: () => ipcRenderer.invoke(IpcChannel.appToggleFullscreen),
+    shutdown: () => ipcRenderer.invoke(IpcChannel.appShutdown),
+    quit: () => ipcRenderer.invoke(IpcChannel.appQuit)
   },
   games: {
     list: () => ipcRenderer.invoke(IpcChannel.gamesList),

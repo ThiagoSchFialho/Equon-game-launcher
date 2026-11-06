@@ -14,7 +14,9 @@ import {
 } from './app/navigation'
 import { DEFAULT_LIBRARY_VIEW, type LibraryView } from '../../shared/library-view'
 import type { AchievementSort } from '../../shared/achievements-view'
+import { SystemMenuContext, type SystemMenuState } from './app/system-menu'
 import { ScreenErrorBoundary } from './components/ScreenErrorBoundary'
+import { SYSTEM_MENU_SCOPE, SystemMenu } from './components/SystemMenu'
 import { AchievementSortContext, type AchievementSortState } from './data/achievements'
 import { BackgroundActivityContext, useBackgroundActivityLoader } from './data/background-activity'
 import { GamesContext, useGamesLoader } from './data/games'
@@ -75,11 +77,24 @@ function App(): React.JSX.Element {
   // Steam scans (startup, "Atualizar biblioteca") add or change games.
   useEffect(() => window.equon.library.onChanged(games.refresh), [games.refresh])
 
+  const [systemMenuOpen, setSystemMenuOpen] = useState(false)
+  const toggleSystemMenu = useCallback(() => {
+    // Every opening starts at the first item.
+    manager.forgetFocus(SYSTEM_MENU_SCOPE)
+    setSystemMenuOpen((open) => !open)
+  }, [manager])
+  const systemMenu = useMemo<SystemMenuState>(
+    () => ({ open: systemMenuOpen, toggle: toggleSystemMenu }),
+    [systemMenuOpen, toggleSystemMenu]
+  )
+
   const dispatch = useCallback(
     (action: Parameters<FocusManager['handle']>[0]) => {
-      manager.handle(action)
+      // Above everything: it also opens over a dialog, which would stop the action.
+      if (action === 'system') toggleSystemMenu()
+      else manager.handle(action)
     },
-    [manager]
+    [manager, toggleSystemMenu]
   )
   useInput(dispatch)
 
@@ -131,9 +146,12 @@ function App(): React.JSX.Element {
             <LibraryViewContext.Provider value={libraryViewState}>
               <AchievementSortContext.Provider value={achievementSortState}>
                 <BackgroundActivityContext.Provider value={activity}>
-                  <ScreenErrorBoundary key={JSON.stringify(route)}>
-                    <CurrentScreen route={route} />
-                  </ScreenErrorBoundary>
+                  <SystemMenuContext.Provider value={systemMenu}>
+                    <ScreenErrorBoundary key={JSON.stringify(route)}>
+                      <CurrentScreen route={route} />
+                    </ScreenErrorBoundary>
+                    {systemMenuOpen && <SystemMenu onClose={() => setSystemMenuOpen(false)} />}
+                  </SystemMenuContext.Provider>
                 </BackgroundActivityContext.Provider>
               </AchievementSortContext.Provider>
             </LibraryViewContext.Provider>

@@ -11,9 +11,31 @@
   flex-shrink: 0;
 }
 
-.footer__activity {
+.footer__system {
   position: absolute;
   left: var(--space-12);
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  opacity: 0.8;
+  transition: opacity var(--motion-focus) var(--motion-easing);
+}
+
+.footer__system img {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.footer__system:hover,
+.footer__system[data-open='true'] {
+  opacity: 1;
+}
+
+.footer__activity {
+  position: absolute;
+  left: calc(var(--space-12) + 3rem + var(--space-4));
   max-width: 50%;
 }
 

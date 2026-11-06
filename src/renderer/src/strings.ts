@@ -335,6 +335,23 @@ export const t = {
     remove: 'Remover o jogo manual',
     close: 'Fechar'
   },
+  systemMenu: {
+    title: 'Menu do sistema',
+    enterFullscreen: 'Mudar para tela cheia',
+    leaveFullscreen: 'Mudar para modo janela',
+    settingsUnsaved: 'Salve ou cancele antes',
+    shutdown: 'Desligar sistema',
+    shutdownConfirm: 'Desligar',
+    shutdownMessage: 'O computador será desligado agora.',
+    shutdownGameOpen:
+      'Há um jogo aberto. O computador será desligado agora, e o que não estiver salvo no jogo pode se perder.',
+    shutdownFailed: 'O Windows não permitiu desligar o computador. Tente pelo menu Iniciar.',
+    quit: 'Sair',
+    quitTitle: 'Sair do Equon',
+    quitMessage: 'O Equon será fechado.',
+    quitGameOpen: 'Há um jogo aberto. Ele continua rodando, mas o Equon deixa de contar o tempo.',
+    cancel: 'Cancelar'
+  },
   settings: {
     title: 'Configurações',
     tabs: { connections: 'Conexões', emulators: 'Emuladores', system: 'Sistema', about: 'Sobre' },

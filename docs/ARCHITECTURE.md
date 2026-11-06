@@ -70,6 +70,7 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-18 | IGDB: filling in manual games and artwork for new Steam games | Accepted | Own Twitch app credentials per user, encrypted; see §3.17 |
 | D-19 | Editing the art of a game by hand | Accepted | "Editar artes" screen for any game; removed art stays removed; see §3.18 |
 | D-20 | Settings › Sistema and where preferences live | Accepted | Columns in `USERS`; starting with Windows is read from Windows; see §3.19 |
+| D-21 | System menu | Accepted | Xbox button or footer icon, on any screen: fullscreen, settings, shutdown, quit; see §3.20 |
 | D-16 | Refresh frequency for `appdetails` metadata | Accepted | Fetched only when a game is discovered/added; failed fetches are retried (§3.14) |
 | D-17 | Steam launch mechanism | Accepted | `steam://rungameid/<appid>`, built in the main process (§3.12) |
 
@@ -390,6 +391,20 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 **Iniciar com o sistema** is the Windows startup entry, through `app.setLoginItemSettings`. It is not stored: `executableWillLaunchAtLogin` is the only source, so an entry turned off in the Task Manager shows as unchecked, and checking the box turns it back on. After a change main reads the state again and reports an error if Windows did not take it. Unpackaged runs refuse it, since they would register the bare Electron binary. The uninstaller does not remove the entry; Windows ignores an entry whose program is gone.
 
 **At login** the network may not be ready. The Steam sync of that start then fails and changes nothing, as any failed sync does (`DATA_BASE_CONTEXT.md` §3.11), and runs again the next time the launcher opens.
+
+### 3.20 D-21 — System menu (Accepted, after Phase 8)
+
+**Owner decisions (2026-11-06):** an Xbox icon at the left of the footer; the Xbox button opens a menu above it with, in this order, the fullscreen toggle, Configurações (the gear next to the clock is gone), "Desligar sistema" in red and "Sair". The last two ask first.
+
+**The Xbox button reaches the app.** Older Chromium sources say XInput does not report it, so this was measured before building (2026-11-06, the owner's controller, "Xbox 360 Controller (XInput STANDARD GAMEPAD)"): it arrives as button 16 of the Gamepad API, every press, and the window kept the focus. Windows can still open the Game Bar with this button, depending on its settings, and the app cannot prevent that. Gamepad input is ignored while the window has no focus, as for every button, so pressing it during a game does not open the menu.
+
+**Above everything.** `App` handles the `system` action before the focus manager, since a dialog would stop it, so the menu also opens over a dialog. The footer icon is for the mouse and stays out of the direction focus path; the footer is above dialog backdrops, so it stays visible and clickable.
+
+**Unsaved work.** Configurações is unavailable on the game form and "Editar artes", whose unsaved state would be lost by changing screens.
+
+**Security.** The renderer only asks for "shutdown", with no arguments. Main runs one fixed program, `%SystemRoot%\System32\shutdown.exe /s /t 0`, with `execFile` and no shell (`src/main/system/system-control.ts`). A delay of 0 does not force programs to close, so Windows may still ask about unsaved work; a higher delay would imply `/f`.
+
+**A game left open.** Closing the launcher does not close the game. The session is closed at its last heartbeat on the next start (`DATA_BASE_CONTEXT.md` §3.8), so the confirmation warns about it.
 
 ## 4. Inconsistencies found across the project docs
 
@@ -754,6 +769,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-05 | 0.39 | D-19: "Editar artes", with a SteamGridDB gallery and `GAME_ARTWORK_REMOVED` (§3.18). |
 | 2026-11-06 | 0.40 | Home covers back to 2:3, still stretched; SteamGridDB first for portrait covers, IGDB as fallback (§3.17). |
 | 2026-11-06 | 0.41 | D-20: Settings › Sistema; preferences live in `USERS`, starting with Windows is read from Windows (§3.19). |
+| 2026-11-06 | 0.42 | D-21: system menu on the Xbox button (button 16, measured); the gear in the top bar is gone (§3.20). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

@@ -1,0 +1,12 @@
+/* Rises from the Xbox icon, at the left of the footer (5rem tall, above the backdrop). */
+.system-menu {
+  position: fixed;
+  z-index: 11;
+  left: var(--space-12);
+  bottom: calc(5rem + var(--space-2));
+  width: 25rem;
+  max-height: calc(100vh - 7rem);
+  display: flex;
+  flex-direction: column;
+  animation: dialog-fade var(--motion-panel) var(--motion-easing);
+}

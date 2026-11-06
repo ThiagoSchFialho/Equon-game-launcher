@@ -22,6 +22,8 @@ export type Action =
   | 'leftTrigger'
   /** RT: done on the on-screen keyboard. */
   | 'rightTrigger'
+  /** Xbox button: the system menu, from any screen (Home key). */
+  | 'system'
 
 export type Direction = 'up' | 'down' | 'left' | 'right'
 

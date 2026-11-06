@@ -5,6 +5,10 @@
 export const IpcChannel = {
   appGetInfo: 'app:get-info',
   appGetSystemInfo: 'app:get-system-info',
+  appIsFullscreen: 'app:is-fullscreen',
+  appToggleFullscreen: 'app:toggle-fullscreen',
+  appShutdown: 'app:shutdown',
+  appQuit: 'app:quit',
   libraryRefresh: 'library:refresh',
   settingsGet: 'settings:get',
   settingsSetSteamId: 'settings:set-steam-id',
@@ -441,6 +445,12 @@ export interface EquonApi {
   app: {
     getInfo(): Promise<AppInfo>
     getSystemInfo(): Promise<SystemInfo>
+    isFullscreen(): Promise<boolean>
+    /** Resolves with the new state. */
+    toggleFullscreen(): Promise<boolean>
+    /** Turns the computer off. Takes no arguments: main runs one fixed command. */
+    shutdown(): Promise<Result<null>>
+    quit(): Promise<null>
   }
   igdb: {
     search(term: string): Promise<Result<IgdbGameInfo[]>>

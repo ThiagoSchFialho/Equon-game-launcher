@@ -65,6 +65,7 @@ import { z } from 'zod'
 import { listFiles, pickNative } from '../files/file-service'
 import type { ManualGameService } from '../games/manual-game-service'
 import type { SettingsService } from '../settings/settings-service'
+import type { SystemControl } from '../system/system-control'
 import { getAchievementsOverview, getGameAchievements } from '../achievements/achievement-queries'
 import type { AchievementSync } from '../achievements/achievement-sync'
 import type { ArtworkEditor } from '../artwork/artwork-editor'
@@ -98,6 +99,8 @@ export interface IpcDeps {
   settings: SettingsService
   /** Settings › Sobre. */
   systemInfo?: () => SystemInfo
+  /** The system menu (D-21). */
+  system?: SystemControl
 }
 
 const idResult = resultSchema(z.strictObject({ id: z.number().int().positive() }))
@@ -130,6 +133,29 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
     ipcMain.handle(
       IpcChannel.appGetSystemInfo,
       createValidatedHandler(noArgs, systemInfoSchema, trusted, () => systemInfo())
+    )
+  }
+
+  if (deps.system) {
+    const system = deps.system
+    ipcMain.handle(
+      IpcChannel.appIsFullscreen,
+      createValidatedHandler(noArgs, z.boolean(), trusted, () => system.isFullscreen())
+    )
+    ipcMain.handle(
+      IpcChannel.appToggleFullscreen,
+      createValidatedHandler(noArgs, z.boolean(), trusted, () => system.toggleFullscreen())
+    )
+    ipcMain.handle(
+      IpcChannel.appShutdown,
+      createValidatedHandler(noArgs, nullResult, trusted, () => system.shutdown())
+    )
+    ipcMain.handle(
+      IpcChannel.appQuit,
+      createValidatedHandler(noArgs, z.null(), trusted, () => {
+        system.quit()
+        return null
+      })
     )
   }
 

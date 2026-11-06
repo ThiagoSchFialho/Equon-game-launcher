@@ -631,7 +631,8 @@ describe('emulators in Settings', () => {
     // The Library has no emulator button any more; the tab lives in Settings.
     await screen.findByText('1 jogo')
     expect(screen.queryByLabelText('Emuladores')).toBeNull()
-    await click('Configurações')
+    await click('Menu do sistema')
+    await clickText('Configurações')
     await clickText('Emuladores')
     expect(await screen.findByText('Não configurado — escolha o yuzu.exe')).toBeTruthy()
     await click('Yuzu')
