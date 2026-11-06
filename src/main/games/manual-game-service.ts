@@ -9,7 +9,6 @@ import {
   saveManualGame,
   validateManualGame,
   isAbsoluteWindowsPath,
-  type ArtworkRepository,
   type EmulatorRepository,
   type FileInspector,
   type GameFlags,
@@ -24,18 +23,11 @@ import {
   BuiltinOrigin,
   EMULATOR_KEYS,
   EMULATORS,
-  toUtcIso,
   type EmulatorConfig,
   type EmulatorKey,
   type Origin
 } from '../../core/domain'
-import {
-  ArtworkImportFailure,
-  prepareArtwork,
-  removeGameArtwork,
-  writeArtwork,
-  type PreparedArtwork
-} from '../../infrastructure/artwork/import-artwork'
+import { removeGameArtwork } from '../../infrastructure/artwork/import-artwork'
 import { matchesPickKind } from '../../infrastructure/filesystem/file-browser'
 import type {
   AppError,
@@ -51,13 +43,11 @@ export interface ManualGameServiceDeps {
   configs: LaunchConfigRepository
   origins: OriginRepository
   emulators: EmulatorRepository
-  artwork: ArtworkRepository
   uow: UnitOfWork
   inspector: FileInspector
   runner: GameRunner
   artworkCacheDir: string
   /** Full image decode returning the real size (Electron nativeImage in main). */
-  decodeImage: (bytes: Buffer) => { width: number; height: number } | null
   /** URL= target of a .url shortcut, or null. */
   readShortcut: (path: string) => string | null
 }
@@ -71,7 +61,6 @@ const failure = (code: string, field?: string): Result<never> => ({
 /** Maps expected errors to codes the renderer turns into messages; rethrows the rest. */
 export function toAppError(error: unknown): AppError {
   if (error instanceof ManualGameValidationError) return { code: error.code, field: error.field }
-  if (error instanceof ArtworkImportFailure) return { code: error.code, field: 'backgroundPath' }
   if (error instanceof LaunchError) return { code: error.code }
   if (error instanceof DuplicateNameError) return { code: 'duplicate-name', field: 'name' }
   if (error instanceof InvalidNameError) return { code: 'invalid-name', field: 'name' }
@@ -108,29 +97,7 @@ export interface ManualGameService {
 export function createManualGameService(deps: ManualGameServiceDeps): ManualGameService {
   const originExists = (key: string): boolean => deps.origins.list().some((o) => o.key === key)
 
-  const prepareBackground = (path: string | null): PreparedArtwork | null => {
-    if (path === null) return null
-    if (!matchesPickKind(path, 'image')) throw new ArtworkImportFailure('unsupported-type')
-    return prepareArtwork(path, 'background', deps.decodeImage)
-  }
-
-  const saveBackground = (gameId: number, prepared: PreparedArtwork | null): void => {
-    if (!prepared) return
-    const written = writeArtwork(deps.artworkCacheDir, gameId, 'background', prepared)
-    deps.artwork.save({
-      gameId,
-      kind: 'background',
-      localPath: written.localPath,
-      source: 'user',
-      sourceUrl: null,
-      width: written.width,
-      height: written.height,
-      userSelected: true,
-      fetchedAt: toUtcIso(new Date())
-    })
-  }
-
-  // Everything is validated (fields, paths, image) before anything is written.
+  // Everything is validated before anything is written.
   const save = (form: ManualGameForm, id?: number): Promise<Result<{ id: number }>> =>
     asResult(() => {
       if (id !== undefined) {
@@ -138,15 +105,7 @@ export function createManualGameService(deps: ManualGameServiceDeps): ManualGame
         if (!existing || existing.origin === BuiltinOrigin.steam)
           throw new NotFoundError('Game', id)
       }
-      const {
-        executablePath,
-        romPath,
-        arguments: args,
-        workingDirectory,
-        backgroundPath,
-        genres,
-        ...fields
-      } = form
+      const { executablePath, romPath, arguments: args, workingDirectory, genres, ...fields } = form
       const input = validateManualGame(
         {
           ...fields,
@@ -159,9 +118,7 @@ export function createManualGameService(deps: ManualGameServiceDeps): ManualGame
         },
         { inspector: deps.inspector, originExists, readShortcut: deps.readShortcut }
       )
-      const background = prepareBackground(backgroundPath)
       const game = saveManualGame(deps, input, id)
-      saveBackground(game.id, background)
       // Filled from IGDB: the genres of a game that has them are not replaced.
       if (genres && genres.length > 0 && deps.genres.listForGame(game.id).length === 0) {
         deps.genres.setGameGenres(game.id, genres)

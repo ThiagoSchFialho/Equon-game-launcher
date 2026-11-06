@@ -10,6 +10,8 @@ export type Route =
   | ScreenRoute
   /** Add (id null) or edit form; `previous` is where Cancel/back returns. */
   | { name: 'gameForm'; id: number | null; previous: ScreenRoute }
+  /** "Editar artes", from the game's options menu. */
+  | { name: 'gameArtwork'; id: number; previous: ScreenRoute }
   /** One game's achievements, from the overview or the game's options menu. */
   | { name: 'gameAchievements'; id: number; previous: ScreenRoute }
   /** Settings, opened from the gear in the top bar. */
@@ -28,6 +30,7 @@ export interface Navigation {
   openGameForm(id: number | null): void
   openSettings(): void
   openGameAchievements(id: number): void
+  openGameArtwork(id: number): void
   /** Go back one screen; no-op at a top-level section. */
   back(): void
   /** LB/RB: move to the neighbouring section without wrapping around. */
@@ -74,6 +77,11 @@ export function formRoute(route: Route, id: number | null): Route {
 /** Route that opens one game's achievements from `route`. */
 export function gameAchievementsRoute(route: Route, id: number): Route {
   return { name: 'gameAchievements', id, previous: screenOf(route) }
+}
+
+/** Route that opens "Editar artes" from `route`. */
+export function gameArtworkRoute(route: Route, id: number): Route {
+  return { name: 'gameArtwork', id, previous: screenOf(route) }
 }
 
 /** Route that opens the settings from `route`. */

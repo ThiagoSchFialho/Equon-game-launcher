@@ -88,6 +88,7 @@ export function installFakeApi(
     achievements?: Partial<EquonApi['achievements']>
     activity?: Partial<EquonApi['activity']>
     igdb?: Partial<EquonApi['igdb']>
+    artworkEdit?: Partial<EquonApi['artworkEdit']>
   } = {}
 ): EquonApi {
   const runningListeners = new Set<(ids: number[]) => void>()
@@ -101,14 +102,13 @@ export function installFakeApi(
         node: '24.18.0',
         os: 'Windows 11 Pro (10.0.26300)',
         dataPath: 'C:\\Users\\u\\AppData\\Roaming\\equon-game-launcher-dev',
-        schemaVersion: 10
+        schemaVersion: 11
       })
     },
     igdb: {
       search: async () => ({ ok: true, data: [] }),
       game: async () => ({ ok: true, data: null }),
       applyArtwork: async () => ({ ok: true, data: [] }),
-      replaceArtwork: async () => ({ ok: true, data: [] }),
       ...overrides.igdb
     },
     activity: {
@@ -148,7 +148,6 @@ export function installFakeApi(
     },
     artwork: {
       search: async () => ({ ok: true, data: [] }),
-      applySteamGridDb: async () => ({ ok: true, data: [] }),
       ...overrides.artwork
     },
     settings: {
@@ -192,6 +191,16 @@ export function installFakeApi(
       rename: vi.fn(),
       remove: vi.fn(),
       ...overrides.origins
+    },
+    artworkEdit: {
+      begin: async () => {},
+      end: async () => {},
+      fromFile: async () => ({ ok: true, data: { version: 1 } }),
+      fromIgdb: async () => ({ ok: true, data: { version: 1 } }),
+      gridAssets: async () => ({ ok: true, data: [] }),
+      fromGrid: async () => ({ ok: true, data: { version: 1 } }),
+      save: async () => ({ ok: true, data: null }),
+      ...overrides.artworkEdit
     },
     emulators: {
       list: async () => [yuzu()],

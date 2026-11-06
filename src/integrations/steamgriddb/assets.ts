@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { NetworkError, type HttpGet } from '../http'
+import { NetworkError, isAllowedImageUrl, type HttpGet } from '../http'
 
 const API = 'https://www.steamgriddb.com/api/v2'
 
@@ -69,6 +69,13 @@ async function call(get: HttpGet, key: string, path: string): Promise<SteamGridD
 const targetPath = (target: SteamGridDbTarget): string =>
   'steamAppId' in target ? `steam/${target.steamAppId}` : `game/${target.gameId}`
 
+const assetsPath = (target: SteamGridDbTarget, kind: SteamGridDbKind): string => {
+  const query = 'types=static&nsfw=false&humor=false'
+  return kind === 'logo'
+    ? `/logos/${targetPath(target)}?${query}`
+    : `/grids/${targetPath(target)}?dimensions=${GRID_DIMENSIONS[kind]}&${query}`
+}
+
 /**
  * URL of the best-voted static image of one kind (owner decision: highest
  * score), skipping adult and joke entries; null when SteamGridDB has none.
@@ -79,12 +86,7 @@ export async function findBestAsset(
   target: SteamGridDbTarget,
   kind: SteamGridDbKind
 ): Promise<SteamGridDbResult<string | null>> {
-  const query = 'types=static&nsfw=false&humor=false'
-  const path =
-    kind === 'logo'
-      ? `/logos/${targetPath(target)}?${query}`
-      : `/grids/${targetPath(target)}?dimensions=${GRID_DIMENSIONS[kind]}&${query}`
-  const result = await call(get, key, path)
+  const result = await call(get, key, assetsPath(target, kind))
   if (!result.ok) return result.error === 'not-found' ? { ok: true, data: null } : result
   const parsed = assetsSchema.safeParse(result.data)
   if (!parsed.success) return { ok: false, error: 'invalid-response' }
@@ -95,6 +97,61 @@ export async function findBestAsset(
       return top === null || score > top.score ? { url: asset.url, score } : top
     }, null)
   return { ok: true, data: best?.url ?? null }
+}
+
+export interface SteamGridDbAsset {
+  id: number
+  url: string
+  thumb: string
+  width: number
+  height: number
+}
+
+/** How many images one gallery shows. */
+const MAX_LISTED_ASSETS = 40
+
+const listedAssetSchema = z.object({
+  id: z.number().int().positive(),
+  url: z.string(),
+  thumb: z.string(),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  score: z.number().optional(),
+  nsfw: z.boolean().optional(),
+  humor: z.boolean().optional()
+})
+const assetListSchema = z.object({ success: z.literal(true), data: z.array(z.unknown()) })
+
+/** Static images of one kind for the user to choose from, best voted first. */
+export async function listAssets(
+  get: HttpGet,
+  key: string,
+  target: SteamGridDbTarget,
+  kind: SteamGridDbKind
+): Promise<SteamGridDbResult<SteamGridDbAsset[]>> {
+  const result = await call(get, key, assetsPath(target, kind))
+  if (!result.ok) return result.error === 'not-found' ? { ok: true, data: [] } : result
+  const parsed = assetListSchema.safeParse(result.data)
+  if (!parsed.success) return { ok: false, error: 'invalid-response' }
+  return {
+    ok: true,
+    data: parsed.data.data
+      // One broken entry does not cost the rest of the list.
+      .flatMap((entry) => {
+        const asset = listedAssetSchema.safeParse(entry)
+        return asset.success ? [asset.data] : []
+      })
+      .filter(
+        (asset) =>
+          !asset.nsfw &&
+          !asset.humor &&
+          isAllowedImageUrl(asset.url) &&
+          isAllowedImageUrl(asset.thumb)
+      )
+      .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+      .slice(0, MAX_LISTED_ASSETS)
+      .map(({ id, url, thumb, width, height }) => ({ id, url, thumb, width, height }))
+  }
 }
 
 /** Name search for manual games (the user confirms the match). */

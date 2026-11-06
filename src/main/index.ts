@@ -138,11 +138,6 @@ app.whenReady().then(async () => {
   })
 
   hardenApp(appOrigin)
-  handleArtworkProtocol(
-    createArtworkRepository(db),
-    createAchievementRepository(db),
-    artworkCacheDir
-  )
   const database = db
   const services = createServices(db, artworkCacheDir, () => mainWindow, {
     // Windows DPAPI through safeStorage (D-04); keys never leave main in clear text.
@@ -150,6 +145,12 @@ app.whenReady().then(async () => {
     encrypt: (plain) => safeStorage.encryptString(plain),
     decrypt: (encrypted) => safeStorage.decryptString(Buffer.from(encrypted))
   })
+  handleArtworkProtocol(
+    createArtworkRepository(db),
+    createAchievementRepository(db),
+    artworkCacheDir,
+    services.artworkEditor
+  )
   registerIpcHandlers(appOrigin, {
     ...services,
     systemInfo: () => ({

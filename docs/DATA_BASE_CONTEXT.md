@@ -285,6 +285,18 @@ Regras:
 - A capa vertical (`cover_portrait`) e a quadrada (`cover_square`) são artes **independentes**: uma não é recortada a partir da outra. A tela Início usa a vertical; a Biblioteca usa a quadrada.
 - Validar as dimensões decodificadas de cada tipo: a vertical deve ter proporção de 2:3 a 3:4 (SteamGridDB e IGDB, respectivamente; o card do Início é 3:4 e estica a arte para caber inteira) e a quadrada proporção 1:1.
 
+### 3.9.1 `GAME_ARTWORK_REMOVED` (D-19)
+
+Artes que o usuário removeu em "Editar artes". Enquanto a linha existir, downloads automáticos ignoram aquele tipo de arte do jogo; escolher outra imagem apaga a linha.
+
+| Coluna | Tipo | Regras |
+| --- | --- | --- |
+| `game_id` | `INTEGER NOT NULL` | FK `games(id)`, `ON DELETE CASCADE` |
+| `kind` | `TEXT NOT NULL` | Mesmo `CHECK` de `GAME_ARTWORK.kind` |
+| `removed_at` | `TEXT NOT NULL` | ISO-8601 UTC |
+
+Chave primária: `(game_id, kind)`. A remoção apaga a linha de `GAME_ARTWORK` e grava esta na mesma transação.
+
 ### 3.10 `ORIGINS` (D-05)
 
 Origens possíveis de um jogo. É uma tabela, não uma lista fixa, para que o usuário possa criar origens novas (por exemplo, "Nintendo 64" para um emulador novo).

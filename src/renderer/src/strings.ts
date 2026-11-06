@@ -102,8 +102,7 @@ export const t = {
     unhide: 'Mostrar jogo',
     flagFailed: 'Não foi possível salvar a alteração.',
     edit: 'Editar jogo',
-    artwork: 'Buscar artes no SteamGridDB',
-    igdbArtwork: 'Buscar artes no IGDB',
+    editArtwork: 'Editar artes',
     remove: 'Remover jogo',
     close: 'Fechar',
     soon: 'Em breve'
@@ -156,14 +155,6 @@ export const t = {
       L: 'Todas as idades',
       age: (n: string) => `${n} anos`
     },
-    background: {
-      title: 'Adicione uma imagem de fundo para o jogo',
-      subtitle: 'Use a imagem da sua escolha (1920×1080)',
-      select: 'Selecionar imagem',
-      change: 'Trocar imagem',
-      selected: (name: string) => `Selecionada: ${name}`,
-      current: 'Imagem atual'
-    },
     manageOrigins: 'Gerenciar origens…',
     emulatorCommand: (emulator: string, rom: string) =>
       `Será iniciado com: ${emulator} -f -g "${rom}"`,
@@ -198,7 +189,7 @@ export const t = {
     'too-large': 'Imagem maior que 20 MB.',
     'unsupported-type': 'Use uma imagem PNG, JPG ou WebP.',
     undecodable: 'Não foi possível abrir esta imagem.',
-    'wrong-proportion': 'A imagem de fundo precisa ser 16:9 (ex.: 1920×1080).',
+    'wrong-proportion': 'A imagem não tem a proporção certa.',
     'duplicate-name': 'Já existe uma origem com este nome.',
     'invalid-name': 'Nome inválido.',
     'builtin-origin': 'Origens de fábrica não podem ser excluídas.',
@@ -265,11 +256,6 @@ export const t = {
     pick: 'Escolha o jogo certo. Os dados preenchem o formulário, e as artes vêm ao salvar.',
     pickToAdd: 'Escolha o jogo certo. Os dados e as artes dele serão usados neste jogo.',
     saveWithout: 'Salvar sem dados do IGDB',
-    artworkTitle: 'Artes do IGDB',
-    artworkPick:
-      'Escolha o jogo certo. A capa vertical, o logo e a imagem de fundo serão trocados.',
-    artworkApplying: (name: string) => `Baixando as artes de ${name}…`,
-    artworkNone: 'O IGDB não tem artes que sirvam para este jogo.',
     savedTitle: 'Jogo salvo sem dados do IGDB',
     savedMessage: (reason: string) => `${reason} Você pode completar os dados em Editar jogo.`,
     savedConfirm: 'Entendi',
@@ -286,17 +272,49 @@ export const t = {
       'invalid-response': 'O IGDB respondeu de forma inesperada. Tente mais tarde.'
     } as Record<string, string>
   },
-  steamGridDb: {
-    title: 'Artes do SteamGridDB',
+  artEditor: {
+    title: 'Editar artes',
+    kinds: {
+      cover_portrait: 'Capa vertical',
+      cover_square: 'Capa quadrada',
+      logo: 'Logo',
+      background: 'Imagem de fundo'
+    },
+    fromIgdb: 'Imagem do IGDB',
+    fromGrid: 'Selecionar imagem do SteamGridDB',
+    fromFile: 'Selecionar imagem do PC',
+    remove: 'Remover imagem',
+    save: 'Salvar',
+    close: 'Fechar',
+    loadError: 'Não foi possível abrir as artes deste jogo.',
+    downloading: 'Baixando a imagem…',
     searching: 'Buscando…',
-    pick: 'Escolha o jogo certo para baixar as capas, o logo e o cabeçalho.',
+    searchingImages: 'Buscando imagens…',
+    pending: 'Nova imagem. Será aplicada ao salvar.',
+    pendingRemoval: 'Será removida ao salvar.',
+    saveFailed: 'Não foi possível salvar as artes. Tente de novo.',
+    downloadFailed: 'Não foi possível baixar a imagem. Tente de novo.',
+    noImageIgdb: 'O IGDB não tem esta imagem para este jogo.',
+    noImageGrid: 'O SteamGridDB não tem imagens deste tipo para este jogo.',
+    proportion: {
+      cover_portrait: 'A capa vertical precisa ter proporção entre 2:3 e 3:4.',
+      cover_square: 'A capa quadrada precisa ter proporção 1:1.',
+      logo: 'Esta imagem não serve como logo.',
+      background: 'A imagem de fundo precisa ser 16:9 (ex.: 1920×1080).'
+    },
+    igdbTitle: 'Jogo no IGDB',
+    gridTitle: 'Jogo no SteamGridDB',
+    pickGame: 'Escolha o jogo certo.',
     noResults: (term: string) => `Nenhum jogo encontrado para "${term}".`,
     otherName: 'Buscar outro nome',
+    galleryTitle: 'Imagens do SteamGridDB',
+    galleryPick: 'Escolha uma imagem.',
+    galleryItem: (size: string) => `Imagem ${size}`
+  },
+  steamGridDb: {
     searchTitle: 'Nome do jogo no SteamGridDB',
-    applying: (name: string) => `Baixando artes de ${name}…`,
-    nothingFound: 'O SteamGridDB não tem artes para este jogo.',
-    close: 'Fechar',
     errors: {
+      unavailable: 'O SteamGridDB está indisponível agora. Tente mais tarde.',
       'not-configured': 'Configure a chave do SteamGridDB em Configurações.',
       'invalid-key': 'A chave do SteamGridDB é inválida.',
       'not-found': 'Jogo não encontrado.',

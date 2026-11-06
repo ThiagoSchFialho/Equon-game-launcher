@@ -40,9 +40,7 @@ const api: EquonApi = {
     search: (term) => ipcRenderer.invoke(IpcChannel.igdbSearch, term),
     game: (id) => ipcRenderer.invoke(IpcChannel.igdbGame, id),
     applyArtwork: (gameId, igdbGameId) =>
-      ipcRenderer.invoke(IpcChannel.igdbApplyArtwork, gameId, igdbGameId),
-    replaceArtwork: (gameId, igdbGameId) =>
-      ipcRenderer.invoke(IpcChannel.igdbReplaceArtwork, gameId, igdbGameId)
+      ipcRenderer.invoke(IpcChannel.igdbApplyArtwork, gameId, igdbGameId)
   },
   activity: {
     current: () => ipcRenderer.invoke(IpcChannel.activityCurrent),
@@ -77,9 +75,20 @@ const api: EquonApi = {
     }
   },
   artwork: {
-    search: (term) => ipcRenderer.invoke(IpcChannel.artworkSearch, term),
-    applySteamGridDb: (gameId, steamGridDbGameId) =>
-      ipcRenderer.invoke(IpcChannel.artworkApplySteamGridDb, gameId, steamGridDbGameId)
+    search: (term) => ipcRenderer.invoke(IpcChannel.artworkSearch, term)
+  },
+  artworkEdit: {
+    begin: (gameId) => ipcRenderer.invoke(IpcChannel.artworkEditBegin, gameId),
+    end: () => ipcRenderer.invoke(IpcChannel.artworkEditEnd),
+    fromFile: (gameId, kind, path) =>
+      ipcRenderer.invoke(IpcChannel.artworkEditFromFile, gameId, kind, path),
+    fromIgdb: (gameId, kind, igdbGameId) =>
+      ipcRenderer.invoke(IpcChannel.artworkEditFromIgdb, gameId, kind, igdbGameId),
+    gridAssets: (gameId, kind, gridGameId) =>
+      ipcRenderer.invoke(IpcChannel.artworkEditGridAssets, gameId, kind, gridGameId),
+    fromGrid: (gameId, kind, assetId) =>
+      ipcRenderer.invoke(IpcChannel.artworkEditFromGrid, gameId, kind, assetId),
+    save: (gameId, remove) => ipcRenderer.invoke(IpcChannel.artworkEditSave, gameId, remove)
   },
   settings: {
     get: () => ipcRenderer.invoke(IpcChannel.settingsGet),

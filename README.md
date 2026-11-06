@@ -13,7 +13,7 @@ A controller-first game launcher for Windows: your Steam library, your other PC 
 - **Other games.** Add a game with its name and executable, and confirm it on [IGDB](https://www.igdb.com) to fill in the rest (your own free Twitch app; descriptions come in English). Any store `.url` shortcut works too, which is how Epic Games Store and GOG games are added. Yuzu games only need the ROM. You can create your own origins, such as Nintendo 64.
 - **Library.** Search, filters by origin and install state, hidden games, games marked as beaten, and sorting by title, recent activity or playtime.
 - **Achievements.** Steam achievements by game, with rarity tiers and a platinum for completed games. A game is synced when it closes, and a manual action syncs the whole library.
-- **Artwork.** Downloaded from Steam, IGDB and, with your own key, SteamGridDB, and kept on disk. You can search SteamGridDB for any game; what you choose is never overwritten. Everything works with placeholders too.
+- **Artwork.** Downloaded from Steam, IGDB and, with your own key, SteamGridDB, and kept on disk. In "Editar artes" you can change each image of any game, from IGDB, a SteamGridDB gallery or a file, or remove it; what you choose is never overwritten. Everything works with placeholders too.
 - **Local and private.** One local user and an embedded SQLite database, with no account or server of its own. API keys are encrypted with Windows' own protection and never leave the main process.
 
 | | |

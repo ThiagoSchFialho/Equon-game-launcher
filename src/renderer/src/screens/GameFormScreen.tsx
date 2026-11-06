@@ -8,7 +8,6 @@ import type {
 } from '../../../shared/ipc/contract'
 import { formatArguments, isoToDisplayDate, parseArguments } from '../../../shared/text-format'
 import { currentSection, useNavigation } from '../app/navigation'
-import { Artwork } from '../components/Artwork'
 import { Button } from '../components/Button'
 import { ChoiceDialog, ConfirmDialog, type ChoiceItem } from '../components/Dialog'
 import { DatePickerDialog } from '../components/DatePickerDialog'
@@ -40,11 +39,10 @@ interface FormState {
   argumentsText: string
   workingDirectory: string | null
   requiredAge: string | null
-  backgroundPath: string | null
 }
 
 type TextField = 'title' | 'description' | 'developer' | 'playtime' | 'argumentsText'
-type FileField = 'rom' | 'executablePath' | 'workingDirectory' | 'backgroundPath'
+type FileField = 'rom' | 'executablePath' | 'workingDirectory'
 
 type Overlay =
   | { kind: 'text'; field: TextField }
@@ -68,8 +66,7 @@ const EMPTY: FormState = {
   executablePath: '',
   argumentsText: '',
   workingDirectory: null,
-  requiredAge: null,
-  backgroundPath: null
+  requiredAge: null
 }
 
 const AGES = ['L', '10', '12', '14', '16', '18'] as const
@@ -115,8 +112,7 @@ const TEXT_FIELDS: Record<
 const PICK_KIND: Record<FileField, PickKind> = {
   rom: 'rom',
   executablePath: 'executable',
-  workingDirectory: 'directory',
-  backgroundPath: 'image'
+  workingDirectory: 'directory'
 }
 
 /** Main reports errors by ManualGameForm field; this maps them to rows. */
@@ -131,8 +127,7 @@ const ERROR_ROW: Record<string, keyof FormState> = {
   executablePath: 'executablePath',
   romPath: 'rom',
   arguments: 'argumentsText',
-  workingDirectory: 'workingDirectory',
-  backgroundPath: 'backgroundPath'
+  workingDirectory: 'workingDirectory'
 }
 
 const fileName = (path: string | null): string | null =>
@@ -164,7 +159,6 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
   const [emulators, setEmulators] = useState<EmulatorInfo[] | null>(null)
   // Add form starts empty; the edit form waits for the stored values.
   const [initial, setInitial] = useState<FormState | null>(id === null ? EMPTY : null)
-  const [hasBackground, setHasBackground] = useState(false)
   const [form, setForm] = useState<FormState>(EMPTY)
   const [overlay, setOverlay] = useState<Overlay | null>(null)
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({})
@@ -207,12 +201,10 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
           executablePath: game.form.executablePath,
           argumentsText: formatArguments(game.form.arguments),
           workingDirectory: game.form.workingDirectory,
-          requiredAge: game.form.requiredAge,
-          backgroundPath: null
+          requiredAge: game.form.requiredAge
         }
         setInitial(state)
         setForm(state)
-        setHasBackground(game.hasBackground)
       },
       () => setLoadFailed(true)
     )
@@ -285,7 +277,6 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
       romPath: romGame ? values.rom : null,
       arguments: noExtras ? [] : parseArguments(values.argumentsText),
       workingDirectory: noExtras ? null : values.workingDirectory,
-      backgroundPath: values.backgroundPath,
       ...(chosen ? { genres: chosen.genres } : {})
     }
     setSaving(true)
@@ -381,7 +372,7 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
     <FormFrame>
       <div className="game-form">
         <h1 className="game-form__title">{id === null ? t.form.addTitle : t.form.editTitle}</h1>
-        <div className="game-form__body" data-adding={adding}>
+        <div className="game-form__body">
           <div className="game-form__fields">
             {adding ? (
               <>
@@ -495,49 +486,6 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
               </>
             )}
           </div>
-
-          {!adding && (
-            <aside className="game-form__image" data-invalid={Boolean(errors.backgroundPath)}>
-              {id !== null && hasBackground && !form.backgroundPath ? (
-                <Artwork
-                  gameId={id}
-                  kind="background"
-                  available={['background']}
-                  title={form.title}
-                  className="game-form__preview"
-                  loading="eager"
-                />
-              ) : (
-                <svg className="game-form__image-icon" viewBox="0 0 272 232" aria-hidden>
-                  <rect x="6" y="6" width="260" height="220" rx="30" />
-                  <circle cx="84" cy="74" r="20" />
-                  <path d="M30 220 L190 92 L262 150" />
-                </svg>
-              )}
-              <p className="game-form__image-title">{t.form.background.title}</p>
-              <p className="game-form__image-subtitle">
-                {form.backgroundPath
-                  ? t.form.background.selected(fileName(form.backgroundPath) ?? '')
-                  : id !== null && hasBackground
-                    ? t.form.background.current
-                    : t.form.background.subtitle}
-              </p>
-              <Button
-                id="form:background"
-                label={t.form.background.select}
-                onConfirm={() => setOverlay({ kind: 'file', field: 'backgroundPath' })}
-              >
-                {form.backgroundPath || hasBackground
-                  ? t.form.background.change
-                  : t.form.background.select}
-              </Button>
-              {errors.backgroundPath && (
-                <p className="form-row__error" role="alert">
-                  {errors.backgroundPath}
-                </p>
-              )}
-            </aside>
-          )}
         </div>
 
         <div className="game-form__actions">

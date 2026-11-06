@@ -1,3 +1,4 @@
+import type { ArtworkRepository } from '../../../src/core/application'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { NotFoundError } from '../../../src/core/application'
 import type {
@@ -6,6 +7,7 @@ import type {
   SessionRepository
 } from '../../../src/core/application'
 import {
+  createArtworkRepository,
   createGameRepository,
   createLaunchConfigRepository,
   createSessionRepository,
@@ -270,6 +272,53 @@ describe('SessionRepository', () => {
     expect(
       db.prepare('SELECT last_seen_at FROM play_sessions WHERE id = ?').get(session.id)
     ).toEqual({ last_seen_at: '2026-11-02T10:10:00Z' })
+  })
+})
+
+describe('migration 0011 and removed art', () => {
+  const art = (
+    kind: 'logo' | 'header',
+    userSelected: boolean
+  ): Parameters<ArtworkRepository['save']>[0] => ({
+    gameId: 1,
+    kind,
+    localPath: `1/${kind}.png`,
+    source: 'steam',
+    sourceUrl: null,
+    width: 10,
+    height: 10,
+    userSelected,
+    fetchedAt: null
+  })
+
+  it('keeps automatic art away until the user chooses again', () => {
+    const fresh = openDatabase(':memory:')
+    migrate(fresh, migrations)
+    fresh.prepare("INSERT INTO games (id, title, origin) VALUES (1, 'A', 'manual')").run()
+    const repository = createArtworkRepository(fresh)
+
+    repository.save(art('logo', false))
+    repository.remove(1, 'logo', '2026-11-05T12:00:00Z')
+    expect(repository.get(1, 'logo')).toBeNull()
+    expect(repository.listRemoved().get(1)).toEqual(['logo'])
+
+    expect(repository.save(art('logo', false))).toBe(false)
+    expect(repository.get(1, 'logo')).toBeNull()
+
+    expect(repository.save(art('logo', true))).toBe(true)
+    expect(repository.get(1, 'logo')).toMatchObject({ userSelected: true })
+    expect(repository.listRemoved().get(1)).toBeUndefined()
+
+    repository.remove(1, 'logo', '2026-11-05T12:00:00Z')
+    fresh.prepare('DELETE FROM games WHERE id = 1').run()
+    expect(fresh.prepare('SELECT COUNT(*) AS n FROM game_artwork_removed').get()).toEqual({ n: 0 })
+    expect(() =>
+      fresh
+        .prepare(
+          "INSERT INTO game_artwork_removed (game_id, kind, removed_at) VALUES (1, 'other', 'x')"
+        )
+        .run()
+    ).toThrow()
   })
 })
 

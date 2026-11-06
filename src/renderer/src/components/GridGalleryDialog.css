@@ -1,0 +1,79 @@
+.art-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+}
+
+.art-gallery__grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-3);
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  /* Room for the focus ring inside the scroll area. */
+  padding: var(--space-2);
+}
+
+.art-gallery__grid[data-kind='logo'] {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.art-gallery__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-card);
+  outline: var(--focus-ring-width) solid transparent;
+  transition: outline-color var(--motion-focus) var(--motion-easing);
+}
+
+.art-gallery__item[data-focused='true'] {
+  outline-color: var(--color-focus);
+}
+
+.art-gallery__item[aria-disabled='true'] {
+  opacity: 0.5;
+}
+
+.art-gallery__image {
+  display: block;
+  width: 100%;
+  background: var(--color-surface-raised);
+  border-radius: var(--radius-card);
+  object-fit: contain;
+}
+
+.art-gallery__item[data-kind='cover_portrait'] .art-gallery__image {
+  aspect-ratio: 3 / 4;
+  /* As the Home card shows it. */
+  object-fit: fill;
+}
+
+.art-gallery__item[data-kind='cover_square'] .art-gallery__image {
+  aspect-ratio: 1 / 1;
+}
+
+.art-gallery__item[data-kind='logo'] .art-gallery__image {
+  aspect-ratio: 16 / 9;
+}
+
+.art-gallery__size {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-meta);
+  text-align: center;
+}
+
+.art-gallery__close {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: center;
+}
+
+.art-gallery__close .button {
+  height: 2.75rem;
+  padding: 0 var(--space-5);
+  font-size: var(--font-size-body);
+}

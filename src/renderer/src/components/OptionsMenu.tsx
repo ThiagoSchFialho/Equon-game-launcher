@@ -14,8 +14,7 @@ export function OptionsMenu({
   onClose,
   onAchievements,
   onEdit,
-  onArtwork,
-  onIgdbArtwork,
+  onEditArtwork,
   onRemove
 }: {
   title: string
@@ -26,10 +25,7 @@ export function OptionsMenu({
   onClose: () => void
   onAchievements: () => void
   onEdit?: () => void
-  /** "Buscar artes no SteamGridDB" (manual games). */
-  onArtwork?: () => void
-  /** "Buscar artes no IGDB". */
-  onIgdbArtwork?: () => void
+  onEditArtwork?: () => void
   onRemove?: () => void
 }): React.JSX.Element {
   const items: ChoiceItem[] = [
@@ -45,9 +41,8 @@ export function OptionsMenu({
       onConfirm: () => onFlags({ hidden: !hidden })
     },
     ...(onEdit ? [{ id: 'edit', label: t.menu.edit, onConfirm: onEdit }] : []),
-    ...(onArtwork ? [{ id: 'artwork', label: t.menu.artwork, onConfirm: onArtwork }] : []),
-    ...(onIgdbArtwork
-      ? [{ id: 'igdb-artwork', label: t.menu.igdbArtwork, onConfirm: onIgdbArtwork }]
+    ...(onEditArtwork
+      ? [{ id: 'edit-artwork', label: t.menu.editArtwork, onConfirm: onEditArtwork }]
       : []),
     { id: 'close', label: t.menu.close, onConfirm: onClose },
     ...(onRemove

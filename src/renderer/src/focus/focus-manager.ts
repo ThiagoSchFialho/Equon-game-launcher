@@ -38,7 +38,7 @@ interface HandlerEntry {
   modal: boolean
 }
 
-const prefersReducedMotion = (): boolean =>
+export const prefersReducedMotion = (): boolean =>
   typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
 
 const rectOf = (el: HTMLElement): Rect => {

@@ -53,6 +53,44 @@ export function createArtworkRepository(db: SqliteDatabase): ArtworkRepository {
       fetched_at    = excluded.fetched_at
     WHERE game_artwork.user_selected = 0 OR excluded.user_selected = 1`)
 
+  const selectRemoved = db.prepare<[], { game_id: number; kind: ArtworkKind }>(
+    'SELECT game_id, kind FROM game_artwork_removed ORDER BY game_id, kind'
+  )
+  const isRemoved = db.prepare<[number, string], { found: number }>(
+    'SELECT 1 AS found FROM game_artwork_removed WHERE game_id = ? AND kind = ?'
+  )
+  const clearRemoved = db.prepare<[number, string]>(
+    'DELETE FROM game_artwork_removed WHERE game_id = ? AND kind = ?'
+  )
+  const deleteOne = db.prepare<[number, string]>(
+    'DELETE FROM game_artwork WHERE game_id = ? AND kind = ?'
+  )
+  const markRemoved = db.prepare<[number, string, string]>(
+    'INSERT OR REPLACE INTO game_artwork_removed (game_id, kind, removed_at) VALUES (?, ?, ?)'
+  )
+
+  const saveArtwork = db.transaction((artwork: GameArtwork): boolean => {
+    if (artwork.userSelected) clearRemoved.run(artwork.gameId, artwork.kind)
+    else if (isRemoved.get(artwork.gameId, artwork.kind)) return false
+    return (
+      upsert.run({
+        gameId: artwork.gameId,
+        kind: artwork.kind,
+        localPath: artwork.localPath,
+        source: artwork.source,
+        sourceUrl: artwork.sourceUrl,
+        width: artwork.width,
+        height: artwork.height,
+        userSelected: toBit(artwork.userSelected),
+        fetchedAt: artwork.fetchedAt
+      }).changes > 0
+    )
+  })
+  const removeArtwork = db.transaction((gameId: number, kind: ArtworkKind, removedAt: string) => {
+    deleteOne.run(gameId, kind)
+    markRemoved.run(gameId, kind, removedAt)
+  })
+
   return {
     get: (gameId, kind) => {
       const row = selectOne.get(gameId, kind)
@@ -77,17 +115,15 @@ export function createArtworkRepository(db: SqliteDatabase): ArtworkRepository {
       return byGame
     },
 
-    save: (artwork) =>
-      upsert.run({
-        gameId: artwork.gameId,
-        kind: artwork.kind,
-        localPath: artwork.localPath,
-        source: artwork.source,
-        sourceUrl: artwork.sourceUrl,
-        width: artwork.width,
-        height: artwork.height,
-        userSelected: toBit(artwork.userSelected),
-        fetchedAt: artwork.fetchedAt
-      }).changes > 0
+    listRemoved: () => {
+      const byGame = new Map<number, ArtworkKind[]>()
+      for (const { game_id, kind } of selectRemoved.all()) {
+        byGame.set(game_id, [...(byGame.get(game_id) ?? []), kind])
+      }
+      return byGame
+    },
+
+    save: (artwork) => saveArtwork(artwork),
+    remove: (gameId, kind, removedAt) => removeArtwork(gameId, kind, removedAt)
   }
 }

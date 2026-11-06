@@ -230,8 +230,7 @@ describe('add game form', () => {
       executablePath: 'C:\\Games\\hq.exe',
       romPath: null,
       arguments: [],
-      workingDirectory: null,
-      backgroundPath: null
+      workingDirectory: null
     })
     // Opens the new game.
     expect(await screen.findByText('Sobre o jogo')).toBeTruthy()
@@ -503,7 +502,6 @@ describe('add game form', () => {
 describe('edit game form', () => {
   const editable: Awaited<ReturnType<EquonApi['games']['getEditable']>> = {
     id: 1,
-    hasBackground: false,
     form: {
       title: 'Mine',
       description: 'My own words.',
@@ -515,8 +513,7 @@ describe('edit game form', () => {
       executablePath: 'C:\\Games\\m.exe',
       romPath: null,
       arguments: [],
-      workingDirectory: null,
-      backgroundPath: null
+      workingDirectory: null
     }
   }
   const openEdit = async (): Promise<void> => {
@@ -527,7 +524,7 @@ describe('edit game form', () => {
     await screen.findByRole('heading', { name: 'Editar jogo' })
   }
 
-  it('offers every field, the image and IGDB', async () => {
+  it('offers every field and IGDB', async () => {
     installFakeApi([summary(1, 'Mine')], { games: { getEditable: async () => editable } })
     await openEdit()
     for (const label of [
@@ -541,7 +538,8 @@ describe('edit game form', () => {
     ]) {
       expect(await screen.findByLabelText(label)).toBeTruthy()
     }
-    expect(screen.getByText('Selecionar imagem')).toBeTruthy()
+    // Art has its own screen.
+    expect(screen.queryByText('Selecionar imagem')).toBeNull()
   })
 
   it('only fills what is empty from IGDB', async () => {
@@ -706,124 +704,5 @@ describe('remove game', () => {
     await screen.findByRole('dialog', { name: 'Portal 2' })
     expect(screen.queryByText('Editar jogo')).toBeNull()
     expect(screen.queryByText('Remover jogo')).toBeNull()
-  })
-})
-
-describe('Buscar artes no IGDB', () => {
-  const search = (): Mock<EquonApi['igdb']['search']> =>
-    vi.fn<EquonApi['igdb']['search']>(async () => ({
-      ok: true,
-      data: [{ id: 7, name: 'Tidebound', year: 2021, developer: 'Team' }]
-    }))
-
-  it('is offered for Steam games too, and searches without the trademark signs', async () => {
-    const find = search()
-    installFakeApi([summary(1, 'Tidebound® Saga™', { origin: 'steam', originName: 'Steam' })], {
-      igdb: { search: find }
-    })
-    render(<App />)
-    await screen.findByText('12h 22m')
-    press('m')
-    await clickText('Buscar artes no IGDB')
-    await waitFor(() => expect(find).toHaveBeenCalledWith('Tidebound Saga'))
-  })
-
-  it('replaces the art with the chosen game and reports it', async () => {
-    const replaceArtwork = vi.fn<EquonApi['igdb']['replaceArtwork']>(async () => ({
-      ok: true,
-      data: ['cover_portrait', 'background']
-    }))
-    installFakeApi([summary(1, 'Tidebound')], { igdb: { search: search(), replaceArtwork } })
-    render(<App />)
-    await screen.findByText('12h 22m')
-    press('m')
-    await clickText('Buscar artes no IGDB')
-    expect(await screen.findByText('2021 · Team')).toBeTruthy()
-    const dialog = screen.getByRole('dialog', { name: 'Artes do IGDB' })
-    expect(dialog.querySelector('[data-focused="true"]')?.textContent).toContain('Tidebound')
-    act(() => (screen.getByText('2021 · Team').closest('button') as HTMLElement).click())
-    expect(replaceArtwork).toHaveBeenCalledWith(1, 7)
-    // Done: it closes by itself.
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-  })
-
-  it('is also on the game page', async () => {
-    const replaceArtwork = vi.fn<EquonApi['igdb']['replaceArtwork']>(async () => ({
-      ok: true,
-      data: ['logo']
-    }))
-    const game = summary(1, 'Tidebound')
-    installFakeApi([game], {
-      games: { get: async () => details(game) },
-      igdb: { search: search(), replaceArtwork }
-    })
-    render(<App />)
-    await screen.findByText('12h 22m')
-    press('Enter')
-    await screen.findByLabelText('Jogar')
-    press('m')
-    await clickText('Buscar artes no IGDB')
-    await clickText('2021 · Team')
-    await waitFor(() => expect(replaceArtwork).toHaveBeenCalledWith(1, 7))
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-    expect(await screen.findByLabelText('Jogar')).toBeTruthy()
-  })
-
-  it.each([
-    ['not-configured', 'Configure o Client ID e o Client Secret do IGDB em Configurações.'],
-    ['network', 'Sem conexão com o IGDB. Tente mais tarde.']
-  ])('explains a failed search (%s)', async (code, message) => {
-    installFakeApi([summary(1, 'Tidebound')], {
-      igdb: { search: async () => ({ ok: false, error: { code } }) }
-    })
-    render(<App />)
-    await screen.findByText('12h 22m')
-    press('m')
-    await clickText('Buscar artes no IGDB')
-    expect(await screen.findByText(message)).toBeTruthy()
-  })
-
-  it('shows its message inside the panel, and a small close button', async () => {
-    installFakeApi([summary(1, 'Tidebound')], { igdb: { search: search() } })
-    render(<App />)
-    await screen.findByText('12h 22m')
-    press('m')
-    await clickText('Buscar artes no IGDB')
-    await screen.findByText('2021 · Team')
-    const panel = document.querySelector('.dialog__panel') as HTMLElement
-    expect(panel.querySelector('.dialog__message')?.textContent).toContain('Escolha o jogo certo')
-    expect(screen.getByText('Fechar').closest('button')?.getAttribute('data-compact')).toBe('true')
-  })
-
-  it('stays closed when closed by hand while downloading', async () => {
-    let finish: (value: Awaited<ReturnType<EquonApi['igdb']['replaceArtwork']>>) => void = () => {}
-    const replaceArtwork = vi.fn<EquonApi['igdb']['replaceArtwork']>(
-      () =>
-        new Promise((resolve) => {
-          finish = resolve
-        })
-    )
-    installFakeApi([summary(1, 'Tidebound')], { igdb: { search: search(), replaceArtwork } })
-    render(<App />)
-    await screen.findByText('12h 22m')
-    press('m')
-    await clickText('Buscar artes no IGDB')
-    await clickText('2021 · Team')
-    await clickText('Fechar')
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-    press('m')
-    expect(await screen.findByRole('dialog', { name: 'Tidebound' })).toBeTruthy()
-    await act(async () => finish({ ok: true, data: ['logo'] }))
-    expect(screen.getByRole('dialog', { name: 'Tidebound' })).toBeTruthy()
-  })
-
-  it('says so when the chosen game has no art that fits', async () => {
-    installFakeApi([summary(1, 'Tidebound')], { igdb: { search: search() } })
-    render(<App />)
-    await screen.findByText('12h 22m')
-    press('m')
-    await clickText('Buscar artes no IGDB')
-    await clickText('2021 · Team')
-    expect(await screen.findByText('O IGDB não tem artes que sirvam para este jogo.')).toBeTruthy()
   })
 })

@@ -147,6 +147,13 @@ export function importArtwork(options: {
   return writeArtwork(options.cacheDir, options.gameId, options.kind, prepared)
 }
 
+/** Deletes one kind of a game's art, in whichever format it was stored. */
+export function removeArtworkFile(cacheDir: string, gameId: number, kind: ArtworkKind): void {
+  for (const type of ['png', 'jpg', 'webp']) {
+    rmSync(join(cacheDir, String(gameId), `${kind}.${type}`), { force: true })
+  }
+}
+
 /** Deletes a game's cached artwork folder (after the game row is removed). */
 export function removeGameArtwork(cacheDir: string, gameId: number): void {
   rmSync(join(cacheDir, String(gameId)), { recursive: true, force: true })

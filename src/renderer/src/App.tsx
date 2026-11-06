@@ -6,6 +6,7 @@ import {
   settingsRoute,
   formRoute,
   gameAchievementsRoute,
+  gameArtworkRoute,
   previousRoute,
   stepSection,
   type Navigation,
@@ -27,6 +28,7 @@ import { GameAchievementsScreen } from './screens/GameAchievementsScreen'
 import { GameDetailsScreen } from './screens/GameDetailsScreen'
 import { GameFormScreen } from './screens/GameFormScreen'
 import { HomeScreen } from './screens/HomeScreen'
+import { GameArtworkScreen } from './screens/GameArtworkScreen'
 import { LibraryScreen } from './screens/LibraryScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import './screens/Screen.css'
@@ -43,6 +45,8 @@ function CurrentScreen({ route }: { route: Route }): React.JSX.Element {
       return <GameDetailsScreen key={route.id} id={route.id} from={route.from} />
     case 'gameForm':
       return <GameFormScreen key={route.id ?? 'new'} id={route.id} />
+    case 'gameArtwork':
+      return <GameArtworkScreen key={route.id} id={route.id} />
     case 'gameAchievements':
       return <GameAchievementsScreen key={route.id} id={route.id} />
     case 'settings':
@@ -102,6 +106,10 @@ function App(): React.JSX.Element {
       openGameAchievements: (id) => {
         manager.forgetFocus(`screen:game-achievements:${id}`)
         setRoute((r) => gameAchievementsRoute(r, id))
+      },
+      openGameArtwork: (id) => {
+        manager.forgetFocus('screen:game-artwork')
+        setRoute((r) => gameArtworkRoute(r, id))
       },
       back: () => setRoute(previousRoute),
       // Sections only change from the section screens themselves.

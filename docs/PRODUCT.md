@@ -309,9 +309,11 @@ limitações, condições de teste e método de inicialização suportado.
     nome ou salvar sem dados do IGDB.
 -   Ao editar um jogo, o IGDB só preenche campos vazios e nunca troca artes
     que o jogo já tem.
--   O menu de opções de qualquer jogo tem "Buscar artes no IGDB": o usuário
-    confirma o jogo, e a capa vertical, o logotipo e a imagem de fundo dele
-    substituem os atuais. O que o IGDB não tiver continua como está.
+-   O menu de opções de qualquer jogo tem "Editar artes", com a capa
+    vertical, a capa quadrada, o logotipo e a imagem de fundo. Cada arte pode
+    vir do IGDB (menos a capa quadrada), de uma galeria do SteamGridDB (menos
+    a imagem de fundo) ou de um arquivo do PC, e pode ser removida. Nada muda
+    até o usuário salvar, e uma arte removida não volta sozinha.
 -   Os metadados da Steam (título, descrição, desenvolvedor, data,
     classificação indicativa e gêneros) e as artes são obtidos **apenas
     quando o jogo é descoberto ou adicionado**; não há atualização

@@ -8,6 +8,7 @@ import achievementIconLocked from './0007_achievement_icon_locked.sql?raw'
 import artworkCheckedAt from './0008_artwork_checked_at.sql?raw'
 import igdbCredentials from './0009_igdb_credentials.sql?raw'
 import artworkSourceIgdb from './0010_artwork_source_igdb.sql?raw'
+import artworkRemoved from './0011_artwork_removed.sql?raw'
 
 export interface Migration {
   version: number
@@ -26,5 +27,6 @@ export const migrations: readonly Migration[] = [
   { version: 7, name: '0007_achievement_icon_locked', sql: achievementIconLocked },
   { version: 8, name: '0008_artwork_checked_at', sql: artworkCheckedAt },
   { version: 9, name: '0009_igdb_credentials', sql: igdbCredentials },
-  { version: 10, name: '0010_artwork_source_igdb', sql: artworkSourceIgdb }
+  { version: 10, name: '0010_artwork_source_igdb', sql: artworkSourceIgdb },
+  { version: 11, name: '0011_artwork_removed', sql: artworkRemoved }
 ]

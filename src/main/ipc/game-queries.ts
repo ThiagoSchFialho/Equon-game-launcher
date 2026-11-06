@@ -138,9 +138,7 @@ export function getEditableGame(deps: GameQueryDeps, id: number): EditableGame |
       executablePath: config?.executablePath ?? '',
       romPath: config?.romPath ?? null,
       arguments: config?.arguments ?? [],
-      workingDirectory: config?.workingDirectory ?? null,
-      backgroundPath: null
-    },
-    hasBackground: deps.artwork.get(id, 'background') !== null
+      workingDirectory: config?.workingDirectory ?? null
+    }
   }
 }

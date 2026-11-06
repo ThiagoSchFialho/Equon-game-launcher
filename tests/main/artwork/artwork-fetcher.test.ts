@@ -397,8 +397,7 @@ describe('artwork fetcher: generated store backgrounds', () => {
 })
 
 describe('artwork fetcher: manual games', () => {
-  it('searches and applies the chosen SteamGridDB game as user-selected art', async () => {
-    const id = games().create({ origin: 'manual', title: 'Hollow Quest' }).id
+  it('searches SteamGridDB by name', async () => {
     expect(await fetcher.search('Hollow')).toEqual({
       ok: false,
       error: { code: 'not-configured' }
@@ -412,71 +411,29 @@ describe('artwork fetcher: manual games', () => {
       ok: true,
       data: [{ id: 77, name: 'Hollow Quest', year: 2020 }]
     })
-
-    json.set('/grids/game/77?dimensions=512x512', {
-      status: 200,
-      json: { success: true, data: [{ url: 'https://cdn2.steamgriddb.com/sq.png', score: 5 }] }
-    })
-    json.set('/grids/game/77?dimensions=460x215', {
-      status: 200,
-      json: { success: true, data: [{ url: 'https://cdn2.steamgriddb.com/hd.png', score: 5 }] }
-    })
-    image('https://cdn2.steamgriddb.com/sq.png', 1024, 1024)
-    image('https://cdn2.steamgriddb.com/hd.png', 920, 430)
-
-    expect(await fetcher.applySteamGridDb(id, 77)).toEqual({
-      ok: true,
-      data: ['cover_square', 'header']
-    })
-    expect(artwork().get(id, 'cover_square')).toMatchObject({ userSelected: true })
   })
+})
 
-  it('works for Steam games too, and no later sync overwrites the choice', async () => {
-    const steam = games().upsertSteamGame({ steamAppId: 620, title: 'Portal 2' }).id
-    steamArt(620, 'https://x.steamstatic.com/h.jpg', '')
+describe('artwork fetcher: art the user removed', () => {
+  it('does not bring it back, not even when asked to try again', async () => {
+    const id = games().upsertSteamGame({ steamAppId: 2379780, title: 'Balatro' }).id
+    steamArt(2379780, 'https://x.steamstatic.com/h.jpg', 'https://x.steamstatic.com/bg.jpg')
     image('https://x.steamstatic.com/h.jpg', 460, 215)
-    await fetcher.fetchMissing()
-    expect(artwork().get(steam, 'header')).toMatchObject({ source: 'steam', userSelected: false })
-
-    gridKey = KEY
-    json.set('/grids/game/77?dimensions=512x512', {
-      status: 200,
-      json: { success: true, data: [{ url: 'https://cdn2.steamgriddb.com/sq.png', score: 5 }] }
-    })
-    json.set('/grids/game/77?dimensions=460x215', {
-      status: 200,
-      json: { success: true, data: [{ url: 'https://cdn2.steamgriddb.com/hd.png', score: 5 }] }
-    })
-    image('https://cdn2.steamgriddb.com/sq.png', 1024, 1024)
-    image('https://cdn2.steamgriddb.com/hd.png', 920, 430)
-    expect(await fetcher.applySteamGridDb(steam, 77)).toEqual({
-      ok: true,
-      data: ['cover_square', 'header']
-    })
-    const chosen = {
-      source: 'steamgriddb',
-      userSelected: true,
-      sourceUrl: 'https://cdn2.steamgriddb.com/hd.png'
-    }
-    expect(artwork().get(steam, 'header')).toMatchObject(chosen)
+    image('https://x.steamstatic.com/bg.jpg', 1438, 810)
+    artwork().remove(id, 'background', '2026-11-05T12:00:00Z')
 
     await fetcher.fetchMissing({ retry: true })
-    expect(artwork().get(steam, 'header')).toMatchObject(chosen)
-    expect(artwork().get(steam, 'cover_square')).toMatchObject({ userSelected: true })
+
+    expect(artwork().get(id, 'header')).not.toBeNull()
+    expect(artwork().get(id, 'background')).toBeNull()
   })
 
-  it('refuses a game that does not exist and reports a bad key', async () => {
-    gridKey = KEY
-    expect(await fetcher.applySteamGridDb(999, 1)).toEqual({
-      ok: false,
-      error: { code: 'not-found' }
-    })
-    const manual = games().create({ origin: 'manual', title: 'X' }).id
-    json.set('steamgriddb.com', { status: 401, json: { success: false } })
-    expect(await fetcher.applySteamGridDb(manual, 1)).toEqual({
-      ok: false,
-      error: { code: 'invalid-key' }
-    })
+  it('asks for nothing when all that is missing was removed', async () => {
+    const id = games().upsertSteamGame({ steamAppId: 2379780, title: 'Balatro' }).id
+    artwork().remove(id, 'background', '2026-11-05T12:00:00Z')
+    artwork().remove(id, 'header', '2026-11-05T12:00:00Z')
+    await fetcher.fetchMissing({ retry: true })
+    expect(requested).toEqual([])
   })
 })
 
@@ -782,74 +739,5 @@ describe('artwork fetcher: Steam games with IGDB', () => {
     await fetcher.fetchMissing()
     expect(igdbAsked).toEqual([])
     expect(sources(id)).toMatchObject({ portrait: 'steamgriddb', background: 'steam' })
-  })
-})
-
-describe('artwork fetcher: the user searches IGDB for any game', () => {
-  const IGDB = 'https://images.igdb.com/igdb/image/upload/t_1080p'
-  const data: IgdbGameData = {
-    name: 'Balatro',
-    summary: null,
-    releaseDate: null,
-    developer: null,
-    genres: [],
-    requiredAge: null,
-    cover: { imageId: 'cov', width: 810, height: 1080 },
-    artworks: [{ imageId: 'art', width: 1920, height: 1080 }],
-    screenshots: [],
-    logos: []
-  }
-  const chosen = (id: number, kind: 'background' | 'cover_square'): void => {
-    artwork().save({
-      gameId: id,
-      kind,
-      localPath: `${id}/${kind}.png`,
-      source: 'user',
-      sourceUrl: null,
-      width: 1920,
-      height: 1080,
-      userSelected: true,
-      fetchedAt: null
-    })
-  }
-
-  beforeEach(() => {
-    image(`${IGDB}/cov.jpg`, 810, 1080)
-    image(`${IGDB}/art.jpg`, 1920, 1080)
-  })
-
-  it('replaces what the chosen game has, on a Steam game, and leaves the rest', async () => {
-    const id = games().upsertSteamGame({ steamAppId: 620, title: 'Balatro' }).id
-    chosen(id, 'background')
-    chosen(id, 'cover_square')
-    igdbAnswer = { ok: true, data }
-    expect(await fetcher.replaceWithIgdb(id, 7)).toEqual({
-      ok: true,
-      data: ['cover_portrait', 'background']
-    })
-    expect(artwork().get(id, 'background')).toMatchObject({ source: 'igdb', userSelected: true })
-    expect(artwork().get(id, 'cover_square')).toMatchObject({ source: 'user' })
-    // IGDB has no logo here: nothing to save, nothing asked of anyone else.
-    expect(artwork().get(id, 'logo')).toBeNull()
-    expect(requested).toEqual([])
-  })
-
-  it('reports failures and changes nothing', async () => {
-    const id = games().create({ origin: 'manual', title: 'A' }).id
-    igdbAnswer = { ok: false, error: 'not-configured' }
-    expect(await fetcher.replaceWithIgdb(id, 7)).toEqual({
-      ok: false,
-      error: { code: 'not-configured' }
-    })
-    igdbAnswer = { ok: true, data: null }
-    expect(await fetcher.replaceWithIgdb(id, 7)).toEqual({
-      ok: false,
-      error: { code: 'not-found' }
-    })
-    expect(await fetcher.replaceWithIgdb(404, 7)).toEqual({
-      ok: false,
-      error: { code: 'not-found' }
-    })
-    expect(artwork().get(id, 'cover_portrait')).toBeNull()
   })
 })

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import {
+  ARTWORK_EDIT_KINDS,
   ARTWORK_KINDS,
   type AchievementsOverview,
   type AchievementSyncStatus,
@@ -42,8 +43,7 @@ export const manualGameFormSchema = z.strictObject({
   romPath: path.nullable(),
   arguments: z.array(text).max(64),
   workingDirectory: path.nullable(),
-  genres: z.array(z.string().min(1).max(100)).max(32).optional(),
-  backgroundPath: path.nullable()
+  genres: z.array(z.string().min(1).max(100)).max(32).optional()
 }) satisfies z.ZodType<ManualGameForm>
 
 export const gamesCreateArgs = z.tuple([manualGameFormSchema])
@@ -211,7 +211,21 @@ export const steamGridDbGameListSchema = z.array(
   })
 )
 export const artworkSearchArgs = z.tuple([z.string().max(200)])
-export const artworkApplyArgs = z.tuple([id, z.number().int().positive()])
+const artworkEditKind = z.enum(ARTWORK_EDIT_KINDS)
+const externalId = z.number().int().positive()
+export const artworkEditBeginArgs = z.tuple([id])
+export const artworkEditFromFileArgs = z.tuple([id, artworkEditKind, path])
+export const artworkEditFromExternalArgs = z.tuple([id, artworkEditKind, externalId.nullable()])
+export const artworkEditFromGridArgs = z.tuple([id, artworkEditKind, externalId])
+export const artworkEditSaveArgs = z.tuple([id, z.array(artworkEditKind).max(4)])
+export const artworkDraftSchema = z.strictObject({ version: z.number().int().positive() })
+export const gridAssetListSchema = z.array(
+  z.strictObject({
+    id: externalId,
+    width: z.number().int().positive(),
+    height: z.number().int().positive()
+  })
+)
 export const artworkKindListSchema = z.array(z.enum(ARTWORK_KINDS))
 
 export const settingsTestConnectionArgs = z.tuple([z.enum(['steam', 'steamgriddb', 'igdb'])])
@@ -303,8 +317,7 @@ export const editableGameSchema = z
       ...manualGameFormSchema.shape,
       // Stored paths may be invalid by now; the form shows them for correction.
       executablePath: z.string()
-    }),
-    hasBackground: z.boolean()
+    })
   })
   .nullable() satisfies z.ZodType<EditableGame | null>
 

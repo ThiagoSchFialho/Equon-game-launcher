@@ -183,14 +183,19 @@ export interface ArtworkRepository {
   get(gameId: number, kind: ArtworkKind): GameArtwork | null
   /** Kinds with cached artwork, per game id. */
   listKinds(): Map<number, ArtworkKind[]>
+  /** Kinds the user removed, per game id: automatic downloads skip them. */
+  listRemoved(): Map<number, ArtworkKind[]>
   /** When each game's art last changed, per game id. */
   listVersions(): Map<number, string>
   /**
    * Inserts or replaces the artwork of (game, kind). An automatic save
-   * (userSelected = false) never replaces art the user selected.
-   * Returns false when the existing user-selected art was kept.
+   * (userSelected = false) never replaces art the user selected, nor brings back
+   * art the user removed; a user selection clears that removal.
+   * Returns false when nothing was saved for those reasons.
    */
   save(artwork: GameArtwork): boolean
+  /** The user removed this art: forgets it and keeps automatic downloads away from it. */
+  remove(gameId: number, kind: ArtworkKind, removedAt: string): void
 }
 
 export interface Clock {

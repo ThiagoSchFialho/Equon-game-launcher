@@ -13,14 +13,10 @@
 
 .game-form__body {
   display: grid;
-  grid-template-columns: 1fr 42.75rem;
+  grid-template-columns: minmax(0, 60rem);
   gap: var(--space-10);
   flex: 1;
   min-height: 0;
-}
-
-.game-form__body[data-adding='true'] {
-  grid-template-columns: minmax(0, 60rem);
 }
 
 .game-form__fields {
@@ -34,57 +30,6 @@
   padding: var(--space-2);
   margin: calc(var(--space-2) * -1);
   scroll-padding: var(--space-4);
-}
-
-.game-form__image {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-8);
-  background: var(--color-surface);
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-panel);
-  text-align: center;
-  align-self: start;
-  min-height: 42.75rem;
-}
-
-.game-form__image[data-invalid='true'] {
-  border-color: var(--color-danger);
-}
-
-.game-form__image-icon {
-  width: 17rem;
-  height: 14.5rem;
-  margin-bottom: var(--space-6);
-  fill: none;
-  stroke: var(--color-surface-raised);
-  stroke-width: 10;
-  stroke-linejoin: round;
-}
-
-.game-form__preview {
-  width: 100%;
-  margin-bottom: var(--space-6);
-  border-radius: var(--radius-card);
-}
-
-.game-form__image-title {
-  margin: 0;
-  font-size: var(--font-size-card-title);
-  font-weight: var(--font-weight-bold);
-}
-
-.game-form__image-subtitle {
-  margin: 0 0 var(--space-8);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-body);
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .game-form__actions {

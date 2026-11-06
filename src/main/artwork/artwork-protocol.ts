@@ -4,7 +4,13 @@ import type { AchievementRepository, ArtworkRepository } from '../../core/applic
 import { achievementIconPath } from '../../infrastructure/artwork/achievement-icons'
 import { ARTWORK_SCHEME } from '../../shared/ipc/contract'
 import { resolveInside } from '../security/paths'
-import { parseAchievementIconUrl, parseArtworkUrl } from './artwork-url'
+import type { ArtworkEditor, ServedImage } from './artwork-editor'
+import {
+  parseAchievementIconUrl,
+  parseArtworkUrl,
+  parseDraftArtworkUrl,
+  parseGridThumbnailUrl
+} from './artwork-url'
 
 /** Must run before the app is ready. */
 export function registerArtworkScheme(): void {
@@ -17,10 +23,20 @@ export function registerArtworkScheme(): void {
 export function handleArtworkProtocol(
   artwork: ArtworkRepository,
   achievements: AchievementRepository,
-  cacheDir: string
+  cacheDir: string,
+  editor: Pick<ArtworkEditor, 'draftImage' | 'gridThumbnail'>
 ): void {
+  const served = (image: ServedImage | null): Response =>
+    image
+      ? new Response(new Uint8Array(image.bytes), { headers: { 'content-type': image.mime } })
+      : new Response(null, { status: 404 })
+
   protocol.handle(ARTWORK_SCHEME, async (request) => {
     if (request.method !== 'GET') return new Response(null, { status: 405 })
+    const draftKind = parseDraftArtworkUrl(request.url)
+    if (draftKind !== null) return served(editor.draftImage(draftKind))
+    const assetId = parseGridThumbnailUrl(request.url)
+    if (assetId !== null) return served(await editor.gridThumbnail(assetId))
     const iconTarget = parseAchievementIconUrl(request.url)
     if (iconTarget !== null) {
       const achievement = achievements.getById(iconTarget.id)

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from '../../src/renderer/src/App'
 import type { EquonApi } from '../../src/shared/ipc/contract'
@@ -386,7 +386,7 @@ describe('IGDB connection', () => {
   })
 })
 
-describe('SteamGridDB artwork', () => {
+describe('replaced artwork', () => {
   it('shows the new image when the art was replaced, with no restart', async () => {
     const steam = summary(1, 'Tidebound', { artwork: ['cover_portrait'], artworkVersion: 'one' })
     const list = vi.fn<EquonApi['games']['list']>(async () => [steam])
@@ -408,59 +408,5 @@ describe('SteamGridDB artwork', () => {
     list.mockResolvedValue([{ ...steam, artworkVersion: 'two' }])
     act(() => changed())
     await waitFor(() => expect(source()).toBe('equon-art://game/1/cover_portrait?v=two'))
-  })
-
-  it('is offered for Steam games too, which still cannot be edited or removed', async () => {
-    const search = vi.fn<EquonApi['artwork']['search']>(async () => ({ ok: true, data: [] }))
-    installFakeApi([summary(1, 'Tidebound', { origin: 'steam', originName: 'Steam' })], {
-      artwork: { search }
-    })
-    render(<App />)
-    await screen.findByText('12h 22m')
-    press('m')
-    expect(await screen.findByText('Buscar artes no SteamGridDB')).toBeTruthy()
-    expect(screen.queryByText(/^Editar/)).toBeNull()
-    expect(screen.queryByText(/^Remover/)).toBeNull()
-    await clickText('Buscar artes no SteamGridDB')
-    expect(search).toHaveBeenCalledWith('Tidebound')
-  })
-
-  it('searches by title, applies the chosen game and reports the result', async () => {
-    const search = vi.fn<EquonApi['artwork']['search']>(async () => ({
-      ok: true,
-      data: [{ id: 77, name: 'Tidebound', year: 2021 }]
-    }))
-    const applySteamGridDb = vi.fn<EquonApi['artwork']['applySteamGridDb']>(async () => ({
-      ok: true,
-      data: ['cover_square', 'cover_portrait', 'logo']
-    }))
-    installFakeApi([summary(1, 'Tidebound')], { artwork: { search, applySteamGridDb } })
-    render(<App />)
-    await screen.findByText('12h 22m')
-    press('m')
-    await clickText('Buscar artes no SteamGridDB')
-    expect(search).toHaveBeenCalledWith('Tidebound')
-    expect(await screen.findByText('2021')).toBeTruthy()
-    const dialog = screen.getByRole('dialog', { name: 'Artes do SteamGridDB' })
-    expect(dialog.querySelector('[data-focused="true"]')?.textContent).toContain('Tidebound')
-    // Game names can be long: this list uses the wide dialog.
-    expect(dialog.className).toContain('dialog--wide')
-    act(() => (within(dialog).getByText('Tidebound').closest('button') as HTMLElement).click())
-    expect(applySteamGridDb).toHaveBeenCalledWith(1, 77)
-    // Done: it closes by itself.
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-  })
-
-  it('explains a missing key', async () => {
-    installFakeApi([summary(1, 'Tidebound')], {
-      artwork: { search: async () => ({ ok: false, error: { code: 'not-configured' } }) }
-    })
-    render(<App />)
-    await screen.findByText('12h 22m')
-    press('m')
-    await clickText('Buscar artes no SteamGridDB')
-    expect(
-      await screen.findByText('Configure a chave do SteamGridDB em Configurações.')
-    ).toBeTruthy()
   })
 })

@@ -8,6 +8,7 @@ import type {
   SystemInfo
 } from '../../../shared/ipc/contract'
 import checkIcon from '../assets/icons/check-circle.svg'
+import deleteIcon from '../assets/icons/delete.svg'
 import editIcon from '../assets/icons/edit.svg'
 import gamepadIcon from '../assets/icons/gamepad.svg'
 import infoIcon from '../assets/icons/info.svg'
@@ -487,6 +488,7 @@ function SecretRow({
         </Button>
         {configured && (
           <Button id={`settings:${id}:remove`} label={t.settings.remove} onConfirm={onRemove}>
+            <img src={deleteIcon} alt="" />
             <span className="settings__danger">{t.settings.remove}</span>
           </Button>
         )}

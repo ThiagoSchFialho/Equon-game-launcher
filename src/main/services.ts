@@ -30,6 +30,7 @@ import { fetchIgdbGame, fetchIgdbSteamGame } from '../integrations/igdb/games'
 import { createIgdbClient } from '../integrations/igdb/igdb'
 import { MAX_ARTWORK_BYTES, webpSize } from '../infrastructure/artwork/import-artwork'
 import { createAchievementSync } from './achievements/achievement-sync'
+import { createArtworkEditor } from './artwork/artwork-editor'
 import { createArtworkFetcher } from './artwork/artwork-fetcher'
 import { IpcEvent } from '../shared/ipc/contract'
 import { createManualGameService } from './games/manual-game-service'
@@ -223,6 +224,22 @@ export function createServices(
     onError: (error) => console.error('Artwork download failed:', String(error))
   })
 
+  const artworkEditor = createArtworkEditor({
+    games,
+    artwork,
+    uow,
+    get: fetchGet,
+    getBytes: createFetchBytes(MAX_ARTWORK_BYTES),
+    gridKey: () => secret('steamgriddb-api-key'),
+    igdbGame: (id) => fetchIgdbGame(igdb, id),
+    igdbSteamGame: (appId) => fetchIgdbSteamGame(igdb, appId),
+    cacheDir: artworkCacheDir,
+    decode: decodeImage,
+    clock,
+    onLibraryChanged: () => window()?.webContents.send(IpcEvent.libraryChanged),
+    onError: (error) => console.error('Artwork save failed:', String(error))
+  })
+
   const steam = createSteamService({
     games,
     uow,
@@ -266,12 +283,10 @@ export function createServices(
       configs,
       origins,
       emulators,
-      artwork,
       uow,
       inspector,
       runner,
       artworkCacheDir,
-      decodeImage,
       readShortcut: readShortcutUrl
     }),
     runner,
@@ -279,6 +294,7 @@ export function createServices(
     steam,
     steamOnline,
     artworkFetcher,
+    artworkEditor,
     achievementSync,
     activity,
     igdb,

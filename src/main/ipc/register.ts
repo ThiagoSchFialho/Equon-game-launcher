@@ -46,7 +46,13 @@ import {
   igdbSearchArgs,
   igdbSearchResultSchema,
   gameAchievementsResultSchema,
-  artworkApplyArgs,
+  artworkDraftSchema,
+  artworkEditBeginArgs,
+  artworkEditFromExternalArgs,
+  artworkEditFromFileArgs,
+  artworkEditFromGridArgs,
+  artworkEditSaveArgs,
+  gridAssetListSchema,
   artworkKindListSchema,
   artworkSearchArgs,
   duplicateListSchema,
@@ -60,6 +66,7 @@ import type { ManualGameService } from '../games/manual-game-service'
 import type { SettingsService } from '../settings/settings-service'
 import { getAchievementsOverview, getGameAchievements } from '../achievements/achievement-queries'
 import type { AchievementSync } from '../achievements/achievement-sync'
+import type { ArtworkEditor } from '../artwork/artwork-editor'
 import type { ArtworkFetcher } from '../artwork/artwork-fetcher'
 import type { SteamOnline } from '../steam/steam-online'
 import type { SteamService } from '../steam/steam-service'
@@ -80,6 +87,7 @@ export interface IpcDeps {
   steam: SteamService
   steamOnline: SteamOnline
   artworkFetcher: ArtworkFetcher
+  artworkEditor: ArtworkEditor
   achievementSync: AchievementSync
   igdb: IgdbClient
   activity: BackgroundActivityTracker
@@ -219,15 +227,6 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
     )
   )
   ipcMain.handle(
-    IpcChannel.igdbReplaceArtwork,
-    createValidatedHandler(
-      igdbApplyArtworkArgs,
-      resultSchema(artworkKindListSchema),
-      trusted,
-      (gameId, igdbGameId) => deps.artworkFetcher.replaceWithIgdb(gameId, igdbGameId)
-    )
-  )
-  ipcMain.handle(
     IpcChannel.igdbApplyArtwork,
     createValidatedHandler(
       igdbApplyArtworkArgs,
@@ -246,12 +245,59 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
     )
   )
   ipcMain.handle(
-    IpcChannel.artworkApplySteamGridDb,
+    IpcChannel.artworkEditBegin,
+    createValidatedHandler(artworkEditBeginArgs, z.undefined(), trusted, (gameId) => {
+      deps.artworkEditor.begin(gameId)
+      return undefined
+    })
+  )
+  ipcMain.handle(
+    IpcChannel.artworkEditEnd,
+    createValidatedHandler(noArgs, z.undefined(), trusted, () => {
+      deps.artworkEditor.end()
+      return undefined
+    })
+  )
+  ipcMain.handle(
+    IpcChannel.artworkEditFromFile,
     createValidatedHandler(
-      artworkApplyArgs,
-      resultSchema(artworkKindListSchema),
+      artworkEditFromFileArgs,
+      resultSchema(artworkDraftSchema),
       trusted,
-      (gameId, gridId) => deps.artworkFetcher.applySteamGridDb(gameId, gridId)
+      (gameId, kind, path) => deps.artworkEditor.fromFile(gameId, kind, path)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.artworkEditFromIgdb,
+    createValidatedHandler(
+      artworkEditFromExternalArgs,
+      resultSchema(artworkDraftSchema),
+      trusted,
+      (gameId, kind, igdbGameId) => deps.artworkEditor.fromIgdb(gameId, kind, igdbGameId)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.artworkEditGridAssets,
+    createValidatedHandler(
+      artworkEditFromExternalArgs,
+      resultSchema(gridAssetListSchema),
+      trusted,
+      (gameId, kind, gridGameId) => deps.artworkEditor.gridAssets(gameId, kind, gridGameId)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.artworkEditFromGrid,
+    createValidatedHandler(
+      artworkEditFromGridArgs,
+      resultSchema(artworkDraftSchema),
+      trusted,
+      (gameId, kind, assetId) => deps.artworkEditor.fromGrid(gameId, kind, assetId)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.artworkEditSave,
+    createValidatedHandler(artworkEditSaveArgs, resultSchema(z.null()), trusted, (gameId, remove) =>
+      deps.artworkEditor.save(gameId, remove)
     )
   )
   ipcMain.handle(

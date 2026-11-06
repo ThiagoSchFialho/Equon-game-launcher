@@ -1,5 +1,42 @@
-import { ARTWORK_SCHEME, type ArtworkKind } from '../../shared/ipc/contract'
+import { z } from 'zod'
+import {
+  ARTWORK_EDIT_KINDS,
+  ARTWORK_SCHEME,
+  type ArtworkEditKind,
+  type ArtworkKind
+} from '../../shared/ipc/contract'
 import { artworkKindSchema } from '../../shared/ipc/schemas'
+
+/** The parts every address of this scheme must leave empty. */
+function plainUrl(url: string): URL | null {
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === `${ARTWORK_SCHEME}:` &&
+      parsed.port === '' &&
+      parsed.username === '' &&
+      parsed.hash === ''
+      ? parsed
+      : null
+  } catch {
+    return null
+  }
+}
+
+/** Parses `equon-art://draft/<kind>?v=<version>`, an image chosen but not saved yet. */
+export function parseDraftArtworkUrl(url: string): ArtworkEditKind | null {
+  const parsed = plainUrl(url)
+  if (parsed?.hostname !== 'draft' || !/^(\?v=\d{1,12})?$/.test(parsed.search)) return null
+  const kind = z.enum(ARTWORK_EDIT_KINDS).safeParse(parsed.pathname.slice(1))
+  return kind.success ? kind.data : null
+}
+
+/** Parses `equon-art://grid/<assetId>`, a thumbnail of the SteamGridDB gallery. */
+export function parseGridThumbnailUrl(url: string): number | null {
+  const parsed = plainUrl(url)
+  if (parsed?.hostname !== 'grid' || parsed.search !== '') return null
+  const match = /^\/([1-9]\d{0,15})$/.exec(parsed.pathname)
+  return match ? Number(match[1]) : null
+}
 
 /** Parses `equon-art://achievement/<id>/<locked|unlocked>`; anything else is rejected. */
 export function parseAchievementIconUrl(url: string): { id: number; locked: boolean } | null {

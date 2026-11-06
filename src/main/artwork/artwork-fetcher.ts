@@ -69,10 +69,6 @@ export interface ArtworkFetcher {
    * the rest from SteamGridDB under the same name. Only what the game does not have yet.
    */
   applyIgdb(gameId: number, igdbGameId: number): Promise<Result<ArtworkKind[]>>
-  /** The user picked the IGDB game, for any game; its art replaces portrait cover, logo and background. */
-  replaceWithIgdb(gameId: number, igdbGameId: number): Promise<Result<ArtworkKind[]>>
-  /** The user picked the SteamGridDB game; its art replaces covers, logo and header. */
-  applySteamGridDb(gameId: number, steamGridDbGameId: number): Promise<Result<ArtworkKind[]>>
 }
 
 /**
@@ -86,7 +82,7 @@ export interface ArtworkFetcher {
  * to show; one that got none stays to try. With no network the queue just stops.
  */
 /** Where IGDB keeps each image of a game; null when it has none that fits. */
-function igdbArtUrls(data: IgdbGameData): [ArtworkKind, string | null][] {
+export function igdbArtUrls(data: IgdbGameData): [ArtworkKind, string | null][] {
   const background = pickIgdbBackground(data)
   return [
     ['cover_portrait', data.cover ? igdbImageUrl(data.cover.imageId, '1080p') : null],
@@ -233,7 +229,17 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
   }
 
   const fetchAll = async (retry: boolean): Promise<void> => {
-    const kinds = deps.artwork.listKinds()
+    const stored = deps.artwork.listKinds()
+    const removed = deps.artwork.listRemoved()
+    // Art the user removed is not missing: it stays out until the user chooses another.
+    const kinds = new Map(
+      deps.games
+        .list()
+        .map((game): [number, ArtworkKind[]] => [
+          game.id,
+          [...(stored.get(game.id) ?? []), ...(removed.get(game.id) ?? [])]
+        ])
+    )
     const pending = deps.games
       .list()
       .filter(
@@ -303,7 +309,10 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
       if (!answer.data) return { ok: false, error: { code: 'not-found' } }
       const data = answer.data
 
-      const have = (): ArtworkKind[] => deps.artwork.listKinds().get(gameId) ?? []
+      const have = (): ArtworkKind[] => [
+        ...(deps.artwork.listKinds().get(gameId) ?? []),
+        ...(deps.artwork.listRemoved().get(gameId) ?? [])
+      ]
       const saved: ArtworkKind[] = []
       const wanted = igdbArtUrls(data).filter(
         ([kind, url]) => url !== null && !have().includes(kind)
@@ -338,29 +347,6 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
         }
       }
       return { ok: true, data: saved }
-    },
-
-    async replaceWithIgdb(gameId, igdbGameId) {
-      const game = deps.games.getById(gameId)
-      if (!game) return { ok: false, error: { code: 'not-found' } }
-      const answer = await deps.igdbGame(igdbGameId)
-      if (!answer.ok) return { ok: false, error: { code: answer.error } }
-      if (!answer.data) return { ok: false, error: { code: 'not-found' } }
-      const saved: ArtworkKind[] = []
-      for (const [kind, url] of igdbArtUrls(answer.data)) {
-        if (url !== null && (await store(game, kind, url, 'igdb', true))) saved.push(kind)
-      }
-      if (saved.length > 0) deps.onLibraryChanged()
-      return { ok: true, data: saved }
-    },
-
-    async applySteamGridDb(gameId, steamGridDbGameId) {
-      const game = deps.games.getById(gameId)
-      if (!game) return { ok: false, error: { code: 'not-found' } }
-      const result = await fromSteamGridDb(game, { gameId: steamGridDbGameId }, CHOSEN_KINDS, true)
-      if (result.saved.length > 0) deps.onLibraryChanged()
-      if (result.error) return { ok: false, error: { code: result.error } }
-      return { ok: true, data: result.saved }
     }
   }
 }

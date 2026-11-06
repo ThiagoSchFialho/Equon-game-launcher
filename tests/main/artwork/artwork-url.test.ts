@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { parseAchievementIconUrl, parseArtworkUrl } from '../../../src/main/artwork/artwork-url'
+import {
+  parseAchievementIconUrl,
+  parseArtworkUrl,
+  parseDraftArtworkUrl,
+  parseGridThumbnailUrl
+} from '../../../src/main/artwork/artwork-url'
 import {
   ARTWORK_KINDS as SHARED_KINDS,
   achievementIconUrl,
-  artworkUrl
+  artworkUrl,
+  draftArtworkUrl,
+  gridThumbnailUrl
 } from '../../../src/shared/ipc/contract'
 import { ARTWORK_KINDS as DOMAIN_KINDS } from '../../../src/core/domain'
 
@@ -86,5 +93,35 @@ describe('artwork URLs', () => {
 
   it('keeps the shared kinds in sync with the domain', () => {
     expect([...SHARED_KINDS]).toEqual([...DOMAIN_KINDS])
+  })
+})
+
+describe('addresses of the art editor', () => {
+  it('reads the preview of an image not saved yet', () => {
+    expect(parseDraftArtworkUrl(draftArtworkUrl('logo', 3))).toBe('logo')
+    for (const bad of [
+      'equon-art://draft/header?v=3',
+      'equon-art://draft/logo?v=x',
+      'equon-art://draft/logo/more',
+      'equon-art://draft/..%2Flogo',
+      'equon-art://game/1/logo',
+      'https://draft/logo'
+    ]) {
+      expect(parseDraftArtworkUrl(bad), bad).toBeNull()
+    }
+  })
+
+  it('reads a thumbnail of the gallery', () => {
+    expect(parseGridThumbnailUrl(gridThumbnailUrl(42))).toBe(42)
+    for (const bad of [
+      'equon-art://grid/0',
+      'equon-art://grid/x',
+      'equon-art://grid/42/more',
+      'equon-art://grid/42?v=1',
+      'equon-art://draft/42',
+      'https://grid/42'
+    ]) {
+      expect(parseGridThumbnailUrl(bad), bad).toBeNull()
+    }
   })
 })

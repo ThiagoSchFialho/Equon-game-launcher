@@ -22,8 +22,13 @@ export const IpcChannel = {
   igdbSearch: 'igdb:search',
   igdbGame: 'igdb:game',
   igdbApplyArtwork: 'igdb:apply-artwork',
-  igdbReplaceArtwork: 'igdb:replace-artwork',
-  artworkApplySteamGridDb: 'artwork:apply-steamgriddb',
+  artworkEditBegin: 'artwork-edit:begin',
+  artworkEditEnd: 'artwork-edit:end',
+  artworkEditFromFile: 'artwork-edit:from-file',
+  artworkEditFromIgdb: 'artwork-edit:from-igdb',
+  artworkEditGridAssets: 'artwork-edit:grid-assets',
+  artworkEditFromGrid: 'artwork-edit:from-grid',
+  artworkEditSave: 'artwork-edit:save',
   gamesList: 'games:list',
   gamesGet: 'games:get',
   gamesGetEditable: 'games:get-editable',
@@ -244,6 +249,32 @@ export function artworkUrl(gameId: number, kind: ArtworkKind, version?: string |
   return version ? `${url}?v=${encodeURIComponent(version)}` : url
 }
 
+/** The art "Editar artes" handles; the header keeps coming from its sources. */
+export const ARTWORK_EDIT_KINDS = ['cover_portrait', 'cover_square', 'logo', 'background'] as const
+export type ArtworkEditKind = (typeof ARTWORK_EDIT_KINDS)[number]
+
+/** Preview of an image chosen but not saved yet. */
+export function draftArtworkUrl(kind: ArtworkEditKind, version: number): string {
+  return `${ARTWORK_SCHEME}://draft/${kind}?v=${version}`
+}
+
+/** Thumbnail of a SteamGridDB image, brought by main: the renderer never reaches the network. */
+export function gridThumbnailUrl(assetId: number): string {
+  return `${ARTWORK_SCHEME}://grid/${assetId}`
+}
+
+export interface ArtworkDraftInfo {
+  /** Tells the browser this preview is a new image. */
+  version: number
+}
+
+/** One image of the SteamGridDB gallery; its addresses stay in main. */
+export interface GridAssetInfo {
+  id: number
+  width: number
+  height: number
+}
+
 /** Expected failures come back as data so the UI can explain them (codes, not text). */
 export interface AppError {
   code: string
@@ -348,13 +379,11 @@ export interface ManualGameForm {
   /** Genres from IGDB, when filled from it; a game that already has genres keeps them. */
   genres?: string[]
   /** A new background image to import; null keeps the current one. */
-  backgroundPath: string | null
 }
 
 export interface EditableGame {
   id: number
   form: ManualGameForm
-  hasBackground: boolean
 }
 
 export type PickKind = 'executable' | 'game' | 'emulator' | 'rom' | 'image' | 'directory'
@@ -411,8 +440,6 @@ export interface EquonApi {
     game(id: number): Promise<Result<IgdbGameFill | null>>
     /** After saving a game filled from IGDB: downloads what it does not have yet. */
     applyArtwork(gameId: number, igdbGameId: number): Promise<Result<ArtworkKind[]>>
-    /** "Buscar artes no IGDB", for any game: replaces what the chosen game has. */
-    replaceArtwork(gameId: number, igdbGameId: number): Promise<Result<ArtworkKind[]>>
   }
   activity: {
     current(): Promise<BackgroundActivity | null>
@@ -443,8 +470,30 @@ export interface EquonApi {
   artwork: {
     /** SteamGridDB name search for a manual game (needs the key). */
     search(term: string): Promise<Result<SteamGridDbGameInfo[]>>
-    /** Downloads covers, logo and header of the chosen SteamGridDB game for a manual game. */
-    applySteamGridDb(gameId: number, steamGridDbGameId: number): Promise<Result<ArtworkKind[]>>
+  }
+  /** "Editar artes": images wait in main until save; end drops what was not saved. */
+  artworkEdit: {
+    begin(gameId: number): Promise<void>
+    end(): Promise<void>
+    fromFile(gameId: number, kind: ArtworkEditKind, path: string): Promise<Result<ArtworkDraftInfo>>
+    /** igdbGameId null: a Steam game, found by its App ID. */
+    fromIgdb(
+      gameId: number,
+      kind: ArtworkEditKind,
+      igdbGameId: number | null
+    ): Promise<Result<ArtworkDraftInfo>>
+    /** gridGameId null: a Steam game, found by its App ID. */
+    gridAssets(
+      gameId: number,
+      kind: ArtworkEditKind,
+      gridGameId: number | null
+    ): Promise<Result<GridAssetInfo[]>>
+    fromGrid(
+      gameId: number,
+      kind: ArtworkEditKind,
+      assetId: number
+    ): Promise<Result<ArtworkDraftInfo>>
+    save(gameId: number, remove: ArtworkEditKind[]): Promise<Result<null>>
   }
   settings: {
     get(): Promise<SettingsInfo>

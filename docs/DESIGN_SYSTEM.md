@@ -268,6 +268,14 @@ apenas de animação para mostrar que uma ação foi ativada.
     básicas; considerar um teclado virtual ou um fluxo alternativo se a
     busca textual for essencial.
 
+### Editar artes
+
+-   Tela em painéis com rolagem, um por arte: nome e prévia à esquerda, botões à direita. Salvar e Cancelar ficam fixos embaixo. O foco em um botão traz o painel inteiro para a tela.
+-   Start salva de qualquer ponto da tela, com a dica no rodapé.
+-   A capa vertical é mostrada como no Início: 3:4 e esticada. As outras mantêm a proporção.
+-   Só aparecem os botões de fontes que têm aquela arte. "Remover imagem" fica indisponível quando não há o que remover.
+-   Ações de remover nesta tela e nas Configurações usam o ícone `delete.svg`.
+
 ### Diálogos e notificações
 
 -   Usar diálogos para decisões que exigem confirmação.
