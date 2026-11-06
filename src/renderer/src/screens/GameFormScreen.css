@@ -19,6 +19,10 @@
   min-height: 0;
 }
 
+.game-form__body[data-adding='true'] {
+  grid-template-columns: minmax(0, 60rem);
+}
+
 .game-form__fields {
   display: flex;
   flex-direction: column;

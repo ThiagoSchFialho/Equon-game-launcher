@@ -10,10 +10,10 @@ A controller-first game launcher for Windows: your Steam library, your other PC 
 
 - **Controller first.** The whole app works with a gamepad, and also with keyboard and mouse. Focus is always visible, including at a distance on a TV.
 - **Steam.** Games you own appear on their own, installed or not. Installing or removing a game in Steam shows up within seconds. Playtime and last session come from Steam, and sessions observed by the launcher add on top.
-- **Other games.** Add any game by its executable or a store `.url` shortcut, which is how Epic Games Store and GOG games are added. Yuzu games only need the ROM. You can create your own origins, such as Nintendo 64.
+- **Other games.** Add a game with its name and executable, and confirm it on [IGDB](https://www.igdb.com) to fill in the rest (your own free Twitch app; descriptions come in English). Any store `.url` shortcut works too, which is how Epic Games Store and GOG games are added. Yuzu games only need the ROM. You can create your own origins, such as Nintendo 64.
 - **Library.** Search, filters by origin and install state, hidden games, games marked as beaten, and sorting by title, recent activity or playtime.
 - **Achievements.** Steam achievements by game, with rarity tiers and a platinum for completed games. A game is synced when it closes, and a manual action syncs the whole library.
-- **Artwork.** Downloaded from Steam and, with your own key, from SteamGridDB, and kept on disk. You can search SteamGridDB for any game; what you choose is never overwritten. Everything works with placeholders too.
+- **Artwork.** Downloaded from Steam, IGDB and, with your own key, SteamGridDB, and kept on disk. You can search SteamGridDB for any game; what you choose is never overwritten. Everything works with placeholders too.
 - **Local and private.** One local user and an embedded SQLite database, with no account or server of its own. API keys are encrypted with Windows' own protection and never leave the main process.
 
 | | |
@@ -71,7 +71,7 @@ Settings → "Emuladores": configure `yuzu.exe` once; Yuzu games then only need 
 
 `npm run build:win` creates `dist/equon-game-launcher-<version>-setup.exe`. Run it: it installs for the current user, with no administrator rights, and creates the shortcuts. To update, run the new installer over the old one.
 
-Then, in Settings → "Conexões", fill in your SteamID and your [Steam Web API key](https://steamcommunity.com/dev/apikey), and optionally a [SteamGridDB key](https://www.steamgriddb.com/profile/preferences/api). Your Steam game details must be public for the launcher to read them.
+Then, in Settings → "Conexões", fill in your SteamID and your [Steam Web API key](https://steamcommunity.com/dev/apikey), and optionally a [SteamGridDB key](https://www.steamgriddb.com/profile/preferences/api) and the Client ID and Secret of a [Twitch app](https://dev.twitch.tv/console) for IGDB. Your Steam game details must be public for the launcher to read them.
 
 The installer is not signed: Windows SmartScreen may warn about it ("More info" → "Run anyway"), and an antivirus may hold the new program for a scan, so the first launch can take a while.
 

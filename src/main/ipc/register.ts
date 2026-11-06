@@ -1,4 +1,6 @@
 import { app, ipcMain, type BrowserWindow } from 'electron'
+import { fetchIgdbFill, searchIgdbGames } from '../../integrations/igdb/games'
+import type { IgdbClient, IgdbResult } from '../../integrations/igdb/igdb'
 import type { BackgroundActivityTracker } from '../background-activity'
 import type { GameRunner, UserRepository } from '../../core/application'
 import { IpcChannel, type SystemInfo } from '../../shared/ipc/contract'
@@ -38,6 +40,11 @@ import {
   achievementsOverviewSchema,
   achievementSyncStatusSchema,
   backgroundActivitySchema,
+  igdbApplyArtworkArgs,
+  igdbGameArgs,
+  igdbGameSchema,
+  igdbSearchArgs,
+  igdbSearchResultSchema,
   gameAchievementsResultSchema,
   artworkApplyArgs,
   artworkKindListSchema,
@@ -74,6 +81,7 @@ export interface IpcDeps {
   steamOnline: SteamOnline
   artworkFetcher: ArtworkFetcher
   achievementSync: AchievementSync
+  igdb: IgdbClient
   activity: BackgroundActivityTracker
   users: UserRepository
   /** Where artwork files live; achievement icons are looked up there. */
@@ -87,6 +95,14 @@ const idResult = resultSchema(z.strictObject({ id: z.number().int().positive() }
 const nullResult = resultSchema(z.null())
 const originResult = resultSchema(originInfoSchema)
 const settingsResult = resultSchema(settingsInfoSchema)
+
+/** Expected failures come back as data the screen can explain. */
+const igdbResult = async <T>(
+  pending: Promise<IgdbResult<T>>
+): Promise<{ ok: true; data: T } | { ok: false; error: { code: string } }> => {
+  const result = await pending
+  return result.ok ? result : { ok: false, error: { code: result.error } }
+}
 
 export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
   const trusted = (url: string): boolean => isAppUrl(url, origin)
@@ -189,6 +205,36 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
       deps.steam.dismissDuplicate(manualGameId)
       return undefined
     })
+  )
+  ipcMain.handle(
+    IpcChannel.igdbSearch,
+    createValidatedHandler(igdbSearchArgs, resultSchema(igdbSearchResultSchema), trusted, (term) =>
+      igdbResult(searchIgdbGames(deps.igdb, term))
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.igdbGame,
+    createValidatedHandler(igdbGameArgs, resultSchema(igdbGameSchema), trusted, (gameId) =>
+      igdbResult(fetchIgdbFill(deps.igdb, gameId))
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.igdbReplaceArtwork,
+    createValidatedHandler(
+      igdbApplyArtworkArgs,
+      resultSchema(artworkKindListSchema),
+      trusted,
+      (gameId, igdbGameId) => deps.artworkFetcher.replaceWithIgdb(gameId, igdbGameId)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.igdbApplyArtwork,
+    createValidatedHandler(
+      igdbApplyArtworkArgs,
+      resultSchema(artworkKindListSchema),
+      trusted,
+      (gameId, igdbGameId) => deps.artworkFetcher.applyIgdb(gameId, igdbGameId)
+    )
   )
   ipcMain.handle(
     IpcChannel.artworkSearch,

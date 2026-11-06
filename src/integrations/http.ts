@@ -35,6 +35,34 @@ export const fetchGet: HttpGet = async (url, headers) => {
   return { status: response.status, json }
 }
 
+export type HttpPost = (
+  url: string,
+  headers: Record<string, string>,
+  body: string
+) => Promise<HttpResponse>
+
+/** HttpPost over the global fetch, 10 s timeout. */
+export const fetchPost: HttpPost = async (url, headers, body) => {
+  let response: Response
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body,
+      signal: AbortSignal.timeout(10_000)
+    })
+  } catch {
+    throw new NetworkError()
+  }
+  let json: unknown
+  try {
+    json = await response.json()
+  } catch {
+    json = undefined
+  }
+  return { status: response.status, json }
+}
+
 /** Downloads one image; null when the request failed or the body was too large. */
 export type HttpGetBytes = (url: string) => Promise<Uint8Array | null>
 
@@ -43,7 +71,8 @@ export type HttpGetBytes = (url: string) => Promise<Uint8Array | null>
 const IMAGE_HOSTS = [
   /\.steamstatic\.com$/,
   /^steamcdn-a\.akamaihd\.net$/,
-  /^cdn2\.steamgriddb\.com$/
+  /^cdn2\.steamgriddb\.com$/,
+  /^images\.igdb\.com$/
 ]
 
 export function isAllowedImageUrl(url: string): boolean {

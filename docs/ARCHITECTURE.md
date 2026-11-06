@@ -1,6 +1,6 @@
 # Equon Game Launcher — Architecture
 
-**Version:** 0.32
+**Version:** 0.33
 **Status:** Current — all roadmap phases complete
 **Last updated:** 2026-11-04
 **Inputs:** `README.md`, `PRODUCT.md`, `DATA_BASE_CONTEXT.md`, `DESIGN_SYSTEM.md`, `ROADMAP.md`
@@ -66,7 +66,8 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-12 | Steam discovery, installation state and running state | Accepted | Read `libraryfolders.vdf` + `appmanifest_*.acf` `StateFlags`, with the safeguards in §3.12 |
 | D-13 | Windows packaging / installer | Accepted | NSIS through electron-builder: per user, no administrator, not signed, no automatic updates (§3.16) |
 | D-14 | Package manager, build tool, test framework, lint/format | Accepted | npm; electron-vite; Vitest; ESLint + Prettier; TypeScript `strict` (§3.15) |
-| D-15 | Artwork sources and cache policy | Accepted | SteamGridDB (API key) + Steam `appdetails`; local file picker as fallback; Google Images not adopted (§3.13) |
+| D-15 | Artwork sources and cache policy | Accepted | SteamGridDB (API key) + Steam `appdetails`, plus IGDB (D-18, first choice for portrait cover, logo and background); local file picker as fallback; Google Images not adopted (§3.13) |
+| D-18 | IGDB: filling in manual games and artwork for new Steam games | Accepted | Own Twitch app credentials per user, encrypted; see §3.17 |
 | D-16 | Refresh frequency for `appdetails` metadata | Accepted | Fetched only when a game is discovered/added; failed fetches are retried (§3.14) |
 | D-17 | Steam launch mechanism | Accepted | `steam://rungameid/<appid>`, built in the main process (§3.12) |
 
@@ -259,14 +260,14 @@ The reference implementation (a prototype using an Express router) already does 
 
 ### 3.13 D-15 — Artwork sources and cache (Accepted)
 
-Each game needs five images: a **square cover** (Library), a **portrait cover 600×900** (Home), a **logo**, a **1920×1080 image**, and a **header image**. The two covers are independent assets; neither is cropped from the other.
+Each game needs five images: a **square cover** (Library), a **portrait cover** (Home, shown 3:4), a **logo**, a **1920×1080 image**, and a **header image**. The two covers are independent assets; neither is cropped from the other.
 
 | Asset | Steam games | Manual games |
 | --- | --- | --- |
 | Square cover (`cover_square`) | SteamGridDB grids, filtered to square dimensions, looked up by Steam App ID | SteamGridDB name search; the user confirms the match. Otherwise a local file |
-| Portrait cover (`cover_portrait`, 600×900) | SteamGridDB grids, filtered to 600×900, looked up by Steam App ID. `appdetails` has no vertical cover; Steam's own CDN asset for it is undocumented and must not be relied on | Same as the square cover |
-| Logo | SteamGridDB logos | Same as cover |
-| 1920×1080 | `background_raw` from `appdetails` (owner decision, Phase 6c; measured 1438×810, ≈16:9). When the store only has a generated, blurred background (`/images/storepagebackground/`), the first screenshot (`screenshots[0].path_full`, 1920×1080) is used instead (owner decision) | A local file chosen by the user. SteamGridDB heroes are wide banners, not 16:9 (verify dimensions), so use them only as a fallback with `cover` fit |
+| Portrait cover (`cover_portrait`, 600×900) | IGDB first when configured (§3.17). Then SteamGridDB grids, filtered to 600×900, looked up by Steam App ID. `appdetails` has no vertical cover; Steam's own CDN asset for it is undocumented and must not be relied on | Same as the square cover |
+| Logo | IGDB first when configured (§3.17). Then SteamGridDB logos | Same as cover |
+| 1920×1080 | IGDB first when configured (§3.17). Then `background_raw` from `appdetails` (owner decision, Phase 6c; measured 1438×810, ≈16:9). When the store only has a generated, blurred background (`/images/storepagebackground/`), the first screenshot (`screenshots[0].path_full`, 1920×1080) is used instead (owner decision) | A local file chosen by the user. SteamGridDB heroes are wide banners, not 16:9 (verify dimensions), so use them only as a fallback with `cover` fit |
 | Header | `header_image` from `appdetails` | SteamGridDB horizontal grid (460×215 / 920×430) or a crop of the 1920×1080 image |
 
 **SteamGridDB (adopted).** REST API v2 at `https://www.steamgriddb.com/api/v2`, `Authorization: Bearer <key>`. The key is free but requires a SteamGridDB account. Supports lookup by Steam App ID or SteamGridDB game ID, name search (needed for non-Steam games), and filters by dimensions and style. Art is community-contributed. A third-party document reports about 500 requests per hour on the free tier; this is not confirmed, so verify it and design for throttling.
@@ -349,6 +350,20 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 **Security review (Phase 8d).** No secret in the repository or its history; all 35 IPC channels are validated; no process goes through a shell; `shell.openExternal` only takes allowlisted URLs; no log carries a URL or a key. Changes: installed runs replace the default Electron menu, which offered DevTools, reload, zoom and close (`src/main/app-menu.ts`; F11 and the text editing shortcuts stay, and the menu bar never shows); Electron fuses turn off running as Node and the Node inspector options, and validate the package; image downloads stop at the size limit even if the server hides the size. **Known and accepted:** `npm audit` reports 13 moderate issues, all in lint and packaging tools that do not ship, and production has none; the offered fix would downgrade those tools. `--remote-debugging-port` still works on the installed app: it only listens locally and is how the package is tested, and a local program with the same rights could already read the same data. The installed app keeps no log file. `style-src` keeps `unsafe-inline` because the dev server needs it, and nothing renders untrusted HTML.
 
 **Preferences:** nothing is persisted for now. The Library view and the sorts reset at every start by owner decision; keys and paths already have their own storage.
+
+### 3.17 D-18 — IGDB (Accepted, after Phase 8)
+
+**Owner decisions:** the add form asks only for the title, the executable, the playtime and the arguments, and the game is a "Jogo Local". On saving, IGDB always shows its results for the user to confirm the game, which fills in the rest; metadata, origin and images are typed or chosen only when editing. The executable field also takes a ROM when an emulator is configured, and the game then belongs to that emulator. If IGDB cannot answer (no credentials, no network, an error), the game is saved with what was typed and a notice gives the reason; with no results the user can search another name or save without IGDB. Descriptions come in English and stay editable, since IGDB localizes only names and covers. Genres are stored translated by a table of ours. IGDB gives the portrait cover, logo and background; the square cover and the header, which IGDB does not have, come from SteamGridDB when a key is set. Editing an existing game only fills empty fields and never replaces chosen artwork.
+
+**Credentials.** IGDB is free for non-commercial use under the Twitch Developer Service Agreement, with each user's own Twitch app (Client ID and Client Secret; the Twitch account needs two-factor authentication). Both are encrypted like the other keys. The access token stays in memory, and the secret goes in the token request's body, never in a URL, although the IGDB docs show it in the query string. Limit: 4 requests per second, 8 open at a time.
+
+**Measured with real data (2026-11-05, 8 games).** Search returns obscure entries first ("Fortnite" brought the Chinese version, "Super Mario Odyssey" a fan game), so results go exact name first, then by rating count, with the developer shown to tell apart equal names; add-ons, mods and editions are left out. Covers are all 3:4, so portrait covers accept 2:3 to 3:4. By owner decision the Home card is 3:4 and stretches the whole art to fit, with no cropping or bars, which slightly widens 2:3 art from SteamGridDB. Artworks come in any shape, so the background is the widest 16:9 image of at least 1280 px, official art first, then screenshots. Logos have their own endpoint, exist for about half of the games and keep transparency only as PNG. The rating is the ClassInd one, read through `organization` and `rating_category`; the old `category` and `rating` fields are deprecated. SteamGridDB fills the square cover, the header and what else is missing only under the very same name, since nobody confirms that match.
+
+**Steam games (owner decision, 2026-11-05).** With credentials set, IGDB is the first source of a Steam game's portrait cover, logo and background; the header stays with Steam and the square cover with SteamGridDB, since IGDB has neither. Whatever IGDB does not have, or an image that fails validation, falls back to the previous source of that kind. The game is looked up by App ID in `external_games`, never by name. Only new games and missing art: art a game already has is never replaced, and answered games wait for "Atualizar biblioteca" as usual. Metadata still comes from `appdetails`. IGDB failing does not cost a game its other sources: with no network the queue stops; any other failure leaves the game to try again. Saving IGDB credentials does not start a retry; the button does.
+
+**"Buscar artes no IGDB" (owner decision, 2026-11-05).** In the options menu of any game, next to the SteamGridDB search: search by title (without ™, ® and ©), the user confirms the game, and its portrait cover, logo and background replace the current ones and count as chosen by the user, like the SteamGridDB search. What IGDB does not have stays as it is. Both art searches close by themselves when the download ends; only failures stay on screen.
+
+**Measured (2026-11-05, 50 of the owner's 258 Steam games).** All 50 found by App ID, each with one IGDB game; all with a 3:4 cover; 49 with a 16:9 background of at least 1280 px (27 official art, 22 screenshots); 24 with a logo, so the SteamGridDB fallback matters for logos.
 
 ## 4. Inconsistencies found across the project docs
 
@@ -704,6 +719,12 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-05 | 0.30 | Local Steam check every 10 s and on window focus, paused while a game runs. |
 | 2026-11-05 | 0.31 | Background queues tell no network from a server that cannot serve (§3.13). |
 | 2026-11-05 | 0.32 | Phase 8d: security review (§3.16): own app menu, Electron fuses, capped image downloads, Electron 44.10.2. |
+| 2026-11-05 | 0.33 | D-18: IGDB connection for manual games (§3.17). |
+| 2026-11-05 | 0.34 | D-18: the add form starts with name and executable; IGDB as an artwork source; portrait covers accept up to 3:4 (§3.17). |
+| 2026-11-05 | 0.35 | D-18: IGDB first for the portrait cover, logo and background of Steam games (§3.17). |
+| 2026-11-05 | 0.36 | D-18: smaller add form; IGDB is asked on saving; ROMs detected by file (§3.17). |
+| 2026-11-05 | 0.37 | D-18: "Buscar artes no IGDB" in the options menu (§3.17). |
+| 2026-11-05 | 0.38 | Home covers shown 3:4, always stretched to show the whole art (§3.17). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

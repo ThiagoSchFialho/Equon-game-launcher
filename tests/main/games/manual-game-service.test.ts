@@ -9,6 +9,7 @@ import {
   createArtworkRepository,
   createEmulatorRepository,
   createGameRepository,
+  createGenreRepository,
   createLaunchConfigRepository,
   createOriginRepository,
   createUnitOfWork,
@@ -60,6 +61,7 @@ beforeEach(() => {
   }
   service = createManualGameService({
     games: createGameRepository(db),
+    genres: createGenreRepository(db),
     configs: createLaunchConfigRepository(db),
     origins: createOriginRepository(db),
     emulators: createEmulatorRepository(db),
@@ -76,6 +78,19 @@ beforeEach(() => {
 afterEach(() => rmSync(dir, { recursive: true, force: true }))
 
 describe('manual game service', () => {
+  it('stores the genres filled from IGDB, and keeps those a game already has', async () => {
+    const genres = createGenreRepository(db)
+    const created = await service.create(form({ genres: ['RPG', 'Indie'] }))
+    const id = created.ok ? created.data.id : 0
+    expect(genres.listForGame(id).map((g) => g.name)).toEqual(
+      expect.arrayContaining(['RPG', 'Indie'])
+    )
+    await service.update(id, form({ genres: ['Luta'] }))
+    expect(genres.listForGame(id).map((g) => g.name)).not.toContain('Luta')
+    await service.update(id, form())
+    expect(genres.listForGame(id)).toHaveLength(2)
+  })
+
   it('creates a game with its background', async () => {
     const result = await service.create(form({ backgroundPath: join(dir, 'bg.png') }))
     expect(result.ok).toBe(true)

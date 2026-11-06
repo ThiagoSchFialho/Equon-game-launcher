@@ -38,6 +38,8 @@ describe('settings service', () => {
       steamId: null,
       steamApiKey: false,
       steamGridDbKey: false,
+      igdbClientId: false,
+      igdbClientSecret: false,
       secretsAvailable: true,
       steamPath: 'C:\\Program Files (x86)\\Steam',
       refreshing: false,

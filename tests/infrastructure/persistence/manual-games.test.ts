@@ -273,6 +273,52 @@ describe('SessionRepository', () => {
   })
 })
 
+describe('migration 0010', () => {
+  it('accepts IGDB art and keeps what was stored', () => {
+    const fresh = openDatabase(':memory:')
+    migrate(fresh, migrations.slice(0, 9))
+    fresh.prepare("INSERT INTO games (id, title, origin) VALUES (1, 'A', 'manual')").run()
+    const insert = (kind: string, source: string): unknown =>
+      fresh
+        .prepare(
+          'INSERT INTO game_artwork (game_id, kind, local_path, source, user_selected) VALUES (1, ?, ?, ?, 1)'
+        )
+        .run(kind, 'x', source)
+    insert('logo', 'user')
+    expect(() => insert('header', 'igdb')).toThrow(/CHECK/)
+    migrate(fresh, migrations)
+    insert('header', 'igdb')
+    expect(() => insert('background', 'other')).toThrow(/CHECK/)
+    expect(
+      fresh
+        .prepare('SELECT kind, source, user_selected AS chosen FROM game_artwork ORDER BY id')
+        .all()
+    ).toEqual([
+      { kind: 'logo', source: 'user', chosen: 1 },
+      { kind: 'header', source: 'igdb', chosen: 1 }
+    ])
+    // The foreign key survived the rebuild.
+    fresh.prepare('DELETE FROM games WHERE id = 1').run()
+    expect(fresh.prepare('SELECT COUNT(*) AS n FROM game_artwork').get()).toEqual({ n: 0 })
+  })
+})
+
+describe('migration 0009', () => {
+  it('adds empty IGDB credentials, keeping the other keys', () => {
+    const fresh = openDatabase(':memory:')
+    migrate(fresh, migrations.slice(0, 8))
+    fresh.prepare('UPDATE users SET steam_api_key_encrypted = ? WHERE id = 1').run(Buffer.from('k'))
+    migrate(fresh, migrations)
+    expect(
+      fresh
+        .prepare(
+          'SELECT steam_api_key_encrypted IS NOT NULL AS steam, igdb_client_id_encrypted AS id, igdb_client_secret_encrypted AS secret FROM users'
+        )
+        .get()
+    ).toEqual({ steam: 1, id: null, secret: null })
+  })
+})
+
 describe('migration 0008', () => {
   it('adds artwork_checked_at: every existing game still gets one try', () => {
     const fresh = openDatabase(':memory:')

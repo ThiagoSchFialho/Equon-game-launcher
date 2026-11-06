@@ -242,7 +242,8 @@ export interface TrophyCounters {
 }
 
 /** Secrets stored in USERS, always encrypted with safeStorage (D-04, D-15). */
-export type SecretKind = 'steam-api-key' | 'steamgriddb-api-key'
+export type SecretKind =
+  'steam-api-key' | 'steamgriddb-api-key' | 'igdb-client-id' | 'igdb-client-secret'
 
 export interface UserRepository {
   /** SteamID64 (17 digits) or null. */

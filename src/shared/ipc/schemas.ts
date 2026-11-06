@@ -42,6 +42,7 @@ export const manualGameFormSchema = z.strictObject({
   romPath: path.nullable(),
   arguments: z.array(text).max(64),
   workingDirectory: path.nullable(),
+  genres: z.array(z.string().min(1).max(100)).max(32).optional(),
   backgroundPath: path.nullable()
 }) satisfies z.ZodType<ManualGameForm>
 
@@ -65,7 +66,7 @@ export const settingsSetSteamIdArgs = z.tuple([
 ])
 /** API keys: plain tokens; null removes the stored key. */
 export const settingsSetSecretArgs = z.tuple([
-  z.enum(['steam-api-key', 'steamgriddb-api-key']),
+  z.enum(['steam-api-key', 'steamgriddb-api-key', 'igdb-client-id', 'igdb-client-secret']),
   z
     .string()
     .regex(/^[A-Za-z0-9]{16,128}$/)
@@ -81,6 +82,30 @@ export const systemInfoSchema = z.strictObject({
   dataPath: z.string(),
   schemaVersion: z.number().int().nonnegative()
 }) satisfies z.ZodType<SystemInfo>
+
+export const igdbSearchArgs = z.tuple([z.string().max(200)])
+export const igdbGameArgs = z.tuple([id])
+export const igdbApplyArtworkArgs = z.tuple([id, id])
+
+export const igdbSearchResultSchema = z.array(
+  z.strictObject({
+    id,
+    name: z.string(),
+    year: z.number().int().nullable(),
+    developer: z.string().nullable()
+  })
+)
+
+export const igdbGameSchema = z
+  .strictObject({
+    name: z.string(),
+    summary: z.string().nullable(),
+    releaseDate: z.string().nullable(),
+    developer: z.string().nullable(),
+    genres: z.array(z.string()),
+    requiredAge: z.string().nullable()
+  })
+  .nullable()
 
 export const backgroundActivitySchema = z
   .strictObject({
@@ -189,12 +214,14 @@ export const artworkSearchArgs = z.tuple([z.string().max(200)])
 export const artworkApplyArgs = z.tuple([id, z.number().int().positive()])
 export const artworkKindListSchema = z.array(z.enum(ARTWORK_KINDS))
 
-export const settingsTestConnectionArgs = z.tuple([z.enum(['steam', 'steamgriddb'])])
+export const settingsTestConnectionArgs = z.tuple([z.enum(['steam', 'steamgriddb', 'igdb'])])
 
 export const settingsInfoSchema = z.strictObject({
   steamId: z.string().nullable(),
   steamApiKey: z.boolean(),
   steamGridDbKey: z.boolean(),
+  igdbClientId: z.boolean(),
+  igdbClientSecret: z.boolean(),
   secretsAvailable: z.boolean(),
   steamPath: z.string().nullable(),
   refreshing: z.boolean(),
@@ -208,7 +235,14 @@ export const originsRemoveArgs = z.tuple([originKey])
 export const emulatorsSetArgs = z.tuple([originKey, path])
 export const emulatorsRemoveArgs = z.tuple([originKey])
 
-export const pickKindSchema = z.enum(['executable', 'emulator', 'rom', 'image', 'directory'])
+export const pickKindSchema = z.enum([
+  'executable',
+  'game',
+  'emulator',
+  'rom',
+  'image',
+  'directory'
+])
 export const filesListArgs = z.tuple([path.nullable(), pickKindSchema])
 export const filesPickNativeArgs = z.tuple([pickKindSchema])
 

@@ -36,6 +36,14 @@ const api: EquonApi = {
     rename: (key, name) => ipcRenderer.invoke(IpcChannel.originsRename, key, name),
     remove: (key) => ipcRenderer.invoke(IpcChannel.originsRemove, key)
   },
+  igdb: {
+    search: (term) => ipcRenderer.invoke(IpcChannel.igdbSearch, term),
+    game: (id) => ipcRenderer.invoke(IpcChannel.igdbGame, id),
+    applyArtwork: (gameId, igdbGameId) =>
+      ipcRenderer.invoke(IpcChannel.igdbApplyArtwork, gameId, igdbGameId),
+    replaceArtwork: (gameId, igdbGameId) =>
+      ipcRenderer.invoke(IpcChannel.igdbReplaceArtwork, gameId, igdbGameId)
+  },
   activity: {
     current: () => ipcRenderer.invoke(IpcChannel.activityCurrent),
     onChanged: (listener) => {

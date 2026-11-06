@@ -103,6 +103,7 @@ export const t = {
     flagFailed: 'Não foi possível salvar a alteração.',
     edit: 'Editar jogo',
     artwork: 'Buscar artes no SteamGridDB',
+    igdbArtwork: 'Buscar artes no IGDB',
     remove: 'Remover jogo',
     close: 'Fechar',
     soon: 'Em breve'
@@ -119,6 +120,7 @@ export const t = {
     addTitle: 'Adicionar jogo',
     editTitle: 'Editar jogo',
     submitAdd: 'Adicionar jogo',
+    fillIgdb: 'Preencher com IGDB',
     submitEdit: 'Salvar alterações',
     cancel: 'Cancelar',
     saving: 'Salvando…',
@@ -145,6 +147,7 @@ export const t = {
       playtime: 'Tempo total de jogo (em minutos)',
       rom: 'Escolha a ROM do jogo (.nsp, .xci…)…',
       executable: 'Escolha o .exe do jogo ou um atalho .url…',
+      game: 'Escolha o .exe do jogo, um atalho .url ou uma ROM…',
       arguments: 'Opcional, ex.: -fullscreen "D:\\Jogos\\jogo.iso"',
       workingDirectory: 'Opcional (padrão: pasta do executável)'
     },
@@ -221,6 +224,7 @@ export const t = {
   files: {
     titles: {
       executable: 'Escolher executável',
+      game: 'Escolher jogo',
       emulator: 'Escolher executável do emulador',
       rom: 'Escolher ROM',
       image: 'Escolher imagem',
@@ -254,6 +258,34 @@ export const t = {
     close: 'Fechar',
     changeNote: 'A troca vale para todos os jogos deste emulador.'
   },
+  igdb: {
+    title: 'Preencher com IGDB',
+    searchTitle: 'Nome do jogo no IGDB',
+    searching: 'Buscando…',
+    pick: 'Escolha o jogo certo. Os dados preenchem o formulário, e as artes vêm ao salvar.',
+    pickToAdd: 'Escolha o jogo certo. Os dados e as artes dele serão usados neste jogo.',
+    saveWithout: 'Salvar sem dados do IGDB',
+    artworkTitle: 'Artes do IGDB',
+    artworkPick:
+      'Escolha o jogo certo. A capa vertical, o logo e a imagem de fundo serão trocados.',
+    artworkApplying: (name: string) => `Baixando as artes de ${name}…`,
+    artworkNone: 'O IGDB não tem artes que sirvam para este jogo.',
+    savedTitle: 'Jogo salvo sem dados do IGDB',
+    savedMessage: (reason: string) => `${reason} Você pode completar os dados em Editar jogo.`,
+    savedConfirm: 'Entendi',
+    noResults: (term: string) => `Nenhum jogo encontrado para "${term}".`,
+    otherName: 'Buscar outro nome',
+    loading: (name: string) => `Buscando os dados de ${name}…`,
+    notFound: 'Jogo não encontrado no IGDB.',
+    close: 'Fechar',
+    errors: {
+      'not-configured': 'Configure o Client ID e o Client Secret do IGDB em Configurações.',
+      'invalid-key': 'As credenciais do IGDB são inválidas. Confira em Configurações.',
+      network: 'Sem conexão com o IGDB. Tente mais tarde.',
+      unavailable: 'O IGDB está indisponível agora. Tente mais tarde.',
+      'invalid-response': 'O IGDB respondeu de forma inesperada. Tente mais tarde.'
+    } as Record<string, string>
+  },
   steamGridDb: {
     title: 'Artes do SteamGridDB',
     searching: 'Buscando…',
@@ -262,7 +294,6 @@ export const t = {
     otherName: 'Buscar outro nome',
     searchTitle: 'Nome do jogo no SteamGridDB',
     applying: (name: string) => `Baixando artes de ${name}…`,
-    applied: (count: number) => (count === 1 ? '1 arte baixada.' : `${count} artes baixadas.`),
     nothingFound: 'O SteamGridDB não tem artes para este jogo.',
     close: 'Fechar',
     errors: {
@@ -295,6 +326,9 @@ export const t = {
     steamKey: 'Chave da Steam API',
     steamGridDb: 'SteamGridDB',
     steamGridDbKey: 'Chave do SteamGridDB',
+    igdb: 'IGDB',
+    igdbClientId: 'Client ID da Twitch',
+    igdbClientSecret: 'Client Secret da Twitch',
     configured: 'Configurada',
     notConfigured: 'Não configurada',
     configure: 'Configurar',
@@ -308,7 +342,10 @@ export const t = {
     testPrivate: (name: string) =>
       `Conectado como ${name}, mas os detalhes de jogos do perfil são privados: o tempo de jogo não sincroniza.`,
     testOkGrid: 'Chave válida.',
+    testOkIgdb: 'Credenciais válidas.',
+    testNeedsIgdb: 'Configure o Client ID e o Client Secret para testar.',
     testErrors: {
+      unavailable: 'O serviço está indisponível agora. Tente mais tarde.',
       'not-configured': 'Configure as informações acima antes de testar.',
       'invalid-key': 'Chave inválida.',
       'invalid-steam-id': 'ID Steam não encontrado.',

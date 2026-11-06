@@ -121,6 +121,10 @@ describe('file browser', () => {
     expect(matchesPickKind('C:\\g\\x.url', 'emulator')).toBe(false)
     expect(matchesPickKind('C:\\g\\x.XCI', 'rom')).toBe(true)
     expect(matchesPickKind('C:\\g\\x.iso', 'rom')).toBe(false)
+    for (const file of ['g.exe', 'g.url', 'g.nsp']) {
+      expect(matchesPickKind(`C:\\g\\${file}`, 'game')).toBe(true)
+    }
+    expect(matchesPickKind('C:\\g\\g.iso', 'game')).toBe(false)
   })
 })
 
@@ -149,6 +153,10 @@ describe('artwork import', () => {
     expect(hasExpectedProportion('background', 1920, 1080)).toBe(true)
     expect(hasExpectedProportion('background', 1920, 1150)).toBe(false)
     expect(hasExpectedProportion('cover_portrait', 600, 900)).toBe(true)
+    // IGDB covers are 3:4; square images are still not portrait covers.
+    expect(hasExpectedProportion('cover_portrait', 810, 1080)).toBe(true)
+    expect(hasExpectedProportion('cover_portrait', 600, 600)).toBe(false)
+    expect(hasExpectedProportion('cover_portrait', 500, 900)).toBe(false)
     expect(hasExpectedProportion('logo', 800, 100)).toBe(true)
   })
 

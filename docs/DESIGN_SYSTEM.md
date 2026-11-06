@@ -306,7 +306,7 @@ artes independentes; nenhuma é recortada a partir da outra.
 | Arte (`kind`) | Formato | Onde aparece nos mockups |
 | --- | --- | --- |
 | `cover_square` | Capa quadrada (1:1) | Biblioteca (grade de cards) |
-| `cover_portrait` | Capa vertical 600×900 (2:3) | Início (cards de continuar jogando e recentes) |
+| `cover_portrait` | Capa vertical, exibida em 3:4 e sempre esticada para caber inteira, sem corte nem barras (decisão do dono do projeto) | Início (cards de continuar jogando e recentes) |
 | `logo` | Logotipo, preferencialmente com transparência | Detalhes do jogo, sobre o fundo |
 | `background` | Imagem 1920×1080 (16:9) | Detalhes do jogo, como arte dominante |
 | `header` | Imagem larga (`header_image` da Steam, cerca de 2:1) | Lista de conquistas, miniatura de cada jogo |

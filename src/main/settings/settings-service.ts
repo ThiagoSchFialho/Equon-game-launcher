@@ -35,6 +35,8 @@ export function createSettingsService(deps: SettingsServiceDeps): SettingsServic
     steamId: deps.users.getSteamId(),
     steamApiKey: deps.users.getSecret('steam-api-key') !== null,
     steamGridDbKey: deps.users.getSecret('steamgriddb-api-key') !== null,
+    igdbClientId: deps.users.getSecret('igdb-client-id') !== null,
+    igdbClientSecret: deps.users.getSecret('igdb-client-secret') !== null,
     secretsAvailable: deps.cipher.available(),
     steamPath: deps.steamPath(),
     refreshing: deps.steam.refreshing(),

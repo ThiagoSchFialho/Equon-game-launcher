@@ -46,9 +46,18 @@ export function detectImageType(bytes: Uint8Array): ImageType | null {
   return null
 }
 
+/**
+ * Portrait covers: SteamGridDB's are 2:3 and IGDB's are all 3:4 (measured on 2026-11-05).
+ * The Home card is 3:4 and stretches whatever it gets to fill it, so both are accepted.
+ */
+const PORTRAIT_WIDEST = 3 / 4
+
 export function hasExpectedProportion(kind: ArtworkKind, width: number, height: number): boolean {
   const target = RATIOS[kind]
   if (target === undefined) return true
+  if (kind === 'cover_portrait' && width / height >= target) {
+    return width / height <= PORTRAIT_WIDEST * (1 + RATIO_TOLERANCE)
+  }
   return Math.abs(width / height - target) / target <= RATIO_TOLERANCE
 }
 

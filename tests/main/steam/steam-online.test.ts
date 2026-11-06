@@ -55,6 +55,7 @@ beforeEach(() => {
     wait: async (ms) => {
       waits.push(ms)
     },
+    testIgdb: async () => ({ ok: true }),
     onLibraryChanged: () => changes++,
     onMetadataProgress: (value) => metadataProgress.push(value)
   })

@@ -17,7 +17,7 @@ Quando este documento e o código divergirem, atualize o documento no mesmo comm
 - Migrações: arquivos `.sql` versionados em `src/infrastructure/persistence/migrations/` (`0001_init.sql`, ...), embutidos no bundle e listados em `migrations/index.ts`. Um executor pequeno os aplica em ordem e registra a versão em `PRAGMA user_version`. Cada migração roda em transação junto com a atualização da versão; as chaves estrangeiras são desligadas fora da transação e `foreign_key_check` precisa passar antes do commit.
 - **Obrigatório:** executar `PRAGMA foreign_keys = ON` em **toda** conexão. Sem isso o SQLite ignora as chaves estrangeiras e os `ON DELETE CASCADE` não funcionam.
 - O estado de desbloqueio das conquistas fica em `ACHIEVEMENTS`. **Não** criar `USER_ACHIEVEMENTS` nem perfis múltiplos.
-- Fontes Steam usadas: arquivos locais da Steam (instalação), `appdetails` (metadados), Steam Web API (conquistas) e SteamGridDB (artes). Epic Games e GOG **não** têm integração automática; esses jogos são adicionados manualmente (`origin = 'manual'`). Jogos de emuladores também são adicionados manualmente, cada um com a sua origem (ver 3.10); o único emulador suportado é o Yuzu (3.12).
+- Fontes Steam usadas: arquivos locais da Steam (instalação), `appdetails` (metadados), Steam Web API (conquistas) e SteamGridDB (artes). O IGDB preenche jogos manuais e é a primeira fonte da capa vertical, do logo e da imagem de fundo de jogos da Steam (`ARCHITECTURE.md` §3.17). Epic Games e GOG **não** têm integração automática; esses jogos são adicionados manualmente (`origin = 'manual'`). Jogos de emuladores também são adicionados manualmente, cada um com a sua origem (ver 3.10); o único emulador suportado é o Yuzu (3.12).
 - Segredos (chaves de API) nunca ficam em texto puro no banco (D-04).
 
 ---
@@ -118,6 +118,8 @@ Uma única linha, com a configuração do usuário local.
 | `steam_id` | `TEXT UNIQUE` | SteamID64 (17 dígitos, validar com `^\d{17}$`); `NULL` enquanto não configurado. O banco também verifica: 17 caracteres, só dígitos |
 | `steam_api_key_encrypted` | `BLOB` | Chave da Steam Web API criptografada com `safeStorage` (D-04) |
 | `steamgriddb_api_key_encrypted` | `BLOB` | Chave do SteamGridDB criptografada com `safeStorage` (D-15) |
+| `igdb_client_id_encrypted` | `BLOB` | Client ID do app da Twitch para o IGDB, criptografado com `safeStorage` (D-18) |
+| `igdb_client_secret_encrypted` | `BLOB` | Client Secret do app da Twitch para o IGDB, criptografado com `safeStorage` (D-18). O token de acesso fica só na memória |
 | `platine` | `INTEGER NOT NULL DEFAULT 0` | Jogos com platina; `CHECK (>= 0)` |
 | `gold` | `INTEGER NOT NULL DEFAULT 0` | Conquistas ouro desbloqueadas; `CHECK (>= 0)` |
 | `silver` | `INTEGER NOT NULL DEFAULT 0` | Conquistas prata desbloqueadas; `CHECK (>= 0)` |
@@ -254,7 +256,7 @@ Artes de cada jogo, guardadas em cache local.
 | `game_id` | `INTEGER NOT NULL` | FK para `GAMES(id)` com `ON DELETE CASCADE` |
 | `kind` | `TEXT NOT NULL` | `CHECK (kind IN ('cover_square','cover_portrait','logo','background','header'))` |
 | `local_path` | `TEXT NOT NULL` | Caminho relativo à pasta de cache de artes |
-| `source` | `TEXT NOT NULL` | `CHECK (source IN ('steam','steamgriddb','user'))` |
+| `source` | `TEXT NOT NULL` | `CHECK (source IN ('steam','steamgriddb','igdb','user'))` |
 | `source_url` | `TEXT` | Origem remota, se houver |
 | `width` | `INTEGER` | Dimensões reais da imagem baixada; `CHECK (width > 0)` |
 | `height` | `INTEGER` | `CHECK (height > 0)` |
@@ -268,7 +270,7 @@ Tipos de arte:
 | `kind` | Conteúdo | Uso na interface |
 | --- | --- | --- |
 | `cover_square` | Capa quadrada | Biblioteca |
-| `cover_portrait` | Capa vertical 600×900 (2:3) | Início |
+| `cover_portrait` | Capa vertical (exibida em 3:4) | Início |
 | `logo` | Logotipo, preferencialmente com transparência | Página do jogo |
 | `background` | Imagem 1920×1080 | Página do jogo |
 | `header` | Imagem larga (`header_image` da Steam, ~460×215) | Lista de conquistas |
@@ -281,7 +283,7 @@ Regras:
 - O cache é pessoal e local; imagens baixadas não são redistribuídas com o aplicativo.
 - A tabela pode ficar sem linhas para um jogo: a interface usa placeholders.
 - A capa vertical (`cover_portrait`) e a quadrada (`cover_square`) são artes **independentes**: uma não é recortada a partir da outra. A tela Início usa a vertical; a Biblioteca usa a quadrada.
-- Validar as dimensões decodificadas de cada tipo: a vertical deve ter proporção 2:3 (alvo 600×900) e a quadrada proporção 1:1.
+- Validar as dimensões decodificadas de cada tipo: a vertical deve ter proporção de 2:3 a 3:4 (SteamGridDB e IGDB, respectivamente; o card do Início é 3:4 e estica a arte para caber inteira) e a quadrada proporção 1:1.
 
 ### 3.10 `ORIGINS` (D-05)
 

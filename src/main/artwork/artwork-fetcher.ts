@@ -6,6 +6,8 @@ import {
   writeArtwork
 } from '../../infrastructure/artwork/import-artwork'
 import type { HttpGet, HttpGetBytes } from '../../integrations/http'
+import { igdbImageUrl, pickIgdbBackground, type IgdbGameData } from '../../integrations/igdb/games'
+import type { IgdbResult } from '../../integrations/igdb/igdb'
 import { fetchAppArtwork, isGeneratedStoreBackground } from '../../integrations/steam/steam-web'
 import {
   findBestAsset,
@@ -20,6 +22,8 @@ import { UNAVAILABLE_LIMIT, UNAVAILABLE_WAIT_MS } from '../queue-pacing'
 export const ARTWORK_INTERVAL_MS = 1500
 
 const GRID_KINDS: SteamGridDbKind[] = ['cover_square', 'cover_portrait', 'logo']
+/** What IGDB gives a game (D-18). */
+const IGDB_KINDS: ArtworkKind[] = ['cover_portrait', 'background', 'logo']
 /** What the user's own search replaces, for any game (D-15). */
 const CHOSEN_KINDS: SteamGridDbKind[] = ['cover_square', 'cover_portrait', 'logo', 'header']
 
@@ -36,6 +40,12 @@ export interface ArtworkFetcherDeps {
   getBytes: HttpGetBytes
   /** Decrypted only in main; null when not configured. */
   gridKey(): string | null
+  /** Whether both IGDB credentials are set. */
+  igdbConfigured(): boolean
+  /** One game from IGDB (D-18). */
+  igdbGame(id: number): Promise<IgdbResult<IgdbGameData | null>>
+  /** The same, by Steam App ID. */
+  igdbSteamGame(appId: number): Promise<IgdbResult<IgdbGameData | null>>
   cacheDir: string
   decode(bytes: Buffer): { width: number; height: number } | null
   clock: { now(): Date }
@@ -54,19 +64,38 @@ export interface ArtworkFetcher {
    */
   fetchMissing(options?: { retry?: boolean }): Promise<void>
   search(term: string): Promise<Result<SteamGridDbGameInfo[]>>
+  /**
+   * A manual game filled from IGDB (D-18): portrait cover, logo and background from IGDB,
+   * the rest from SteamGridDB under the same name. Only what the game does not have yet.
+   */
+  applyIgdb(gameId: number, igdbGameId: number): Promise<Result<ArtworkKind[]>>
+  /** The user picked the IGDB game, for any game; its art replaces portrait cover, logo and background. */
+  replaceWithIgdb(gameId: number, igdbGameId: number): Promise<Result<ArtworkKind[]>>
   /** The user picked the SteamGridDB game; its art replaces covers, logo and header. */
   applySteamGridDb(gameId: number, steamGridDbGameId: number): Promise<Result<ArtworkKind[]>>
 }
 
 /**
- * Artwork queue (ARCHITECTURE.md §3.13, owner decisions of Phase 6c): Steam
- * games get `header_image` and `background_raw` from appdetails, and the
- * best-voted square cover, portrait cover and logo from SteamGridDB when a
- * key is set. Every download is validated (type, size, decoded dimensions,
+ * Artwork queue (ARCHITECTURE.md §3.13 and §3.17): with IGDB credentials, Steam
+ * games get their portrait cover, logo and background from IGDB first. The header
+ * comes from appdetails, as does a background IGDB does not have; the best-voted
+ * square cover, and a portrait cover or logo IGDB does not have, come from
+ * SteamGridDB when a key is set. Every download is validated (type, size, decoded dimensions,
  * proportion) before it reaches the cache; failures keep the placeholder.
  * A game that got answers is not tried again at the next start, even with no art
  * to show; one that got none stays to try. With no network the queue just stops.
  */
+/** Where IGDB keeps each image of a game; null when it has none that fits. */
+function igdbArtUrls(data: IgdbGameData): [ArtworkKind, string | null][] {
+  const background = pickIgdbBackground(data)
+  return [
+    ['cover_portrait', data.cover ? igdbImageUrl(data.cover.imageId, '1080p') : null],
+    ['background', background ? igdbImageUrl(background.imageId, '1080p') : null],
+    // Logos need the PNG: the JPEG would lose their transparency.
+    ['logo', data.logos[0] ? igdbImageUrl(data.logos[0].imageId, '1080p', 'png') : null]
+  ]
+}
+
 export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
   let run: Promise<void> | null = null
   let runIsRetry = false
@@ -78,7 +107,7 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
     game: Game,
     kind: ArtworkKind,
     url: string,
-    source: 'steam' | 'steamgriddb',
+    source: 'steam' | 'steamgriddb' | 'igdb',
     userSelected: boolean
   ): Promise<boolean> => {
     const bytes = await deps.getBytes(url)
@@ -142,7 +171,8 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
     return (
       missing('header') ||
       missing('background') ||
-      (deps.gridKey() !== null && GRID_KINDS.some(missing))
+      (deps.gridKey() !== null && GRID_KINDS.some(missing)) ||
+      (deps.igdbConfigured() && IGDB_KINDS.some(missing))
     )
   }
 
@@ -154,7 +184,25 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
     let changed = false
     let outcome: QueueOutcome = 'answered'
     storageFailed = false
-    const missing = missingCheck(game, have)
+    const notInCache = missingCheck(game, have)
+    const fromIgdb = new Set<ArtworkKind>()
+    const missing = (kind: ArtworkKind): boolean => notInCache(kind) && !fromIgdb.has(kind)
+
+    if (deps.igdbConfigured() && IGDB_KINDS.some(missing)) {
+      const answer = await deps.igdbSteamGame(appId)
+      await deps.wait(ARTWORK_INTERVAL_MS)
+      if (!answer.ok && answer.error === 'network') return { changed, outcome: 'no-network' }
+      // IGDB failing must not cost this game the other sources; it stays to try.
+      if (!answer.ok) outcome = 'no-answer'
+      if (answer.ok && answer.data) {
+        for (const [kind, url] of igdbArtUrls(answer.data)) {
+          if (url !== null && missing(kind) && (await store(game, kind, url, 'igdb', false))) {
+            fromIgdb.add(kind)
+            changed = true
+          }
+        }
+      }
+    }
 
     if (missing('header') || missing('background')) {
       const urls = await fetchAppArtwork(deps.get, appId)
@@ -243,6 +291,67 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
       return result.ok
         ? { ok: true, data: result.data }
         : { ok: false, error: { code: result.error } }
+    },
+
+    async applyIgdb(gameId, igdbGameId) {
+      const game = deps.games.getById(gameId)
+      if (!game || game.origin === BuiltinOrigin.steam) {
+        return { ok: false, error: { code: 'not-found' } }
+      }
+      const answer = await deps.igdbGame(igdbGameId)
+      if (!answer.ok) return { ok: false, error: { code: answer.error } }
+      if (!answer.data) return { ok: false, error: { code: 'not-found' } }
+      const data = answer.data
+
+      const have = (): ArtworkKind[] => deps.artwork.listKinds().get(gameId) ?? []
+      const saved: ArtworkKind[] = []
+      const wanted = igdbArtUrls(data).filter(
+        ([kind, url]) => url !== null && !have().includes(kind)
+      )
+      for (const [index, [kind, url]] of wanted.entries()) {
+        deps.onProgress?.({ done: index, total: wanted.length })
+        if (await store(game, kind, url as string, 'igdb', true)) {
+          saved.push(kind)
+          // The game page is already open: each image shows as it arrives.
+          deps.onLibraryChanged()
+        }
+      }
+      deps.onProgress?.(null)
+
+      // What IGDB does not have. Only under the very same name: nobody confirms this match.
+      const missing = CHOSEN_KINDS.filter((kind) => !have().includes(kind))
+      const key = deps.gridKey()
+      if (key && missing.length > 0) {
+        const found = await searchSteamGridDb(deps.get, key, data.name)
+        const same = found.ok
+          ? found.data.find(
+              (g) =>
+                g.name
+                  .trim()
+                  .localeCompare(data.name.trim(), undefined, { sensitivity: 'base' }) === 0
+            )
+          : undefined
+        if (same) {
+          const grid = await fromSteamGridDb(game, { gameId: same.id }, missing, true)
+          saved.push(...grid.saved)
+          if (grid.saved.length > 0) deps.onLibraryChanged()
+        }
+      }
+      return { ok: true, data: saved }
+    },
+
+    async replaceWithIgdb(gameId, igdbGameId) {
+      const game = deps.games.getById(gameId)
+      if (!game) return { ok: false, error: { code: 'not-found' } }
+      const answer = await deps.igdbGame(igdbGameId)
+      if (!answer.ok) return { ok: false, error: { code: answer.error } }
+      if (!answer.data) return { ok: false, error: { code: 'not-found' } }
+      const saved: ArtworkKind[] = []
+      for (const [kind, url] of igdbArtUrls(answer.data)) {
+        if (url !== null && (await store(game, kind, url, 'igdb', true))) saved.push(kind)
+      }
+      if (saved.length > 0) deps.onLibraryChanged()
+      return { ok: true, data: saved }
     },
 
     async applySteamGridDb(gameId, steamGridDbGameId) {

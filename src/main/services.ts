@@ -3,7 +3,8 @@ import { readdir, readFile } from 'node:fs/promises'
 import {
   createGameRunner,
   createSteamSessions,
-  recoverInterruptedSessions
+  recoverInterruptedSessions,
+  type SecretKind
 } from '../core/application'
 import { isAllowedShortcutUrl, isSteamRunUrl } from '../core/domain'
 import { readShortcutUrl } from '../infrastructure/filesystem/shortcut-reader'
@@ -24,7 +25,9 @@ import {
 import { createProcessLauncher } from '../infrastructure/process/process-launcher'
 import { readSteamRegistryValue } from '../integrations/steam/registry'
 import { createSteamAdapter } from '../integrations/steam/steam-adapter'
-import { createFetchBytes, fetchGet } from '../integrations/http'
+import { createFetchBytes, fetchGet, fetchPost } from '../integrations/http'
+import { fetchIgdbGame, fetchIgdbSteamGame } from '../integrations/igdb/games'
+import { createIgdbClient } from '../integrations/igdb/igdb'
 import { MAX_ARTWORK_BYTES, webpSize } from '../infrastructure/artwork/import-artwork'
 import { createAchievementSync } from './achievements/achievement-sync'
 import { createArtworkFetcher } from './artwork/artwork-fetcher'
@@ -142,7 +145,7 @@ export function createServices(
 
   const users = createUserRepository(db)
   const genres = createGenreRepository(db)
-  const secret = (kind: 'steam-api-key' | 'steamgriddb-api-key'): string | null => {
+  const secret = (kind: SecretKind): string | null => {
     const encrypted = users.getSecret(kind)
     if (encrypted === null) return null
     try {
@@ -154,6 +157,15 @@ export function createServices(
   const activity = createBackgroundActivity((current) =>
     window()?.webContents.send(IpcEvent.activityChanged, current)
   )
+
+  const igdb = createIgdbClient({
+    post: fetchPost,
+    credentials: () => ({
+      clientId: secret('igdb-client-id'),
+      clientSecret: secret('igdb-client-secret')
+    }),
+    now: () => Date.now()
+  })
 
   const steamOnline = createSteamOnline({
     games,
@@ -167,6 +179,7 @@ export function createServices(
     }),
     clock,
     wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    testIgdb: () => igdb.test(),
     onLibraryChanged: () => window()?.webContents.send(IpcEvent.libraryChanged),
     onMetadataProgress: (progress) => activity.update('metadata', progress),
     // Messages only: request URLs (which may hold keys) are never logged.
@@ -197,6 +210,10 @@ export function createServices(
     get: fetchGet,
     getBytes: createFetchBytes(MAX_ARTWORK_BYTES),
     gridKey: () => secret('steamgriddb-api-key'),
+    igdbConfigured: () =>
+      secret('igdb-client-id') !== null && secret('igdb-client-secret') !== null,
+    igdbGame: (id) => fetchIgdbGame(igdb, id),
+    igdbSteamGame: (appId) => fetchIgdbSteamGame(igdb, appId),
     cacheDir: artworkCacheDir,
     decode: decodeImage,
     clock,
@@ -245,6 +262,7 @@ export function createServices(
     },
     service: createManualGameService({
       games,
+      genres,
       configs,
       origins,
       emulators,
@@ -263,6 +281,7 @@ export function createServices(
     artworkFetcher,
     achievementSync,
     activity,
+    igdb,
     users,
     artworkCacheDir,
     settings: createSettingsService({

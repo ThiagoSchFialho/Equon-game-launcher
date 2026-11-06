@@ -45,6 +45,8 @@ export interface ChoiceItem {
   selected?: boolean
   /** Starts a new group with a divider above. */
   separated?: boolean
+  /** A small centered button, for a secondary way out next to the real choices. */
+  compact?: boolean
 }
 
 function ChoiceRow({
@@ -72,6 +74,7 @@ function ChoiceRow({
       data-tone={item.tone}
       data-selected={item.selected}
       data-separated={item.separated}
+      data-compact={item.compact}
       aria-disabled={!item.onConfirm}
       tabIndex={-1}
       {...mouse}
@@ -107,11 +110,11 @@ export function ChoiceDialog({
     <DialogFrame id={id} title={title} onClose={onClose} width={width}>
       <h2 className="dialog__title">{title}</h2>
       <div className="dialog__panel dialog__panel--list">
+        {footer}
         {items.map((item, i) => (
           <ChoiceRow key={item.id} dialogId={id} item={item} autoFocus={i === initial} />
         ))}
       </div>
-      {footer}
     </DialogFrame>
   )
 }

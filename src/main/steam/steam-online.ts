@@ -30,6 +30,8 @@ export interface SteamOnlineDeps {
   credentials(): { steamId: string | null; steamKey: string | null; gridKey: string | null }
   clock: { now(): Date }
   wait(ms: number): Promise<void>
+  /** The IGDB connection test; its client lives outside Steam, the test screen does not. */
+  testIgdb(): Promise<{ ok: true } | { ok: false; error: string }>
   onLibraryChanged(): void
   /** Metadata queue progress; null when it ends. */
   onMetadataProgress?(progress: { done: number; total: number } | null): void
@@ -49,7 +51,7 @@ export interface SteamOnline {
   lastSync(): SteamSyncInfo | null
   /** Fetches appdetails for Steam games still without metadata (D-16), one at a time; stops with no network. */
   fetchMissingMetadata(): Promise<void>
-  testConnection(kind: 'steam' | 'steamgriddb'): Promise<Result<ConnectionTest>>
+  testConnection(kind: 'steam' | 'steamgriddb' | 'igdb'): Promise<Result<ConnectionTest>>
 }
 
 export function createSteamOnline(deps: SteamOnlineDeps): SteamOnline {
@@ -127,6 +129,12 @@ export function createSteamOnline(deps: SteamOnlineDeps): SteamOnline {
     },
 
     async testConnection(kind) {
+      if (kind === 'igdb') {
+        const result = await deps.testIgdb()
+        return result.ok
+          ? { ok: true, data: { personaName: null, gamesVisible: true } }
+          : { ok: false, error: { code: result.error } }
+      }
       const { steamId, steamKey, gridKey } = deps.credentials()
       if (kind === 'steamgriddb') {
         if (!gridKey) return { ok: false, error: { code: 'not-configured' } }

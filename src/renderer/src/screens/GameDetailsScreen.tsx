@@ -19,6 +19,7 @@ import { ConfirmDialog } from '../components/Dialog'
 import { BackLink } from '../components/BackLink'
 import { Footer, type Hint } from '../components/Footer'
 import { OptionsMenu } from '../components/OptionsMenu'
+import { IgdbArtworkSearch } from '../components/IgdbArtworkSearch'
 import { SteamGridDbSearch } from '../components/SteamGridDbSearch'
 import { StateMessage } from '../components/StateMessage'
 import {
@@ -225,11 +226,15 @@ export function GameDetailsScreen({ id, from }: { id: number; from: Section }): 
   const navigation = useNavigation()
   const { reload: reloadGames, refresh: refreshGames } = useGames()
   const { details, reload, refresh } = useGameDetails(id)
-  const [overlay, setOverlay] = useState<'menu' | 'remove' | 'artwork' | null>(null)
+  const [overlay, setOverlay] = useState<'menu' | 'remove' | 'artwork' | 'igdb-artwork' | null>(
+    null
+  )
   const [removeError, setRemoveError] = useState<string | null>(null)
   const running = useRunning().ids.includes(id)
   // The sync after a game closes changes the achievement count shown here.
   useEffect(() => window.equon.achievements.onChanged(refresh), [refresh])
+  // Art can arrive while the page is open: a game just filled from IGDB opens before it.
+  useEffect(() => window.equon.library.onChanged(refresh), [refresh])
   // While Steam installs or updates the game, re-read it so Play comes back when it is done.
   const steamBusy = details.status === 'ready' && details.data?.launchIssue === 'steam-busy'
   useEffect(() => {
@@ -315,11 +320,23 @@ export function GameDetailsScreen({ id, from }: { id: number; from: Section }): 
           onAchievements={() => navigation.openGameAchievements(id)}
           onEdit={details.data.editable ? () => navigation.openGameForm(id) : undefined}
           onArtwork={() => setOverlay('artwork')}
+          onIgdbArtwork={() => setOverlay('igdb-artwork')}
           onRemove={details.data.editable && !running ? () => setOverlay('remove') : undefined}
         />
       )}
       {overlay === 'artwork' && details.status === 'ready' && details.data && (
         <SteamGridDbSearch
+          gameId={id}
+          title={details.data.title}
+          onClose={() => setOverlay(null)}
+          onApplied={() => {
+            refresh()
+            refreshGames()
+          }}
+        />
+      )}
+      {overlay === 'igdb-artwork' && details.status === 'ready' && details.data && (
+        <IgdbArtworkSearch
           gameId={id}
           title={details.data.title}
           onClose={() => setOverlay(null)}

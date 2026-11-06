@@ -19,6 +19,10 @@ export const IpcChannel = {
   achievementsStatus: 'achievements:status',
   achievementsEnsureIcons: 'achievements:ensure-icons',
   artworkSearch: 'artwork:search',
+  igdbSearch: 'igdb:search',
+  igdbGame: 'igdb:game',
+  igdbApplyArtwork: 'igdb:apply-artwork',
+  igdbReplaceArtwork: 'igdb:replace-artwork',
   artworkApplySteamGridDb: 'artwork:apply-steamgriddb',
   gamesList: 'games:list',
   gamesGet: 'games:get',
@@ -88,7 +92,8 @@ export interface LibraryRefreshInfo {
   finishedAt: string
 }
 
-export type SecretKind = 'steam-api-key' | 'steamgriddb-api-key'
+export type SecretKind =
+  'steam-api-key' | 'steamgriddb-api-key' | 'igdb-client-id' | 'igdb-client-secret'
 
 /** Last Steam playtime sync (GetOwnedGames, once per launcher start). */
 export interface SteamSyncInfo {
@@ -190,7 +195,7 @@ export interface SteamGridDbGameInfo {
 
 /** Successful "Testar conexão". */
 export interface ConnectionTest {
-  /** Steam profile name; null for SteamGridDB. */
+  /** Steam profile name; null for the other connections. */
   personaName: string | null
   /** False when the Steam profile hides game details (playtime cannot sync). */
   gamesVisible: boolean
@@ -201,6 +206,8 @@ export interface SettingsInfo {
   steamId: string | null
   steamApiKey: boolean
   steamGridDbKey: boolean
+  igdbClientId: boolean
+  igdbClientSecret: boolean
   /** False when Windows cannot encrypt (safeStorage); secrets cannot be saved then. */
   secretsAvailable: boolean
   /** Steam folder found by the last scan; null = not found (yet). */
@@ -338,6 +345,8 @@ export interface ManualGameForm {
   romPath: string | null
   arguments: string[]
   workingDirectory: string | null
+  /** Genres from IGDB, when filled from it; a game that already has genres keeps them. */
+  genres?: string[]
   /** A new background image to import; null keeps the current one. */
   backgroundPath: string | null
 }
@@ -348,7 +357,7 @@ export interface EditableGame {
   hasBackground: boolean
 }
 
-export type PickKind = 'executable' | 'emulator' | 'rom' | 'image' | 'directory'
+export type PickKind = 'executable' | 'game' | 'emulator' | 'rom' | 'image' | 'directory'
 
 export interface BrowserEntry {
   name: string
@@ -362,6 +371,23 @@ export interface BrowserListing {
   parent: string | null
   entries: BrowserEntry[]
   truncated: boolean
+}
+
+export interface IgdbGameInfo {
+  id: number
+  name: string
+  year: number | null
+  developer: string | null
+}
+
+/** What the form fills from IGDB. The description comes in English; genres in Portuguese. */
+export interface IgdbGameFill {
+  name: string
+  summary: string | null
+  releaseDate: string | null
+  developer: string | null
+  genres: string[]
+  requiredAge: string | null
 }
 
 /** Background work the top bar reports. */
@@ -379,6 +405,14 @@ export interface EquonApi {
   app: {
     getInfo(): Promise<AppInfo>
     getSystemInfo(): Promise<SystemInfo>
+  }
+  igdb: {
+    search(term: string): Promise<Result<IgdbGameInfo[]>>
+    game(id: number): Promise<Result<IgdbGameFill | null>>
+    /** After saving a game filled from IGDB: downloads what it does not have yet. */
+    applyArtwork(gameId: number, igdbGameId: number): Promise<Result<ArtworkKind[]>>
+    /** "Buscar artes no IGDB", for any game: replaces what the chosen game has. */
+    replaceArtwork(gameId: number, igdbGameId: number): Promise<Result<ArtworkKind[]>>
   }
   activity: {
     current(): Promise<BackgroundActivity | null>
@@ -418,7 +452,7 @@ export interface EquonApi {
     /** null removes the secret. The value goes to main once and is never returned. */
     setSecret(kind: SecretKind, value: string | null): Promise<Result<SettingsInfo>>
     /** One live request with the stored credentials. */
-    testConnection(kind: 'steam' | 'steamgriddb'): Promise<Result<ConnectionTest>>
+    testConnection(kind: 'steam' | 'steamgriddb' | 'igdb'): Promise<Result<ConnectionTest>>
   }
   games: {
     list(): Promise<GameSummary[]>

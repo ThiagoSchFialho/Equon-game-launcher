@@ -17,7 +17,8 @@ import {
   type GameRunner,
   type LaunchConfigRepository,
   type OriginRepository,
-  type UnitOfWork
+  type UnitOfWork,
+  type GenreRepository
 } from '../../core/application'
 import {
   BuiltinOrigin,
@@ -45,6 +46,7 @@ import type {
 } from '../../shared/ipc/contract'
 
 export interface ManualGameServiceDeps {
+  genres: GenreRepository
   games: GameRepository
   configs: LaunchConfigRepository
   origins: OriginRepository
@@ -142,6 +144,7 @@ export function createManualGameService(deps: ManualGameServiceDeps): ManualGame
         arguments: args,
         workingDirectory,
         backgroundPath,
+        genres,
         ...fields
       } = form
       const input = validateManualGame(
@@ -159,6 +162,10 @@ export function createManualGameService(deps: ManualGameServiceDeps): ManualGame
       const background = prepareBackground(backgroundPath)
       const game = saveManualGame(deps, input, id)
       saveBackground(game.id, background)
+      // Filled from IGDB: the genres of a game that has them are not replaced.
+      if (genres && genres.length > 0 && deps.genres.listForGame(game.id).length === 0) {
+        deps.genres.setGameGenres(game.id, genres)
+      }
       return { id: game.id }
     })
 

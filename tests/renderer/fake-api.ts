@@ -62,6 +62,8 @@ export const settingsInfo = (extra: Partial<SettingsInfo> = {}): SettingsInfo =>
   steamId: null,
   steamApiKey: false,
   steamGridDbKey: false,
+  igdbClientId: false,
+  igdbClientSecret: false,
   secretsAvailable: true,
   steamPath: 'C:\\Program Files (x86)\\Steam',
   refreshing: false,
@@ -85,6 +87,7 @@ export function installFakeApi(
     artwork?: Partial<EquonApi['artwork']>
     achievements?: Partial<EquonApi['achievements']>
     activity?: Partial<EquonApi['activity']>
+    igdb?: Partial<EquonApi['igdb']>
   } = {}
 ): EquonApi {
   const runningListeners = new Set<(ids: number[]) => void>()
@@ -98,8 +101,15 @@ export function installFakeApi(
         node: '24.18.0',
         os: 'Windows 11 Pro (10.0.26300)',
         dataPath: 'C:\\Users\\u\\AppData\\Roaming\\equon-game-launcher-dev',
-        schemaVersion: 8
+        schemaVersion: 10
       })
+    },
+    igdb: {
+      search: async () => ({ ok: true, data: [] }),
+      game: async () => ({ ok: true, data: null }),
+      applyArtwork: async () => ({ ok: true, data: [] }),
+      replaceArtwork: async () => ({ ok: true, data: [] }),
+      ...overrides.igdb
     },
     activity: {
       current: async () => null,

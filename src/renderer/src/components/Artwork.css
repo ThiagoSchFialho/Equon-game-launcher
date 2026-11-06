@@ -8,7 +8,11 @@
   aspect-ratio: 1 / 1;
 }
 .artwork--cover_portrait {
-  aspect-ratio: 2 / 3;
+  aspect-ratio: 3 / 4;
+}
+/* The whole art always shows: stretched to the card, never cropped or letterboxed. */
+.artwork--cover_portrait .artwork__image {
+  object-fit: fill;
 }
 .artwork--background {
   aspect-ratio: 16 / 9;

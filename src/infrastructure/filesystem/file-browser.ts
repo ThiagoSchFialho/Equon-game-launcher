@@ -3,11 +3,13 @@ import { dirname, extname, join, parse, resolve } from 'node:path'
 import { EMULATORS } from '../../core/domain'
 
 /** What the user is picking; decides which files are listed. */
-export type PickKind = 'executable' | 'emulator' | 'rom' | 'image' | 'directory'
+export type PickKind = 'executable' | 'game' | 'emulator' | 'rom' | 'image' | 'directory'
 
 export const PICK_EXTENSIONS: Record<PickKind, readonly string[] | null> = {
   // Games: a native executable or a store .url shortcut.
   executable: ['.exe', '.url'],
+  // The add form: the file decides whether it is a local game or an emulator's.
+  game: ['.exe', '.url', ...EMULATORS.yuzu.romExtensions],
   emulator: ['.exe'],
   // Yuzu is the only supported emulator (DATA_BASE_CONTEXT.md §3.12).
   rom: EMULATORS.yuzu.romExtensions,

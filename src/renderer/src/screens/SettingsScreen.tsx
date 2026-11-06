@@ -296,6 +296,37 @@ function Connections({
       />
       <TestButton id="settings:test-steamgriddb" kind="steamgriddb" ready={info.steamGridDbKey} />
 
+      <h2 className="settings__group">{t.settings.igdb}</h2>
+      <SecretRow
+        id="igdb-client-id"
+        label={t.settings.igdbClientId}
+        configured={info.igdbClientId}
+        error={errors['igdb-client-id']}
+        onEdit={() =>
+          onEdit({ kind: 'secret', secret: 'igdb-client-id', label: t.settings.igdbClientId })
+        }
+        onRemove={() => remove('igdb-client-id')}
+      />
+      <SecretRow
+        id="igdb-client-secret"
+        label={t.settings.igdbClientSecret}
+        configured={info.igdbClientSecret}
+        error={errors['igdb-client-secret']}
+        onEdit={() =>
+          onEdit({
+            kind: 'secret',
+            secret: 'igdb-client-secret',
+            label: t.settings.igdbClientSecret
+          })
+        }
+        onRemove={() => remove('igdb-client-secret')}
+      />
+      <TestButton
+        id="settings:test-igdb"
+        kind="igdb"
+        ready={info.igdbClientId && info.igdbClientSecret}
+      />
+
       <div className="settings__library">
         <div>
           <p className="settings__library-title">{t.settings.library}</p>
@@ -488,7 +519,7 @@ function TestButton({
   ready
 }: {
   id: string
-  kind: 'steam' | 'steamgriddb'
+  kind: 'steam' | 'steamgriddb' | 'igdb'
   ready: boolean
 }): React.JSX.Element {
   const [testing, setTesting] = useState(false)
@@ -506,6 +537,8 @@ function TestButton({
           setResult({ ok: false, text })
         } else if (kind === 'steamgriddb') {
           setResult({ ok: true, text: t.settings.testOkGrid })
+        } else if (kind === 'igdb') {
+          setResult({ ok: true, text: t.settings.testOkIgdb })
         } else {
           const name = outcome.data.personaName ?? ''
           setResult(
@@ -519,7 +552,11 @@ function TestButton({
       .finally(() => setTesting(false))
   }
 
-  const hint = kind === 'steam' ? t.settings.testNeedsConfig : t.settings.testNeedsGridKey
+  const hint = {
+    steam: t.settings.testNeedsConfig,
+    steamgriddb: t.settings.testNeedsGridKey,
+    igdb: t.settings.testNeedsIgdb
+  }[kind]
   return (
     <div className="settings__test">
       <Button

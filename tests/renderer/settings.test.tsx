@@ -79,7 +79,7 @@ describe('settings', () => {
     })
     await openSettings()
     expect(screen.getByText('Configurada')).toBeTruthy()
-    expect(screen.getByText('Não configurada')).toBeTruthy()
+    expect(screen.getAllByText('Não configurada')).toHaveLength(3)
 
     await click('ID Steam')
     type('76561197960287930')
@@ -353,6 +353,39 @@ describe('duplicate review', () => {
   })
 })
 
+describe('IGDB connection', () => {
+  it('asks for both credentials before testing, and only shows if they are configured', async () => {
+    const testConnection = vi.fn<EquonApi['settings']['testConnection']>(async () => ({
+      ok: true,
+      data: { personaName: null, gamesVisible: true }
+    }))
+    installFakeApi([summary(1, 'Tidebound')], { settings: { testConnection } })
+    await openSettings()
+    expect(screen.getByText('Client ID da Twitch')).toBeTruthy()
+    expect(screen.getByText('Client Secret da Twitch')).toBeTruthy()
+    expect(screen.getByText('Configure o Client ID e o Client Secret para testar.')).toBeTruthy()
+    expect(testConnection).not.toHaveBeenCalled()
+  })
+
+  it('tests the connection and says the credentials are valid', async () => {
+    const testConnection = vi.fn<EquonApi['settings']['testConnection']>(async () => ({
+      ok: true,
+      data: { personaName: null, gamesVisible: true }
+    }))
+    installFakeApi([summary(1, 'Tidebound')], {
+      settings: {
+        get: async () => settingsInfo({ igdbClientId: true, igdbClientSecret: true }),
+        testConnection
+      }
+    })
+    await openSettings()
+    const buttons = screen.getAllByLabelText('Testar conexão')
+    act(() => buttons[buttons.length - 1].click())
+    expect(await screen.findByText('Credenciais válidas.')).toBeTruthy()
+    expect(testConnection).toHaveBeenCalledWith('igdb')
+  })
+})
+
 describe('SteamGridDB artwork', () => {
   it('shows the new image when the art was replaced, with no restart', async () => {
     const steam = summary(1, 'Tidebound', { artwork: ['cover_portrait'], artworkVersion: 'one' })
@@ -414,7 +447,8 @@ describe('SteamGridDB artwork', () => {
     expect(dialog.className).toContain('dialog--wide')
     act(() => (within(dialog).getByText('Tidebound').closest('button') as HTMLElement).click())
     expect(applySteamGridDb).toHaveBeenCalledWith(1, 77)
-    expect(await screen.findByText('3 artes baixadas.')).toBeTruthy()
+    // Done: it closes by itself.
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   })
 
   it('explains a missing key', async () => {

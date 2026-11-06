@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { SteamGridDbGameInfo } from '../../../shared/ipc/contract'
 import { useFocusManager } from '../focus/focus-context'
 import { t } from '../strings'
@@ -10,7 +10,7 @@ type Step =
   | { kind: 'results'; term: string; games: SteamGridDbGameInfo[] }
   | { kind: 'typing'; term: string }
   | { kind: 'applying'; name: string }
-  | { kind: 'done'; message: string; tone: 'success' | 'error' }
+  | { kind: 'done'; message: string }
 
 /**
  * "Buscar artes no SteamGridDB" for any game (D-15, owner decisions of Phases
@@ -30,6 +30,13 @@ export function SteamGridDbSearch({
 }): React.JSX.Element {
   const [step, setStep] = useState<Step>({ kind: 'searching', term: title })
   const searchingTerm = step.kind === 'searching' ? step.term : null
+  const open = useRef(true)
+  useEffect(() => {
+    open.current = true
+    return () => {
+      open.current = false
+    }
+  }, [])
 
   // "Fechar" is the only row while searching, so focus would stay on it: move to the results.
   const focus = useFocusManager()
@@ -45,9 +52,9 @@ export function SteamGridDbSearch({
       (result) => {
         if (cancelled) return
         if (result.ok) setStep({ kind: 'results', term: searchingTerm, games: result.data })
-        else setStep({ kind: 'done', message: errorText(result.error.code), tone: 'error' })
+        else setStep({ kind: 'done', message: errorText(result.error.code) })
       },
-      () => !cancelled && setStep({ kind: 'done', message: errorText('network'), tone: 'error' })
+      () => !cancelled && setStep({ kind: 'done', message: errorText('network') })
     )
     return () => {
       cancelled = true
@@ -60,18 +67,15 @@ export function SteamGridDbSearch({
       (result) => {
         if (result.ok && result.data.length > 0) {
           onApplied()
-          setStep({
-            kind: 'done',
-            message: t.steamGridDb.applied(result.data.length),
-            tone: 'success'
-          })
+          // Nothing left to say: the new art is on screen. Closed by hand meanwhile, stay closed.
+          if (open.current) onClose()
         } else if (result.ok) {
-          setStep({ kind: 'done', message: t.steamGridDb.nothingFound, tone: 'error' })
+          setStep({ kind: 'done', message: t.steamGridDb.nothingFound })
         } else {
-          setStep({ kind: 'done', message: errorText(result.error.code), tone: 'error' })
+          setStep({ kind: 'done', message: errorText(result.error.code) })
         }
       },
-      () => setStep({ kind: 'done', message: errorText('network'), tone: 'error' })
+      () => setStep({ kind: 'done', message: errorText('network') })
     )
   }
 
@@ -103,15 +107,15 @@ export function SteamGridDbSearch({
         separated: step.games.length > 0,
         onConfirm: () => setStep({ kind: 'typing', term: step.term })
       },
-      { id: 'close', label: t.steamGridDb.close, onConfirm: onClose }
+      { id: 'close', label: t.steamGridDb.close, compact: true, onConfirm: onClose }
     ]
     message = step.games.length === 0 ? t.steamGridDb.noResults(step.term) : t.steamGridDb.pick
   } else if (step.kind === 'done') {
-    items = [{ id: 'close', label: t.steamGridDb.close, onConfirm: onClose }]
+    items = [{ id: 'close', label: t.steamGridDb.close, compact: true, onConfirm: onClose }]
     message = step.message
   } else {
     // Searching or applying: the close entry stays focusable while main works.
-    items = [{ id: 'close', label: t.steamGridDb.close, onConfirm: onClose }]
+    items = [{ id: 'close', label: t.steamGridDb.close, compact: true, onConfirm: onClose }]
     message =
       step.kind === 'searching' ? t.steamGridDb.searching : t.steamGridDb.applying(step.name)
   }
@@ -124,10 +128,7 @@ export function SteamGridDbSearch({
       items={items}
       onClose={onClose}
       footer={
-        <p
-          className="dialog__message"
-          role={step.kind === 'done' && step.tone === 'error' ? 'alert' : undefined}
-        >
+        <p className="dialog__message" role={step.kind === 'done' ? 'alert' : undefined}>
           {message}
         </p>
       }

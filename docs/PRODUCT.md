@@ -115,8 +115,9 @@ com o computador ligado a uma TV.
     tempo de jogo não é medido).
 -   **Emuladores:** as Configurações têm a aba "Emuladores", onde o usuário
     escolhe um emulador suportado (por enquanto só o Yuzu) e indica o
-    executável dele. Ao adicionar um jogo com origem Yuzu, o usuário só
-    escolhe a ROM; o launcher abre o jogo direto no emulador.
+    executável dele. Ao adicionar um jogo, escolher uma ROM no campo
+    Executável, com o Yuzu configurado, já faz dele um jogo do Yuzu; o
+    launcher abre o jogo direto no emulador.
 
 As integrações devem ser implementadas por adaptadores independentes.
 Não presumir que todas as lojas ofereçam APIs públicas equivalentes.
@@ -286,14 +287,31 @@ limitações, condições de teste e método de inicialização suportado.
 ### 6.9 Artes e metadados
 
 -   Cada jogo pode ter cinco artes: **capa quadrada** (Biblioteca),
-    **capa vertical 600×900** (Início), **logotipo**, **imagem
+    **capa vertical 3:4** (Início, esticada para caber inteira), **logotipo**, **imagem
     1920×1080** e **imagem de cabeçalho** (header).
 -   Fontes: Steam (`header_image` e capturas de tela dos metadados),
     SteamGridDB (capas quadrada e vertical e logotipo, com chave de API
-    pessoal gratuita) e arquivos locais escolhidos pelo usuário. Não usar buscas
-    de imagens da web.
+    pessoal gratuita), IGDB (capa vertical, logotipo e imagem de fundo, com
+    um app próprio e gratuito da Twitch) e arquivos locais escolhidos pelo
+    usuário. Não usar buscas de imagens da web.
+-   Em jogos novos da Steam, com o IGDB configurado, a capa vertical, o
+    logotipo e a imagem de fundo vêm primeiro do IGDB. O que ele não tiver
+    vem da fonte anterior. Artes que o jogo já tem não são trocadas.
 -   Para jogos manuais, a busca no SteamGridDB é feita por título e o
     usuário confirma qual resultado corresponde ao jogo.
+-   O formulário de adicionar pede só título, executável, tempo de jogo e
+    argumentos; a origem é Jogo Local. Ao salvar, o usuário sempre confirma
+    o jogo nos resultados do IGDB, que preenche o resto. Metadados, origem
+    e imagens só são informados à mão na edição. A descrição vem em inglês
+    e pode ser editada; os gêneros são guardados em português.
+-   Se o IGDB não puder responder, o jogo é salvo com o que foi digitado e
+    um aviso explica o motivo. Sem resultados, o usuário pode buscar outro
+    nome ou salvar sem dados do IGDB.
+-   Ao editar um jogo, o IGDB só preenche campos vazios e nunca troca artes
+    que o jogo já tem.
+-   O menu de opções de qualquer jogo tem "Buscar artes no IGDB": o usuário
+    confirma o jogo, e a capa vertical, o logotipo e a imagem de fundo dele
+    substituem os atuais. O que o IGDB não tiver continua como está.
 -   Os metadados da Steam (título, descrição, desenvolvedor, data,
     classificação indicativa e gêneros) e as artes são obtidos **apenas
     quando o jogo é descoberto ou adicionado**; não há atualização

@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi, type Mock } from 'vitest'
 import App from '../../src/renderer/src/App'
-import type { EquonApi, ManualGameForm } from '../../src/shared/ipc/contract'
+import type { EquonApi, IgdbGameFill, ManualGameForm } from '../../src/shared/ipc/contract'
 import { details, installFakeApi, summary, yuzu } from './fake-api'
 
 afterEach(cleanup)
@@ -94,11 +94,87 @@ describe('play from game details', () => {
   })
 })
 
+describe('game page', () => {
+  it('reads the game again when the library changes, so new art shows up', async () => {
+    let emit: () => void = () => {}
+    const game = summary(1, 'Hollow Quest')
+    const get = vi.fn(async () => details(game))
+    installFakeApi([game], {
+      games: { get },
+      library: {
+        onChanged: (listener) => {
+          emit = listener
+          return () => {}
+        }
+      }
+    })
+    render(<App />)
+    await screen.findByText('12h 22m')
+    press('Enter')
+    await screen.findByLabelText('Jogar')
+    const callsBefore = get.mock.calls.length
+    act(() => emit())
+    await waitFor(() => expect(get.mock.calls.length).toBeGreaterThan(callsBefore))
+  })
+})
+
 describe('add game form', () => {
-  it('fills the form with the keyboard and the file browser, then saves', async () => {
-    const create = vi.fn<EquonApi['games']['create']>(async () => ({ ok: true, data: { id: 1 } }))
+  const FILL: IgdbGameFill = {
+    name: 'Hollow Quest: Official',
+    summary: 'A quest in English.',
+    releaseDate: '2017-02-24',
+    developer: 'Team Quest',
+    genres: ['Aventura', 'Indie'],
+    requiredAge: '10'
+  }
+  const igdbFake = (): {
+    search: Mock<EquonApi['igdb']['search']>
+    game: Mock<EquonApi['igdb']['game']>
+    applyArtwork: Mock<EquonApi['igdb']['applyArtwork']>
+  } => ({
+    search: vi.fn<EquonApi['igdb']['search']>(async () => ({
+      ok: true,
+      data: [{ id: 7, name: FILL.name, year: 2017, developer: 'Team Quest' }]
+    })),
+    game: vi.fn<EquonApi['igdb']['game']>(async () => ({ ok: true, data: FILL })),
+    applyArtwork: vi.fn<EquonApi['igdb']['applyArtwork']>(async () => ({ ok: true, data: [] }))
+  })
+  const createOk = (): Mock<EquonApi['games']['create']> =>
+    vi.fn<EquonApi['games']['create']>(async () => ({ ok: true, data: { id: 1 } }))
+
+  const openForm = async (): Promise<void> => {
+    render(<App />)
+    await screen.findByText('12h 22m')
+    press('e') // Library
+    await click('Adicionar jogo')
+    await screen.findByRole('heading', { name: 'Adicionar jogo' })
+  }
+  const typeTitle = async (title: string): Promise<void> => {
+    await click(/Título do jogo/)
+    type(title)
+    press('Enter')
+    await screen.findByText(title, { selector: '.form-row__text' })
+  }
+  const pickFile = async (name: string): Promise<void> => {
+    await click(/Executável/)
+    await clickText(name)
+  }
+
+  it('asks only for the title, executable, playtime and arguments', async () => {
+    installFakeApi([summary(1, 'A')])
+    await openForm()
+    expect(
+      [...document.querySelectorAll('.form-row')].map((r) => r.getAttribute('aria-label'))
+    ).toEqual(['Título do jogo', 'Executável', 'Tempo de jogo', 'Argumentos'])
+    expect(screen.queryByText('Selecionar imagem')).toBeNull()
+    expect(screen.queryByLabelText('Preencher com IGDB')).toBeNull()
+  })
+
+  it('fills the form with the keyboard and the file browser, then saves as a local game', async () => {
+    const create = createOk()
     installFakeApi([summary(1, 'Hollow Quest')], {
       games: { create },
+      igdb: { search: async () => ({ ok: true, data: [] }) },
       files: {
         list: async (path) => ({
           ok: true,
@@ -118,11 +194,7 @@ describe('add game form', () => {
         })
       }
     })
-    render(<App />)
-    await screen.findByText('12h 22m')
-    press('e') // Library
-    await click('Adicionar jogo')
-    expect(await screen.findByRole('heading', { name: 'Adicionar jogo' })).toBeTruthy()
+    await openForm()
 
     // Title through the on-screen keyboard, typed on a physical keyboard.
     await click(/Título do jogo/)
@@ -144,18 +216,15 @@ describe('add game form', () => {
     await clickText('hq.exe')
     expect(await screen.findByText('C:\\Games\\hq.exe')).toBeTruthy()
 
-    // Age rating select.
-    await click('Classificação indicativa')
-    await clickText('12 anos')
-
     await click(/Adicionar jogo/)
+    await clickText('Salvar sem dados do IGDB')
     await waitFor(() => expect(create).toHaveBeenCalledOnce())
     expect(create.mock.calls[0][0]).toEqual<ManualGameForm>({
       title: 'Hollow Quest',
       description: null,
       developer: null,
       releaseDate: null,
-      requiredAge: '12',
+      requiredAge: null,
       playtimeOffset: 90,
       origin: 'manual',
       executablePath: 'C:\\Games\\hq.exe',
@@ -168,71 +237,219 @@ describe('add game form', () => {
     expect(await screen.findByText('Sobre o jogo')).toBeTruthy()
   })
 
-  it('shows required fields locally and main errors on their row', async () => {
+  it('asks IGDB only after the required fields are there', async () => {
+    const igdb = igdbFake()
+    const create = createOk()
+    installFakeApi([summary(1, 'A')], { games: { create }, igdb })
+    await openForm()
+    await click(/Adicionar jogo/)
+    expect(await screen.findAllByText('Campo obrigatório.')).toHaveLength(2)
+    expect(igdb.search).not.toHaveBeenCalled()
+    expect(create).not.toHaveBeenCalled()
+  })
+
+  it('shows on its row an error from main, keeping what was typed', async () => {
     const create = vi.fn<EquonApi['games']['create']>(async () => ({
       ok: false,
       error: { code: 'missing', field: 'executablePath' }
     }))
-    installFakeApi([], { games: { create } })
-    render(<App />)
-    await screen.findByText('Nenhum jogo instalado para mostrar.')
-    press('Enter') // empty Home → Library
-    const [addButton] = await screen.findAllByLabelText('Adicionar jogo')
-    act(() => addButton.click())
-    await screen.findByRole('heading', { name: 'Adicionar jogo' })
-
+    installFakeApi([summary(1, 'A')], {
+      games: { create },
+      igdb: igdbFake(),
+      files: { list: listing('C:\\Games', 'hq.exe') }
+    })
+    await openForm()
+    await typeTitle('Hollow')
+    await pickFile('hq.exe')
     await click(/Adicionar jogo/)
-    expect(await screen.findAllByText('Campo obrigatório.')).toHaveLength(2)
-    expect(create).not.toHaveBeenCalled()
-
-    await click(/Título do jogo/)
-    type('X')
-    press('Enter')
-    await click('Executável')
-    // Type a path directly is not possible; use the native picker fallback.
-    expect(await screen.findByText('Usar janela do Windows')).toBeTruthy()
-    press('Escape')
+    await clickText(FILL.name)
+    await waitFor(() => expect(create).toHaveBeenCalledOnce())
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(screen.getByText('Hollow', { selector: '.form-row__text' })).toBeTruthy()
+    expect(document.querySelector('.form-row__error')).toBeTruthy()
   })
 
   it('asks before discarding changes', async () => {
     installFakeApi([summary(1, 'A')])
-    render(<App />)
-    await screen.findByText('12h 22m')
-    press('e')
-    await click('Adicionar jogo')
-    await click(/Título do jogo/)
-    type('Novo')
-    press('Enter')
+    await openForm()
+    await typeTitle('Novo')
     press('Escape')
     expect(await screen.findByRole('dialog', { name: 'Descartar alterações?' })).toBeTruthy()
     await clickText('Descartar')
     expect(await screen.findByText('1 jogo')).toBeTruthy()
   })
 
-  it('asks only for the ROM when the origin is Yuzu', async () => {
-    const create = vi.fn<EquonApi['games']['create']>(async () => ({ ok: true, data: { id: 1 } }))
+  it('confirms the game on IGDB when saving, and uses its data and art', async () => {
+    const create = createOk()
+    const igdb = igdbFake()
     installFakeApi([summary(1, 'A')], {
       games: { create },
-      emulators: { list: async () => [yuzu('C:\\Yuzu\\yuzu.exe')] },
-      files: { list: listing('D:\\Switch', 'Zelda.nsp') }
+      igdb,
+      files: { list: listing('C:\\Games', 'hq.exe') }
     })
-    render(<App />)
-    await screen.findByText('12h 22m')
-    press('e')
-    await click('Adicionar jogo')
-    await click(/Título do jogo/)
-    type('Zelda')
+    await openForm()
+    await typeTitle('hollow')
+    await pickFile('hq.exe')
+    await click('Argumentos')
+    type('-w')
     press('Enter')
-    await click('Origem')
-    await clickText('Yuzu')
-    expect(screen.queryByLabelText(/Executável/)).toBeNull()
-    expect(screen.queryByLabelText('Argumentos')).toBeNull()
-    await click(/ROM/)
-    await clickText('Zelda.nsp')
+    await click(/Adicionar jogo/)
+
+    await waitFor(() => expect(igdb.search).toHaveBeenCalledWith('hollow'))
+    expect(await screen.findByText('2017 · Team Quest')).toBeTruthy()
+    expect(create).not.toHaveBeenCalled()
+    await clickText(FILL.name)
+
+    await waitFor(() => expect(create).toHaveBeenCalledOnce())
+    expect(create.mock.calls[0][0]).toMatchObject({
+      title: FILL.name,
+      description: 'A quest in English.',
+      developer: 'Team Quest',
+      releaseDate: '2017-02-24',
+      requiredAge: '10',
+      origin: 'manual',
+      executablePath: 'C:\\Games\\hq.exe',
+      arguments: ['-w'],
+      genres: ['Aventura', 'Indie']
+    })
+    await waitFor(() => expect(igdb.applyArtwork).toHaveBeenCalledWith(1, 7))
+    expect(await screen.findByText('Sobre o jogo')).toBeTruthy()
+  })
+
+  it('goes back to the form when the IGDB choice is closed, saving nothing', async () => {
+    const create = createOk()
+    installFakeApi([summary(1, 'A')], {
+      games: { create },
+      igdb: igdbFake(),
+      files: { list: listing('C:\\Games', 'hq.exe') }
+    })
+    await openForm()
+    await typeTitle('Hollow')
+    await pickFile('hq.exe')
+    await click(/Adicionar jogo/)
+    await clickText('Fechar')
+    expect(await screen.findByText('Hollow', { selector: '.form-row__text' })).toBeTruthy()
+    expect(create).not.toHaveBeenCalled()
+  })
+
+  it('can save without IGDB even when it has results', async () => {
+    const create = createOk()
+    const igdb = igdbFake()
+    installFakeApi([summary(1, 'A')], {
+      games: { create },
+      igdb,
+      files: { list: listing('C:\\Games', 'hq.exe') }
+    })
+    await openForm()
+    await typeTitle('Hollow')
+    await pickFile('hq.exe')
+    await click(/Adicionar jogo/)
+    await clickText('Salvar sem dados do IGDB')
+    await waitFor(() => expect(create).toHaveBeenCalledOnce())
+    expect(create.mock.calls[0][0]).toMatchObject({ title: 'Hollow', description: null })
+    expect(create.mock.calls[0][0]).not.toHaveProperty('genres')
+    expect(igdb.applyArtwork).not.toHaveBeenCalled()
+  })
+
+  it('searches another name when nothing was found', async () => {
+    const igdb = igdbFake()
+    igdb.search.mockResolvedValueOnce({ ok: true, data: [] })
+    installFakeApi([summary(1, 'A')], { igdb, files: { list: listing('C:\\Games', 'hq.exe') } })
+    await openForm()
+    await typeTitle('xyz')
+    await pickFile('hq.exe')
+    await click(/Adicionar jogo/)
+    expect(await screen.findByText('Nenhum jogo encontrado para "xyz".')).toBeTruthy()
+    await clickText('Buscar outro nome')
+    await screen.findByRole('dialog', { name: 'Nome do jogo no IGDB' })
+    press('2')
+    press('Enter')
+    await waitFor(() => expect(igdb.search).toHaveBeenLastCalledWith('xyz2'))
+  })
+
+  it.each([
+    ['not-configured', 'Configure o Client ID e o Client Secret do IGDB em Configurações.'],
+    ['invalid-key', 'As credenciais do IGDB são inválidas. Confira em Configurações.'],
+    ['network', 'Sem conexão com o IGDB. Tente mais tarde.'],
+    ['unavailable', 'O IGDB está indisponível agora. Tente mais tarde.']
+  ])('saves and explains when IGDB fails (%s)', async (code, message) => {
+    const create = createOk()
+    const applyArtwork = vi.fn<EquonApi['igdb']['applyArtwork']>(async () => ({
+      ok: true,
+      data: []
+    }))
+    installFakeApi([summary(1, 'A')], {
+      games: { create },
+      igdb: { search: async () => ({ ok: false, error: { code } }), applyArtwork },
+      files: { list: listing('C:\\Games', 'hq.exe') }
+    })
+    await openForm()
+    await typeTitle('Hollow')
+    await pickFile('hq.exe')
+    await click(/Adicionar jogo/)
+
+    expect(await screen.findByRole('dialog', { name: 'Jogo salvo sem dados do IGDB' })).toBeTruthy()
+    expect(screen.getByText(`${message} Você pode completar os dados em Editar jogo.`)).toBeTruthy()
+    expect(create).toHaveBeenCalledOnce()
+    expect(create.mock.calls[0][0]).toMatchObject({ title: 'Hollow', description: null })
+    expect(applyArtwork).not.toHaveBeenCalled()
+
+    await clickText('Entendi')
+    expect(await screen.findByText('Sobre o jogo')).toBeTruthy()
+  })
+
+  it('also saves when the chosen game cannot be read', async () => {
+    const create = createOk()
+    const igdb = igdbFake()
+    igdb.game.mockResolvedValue({ ok: false, error: { code: 'network' } })
+    installFakeApi([summary(1, 'A')], {
+      games: { create },
+      igdb,
+      files: { list: listing('C:\\Games', 'hq.exe') }
+    })
+    await openForm()
+    await typeTitle('Hollow')
+    await pickFile('hq.exe')
+    await click(/Adicionar jogo/)
+    await clickText(FILL.name)
+    expect(await screen.findByRole('dialog', { name: 'Jogo salvo sem dados do IGDB' })).toBeTruthy()
+    expect(create).toHaveBeenCalledOnce()
+    expect(igdb.applyArtwork).not.toHaveBeenCalled()
+  })
+
+  it('turns into a Yuzu game when a ROM is chosen, and back with an executable', async () => {
+    const create = createOk()
+    const kinds: string[] = []
+    let file = 'Zelda.nsp'
+    installFakeApi([summary(1, 'A')], {
+      games: { create },
+      igdb: { search: async () => ({ ok: true, data: [] }) },
+      emulators: { list: async () => [yuzu('C:\\Yuzu\\yuzu.exe')] },
+      files: {
+        list: (path, kind) => {
+          kinds.push(kind)
+          return listing('D:\\Switch', file)(path, kind)
+        }
+      }
+    })
+    await openForm()
+    await typeTitle('Zelda')
+    await pickFile('Zelda.nsp')
+    expect(kinds).toContain('game')
     expect(
       await screen.findByText('Será iniciado com: yuzu.exe -f -g "D:\\Switch\\Zelda.nsp"')
     ).toBeTruthy()
+    expect(screen.queryByLabelText('Argumentos')).toBeNull()
+
+    file = 'jogo.exe'
+    await pickFile('jogo.exe')
+    expect(await screen.findByLabelText('Argumentos')).toBeTruthy()
+    expect(screen.queryByText(/Será iniciado com/)).toBeNull()
+
+    file = 'Zelda.nsp'
+    await pickFile('Zelda.nsp')
     await click(/Adicionar jogo/)
+    await clickText('Salvar sem dados do IGDB')
     await waitFor(() => expect(create).toHaveBeenCalledOnce())
     expect(create.mock.calls[0][0]).toMatchObject({
       origin: 'yuzu',
@@ -243,38 +460,36 @@ describe('add game form', () => {
     })
   })
 
-  it('warns when Yuzu is not configured', async () => {
-    installFakeApi([summary(1, 'A')])
-    render(<App />)
-    await screen.findByText('12h 22m')
-    press('e')
-    await click('Adicionar jogo')
-    await click('Origem')
-    await clickText('Yuzu')
-    expect(
-      await screen.findByText('Yuzu ainda não foi configurado. Use Configurações › Emuladores.')
-    ).toBeTruthy()
+  it('offers only executables and shortcuts while no emulator is configured', async () => {
+    const kinds: string[] = []
+    installFakeApi([summary(1, 'A')], {
+      files: {
+        list: (path, kind) => {
+          kinds.push(kind)
+          return listing('C:\\Games', 'hq.exe')(path, kind)
+        }
+      }
+    })
+    await openForm()
+    await pickFile('hq.exe')
+    expect(kinds).toEqual(expect.arrayContaining(['executable']))
+    expect(kinds).not.toContain('game')
   })
 
-  it('hides arguments and folder for .url shortcuts', async () => {
-    const create = vi.fn<EquonApi['games']['create']>(async () => ({ ok: true, data: { id: 1 } }))
+  it('hides arguments for .url shortcuts', async () => {
+    const create = createOk()
     installFakeApi([summary(1, 'A')], {
       games: { create },
+      igdb: { search: async () => ({ ok: true, data: [] }) },
       files: { list: listing('C:\\Atalhos', 'Fortnite.url') }
     })
-    render(<App />)
-    await screen.findByText('12h 22m')
-    press('e')
-    await click('Adicionar jogo')
-    await click(/Título do jogo/)
-    type('Fortnite')
-    press('Enter')
-    await click(/Executável/)
-    await clickText('Fortnite.url')
+    await openForm()
+    await typeTitle('Fortnite')
+    await pickFile('Fortnite.url')
     expect(await screen.findByText(/Atalhos .url abrem pela loja/)).toBeTruthy()
     expect(screen.queryByLabelText('Argumentos')).toBeNull()
-    expect(screen.queryByLabelText('Pasta de trabalho')).toBeNull()
     await click(/Adicionar jogo/)
+    await clickText('Salvar sem dados do IGDB')
     await waitFor(() => expect(create).toHaveBeenCalledOnce())
     expect(create.mock.calls[0][0]).toMatchObject({
       executablePath: 'C:\\Atalhos\\Fortnite.url',
@@ -282,6 +497,118 @@ describe('add game form', () => {
       arguments: [],
       workingDirectory: null
     })
+  })
+})
+
+describe('edit game form', () => {
+  const editable: Awaited<ReturnType<EquonApi['games']['getEditable']>> = {
+    id: 1,
+    hasBackground: false,
+    form: {
+      title: 'Mine',
+      description: 'My own words.',
+      developer: null,
+      releaseDate: null,
+      requiredAge: null,
+      playtimeOffset: 0,
+      origin: 'manual',
+      executablePath: 'C:\\Games\\m.exe',
+      romPath: null,
+      arguments: [],
+      workingDirectory: null,
+      backgroundPath: null
+    }
+  }
+  const openEdit = async (): Promise<void> => {
+    render(<App />)
+    await screen.findByText('12h 22m')
+    press('m')
+    await clickText('Editar jogo')
+    await screen.findByRole('heading', { name: 'Editar jogo' })
+  }
+
+  it('offers every field, the image and IGDB', async () => {
+    installFakeApi([summary(1, 'Mine')], { games: { getEditable: async () => editable } })
+    await openEdit()
+    for (const label of [
+      'Descrição',
+      'Desenvolvedor',
+      'Data de lançamento',
+      'Origem',
+      'Classificação indicativa',
+      'Pasta de trabalho',
+      'Preencher com IGDB'
+    ]) {
+      expect(await screen.findByLabelText(label)).toBeTruthy()
+    }
+    expect(screen.getByText('Selecionar imagem')).toBeTruthy()
+  })
+
+  it('only fills what is empty from IGDB', async () => {
+    const update = vi.fn<EquonApi['games']['update']>(async () => ({ ok: true, data: { id: 1 } }))
+    const applyArtwork = vi.fn<EquonApi['igdb']['applyArtwork']>(async () => ({
+      ok: true,
+      data: []
+    }))
+    installFakeApi([summary(1, 'Mine')], {
+      igdb: {
+        search: async () => ({
+          ok: true,
+          data: [{ id: 7, name: 'Official', year: 2017, developer: 'Team Quest' }]
+        }),
+        game: async () => ({
+          ok: true,
+          data: {
+            name: 'Official',
+            summary: 'A quest in English.',
+            releaseDate: '2017-02-24',
+            developer: 'Team Quest',
+            genres: ['Indie'],
+            requiredAge: '10'
+          }
+        }),
+        applyArtwork
+      },
+      games: { update, getEditable: async () => editable }
+    })
+    await openEdit()
+    await click('Preencher com IGDB')
+    await clickText('Official')
+    expect(await screen.findByText('Team Quest')).toBeTruthy()
+    expect(update).not.toHaveBeenCalled()
+    await click(/Adicionar jogo/)
+    await waitFor(() => expect(update).toHaveBeenCalledOnce())
+    expect(update.mock.calls[0][1]).toMatchObject({
+      title: 'Mine',
+      description: 'My own words.',
+      developer: 'Team Quest',
+      releaseDate: '2017-02-24',
+      genres: ['Indie']
+    })
+    await waitFor(() => expect(applyArtwork).toHaveBeenCalledWith(1, 7))
+  })
+
+  it('keeps an IGDB failure on screen, changing nothing', async () => {
+    const update = vi.fn<EquonApi['games']['update']>(async () => ({ ok: true, data: { id: 1 } }))
+    installFakeApi([summary(1, 'Mine')], {
+      igdb: { search: async () => ({ ok: false, error: { code: 'network' } }) },
+      games: { update, getEditable: async () => editable }
+    })
+    await openEdit()
+    await click('Preencher com IGDB')
+    expect(await screen.findByText('Sem conexão com o IGDB. Tente mais tarde.')).toBeTruthy()
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  it('warns when Yuzu is not configured', async () => {
+    installFakeApi([summary(1, 'Mine')], { games: { getEditable: async () => editable } })
+    await openEdit()
+    await click('Origem')
+    await clickText('Yuzu')
+    expect(
+      await screen.findByText('Yuzu ainda não foi configurado. Use Configurações › Emuladores.')
+    ).toBeTruthy()
+    expect(screen.queryByLabelText('Argumentos')).toBeNull()
   })
 })
 
@@ -379,5 +706,124 @@ describe('remove game', () => {
     await screen.findByRole('dialog', { name: 'Portal 2' })
     expect(screen.queryByText('Editar jogo')).toBeNull()
     expect(screen.queryByText('Remover jogo')).toBeNull()
+  })
+})
+
+describe('Buscar artes no IGDB', () => {
+  const search = (): Mock<EquonApi['igdb']['search']> =>
+    vi.fn<EquonApi['igdb']['search']>(async () => ({
+      ok: true,
+      data: [{ id: 7, name: 'Tidebound', year: 2021, developer: 'Team' }]
+    }))
+
+  it('is offered for Steam games too, and searches without the trademark signs', async () => {
+    const find = search()
+    installFakeApi([summary(1, 'Tidebound® Saga™', { origin: 'steam', originName: 'Steam' })], {
+      igdb: { search: find }
+    })
+    render(<App />)
+    await screen.findByText('12h 22m')
+    press('m')
+    await clickText('Buscar artes no IGDB')
+    await waitFor(() => expect(find).toHaveBeenCalledWith('Tidebound Saga'))
+  })
+
+  it('replaces the art with the chosen game and reports it', async () => {
+    const replaceArtwork = vi.fn<EquonApi['igdb']['replaceArtwork']>(async () => ({
+      ok: true,
+      data: ['cover_portrait', 'background']
+    }))
+    installFakeApi([summary(1, 'Tidebound')], { igdb: { search: search(), replaceArtwork } })
+    render(<App />)
+    await screen.findByText('12h 22m')
+    press('m')
+    await clickText('Buscar artes no IGDB')
+    expect(await screen.findByText('2021 · Team')).toBeTruthy()
+    const dialog = screen.getByRole('dialog', { name: 'Artes do IGDB' })
+    expect(dialog.querySelector('[data-focused="true"]')?.textContent).toContain('Tidebound')
+    act(() => (screen.getByText('2021 · Team').closest('button') as HTMLElement).click())
+    expect(replaceArtwork).toHaveBeenCalledWith(1, 7)
+    // Done: it closes by itself.
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  })
+
+  it('is also on the game page', async () => {
+    const replaceArtwork = vi.fn<EquonApi['igdb']['replaceArtwork']>(async () => ({
+      ok: true,
+      data: ['logo']
+    }))
+    const game = summary(1, 'Tidebound')
+    installFakeApi([game], {
+      games: { get: async () => details(game) },
+      igdb: { search: search(), replaceArtwork }
+    })
+    render(<App />)
+    await screen.findByText('12h 22m')
+    press('Enter')
+    await screen.findByLabelText('Jogar')
+    press('m')
+    await clickText('Buscar artes no IGDB')
+    await clickText('2021 · Team')
+    await waitFor(() => expect(replaceArtwork).toHaveBeenCalledWith(1, 7))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(await screen.findByLabelText('Jogar')).toBeTruthy()
+  })
+
+  it.each([
+    ['not-configured', 'Configure o Client ID e o Client Secret do IGDB em Configurações.'],
+    ['network', 'Sem conexão com o IGDB. Tente mais tarde.']
+  ])('explains a failed search (%s)', async (code, message) => {
+    installFakeApi([summary(1, 'Tidebound')], {
+      igdb: { search: async () => ({ ok: false, error: { code } }) }
+    })
+    render(<App />)
+    await screen.findByText('12h 22m')
+    press('m')
+    await clickText('Buscar artes no IGDB')
+    expect(await screen.findByText(message)).toBeTruthy()
+  })
+
+  it('shows its message inside the panel, and a small close button', async () => {
+    installFakeApi([summary(1, 'Tidebound')], { igdb: { search: search() } })
+    render(<App />)
+    await screen.findByText('12h 22m')
+    press('m')
+    await clickText('Buscar artes no IGDB')
+    await screen.findByText('2021 · Team')
+    const panel = document.querySelector('.dialog__panel') as HTMLElement
+    expect(panel.querySelector('.dialog__message')?.textContent).toContain('Escolha o jogo certo')
+    expect(screen.getByText('Fechar').closest('button')?.getAttribute('data-compact')).toBe('true')
+  })
+
+  it('stays closed when closed by hand while downloading', async () => {
+    let finish: (value: Awaited<ReturnType<EquonApi['igdb']['replaceArtwork']>>) => void = () => {}
+    const replaceArtwork = vi.fn<EquonApi['igdb']['replaceArtwork']>(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve
+        })
+    )
+    installFakeApi([summary(1, 'Tidebound')], { igdb: { search: search(), replaceArtwork } })
+    render(<App />)
+    await screen.findByText('12h 22m')
+    press('m')
+    await clickText('Buscar artes no IGDB')
+    await clickText('2021 · Team')
+    await clickText('Fechar')
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    press('m')
+    expect(await screen.findByRole('dialog', { name: 'Tidebound' })).toBeTruthy()
+    await act(async () => finish({ ok: true, data: ['logo'] }))
+    expect(screen.getByRole('dialog', { name: 'Tidebound' })).toBeTruthy()
+  })
+
+  it('says so when the chosen game has no art that fits', async () => {
+    installFakeApi([summary(1, 'Tidebound')], { igdb: { search: search() } })
+    render(<App />)
+    await screen.findByText('12h 22m')
+    press('m')
+    await clickText('Buscar artes no IGDB')
+    await clickText('2021 · Team')
+    expect(await screen.findByText('O IGDB não tem artes que sirvam para este jogo.')).toBeTruthy()
   })
 })

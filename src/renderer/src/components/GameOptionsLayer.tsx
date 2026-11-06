@@ -5,6 +5,7 @@ import { useGames } from '../data/games'
 import { useRunning } from '../data/running'
 import { t } from '../strings'
 import { ConfirmDialog } from './Dialog'
+import { IgdbArtworkSearch } from './IgdbArtworkSearch'
 import { OptionsMenu } from './OptionsMenu'
 import { SteamGridDbSearch } from './SteamGridDbSearch'
 
@@ -24,6 +25,7 @@ export function GameOptionsLayer({
   const running = useRunning().ids.includes(game.id)
   const [confirming, setConfirming] = useState(false)
   const [searching, setSearching] = useState(false)
+  const [searchingIgdb, setSearchingIgdb] = useState(false)
   const editable = game.origin !== 'steam'
 
   if (confirming) {
@@ -41,6 +43,16 @@ export function GameOptionsLayer({
             onClose()
           })
         }}
+      />
+    )
+  }
+  if (searchingIgdb) {
+    return (
+      <IgdbArtworkSearch
+        gameId={game.id}
+        title={game.title}
+        onClose={onClose}
+        onApplied={refresh}
       />
     )
   }
@@ -70,6 +82,7 @@ export function GameOptionsLayer({
       onAchievements={() => navigation.openGameAchievements(game.id)}
       onEdit={editable ? () => navigation.openGameForm(game.id) : undefined}
       onArtwork={() => setSearching(true)}
+      onIgdbArtwork={() => setSearchingIgdb(true)}
       onRemove={editable && !running ? () => setConfirming(true) : undefined}
     />
   )

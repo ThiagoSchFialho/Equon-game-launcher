@@ -44,6 +44,18 @@ export function createUserRepository(db: SqliteDatabase): UserRepository {
       update: db.prepare<[Buffer | null]>(
         'UPDATE users SET steamgriddb_api_key_encrypted = ? WHERE id = 1'
       )
+    },
+    'igdb-client-id': {
+      select: db.prepare('SELECT igdb_client_id_encrypted AS value FROM users WHERE id = 1'),
+      update: db.prepare<[Buffer | null]>(
+        'UPDATE users SET igdb_client_id_encrypted = ? WHERE id = 1'
+      )
+    },
+    'igdb-client-secret': {
+      select: db.prepare('SELECT igdb_client_secret_encrypted AS value FROM users WHERE id = 1'),
+      update: db.prepare<[Buffer | null]>(
+        'UPDATE users SET igdb_client_secret_encrypted = ? WHERE id = 1'
+      )
     }
   }
 

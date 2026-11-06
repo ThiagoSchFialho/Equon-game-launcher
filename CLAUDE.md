@@ -10,7 +10,7 @@ Controller-first game launcher for Windows (Electron + React + TypeScript, embed
 
 ## Source of truth (read before coding)
 
-1. `docs/ARCHITECTURE.md` — decision log (D-01…D-17), process model, layers, security. **Start here.**
+1. `docs/ARCHITECTURE.md` — decision log (D-01…D-18), process model, layers, security. **Start here.**
 2. `docs/DATA_BASE_CONTEXT.md` — schema, integrity rules, sync rules.
 3. `docs/PRODUCT.md` — MVP scope and acceptance criteria.
 4. `docs/DESIGN_SYSTEM.md` and `design/` — visual tokens and mockups.
@@ -71,16 +71,16 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 
 ## Security
 
-- API keys (Steam, SteamGridDB) are encrypted with Electron `safeStorage`, decrypted only in main, never sent to the renderer, never logged. Never log URLs containing keys.
+- API keys (Steam, SteamGridDB, IGDB's Twitch credentials) are encrypted with Electron `safeStorage`, decrypted only in main, never sent to the renderer, never logged. Never log URLs containing keys.
 - Executable paths, ROM paths, arguments and working directories are **untrusted**: validate, pass arguments as an array, never use a shell or build command strings. `.url` shortcuts are read in main and only allowlisted store schemes are opened.
 - Only open external URLs built in main from an allowlist.
 - Never commit secrets, databases or artwork cache.
 
 ## Artwork
 
-- Five kinds: `cover_square` (Library), `cover_portrait` 600×900 (Home), `logo`, `background` 1920×1080 (Game details), `header` (Achievements list).
-- Sources: Steam `appdetails`, SteamGridDB (user's own key), local files. **No Google Images or scraping.**
-- Fetch lazily through a throttled queue, validate downloads (type, size, decoded dimensions), cache on disk, never hotlink at runtime. The app must work with placeholders and without a SteamGridDB key.
+- Five kinds: `cover_square` (Library), `cover_portrait` (Home, shown 3:4), `logo`, `background` 1920×1080 (Game details), `header` (Achievements list).
+- Sources: Steam `appdetails`, SteamGridDB (user's own key), IGDB (user's own Twitch app, D-18: fills manual games; first source of portrait cover, logo and background for Steam games, found by App ID), local files. **No Google Images or scraping.**
+- Portrait covers accept 2:3 to 3:4; the Home card is 3:4 and stretches the whole art to fit, never cropping or letterboxing (owner decision). Fetch lazily through a throttled queue, validate downloads (type, size, decoded dimensions), cache on disk, never hotlink at runtime. The app must work with placeholders and without a SteamGridDB key.
 
 ## UI and controller
 
