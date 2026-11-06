@@ -47,7 +47,7 @@
 }
 
 .art-gallery__item[data-kind='cover_portrait'] .art-gallery__image {
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 2 / 3;
   /* As the Home card shows it. */
   object-fit: fill;
 }

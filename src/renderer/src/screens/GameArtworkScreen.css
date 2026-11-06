@@ -72,7 +72,7 @@
 }
 
 .art-editor__preview[data-kind='cover_portrait'] {
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 2 / 3;
 }
 
 .art-editor__preview[data-kind='cover_square'] {

@@ -272,7 +272,7 @@ apenas de animação para mostrar que uma ação foi ativada.
 
 -   Tela em painéis com rolagem, um por arte: nome e prévia à esquerda, botões à direita. Salvar e Cancelar ficam fixos embaixo. O foco em um botão traz o painel inteiro para a tela.
 -   Start salva de qualquer ponto da tela, com a dica no rodapé.
--   A capa vertical é mostrada como no Início: 3:4 e esticada. As outras mantêm a proporção.
+-   A capa vertical é mostrada como no Início: 2:3 e esticada. As outras mantêm a proporção.
 -   Só aparecem os botões de fontes que têm aquela arte. "Remover imagem" fica indisponível quando não há o que remover.
 -   Ações de remover nesta tela e nas Configurações usam o ícone `delete.svg`.
 
@@ -314,7 +314,7 @@ artes independentes; nenhuma é recortada a partir da outra.
 | Arte (`kind`) | Formato | Onde aparece nos mockups |
 | --- | --- | --- |
 | `cover_square` | Capa quadrada (1:1) | Biblioteca (grade de cards) |
-| `cover_portrait` | Capa vertical, exibida em 3:4 e sempre esticada para caber inteira, sem corte nem barras (decisão do dono do projeto) | Início (cards de continuar jogando e recentes) |
+| `cover_portrait` | Capa vertical, exibida em 2:3 e sempre esticada para caber inteira, sem corte nem barras (decisão do dono do projeto) | Início (cards de continuar jogando e recentes) |
 | `logo` | Logotipo, preferencialmente com transparência | Detalhes do jogo, sobre o fundo |
 | `background` | Imagem 1920×1080 (16:9) | Detalhes do jogo, como arte dominante |
 | `header` | Imagem larga (`header_image` da Steam, cerca de 2:1) | Lista de conquistas, miniatura de cada jogo |

@@ -470,7 +470,7 @@ describe('artwork fetcher: filled from IGDB', () => {
 
     expect(await fetcher.applyIgdb(id, 7)).toEqual({
       ok: true,
-      data: ['cover_portrait', 'background', 'logo']
+      data: ['background', 'logo', 'cover_portrait']
     })
     expect(artwork().get(id, 'cover_portrait')).toMatchObject({
       source: 'igdb',
@@ -505,7 +505,7 @@ describe('artwork fetcher: filled from IGDB', () => {
       fetchedAt: '2026-11-04T03:00:00Z'
     })
     igdbAnswer = { ok: true, data: game() }
-    expect(await fetcher.applyIgdb(id, 7)).toEqual({ ok: true, data: ['cover_portrait', 'logo'] })
+    expect(await fetcher.applyIgdb(id, 7)).toEqual({ ok: true, data: ['logo', 'cover_portrait'] })
     expect(artwork().get(id, 'background')).toMatchObject({ source: 'user' })
   })
 
@@ -528,6 +528,28 @@ describe('artwork fetcher: filled from IGDB', () => {
     const result = await fetcher.applyIgdb(id, 7)
     expect(result.ok && result.data).toContain('cover_square')
     expect(artwork().get(id, 'cover_square')).toMatchObject({ source: 'steamgriddb' })
+  })
+
+  it('prefers the SteamGridDB portrait cover, under the very same name', async () => {
+    gridKey = KEY
+    const id = manual()
+    igdbAnswer = { ok: true, data: game() }
+    json.set('search/autocomplete', {
+      status: 200,
+      json: { success: true, data: [{ id: 9, name: 'hollow quest' }] }
+    })
+    json.set('/grids/game/9?dimensions=600x900', {
+      status: 200,
+      json: { success: true, data: [{ url: 'https://cdn2.steamgriddb.com/grid/p.png', score: 1 }] }
+    })
+    image('https://cdn2.steamgriddb.com/grid/p.png', 600, 900)
+    await fetcher.applyIgdb(id, 7)
+    expect(artwork().get(id, 'cover_portrait')).toMatchObject({
+      source: 'steamgriddb',
+      width: 600,
+      userSelected: true
+    })
+    expect(artwork().get(id, 'logo')).toMatchObject({ source: 'igdb' })
   })
 
   it('takes nothing from SteamGridDB under a different name', async () => {
@@ -608,12 +630,12 @@ describe('artwork fetcher: Steam games with IGDB', () => {
     header: artwork().get(id, 'header')?.source
   })
 
-  it('takes the portrait cover, logo and background from IGDB, the rest from the others', async () => {
+  it('takes the logo and background from IGDB, the rest from the others', async () => {
     const id = balatro()
     await fetcher.fetchMissing()
     expect(igdbAsked).toEqual([620])
     expect(sources(id)).toEqual({
-      portrait: 'igdb',
+      portrait: 'steamgriddb',
       logo: 'igdb',
       background: 'igdb',
       square: 'steamgriddb',
@@ -621,7 +643,7 @@ describe('artwork fetcher: Steam games with IGDB', () => {
     })
     // Automatic art: a later choice by the user can still replace it.
     expect(artwork().get(id, 'logo')?.userSelected).toBe(false)
-    expect(requested.some((u) => u.includes('dimensions=600x900'))).toBe(false)
+    expect(requested.some((u) => u.includes('dimensions=600x900'))).toBe(true)
     expect(requested.some((u) => u.includes('/logos/steam/'))).toBe(false)
     expect(games().getById(id)?.artworkCheckedAt).not.toBeNull()
   })
@@ -631,7 +653,7 @@ describe('artwork fetcher: Steam games with IGDB', () => {
     igdbAnswer = { ok: true, data: { ...full, logos: [], artworks: [] } }
     await fetcher.fetchMissing()
     expect(sources(id)).toMatchObject({
-      portrait: 'igdb',
+      portrait: 'steamgriddb',
       logo: 'steamgriddb',
       background: 'steam'
     })
@@ -651,9 +673,9 @@ describe('artwork fetcher: Steam games with IGDB', () => {
 
   it('falls back when an IGDB image fails validation', async () => {
     const id = balatro()
-    image(`${IGDB}/cov.jpg`, 1000, 1000)
+    image(`${IGDB}/art.jpg`, 1000, 1000)
     await fetcher.fetchMissing()
-    expect(sources(id).portrait).toBe('steamgriddb')
+    expect(sources(id).background).toBe('steam')
   })
 
   it.each(['unavailable', 'invalid-key', 'invalid-response'] as const)(
@@ -670,6 +692,37 @@ describe('artwork fetcher: Steam games with IGDB', () => {
       expect(games().getById(id)?.artworkCheckedAt).toBeNull()
     }
   )
+
+  it('falls back to the IGDB portrait cover when SteamGridDB has none', async () => {
+    const id = balatro()
+    json.set('/grids/steam/620?dimensions=600x900', {
+      status: 200,
+      json: { success: true, data: [] }
+    })
+    await fetcher.fetchMissing()
+    expect(sources(id).portrait).toBe('igdb')
+    expect(igdbAsked).toEqual([620])
+  })
+
+  it('does not ask IGDB when SteamGridDB gives all that is left', async () => {
+    const id = balatro()
+    for (const kind of ['header', 'background', 'logo', 'cover_square'] as const) {
+      artwork().save({
+        gameId: id,
+        kind,
+        localPath: `${id}/${kind}.png`,
+        source: 'steam',
+        sourceUrl: null,
+        width: 10,
+        height: 10,
+        userSelected: false,
+        fetchedAt: null
+      })
+    }
+    await fetcher.fetchMissing()
+    expect(sources(id).portrait).toBe('steamgriddb')
+    expect(igdbAsked).toEqual([])
+  })
 
   it('stops the queue with no network', async () => {
     const id = balatro()

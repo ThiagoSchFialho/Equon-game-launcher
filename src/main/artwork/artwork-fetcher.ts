@@ -24,6 +24,8 @@ export const ARTWORK_INTERVAL_MS = 1500
 const GRID_KINDS: SteamGridDbKind[] = ['cover_square', 'cover_portrait', 'logo']
 /** What IGDB gives a game (D-18). */
 const IGDB_KINDS: ArtworkKind[] = ['cover_portrait', 'background', 'logo']
+/** Where IGDB comes first; a portrait cover only falls back to it. */
+const IGDB_FIRST: ArtworkKind[] = ['background', 'logo']
 /** What the user's own search replaces, for any game (D-15). */
 const CHOSEN_KINDS: SteamGridDbKind[] = ['cover_square', 'cover_portrait', 'logo', 'header']
 
@@ -65,22 +67,13 @@ export interface ArtworkFetcher {
   fetchMissing(options?: { retry?: boolean }): Promise<void>
   search(term: string): Promise<Result<SteamGridDbGameInfo[]>>
   /**
-   * A manual game filled from IGDB (D-18): portrait cover, logo and background from IGDB,
-   * the rest from SteamGridDB under the same name. Only what the game does not have yet.
+   * A manual game filled from IGDB (D-18): logo and background from IGDB, the rest from
+   * SteamGridDB under the same name, then an IGDB portrait cover if there is still none.
+   * Only what the game does not have yet.
    */
   applyIgdb(gameId: number, igdbGameId: number): Promise<Result<ArtworkKind[]>>
 }
 
-/**
- * Artwork queue (ARCHITECTURE.md §3.13 and §3.17): with IGDB credentials, Steam
- * games get their portrait cover, logo and background from IGDB first. The header
- * comes from appdetails, as does a background IGDB does not have; the best-voted
- * square cover, and a portrait cover or logo IGDB does not have, come from
- * SteamGridDB when a key is set. Every download is validated (type, size, decoded dimensions,
- * proportion) before it reaches the cache; failures keep the placeholder.
- * A game that got answers is not tried again at the next start, even with no art
- * to show; one that got none stays to try. With no network the queue just stops.
- */
 /** Where IGDB keeps each image of a game; null when it has none that fits. */
 export function igdbArtUrls(data: IgdbGameData): [ArtworkKind, string | null][] {
   const background = pickIgdbBackground(data)
@@ -92,6 +85,15 @@ export function igdbArtUrls(data: IgdbGameData): [ArtworkKind, string | null][] 
   ]
 }
 
+/**
+ * Artwork queue (ARCHITECTURE.md §3.13 and §3.17). Portrait cover: SteamGridDB, then IGDB.
+ * Logo: IGDB, then SteamGridDB. Background: IGDB, then appdetails. Square cover: SteamGridDB.
+ * Header: appdetails. IGDB needs its credentials and SteamGridDB a key. Every download is
+ * validated (type, size, decoded dimensions, proportion) before it reaches the cache;
+ * failures keep the placeholder. A game that got answers is not tried again at the next
+ * start, even with no art to show; one that got none stays to try. With no network the
+ * queue just stops.
+ */
 export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
   let run: Promise<void> | null = null
   let runIsRetry = false
@@ -181,23 +183,42 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
     let outcome: QueueOutcome = 'answered'
     storageFailed = false
     const notInCache = missingCheck(game, have)
-    const fromIgdb = new Set<ArtworkKind>()
-    const missing = (kind: ArtworkKind): boolean => notInCache(kind) && !fromIgdb.has(kind)
+    const saved = new Set<ArtworkKind>()
+    const missing = (kind: ArtworkKind): boolean => notInCache(kind) && !saved.has(kind)
 
-    if (deps.igdbConfigured() && IGDB_KINDS.some(missing)) {
+    // Asked at most once, and only when something is left for it.
+    let igdbAsked = false
+    let igdbData: IgdbGameData | null = null
+    /** False with no network. */
+    const askIgdb = async (): Promise<boolean> => {
+      if (igdbAsked) return true
+      igdbAsked = true
       const answer = await deps.igdbSteamGame(appId)
       await deps.wait(ARTWORK_INTERVAL_MS)
-      if (!answer.ok && answer.error === 'network') return { changed, outcome: 'no-network' }
+      if (!answer.ok && answer.error === 'network') return false
       // IGDB failing must not cost this game the other sources; it stays to try.
       if (!answer.ok) outcome = 'no-answer'
-      if (answer.ok && answer.data) {
-        for (const [kind, url] of igdbArtUrls(answer.data)) {
-          if (url !== null && missing(kind) && (await store(game, kind, url, 'igdb', false))) {
-            fromIgdb.add(kind)
-            changed = true
-          }
+      else igdbData = answer.data
+      return true
+    }
+    const takeFromIgdb = async (kinds: readonly ArtworkKind[]): Promise<void> => {
+      if (!igdbData) return
+      for (const [kind, url] of igdbArtUrls(igdbData)) {
+        if (
+          url !== null &&
+          kinds.includes(kind) &&
+          missing(kind) &&
+          (await store(game, kind, url, 'igdb', false))
+        ) {
+          saved.add(kind)
+          changed = true
         }
       }
+    }
+
+    if (deps.igdbConfigured() && IGDB_FIRST.some(missing)) {
+      if (!(await askIgdb())) return { changed, outcome: 'no-network' }
+      await takeFromIgdb(IGDB_FIRST)
     }
 
     if (missing('header') || missing('background')) {
@@ -221,9 +242,16 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
     if (gridKinds.length > 0 && deps.gridKey()) {
       const result = await fromSteamGridDb(game, { steamAppId: appId }, gridKinds, false)
       changed = result.saved.length > 0 || changed
+      for (const kind of result.saved) saved.add(kind)
       if (result.error === 'network') return { changed, outcome: 'no-network' }
       if (result.error === 'unavailable') return { changed, outcome: 'unavailable' }
       if (result.error) outcome = 'no-answer'
+    }
+
+    // SteamGridDB comes first for portrait covers; IGDB covers what it could not.
+    if (deps.igdbConfigured() && missing('cover_portrait')) {
+      if (!(await askIgdb())) return { changed, outcome: 'no-network' }
+      await takeFromIgdb(['cover_portrait'])
     }
     return { changed, outcome: storageFailed ? 'no-answer' : outcome }
   }
@@ -314,8 +342,9 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
         ...(deps.artwork.listRemoved().get(gameId) ?? [])
       ]
       const saved: ArtworkKind[] = []
-      const wanted = igdbArtUrls(data).filter(
-        ([kind, url]) => url !== null && !have().includes(kind)
+      const urls = igdbArtUrls(data)
+      const wanted = urls.filter(
+        ([kind, url]) => url !== null && IGDB_FIRST.includes(kind) && !have().includes(kind)
       )
       for (const [index, [kind, url]] of wanted.entries()) {
         deps.onProgress?.({ done: index, total: wanted.length })
@@ -327,7 +356,8 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
       }
       deps.onProgress?.(null)
 
-      // What IGDB does not have. Only under the very same name: nobody confirms this match.
+      // Portrait cover, square cover, header, and a logo IGDB does not have. Only under the
+      // very same name: nobody confirms this match.
       const missing = CHOSEN_KINDS.filter((kind) => !have().includes(kind))
       const key = deps.gridKey()
       if (key && missing.length > 0) {
@@ -345,6 +375,17 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
           saved.push(...grid.saved)
           if (grid.saved.length > 0) deps.onLibraryChanged()
         }
+      }
+
+      // SteamGridDB comes first for portrait covers; IGDB covers what it could not.
+      const cover = urls.find(([kind]) => kind === 'cover_portrait')?.[1] ?? null
+      if (
+        cover !== null &&
+        !have().includes('cover_portrait') &&
+        (await store(game, 'cover_portrait', cover, 'igdb', true))
+      ) {
+        saved.push('cover_portrait')
+        deps.onLibraryChanged()
       }
       return { ok: true, data: saved }
     }

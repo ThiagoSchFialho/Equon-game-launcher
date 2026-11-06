@@ -48,7 +48,7 @@ export function detectImageType(bytes: Uint8Array): ImageType | null {
 
 /**
  * Portrait covers: SteamGridDB's are 2:3 and IGDB's are all 3:4 (measured on 2026-11-05).
- * The Home card is 3:4 and stretches whatever it gets to fill it, so both are accepted.
+ * The Home card is 2:3 and stretches whatever it gets to fill it, so both are accepted.
  */
 const PORTRAIT_WIDEST = 3 / 4
 

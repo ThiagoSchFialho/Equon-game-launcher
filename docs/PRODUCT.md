@@ -287,16 +287,17 @@ limitações, condições de teste e método de inicialização suportado.
 ### 6.9 Artes e metadados
 
 -   Cada jogo pode ter cinco artes: **capa quadrada** (Biblioteca),
-    **capa vertical 3:4** (Início, esticada para caber inteira), **logotipo**, **imagem
+    **capa vertical 2:3** (Início, esticada para caber inteira), **logotipo**, **imagem
     1920×1080** e **imagem de cabeçalho** (header).
 -   Fontes: Steam (`header_image` e capturas de tela dos metadados),
     SteamGridDB (capas quadrada e vertical e logotipo, com chave de API
     pessoal gratuita), IGDB (capa vertical, logotipo e imagem de fundo, com
     um app próprio e gratuito da Twitch) e arquivos locais escolhidos pelo
     usuário. Não usar buscas de imagens da web.
--   Em jogos novos da Steam, com o IGDB configurado, a capa vertical, o
-    logotipo e a imagem de fundo vêm primeiro do IGDB. O que ele não tiver
-    vem da fonte anterior. Artes que o jogo já tem não são trocadas.
+-   Em jogos novos da Steam, com o IGDB configurado, o logotipo e a imagem
+    de fundo vêm primeiro do IGDB, e o que ele não tiver vem da fonte
+    anterior. A capa vertical vem do SteamGridDB e, se ele não tiver, do
+    IGDB. Artes que o jogo já tem não são trocadas.
 -   Para jogos manuais, a busca no SteamGridDB é feita por título e o
     usuário confirma qual resultado corresponde ao jogo.
 -   O formulário de adicionar pede só título, executável, tempo de jogo e
