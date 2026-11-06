@@ -195,7 +195,7 @@ describe('library organization', () => {
     await clickText('Todos')
     await clickText('Jogos ocultos')
     await waitFor(() => expect(cards()).toEqual(['Celeste', 'Doom', 'Pokémon Red', 'Zelda']))
-    expect(screen.getByText('Oculto')).toBeTruthy()
+    expect(screen.getByTitle('Oculto')).toBeTruthy()
   })
 
   it('explains an empty result and clears the filters, keeping the sort', async () => {

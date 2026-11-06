@@ -144,7 +144,12 @@ limitações, condições de teste e método de inicialização suportado.
 -   Filtro por estado de instalação quando confiável (Todos /
     Instalados / Não encontrados; o estado desconhecido só aparece em
     "Todos").
--   Ordenação alfabética, por atividade recente e por tempo de jogo.
+-   Ordenação alfabética, por atividade recente, por tempo de jogo, por
+    origem (nome da origem), por instalação (instalados, desconhecidos,
+    não instalados), por ocultos e por zerados (primeiro os marcados). Em
+    cada grupo, ordem alfabética. Ordenar por ocultos também os mostra;
+    trocar de ordenação volta a escondê-los, salvo se o filtro estiver
+    ativo.
 -   Padrão da Biblioteca: ordem alfabética, todos os jogos exceto os
     ocultos. Filtros permitem mostrar os ocultos e listar só os jogos
     zerados; "Limpar filtros" fica ao lado da ordenação.

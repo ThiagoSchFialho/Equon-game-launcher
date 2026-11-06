@@ -770,6 +770,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-06 | 0.40 | Home covers back to 2:3, still stretched; SteamGridDB first for portrait covers, IGDB as fallback (§3.17). |
 | 2026-11-06 | 0.41 | D-20: Settings › Sistema; preferences live in `USERS`, starting with Windows is read from Windows (§3.19). |
 | 2026-11-06 | 0.42 | D-21: system menu on the Xbox button (button 16, measured); the gear in the top bar is gone (§3.20). |
+| 2026-11-06 | 0.43 | Library: sorts by origin, install state, hidden and beaten (`PRODUCT.md` §6.4); "Instalado" and "Zerado" badges on its cards. |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

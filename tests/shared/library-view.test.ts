@@ -4,6 +4,7 @@ import {
   DEFAULT_LIBRARY_VIEW,
   applyLibraryView,
   homeGames,
+  includesHidden,
   isFiltered,
   searchKey,
   type LibraryView
@@ -44,6 +45,47 @@ describe('applyLibraryView', () => {
   it('sorts by recent activity (never played last) and by playtime', () => {
     expect(ids({ sort: 'recent' })).toEqual([3, 1, 5, 6, 2])
     expect(ids({ sort: 'playtime' })).toEqual([2, 1, 3, 5, 6])
+  })
+
+  it('sorts by origin name, then by title', () => {
+    // By name, not by key: the key would put 2 last.
+    const list = [
+      game(1, 'A', { origin: 'custom', originName: 'Zeta' }),
+      game(2, 'C', { origin: 'zzz', originName: 'Alfa' }),
+      game(3, 'B', { origin: 'zzz', originName: 'Alfa' })
+    ]
+    const view = { ...DEFAULT_LIBRARY_VIEW, sort: 'origin' as const }
+    expect(applyLibraryView(list, view).map((g) => g.id)).toEqual([3, 2, 1])
+  })
+
+  it('sorts by install state: installed, unknown, not installed', () => {
+    expect(ids({ sort: 'install' })).toEqual([5, 6, 1, 3, 2])
+  })
+
+  it('sorts beaten games first, then by title', () => {
+    const list = [
+      game(1, 'C'),
+      game(2, 'B', { beated: true }),
+      game(3, 'A'),
+      game(4, 'D', { beated: true })
+    ]
+    const view = { ...DEFAULT_LIBRARY_VIEW, sort: 'beaten' as const }
+    expect(applyLibraryView(list, view).map((g) => g.id)).toEqual([2, 4, 3, 1])
+  })
+
+  it('brings hidden games in only while sorting by them, first', () => {
+    expect(ids({ sort: 'hidden' })).toEqual([4, 3, 5, 6, 2, 1])
+    expect(ids({ sort: 'title' })).not.toContain(4)
+    expect(ids({ sort: 'beaten' })).not.toContain(4)
+    expect(includesHidden({ ...DEFAULT_LIBRARY_VIEW, sort: 'hidden' })).toBe(true)
+    expect(includesHidden(DEFAULT_LIBRARY_VIEW)).toBe(false)
+    // It is a sort: "Limpar filtros" has nothing to clear because of it.
+    expect(isFiltered({ ...DEFAULT_LIBRARY_VIEW, sort: 'hidden' })).toBe(false)
+  })
+
+  it('combines the new sorts with the filters', () => {
+    expect(ids({ sort: 'hidden', origin: 'manual', install: 'installed' })).toEqual([4])
+    expect(ids({ sort: 'install', origin: 'steam' })).toEqual([5, 6])
   })
 
   it('searches ignoring case, accents, signs and word order', () => {

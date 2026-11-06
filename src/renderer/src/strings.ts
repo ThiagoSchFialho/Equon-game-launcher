@@ -30,10 +30,15 @@ export const t = {
     origin: 'Origem',
     allOrigins: 'Todas',
     sort: 'Ordenar',
-    sorts: { title: 'Título', recent: 'Recentes', playtime: 'Tempo de jogo' } as Record<
-      string,
-      string
-    >,
+    sorts: {
+      title: 'Título',
+      recent: 'Recentes',
+      playtime: 'Tempo de jogo',
+      origin: 'Origem',
+      install: 'Instalação',
+      hidden: 'Ocultos',
+      beaten: 'Zerados'
+    } as Record<string, string>,
     filters: 'Filtros',
     install: 'Instalação',
     installs: { all: 'Todos', installed: 'Instalados', missing: 'Não encontrados' } as Record<
@@ -51,7 +56,9 @@ export const t = {
     noMatches: 'Nenhum jogo corresponde à busca e aos filtros.',
     allHidden: 'Todos os jogos estão ocultos.',
     allHiddenHint: 'Use Filtrar (X) › Jogos ocultos para vê-los.',
-    hiddenBadge: 'Oculto'
+    hiddenBadge: 'Oculto',
+    installedBadge: 'Instalado',
+    beatenBadge: 'Zerado'
   },
   home: {
     empty: 'Nenhum jogo instalado para mostrar.',

@@ -3,6 +3,7 @@ import type { GameSummary } from '../../../shared/ipc/contract'
 import {
   DEFAULT_LIBRARY_VIEW,
   applyLibraryView,
+  includesHidden,
   isFiltered,
   type InstallFilter,
   type LibrarySort
@@ -36,7 +37,15 @@ const MENU_HINTS: Hint[] = [
   { button: 'B', label: t.hints.back }
 ]
 
-const SORTS: LibrarySort[] = ['title', 'recent', 'playtime']
+const SORTS: LibrarySort[] = [
+  'title',
+  'recent',
+  'playtime',
+  'origin',
+  'install',
+  'hidden',
+  'beaten'
+]
 const INSTALLS: InstallFilter[] = ['all', 'installed', 'missing']
 
 type Overlay =
@@ -147,7 +156,7 @@ export function LibraryScreen(): React.JSX.Element {
     )
   }
 
-  const total = view.showHidden ? all.length : all.filter((g) => !g.hidden).length
+  const total = includesHidden(view) ? all.length : all.filter((g) => !g.hidden).length
 
   return (
     <FocusScope id="screen:library">

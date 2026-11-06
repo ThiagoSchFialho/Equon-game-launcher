@@ -66,7 +66,14 @@ filtros do Início.
     virtual) e X (controle ou teclado) abre o diálogo de filtros
     (instalação, jogos ocultos e só jogos zerados). "Limpar filtros"
     fica ao lado de "Ordenar" e no diálogo; mantém a ordenação. Jogos ocultos, quando mostrados, aparecem esmaecidos com o
-    selo "Oculto".
+    selo de oculto.
+-   "Ordenar": Título, Recentes, Tempo de jogo, Origem, Instalação, Ocultos
+    e Zerados. A grade não separa os grupos; os selos mostram o estado.
+-   Selos do card da Biblioteca, sempre visíveis, no canto inferior esquerdo,
+    como ícones em um círculo: "Oculto" (olho cortado), "Instalado" (disco,
+    nunca para estado desconhecido) e "Zerado" (troféu). O nome aparece ao
+    passar o mouse. No Início, só "Oculto", que não ocorre lá: a lista só tem
+    jogos instalados e não ocultos.
 -   O card precisa comunicar título e foco; origem e estado de
     instalação podem aparecer como informação secundária.
 -   A biblioteca deve continuar utilizável com capas ausentes ou
