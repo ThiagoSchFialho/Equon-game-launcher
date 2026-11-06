@@ -195,7 +195,8 @@ export const t = {
     'builtin-origin': 'Origens de fábrica não podem ser excluídas.',
     'origin-in-use': 'Esta origem ainda tem jogos.',
     'not-found': 'Não encontrado.',
-    'secrets-unavailable': 'O Windows não permitiu guardar a chave com segurança.'
+    'secrets-unavailable': 'O Windows não permitiu guardar a chave com segurança.',
+    'login-item-failed': 'O Windows não aceitou esta alteração. Tente de novo.'
   } as Record<string, string>,
   keyboard: {
     done: 'Pronto',
@@ -336,7 +337,16 @@ export const t = {
   },
   settings: {
     title: 'Configurações',
-    tabs: { connections: 'Conexões', emulators: 'Emuladores', about: 'Sobre' },
+    tabs: { connections: 'Conexões', emulators: 'Emuladores', system: 'Sistema', about: 'Sobre' },
+    system: {
+      startFullscreen: 'Iniciar em tela cheia',
+      startFullscreenHint:
+        'Vale a partir da próxima vez que o Equon abrir. O F11 entra e sai da tela cheia a qualquer momento.',
+      openAtLogin: 'Iniciar com o sistema',
+      openAtLoginHint: 'Abre o Equon quando você entra no Windows.',
+      openAtLoginUnavailable: 'Disponível só na versão instalada do Equon.',
+      saveFailed: 'Não foi possível salvar esta opção. Tente de novo.'
+    },
     steam: 'Steam',
     steamId: 'ID Steam',
     steamIdPlaceholder: 'Digite sua id Steam…',

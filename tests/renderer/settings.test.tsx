@@ -62,6 +62,64 @@ describe('settings', () => {
     expect(screen.queryByRole('heading', { name: 'Conexões' })).toBeNull()
   })
 
+  it('Sistema: each checkbox saves at once and shows what main answered', async () => {
+    const setStartFullscreen = vi.fn<EquonApi['settings']['setStartFullscreen']>(
+      async (startFullscreen) => ({ ok: true, data: settingsInfo({ startFullscreen }) })
+    )
+    const setOpenAtLogin = vi.fn<EquonApi['settings']['setOpenAtLogin']>(async (openAtLogin) => ({
+      ok: true,
+      data: settingsInfo({ openAtLogin })
+    }))
+    installFakeApi([summary(1, 'Tidebound')], { settings: { setStartFullscreen, setOpenAtLogin } })
+    await openSettings()
+    await clickText('Sistema')
+    await screen.findByRole('heading', { name: 'Sistema' })
+
+    const fullscreen = screen.getByRole('checkbox', { name: 'Iniciar em tela cheia' })
+    expect(fullscreen.getAttribute('aria-checked')).toBe('false')
+    act(() => fullscreen.click())
+    await waitFor(() => expect(fullscreen.getAttribute('aria-checked')).toBe('true'))
+    expect(setStartFullscreen).toHaveBeenCalledWith(true)
+
+    const login = screen.getByRole('checkbox', { name: 'Iniciar com o sistema' })
+    act(() => login.click())
+    await waitFor(() => expect(login.getAttribute('aria-checked')).toBe('true'))
+    expect(setOpenAtLogin).toHaveBeenCalledWith(true)
+  })
+
+  it('Sistema: starting with Windows is explained and does nothing when unavailable', async () => {
+    const setOpenAtLogin = vi.fn<EquonApi['settings']['setOpenAtLogin']>()
+    installFakeApi([summary(1, 'Tidebound')], {
+      settings: {
+        get: async () => settingsInfo({ openAtLoginAvailable: false }),
+        setOpenAtLogin
+      }
+    })
+    await openSettings()
+    await clickText('Sistema')
+    const login = await screen.findByRole('checkbox', { name: 'Iniciar com o sistema' })
+    expect(login.getAttribute('aria-disabled')).toBe('true')
+    expect(screen.getByText('Disponível só na versão instalada do Equon.')).toBeTruthy()
+    act(() => login.click())
+    expect(setOpenAtLogin).not.toHaveBeenCalled()
+  })
+
+  it('Sistema: a refused change keeps the box as it was and says why', async () => {
+    installFakeApi([summary(1, 'Tidebound')], {
+      settings: {
+        setOpenAtLogin: async () => ({ ok: false, error: { code: 'login-item-failed' } })
+      }
+    })
+    await openSettings()
+    await clickText('Sistema')
+    const login = await screen.findByRole('checkbox', { name: 'Iniciar com o sistema' })
+    act(() => login.click())
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'O Windows não aceitou esta alteração. Tente de novo.'
+    )
+    expect(login.getAttribute('aria-checked')).toBe('false')
+  })
+
   it('keeps the initial focus on the screen content, not on the gear', async () => {
     installFakeApi([summary(1, 'Tidebound')])
     render(<App />)

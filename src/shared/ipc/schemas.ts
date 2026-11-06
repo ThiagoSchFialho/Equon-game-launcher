@@ -73,6 +73,9 @@ export const settingsSetSecretArgs = z.tuple([
     .nullable()
 ])
 
+/** A checkbox of Settings › Sistema. */
+export const settingsSetEnabledArgs = z.tuple([z.boolean()])
+
 export const systemInfoSchema = z.strictObject({
   appVersion: z.string(),
   electron: z.string(),
@@ -240,7 +243,10 @@ export const settingsInfoSchema = z.strictObject({
   steamPath: z.string().nullable(),
   refreshing: z.boolean(),
   lastRefresh: libraryRefreshInfoSchema.nullable(),
-  lastSync: steamSyncInfoSchema.nullable()
+  lastSync: steamSyncInfoSchema.nullable(),
+  startFullscreen: z.boolean(),
+  openAtLogin: z.boolean(),
+  openAtLoginAvailable: z.boolean()
 }) satisfies z.ZodType<SettingsInfo>
 
 export const originsCreateArgs = z.tuple([z.string().max(100)])

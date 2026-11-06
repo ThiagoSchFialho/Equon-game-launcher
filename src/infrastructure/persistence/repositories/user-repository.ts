@@ -25,6 +25,13 @@ export function createUserRepository(db: SqliteDatabase): UserRepository {
   )
   const updateSteamId = db.prepare<[string | null]>('UPDATE users SET steam_id = ? WHERE id = 1')
 
+  const selectStartFullscreen = db.prepare<[], { start_fullscreen: number }>(
+    'SELECT start_fullscreen FROM users WHERE id = 1'
+  )
+  const updateStartFullscreen = db.prepare<[number]>(
+    'UPDATE users SET start_fullscreen = ? WHERE id = 1'
+  )
+
   // One fixed statement per secret column; column names never come from input.
   const secrets: Record<
     SecretKind,
@@ -70,6 +77,10 @@ export function createUserRepository(db: SqliteDatabase): UserRepository {
     },
     setSecret: (kind, encrypted) => {
       secrets[kind].update.run(encrypted === null ? null : Buffer.from(encrypted))
+    },
+    getStartFullscreen: () => selectStartFullscreen.get()?.start_fullscreen === 1,
+    setStartFullscreen: (enabled) => {
+      updateStartFullscreen.run(enabled ? 1 : 0)
     },
     getTrophyCounters: () => selectCounters.get() as TrophyCounters,
     recomputeTrophyCounters: () => recompute.get() as TrophyCounters

@@ -69,6 +69,7 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-15 | Artwork sources and cache policy | Accepted | SteamGridDB (API key) + Steam `appdetails`, plus IGDB (D-18, first choice for logo and background, fallback for the portrait cover); local file picker as fallback; Google Images not adopted (§3.13) |
 | D-18 | IGDB: filling in manual games and artwork for new Steam games | Accepted | Own Twitch app credentials per user, encrypted; see §3.17 |
 | D-19 | Editing the art of a game by hand | Accepted | "Editar artes" screen for any game; removed art stays removed; see §3.18 |
+| D-20 | Settings › Sistema and where preferences live | Accepted | Columns in `USERS`; starting with Windows is read from Windows; see §3.19 |
 | D-16 | Refresh frequency for `appdetails` metadata | Accepted | Fetched only when a game is discovered/added; failed fetches are retried (§3.14) |
 | D-17 | Steam launch mechanism | Accepted | `steam://rungameid/<appid>`, built in the main process (§3.12) |
 
@@ -350,7 +351,7 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 
 **Security review (Phase 8d).** No secret in the repository or its history; all 35 IPC channels are validated; no process goes through a shell; `shell.openExternal` only takes allowlisted URLs; no log carries a URL or a key. Changes: installed runs replace the default Electron menu, which offered DevTools, reload, zoom and close (`src/main/app-menu.ts`; F11 and the text editing shortcuts stay, and the menu bar never shows); Electron fuses turn off running as Node and the Node inspector options, and validate the package; image downloads stop at the size limit even if the server hides the size. **Known and accepted:** `npm audit` reports 13 moderate issues, all in lint and packaging tools that do not ship, and production has none; the offered fix would downgrade those tools. `--remote-debugging-port` still works on the installed app: it only listens locally and is how the package is tested, and a local program with the same rights could already read the same data. The installed app keeps no log file. `style-src` keeps `unsafe-inline` because the dev server needs it, and nothing renders untrusted HTML.
 
-**Preferences:** nothing is persisted for now. The Library view and the sorts reset at every start by owner decision; keys and paths already have their own storage.
+**Preferences:** the Library view and the sorts reset at every start by owner decision; keys and paths already have their own storage. Settings › Sistema has the only stored preference so far (D-20, §3.19).
 
 ### 3.17 D-18 — IGDB (Accepted, after Phase 8)
 
@@ -377,6 +378,18 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 **SteamGridDB gallery.** Up to 40 static images, best voted first, without adult or joke entries. Thumbnails come through `equon-art://grid/<assetId>`: main downloads them on demand from the image allowlist, checks their real type and serves them from memory, since the renderer has no network access. The renderer names an asset id main listed and never sends a URL.
 
 **Removed art** lives in `GAME_ARTWORK_REMOVED` (`DATA_BASE_CONTEXT.md` §3.9.1). `ArtworkRepository.save` refuses automatic art for those kinds and a user choice clears the mark; the queue and the IGDB fill treat them as present, so nothing is downloaded for them.
+
+### 3.19 D-20 — Settings › Sistema (Accepted, after Phase 8)
+
+**Owner decisions (2026-11-06):** a "Sistema" tab with two checkboxes, "Iniciar em tela cheia" and "Iniciar com o sistema", both off by default and saved as soon as they change.
+
+**Where preferences live.** Columns in the single `USERS` row, one per preference. A settings table for one value would be more than this needs. This closes the open question in `DATA_BASE_CONTEXT.md` §7.2.
+
+**Iniciar em tela cheia** is `USERS.start_fullscreen`, read once when the window is created, so it takes effect the next time the launcher opens. F11 keeps working at any time and goes back to the 1280×720 window.
+
+**Iniciar com o sistema** is the Windows startup entry, through `app.setLoginItemSettings`. It is not stored: `executableWillLaunchAtLogin` is the only source, so an entry turned off in the Task Manager shows as unchecked, and checking the box turns it back on. After a change main reads the state again and reports an error if Windows did not take it. Unpackaged runs refuse it, since they would register the bare Electron binary. The uninstaller does not remove the entry; Windows ignores an entry whose program is gone.
+
+**At login** the network may not be ready. The Steam sync of that start then fails and changes nothing, as any failed sync does (`DATA_BASE_CONTEXT.md` §3.11), and runs again the next time the launcher opens.
 
 ## 4. Inconsistencies found across the project docs
 
@@ -740,6 +753,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-05 | 0.38 | Home covers shown 3:4, always stretched to show the whole art (§3.17). |
 | 2026-11-05 | 0.39 | D-19: "Editar artes", with a SteamGridDB gallery and `GAME_ARTWORK_REMOVED` (§3.18). |
 | 2026-11-06 | 0.40 | Home covers back to 2:3, still stretched; SteamGridDB first for portrait covers, IGDB as fallback (§3.17). |
+| 2026-11-06 | 0.41 | D-20: Settings › Sistema; preferences live in `USERS`, starting with Windows is read from Windows (§3.19). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

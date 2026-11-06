@@ -94,6 +94,9 @@ const api: EquonApi = {
     get: () => ipcRenderer.invoke(IpcChannel.settingsGet),
     setSteamId: (steamId) => ipcRenderer.invoke(IpcChannel.settingsSetSteamId, steamId),
     setSecret: (kind, value) => ipcRenderer.invoke(IpcChannel.settingsSetSecret, kind, value),
+    setStartFullscreen: (enabled) =>
+      ipcRenderer.invoke(IpcChannel.settingsSetStartFullscreen, enabled),
+    setOpenAtLogin: (enabled) => ipcRenderer.invoke(IpcChannel.settingsSetOpenAtLogin, enabled),
     testConnection: (kind) => ipcRenderer.invoke(IpcChannel.settingsTestConnection, kind)
   },
   emulators: {

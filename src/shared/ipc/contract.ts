@@ -9,6 +9,8 @@ export const IpcChannel = {
   settingsGet: 'settings:get',
   settingsSetSteamId: 'settings:set-steam-id',
   settingsSetSecret: 'settings:set-secret',
+  settingsSetStartFullscreen: 'settings:set-start-fullscreen',
+  settingsSetOpenAtLogin: 'settings:set-open-at-login',
   settingsTestConnection: 'settings:test-connection',
   libraryDuplicates: 'library:duplicates',
   libraryDismissDuplicate: 'library:dismiss-duplicate',
@@ -206,7 +208,7 @@ export interface ConnectionTest {
   gamesVisible: boolean
 }
 
-/** Settings › Conexões. Secrets are never sent: only whether they are set. */
+/** Settings › Conexões and Sistema. Secrets are never sent: only whether they are set. */
 export interface SettingsInfo {
   steamId: string | null
   steamApiKey: boolean
@@ -220,6 +222,11 @@ export interface SettingsInfo {
   refreshing: boolean
   lastRefresh: LibraryRefreshInfo | null
   lastSync: SteamSyncInfo | null
+  startFullscreen: boolean
+  /** As Windows reports it, so turning it off in the Task Manager shows here. */
+  openAtLogin: boolean
+  /** False when unpackaged: it would register the bare Electron binary. */
+  openAtLoginAvailable: boolean
 }
 
 /** Mirrors the domain artwork kinds (a test keeps them in sync). */
@@ -500,6 +507,9 @@ export interface EquonApi {
     setSteamId(steamId: string | null): Promise<Result<SettingsInfo>>
     /** null removes the secret. The value goes to main once and is never returned. */
     setSecret(kind: SecretKind, value: string | null): Promise<Result<SettingsInfo>>
+    /** Takes effect the next time the launcher opens. */
+    setStartFullscreen(enabled: boolean): Promise<Result<SettingsInfo>>
+    setOpenAtLogin(enabled: boolean): Promise<Result<SettingsInfo>>
     /** One live request with the stored credentials. */
     testConnection(kind: 'steam' | 'steamgriddb' | 'igdb'): Promise<Result<ConnectionTest>>
   }

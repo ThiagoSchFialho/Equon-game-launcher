@@ -4,20 +4,37 @@ import {
   createSettingsService,
   type SettingsService
 } from '../../../src/main/settings/settings-service'
-import { settingsInfoSchema, settingsSetSecretArgs } from '../../../src/shared/ipc/schemas'
+import {
+  settingsInfoSchema,
+  settingsSetEnabledArgs,
+  settingsSetSecretArgs
+} from '../../../src/shared/ipc/schemas'
 import { createTestDb } from '../../helpers/db'
 import type { SqliteDatabase } from '../../../src/infrastructure/persistence'
 
 let db: SqliteDatabase
 let available: boolean
 let settings: SettingsService
+let packaged: boolean
+let atLogin: boolean
+let setLogin: (enabled: boolean) => void
 
 const KEY = 'ABCDEF0123456789ABCDEF0123456789'
 
 beforeEach(() => {
   db = createTestDb()
   available = true
+  packaged = true
+  atLogin = false
+  setLogin = (enabled) => {
+    atLogin = enabled
+  }
   settings = createSettingsService({
+    loginItem: {
+      available: () => packaged,
+      enabled: () => atLogin,
+      setEnabled: (enabled) => setLogin(enabled)
+    },
     users: createUserRepository(db),
     // Reversible stand-in for safeStorage, enough to prove nothing is stored in clear text.
     cipher: {
@@ -44,7 +61,10 @@ describe('settings service', () => {
       steamPath: 'C:\\Program Files (x86)\\Steam',
       refreshing: false,
       lastRefresh: null,
-      lastSync: null
+      lastSync: null,
+      startFullscreen: false,
+      openAtLogin: false,
+      openAtLoginAvailable: true
     })
     expect(settingsInfoSchema.safeParse(info).success).toBe(true)
   })
@@ -83,6 +103,60 @@ describe('settings service', () => {
       error: { code: 'secrets-unavailable', field: 'steamgriddb-api-key' }
     })
     expect(settings.get().steamGridDbKey).toBe(false)
+  })
+
+  it('stores the fullscreen preference as 0 or 1', () => {
+    const stored = (): number =>
+      (db.prepare('SELECT start_fullscreen AS v FROM users').get() as { v: number }).v
+    expect(stored()).toBe(0)
+    expect(settings.setStartFullscreen(true)).toMatchObject({
+      ok: true,
+      data: { startFullscreen: true }
+    })
+    expect(stored()).toBe(1)
+    expect(settings.setStartFullscreen(false)).toMatchObject({
+      ok: true,
+      data: { startFullscreen: false }
+    })
+    expect(stored()).toBe(0)
+    expect(() => db.prepare('UPDATE users SET start_fullscreen = 2').run()).toThrow()
+  })
+
+  it('reads the startup entry from Windows, not from a stored copy', () => {
+    expect(settings.setOpenAtLogin(true)).toMatchObject({ ok: true, data: { openAtLogin: true } })
+    // Turned off in the Task Manager.
+    atLogin = false
+    expect(settings.get().openAtLogin).toBe(false)
+  })
+
+  it('never touches the startup entry when unpackaged', () => {
+    packaged = false
+    atLogin = true
+    setLogin = () => {
+      throw new Error('must not be called')
+    }
+    expect(settings.get()).toMatchObject({ openAtLogin: false, openAtLoginAvailable: false })
+    expect(settings.setOpenAtLogin(true)).toEqual({
+      ok: false,
+      error: { code: 'login-item-failed', field: 'openAtLogin' }
+    })
+  })
+
+  it('reports a startup entry Windows refused or ignored', () => {
+    const failed = { ok: false, error: { code: 'login-item-failed', field: 'openAtLogin' } }
+    setLogin = () => {
+      throw new Error('refused')
+    }
+    expect(settings.setOpenAtLogin(true)).toEqual(failed)
+    setLogin = () => {}
+    expect(settings.setOpenAtLogin(true)).toEqual(failed)
+    expect(settings.get().openAtLogin).toBe(false)
+  })
+
+  it('accepts only booleans for the system options over IPC', () => {
+    expect(settingsSetEnabledArgs.safeParse([true]).success).toBe(true)
+    expect(settingsSetEnabledArgs.safeParse(['true']).success).toBe(false)
+    expect(settingsSetEnabledArgs.safeParse([]).success).toBe(false)
   })
 
   it('accepts only plain token keys over IPC', () => {

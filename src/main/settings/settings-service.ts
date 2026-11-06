@@ -11,9 +11,18 @@ export interface SecretCipher {
   decrypt(encrypted: Uint8Array): string
 }
 
+/** The Windows startup entry behind a port, so tests need no Electron. */
+export interface LoginItem {
+  /** False when unpackaged: it would register the bare Electron binary. */
+  available(): boolean
+  enabled(): boolean
+  setEnabled(enabled: boolean): void
+}
+
 export interface SettingsServiceDeps {
   users: UserRepository
   cipher: SecretCipher
+  loginItem: LoginItem
   steam: Pick<SteamService, 'refreshing' | 'lastRefresh'>
   lastSync(): SteamSyncInfo | null
   steamPath(): string | null
@@ -23,6 +32,8 @@ export interface SettingsService {
   get(): SettingsInfo
   setSteamId(steamId: string | null): Result<SettingsInfo>
   setSecret(kind: SecretKind, value: string | null): Result<SettingsInfo>
+  setStartFullscreen(enabled: boolean): Result<SettingsInfo>
+  setOpenAtLogin(enabled: boolean): Result<SettingsInfo>
 }
 
 /**
@@ -41,7 +52,15 @@ export function createSettingsService(deps: SettingsServiceDeps): SettingsServic
     steamPath: deps.steamPath(),
     refreshing: deps.steam.refreshing(),
     lastRefresh: deps.steam.lastRefresh(),
-    lastSync: deps.lastSync()
+    lastSync: deps.lastSync(),
+    startFullscreen: deps.users.getStartFullscreen(),
+    openAtLogin: deps.loginItem.available() && deps.loginItem.enabled(),
+    openAtLoginAvailable: deps.loginItem.available()
+  })
+
+  const loginItemFailed = (): Result<SettingsInfo> => ({
+    ok: false,
+    error: { code: 'login-item-failed', field: 'openAtLogin' }
   })
 
   return {
@@ -67,6 +86,22 @@ export function createSettingsService(deps: SettingsServiceDeps): SettingsServic
       }
       deps.users.setSecret(kind, deps.cipher.encrypt(plain))
       return { ok: true, data: get() }
+    },
+
+    setStartFullscreen(enabled) {
+      deps.users.setStartFullscreen(enabled)
+      return { ok: true, data: get() }
+    },
+
+    setOpenAtLogin(enabled) {
+      if (!deps.loginItem.available()) return loginItemFailed()
+      try {
+        deps.loginItem.setEnabled(enabled)
+      } catch {
+        return loginItemFailed()
+      }
+      // Windows has the last word: the checkbox never shows what it did not accept.
+      return deps.loginItem.enabled() === enabled ? { ok: true, data: get() } : loginItemFailed()
     }
   }
 }

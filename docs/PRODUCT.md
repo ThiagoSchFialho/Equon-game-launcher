@@ -205,6 +205,8 @@ limitações, condições de teste e método de inicialização suportado.
     (guardadas criptografadas), "Atualizar biblioteca", que também traz os
     jogos comprados e não instalados da conta Steam.
 -   Aba "Emuladores" para indicar o executável de cada emulador suportado.
+-   Aba "Sistema" com as opções "Iniciar em tela cheia" e "Iniciar com o
+    sistema", desmarcadas por padrão.
 -   Aba "Sobre" com informações básicas do sistema.
 -   Opções para adicionar, editar e remover jogos manuais.
 -   Informações básicas de diagnóstico para facilitar suporte.

@@ -257,6 +257,8 @@ export interface UserRepository {
   /** Encrypted bytes as stored; decrypted only in main. */
   getSecret(kind: SecretKind): Uint8Array | null
   setSecret(kind: SecretKind, encrypted: Uint8Array | null): void
+  getStartFullscreen(): boolean
+  setStartFullscreen(enabled: boolean): void
   getTrophyCounters(): TrophyCounters
   /** Recomputes counters from ACHIEVEMENTS; never increments blindly. */
   recomputeTrophyCounters(): TrophyCounters

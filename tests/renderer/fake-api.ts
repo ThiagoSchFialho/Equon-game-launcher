@@ -69,6 +69,9 @@ export const settingsInfo = (extra: Partial<SettingsInfo> = {}): SettingsInfo =>
   refreshing: false,
   lastRefresh: null,
   lastSync: null,
+  startFullscreen: false,
+  openAtLogin: false,
+  openAtLoginAvailable: true,
   ...extra
 })
 
@@ -102,7 +105,7 @@ export function installFakeApi(
         node: '24.18.0',
         os: 'Windows 11 Pro (10.0.26300)',
         dataPath: 'C:\\Users\\u\\AppData\\Roaming\\equon-game-launcher-dev',
-        schemaVersion: 11
+        schemaVersion: 12
       })
     },
     igdb: {
@@ -153,6 +156,11 @@ export function installFakeApi(
     settings: {
       get: async () => settingsInfo(),
       setSteamId: async (steamId) => ({ ok: true, data: settingsInfo({ steamId }) }),
+      setStartFullscreen: async (startFullscreen) => ({
+        ok: true,
+        data: settingsInfo({ startFullscreen })
+      }),
+      setOpenAtLogin: async (openAtLogin) => ({ ok: true, data: settingsInfo({ openAtLogin }) }),
       setSecret: async (kind, value) => ({
         ok: true,
         data: settingsInfo({

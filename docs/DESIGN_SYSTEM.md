@@ -95,7 +95,7 @@ filtros do Início.
     abas, igual ao da página do jogo e alcançado com o direcional para cima;
     o trabalho em segundo plano aparece no rodapé.
 -   Layout (mockup `settings ideas2`): barra lateral com as abas
-    "Conexões", "Emuladores" e "Sobre"; conteúdo à direita.
+    "Conexões", "Emuladores", "Sistema" e "Sobre"; conteúdo à direita.
 -   Conexões: Steam (ID Steam; chave da Steam API com Alterar/Remover ou
     Configurar; "Testar conexão"), SteamGridDB (chave; "Testar conexão")
     e o painel "Biblioteca" com "Atualizar biblioteca" e o resultado da
@@ -105,6 +105,9 @@ filtros do Início.
     configurada", nunca o valor.
 -   Emuladores: uma linha por emulador suportado, com o executável
     configurado; trocar vale para todos os jogos do emulador.
+-   Sistema: checkboxes "Iniciar em tela cheia" e "Iniciar com o sistema",
+    salvos assim que mudam. A segunda fica indisponível, com o motivo, fora
+    da versão instalada.
 -   Sobre: versão do Equon, sistema, pasta da Steam detectada, pasta de
     dados, versão do banco e versões de Electron, Chromium e Node.js.
 
@@ -213,6 +216,16 @@ todos os espaços.
     `overflow: hidden`.
 
 ## 4. Componentes e estados
+
+### Checkbox
+
+Caixa, título e descrição opcional; a linha inteira recebe o foco e a
+confirmação (A) alterna o valor. Marcado usa `--color-accent`, com o sinal
+em `--color-background`.
+
+Estados: - Desmarcado. - Marcado. - Focado. - Indisponível (continua
+focável, para o motivo poder ser lido, e não muda). - Erro (a caixa fica como
+estava e o motivo aparece abaixo).
 
 ### Game card
 

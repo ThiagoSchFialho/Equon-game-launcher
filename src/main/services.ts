@@ -35,7 +35,7 @@ import { createArtworkFetcher } from './artwork/artwork-fetcher'
 import { IpcEvent } from '../shared/ipc/contract'
 import { createManualGameService } from './games/manual-game-service'
 import type { IpcDeps } from './ipc/register'
-import type { SecretCipher } from './settings/settings-service'
+import type { LoginItem, SecretCipher } from './settings/settings-service'
 import { createSettingsService } from './settings/settings-service'
 import { createBackgroundActivity } from './background-activity'
 import { createSteamOnline } from './steam/steam-online'
@@ -66,7 +66,8 @@ export function createServices(
   db: SqliteDatabase,
   artworkCacheDir: string,
   window: () => BrowserWindow | null,
-  cipher: SecretCipher
+  cipher: SecretCipher,
+  loginItem: LoginItem
 ): IpcDeps {
   const games = createGameRepository(db)
   const configs = createLaunchConfigRepository(db)
@@ -304,6 +305,7 @@ export function createServices(
       users,
       lastSync: () => steamOnline.lastSync(),
       cipher,
+      loginItem,
       steam,
       steamPath: () => adapter.steamPath()
     })

@@ -64,10 +64,12 @@ app.on('second-instance', () => {
   mainWindow.focus()
 })
 
-function createWindow(): void {
+function createWindow(startFullscreen: boolean): void {
   mainWindow = new BrowserWindow({
+    // Also the size F11 goes back to when it opens in fullscreen.
     width: 1280,
     height: 720,
+    fullscreen: startFullscreen,
     show: false,
     backgroundColor: '#101216',
     webPreferences: {
@@ -139,12 +141,23 @@ app.whenReady().then(async () => {
 
   hardenApp(appOrigin)
   const database = db
-  const services = createServices(db, artworkCacheDir, () => mainWindow, {
-    // Windows DPAPI through safeStorage (D-04); keys never leave main in clear text.
-    available: () => safeStorage.isEncryptionAvailable(),
-    encrypt: (plain) => safeStorage.encryptString(plain),
-    decrypt: (encrypted) => safeStorage.decryptString(Buffer.from(encrypted))
-  })
+  const services = createServices(
+    db,
+    artworkCacheDir,
+    () => mainWindow,
+    {
+      // Windows DPAPI through safeStorage (D-04); keys never leave main in clear text.
+      available: () => safeStorage.isEncryptionAvailable(),
+      encrypt: (plain) => safeStorage.encryptString(plain),
+      decrypt: (encrypted) => safeStorage.decryptString(Buffer.from(encrypted))
+    },
+    {
+      // D-20. Windows owns this state, including an entry turned off in the Task Manager.
+      available: () => app.isPackaged,
+      enabled: () => app.getLoginItemSettings().executableWillLaunchAtLogin,
+      setEnabled: (enabled) => app.setLoginItemSettings({ openAtLogin: enabled })
+    }
+  )
   handleArtworkProtocol(
     createArtworkRepository(db),
     createAchievementRepository(db),
@@ -163,7 +176,7 @@ app.whenReady().then(async () => {
       schemaVersion: schemaVersion(database)
     })
   })
-  createWindow()
+  createWindow(services.users.getStartFullscreen())
   // Local Steam scan and running-game watcher (D-12); a failure never blocks the app.
   steam = services.steam
   steam.start()

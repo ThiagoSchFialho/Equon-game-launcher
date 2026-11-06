@@ -34,6 +34,7 @@ import {
   runningIdsSchema,
   libraryRefreshInfoSchema,
   settingsInfoSchema,
+  settingsSetEnabledArgs,
   settingsSetSecretArgs,
   settingsSetSteamIdArgs,
   settingsTestConnectionArgs,
@@ -149,6 +150,18 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
     IpcChannel.settingsSetSteamId,
     createValidatedHandler(settingsSetSteamIdArgs, settingsResult, trusted, (steamId) =>
       deps.settings.setSteamId(steamId)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.settingsSetStartFullscreen,
+    createValidatedHandler(settingsSetEnabledArgs, settingsResult, trusted, (enabled) =>
+      deps.settings.setStartFullscreen(enabled)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.settingsSetOpenAtLogin,
+    createValidatedHandler(settingsSetEnabledArgs, settingsResult, trusted, (enabled) =>
+      deps.settings.setOpenAtLogin(enabled)
     )
   )
   ipcMain.handle(

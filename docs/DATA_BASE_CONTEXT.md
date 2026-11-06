@@ -124,10 +124,12 @@ Uma única linha, com a configuração do usuário local.
 | `gold` | `INTEGER NOT NULL DEFAULT 0` | Conquistas ouro desbloqueadas; `CHECK (>= 0)` |
 | `silver` | `INTEGER NOT NULL DEFAULT 0` | Conquistas prata desbloqueadas; `CHECK (>= 0)` |
 | `bronze` | `INTEGER NOT NULL DEFAULT 0` | Conquistas bronze desbloqueadas; `CHECK (>= 0)` |
+| `start_fullscreen` | `INTEGER NOT NULL DEFAULT 0` | Abrir o launcher em tela cheia (D-20); `CHECK (IN (0, 1))` |
 
 Regras:
 
 - A linha `id = 1` é criada pela migração inicial; o repositório nunca precisa tratar a ausência dela.
+- Preferências do usuário ficam em colunas desta tabela (D-20). "Iniciar com o sistema" não é guardado aqui: quem sabe se está ativo é o Windows.
 - As chaves só são descriptografadas no processo principal, na hora de uma requisição. Nunca vão para a interface, para logs ou para mensagens de erro.
 - O total exibido na tela de Conquistas soma platinas, ouro, prata e bronze (decisão do dono do projeto, Fase 7). Os troféus de jogos ocultos contam, e esses jogos também aparecem na lista.
 - Os contadores são **agregados derivados** de `ACHIEVEMENTS`. São recalculados a partir dos dados persistidos, na mesma transação da sincronização; nunca incrementados às cegas.
@@ -444,10 +446,10 @@ API REST v2 com chave pessoal gratuita. Fornece capa quadrada e logo (e, para jo
 | Frequência dos metadados | Apenas na descoberta/adição | D-16 |
 | Lançamento na Steam | `steam://rungameid/<appid>` | D-17 |
 | Artes | SteamGridDB + `appdetails` + arquivo local; tabela `GAME_ARTWORK` | D-15 |
+| Preferências do usuário | Colunas em `USERS`, sem tabela de configurações. O caminho da Steam não é preferência: é sempre detectado (Fase 6) | D-20 |
 
 ### 7.2 Ainda em aberto
 
-2. Onde guardar as preferências (idioma etc.): tabela de configurações ou arquivo de configuração. O caminho da Steam não é mais preferência: é sempre detectado (Fase 6).
 3. Política de limpeza do cache de artes e variantes de tamanho.
 4. Se haverá uma ação manual de "atualizar metadados" de um jogo.
 
