@@ -11,8 +11,8 @@ export const t = {
     open: 'Abrir',
     select: 'Selecionar',
     back: 'Voltar',
-    filter: 'Filtrar',
-    search: 'Buscar'
+    sort: 'Ordenar',
+    filter: 'Filtrar'
   },
   library: {
     title: 'Biblioteca',
@@ -40,6 +40,8 @@ export const t = {
       beaten: 'Zerados'
     } as Record<string, string>,
     filters: 'Filtros',
+    filter: 'Filtrar',
+    filterCount: (n: number) => (n === 0 ? 'Nenhum' : n === 1 ? '1 ativo' : `${n} ativos`),
     install: 'Instalação',
     installs: { all: 'Todos', installed: 'Instalados', missing: 'Não encontrados' } as Record<
       string,

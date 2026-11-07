@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import type { GameSummary } from '../../../shared/ipc/contract'
 import {
   DEFAULT_LIBRARY_VIEW,
+  activeFilterCount,
   applyLibraryView,
   includesHidden,
   isFiltered,
@@ -29,8 +30,8 @@ const HINTS: Hint[] = [
   { button: 'LB/RB', label: t.hints.navigate },
   { button: 'menu', label: t.hints.options },
   { button: 'A', label: t.hints.open },
-  { button: 'X', label: t.hints.filter },
-  { button: 'Y', label: t.hints.search }
+  { button: 'X', label: t.hints.sort },
+  { button: 'Y', label: t.hints.filter }
 ]
 const MENU_HINTS: Hint[] = [
   { button: 'A', label: t.hints.select },
@@ -92,8 +93,8 @@ export function LibraryScreen(): React.JSX.Element {
     nextSection: () => navigation.stepSection(1),
     scrollUp: page('up'),
     scrollDown: page('down'),
-    secondary: () => setOverlay({ kind: 'filters' }),
-    tertiary: () => setOverlay({ kind: 'search' })
+    secondary: () => setOverlay({ kind: 'sort' }),
+    tertiary: () => setOverlay({ kind: 'filters' })
   })
 
   let content: React.JSX.Element
@@ -180,11 +181,11 @@ export function LibraryScreen(): React.JSX.Element {
               onConfirm={() => setOverlay({ kind: 'search' })}
             />
             <ToolbarField
-              id="library:origin"
+              id="library:filters"
               kind="select"
-              label={t.library.origin}
-              value={originName}
-              onConfirm={() => setOverlay({ kind: 'origin' })}
+              label={t.library.filter}
+              value={t.library.filterCount(activeFilterCount(view))}
+              onConfirm={() => setOverlay({ kind: 'filters' })}
             />
             <ToolbarField
               id="library:sort"
@@ -236,7 +237,7 @@ export function LibraryScreen(): React.JSX.Element {
         <ChoiceDialog
           id="library-origin"
           title={t.library.origin}
-          onClose={close}
+          onClose={() => setOverlay({ kind: 'filters' })}
           items={[
             { key: null, name: t.library.allOrigins },
             ...origins.map(([key, name]) => ({ key, name }))
@@ -246,7 +247,7 @@ export function LibraryScreen(): React.JSX.Element {
             selected: key === view.origin,
             onConfirm: () => {
               setView((v) => ({ ...v, origin: key }))
-              close()
+              setOverlay({ kind: 'filters' })
             }
           }))}
         />
@@ -273,6 +274,12 @@ export function LibraryScreen(): React.JSX.Element {
           title={t.library.filters}
           onClose={close}
           items={[
+            {
+              id: 'origin',
+              label: t.library.origin,
+              detail: originName,
+              onConfirm: () => setOverlay({ kind: 'origin' })
+            },
             {
               id: 'install',
               label: t.library.install,

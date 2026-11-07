@@ -68,6 +68,7 @@ describe('keyboard mapping', () => {
     expect(keyToAction('Escape', false)).toBe('back')
     expect(keyToAction('q', false)).toBe('previousSection')
     expect(keyToAction('x', false)).toBe('secondary')
+    expect(keyToAction('y', false)).toBe('tertiary')
     expect(keyToAction('z', false)).toBeNull()
   })
 

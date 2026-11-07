@@ -102,7 +102,7 @@ describe('Library sorts and badges', () => {
     installFakeApi(LIBRARY)
     await openLibrary()
     await sortBy('Ocultos')
-    press('x')
+    press('y')
     await clickText('Jogos zerados')
     await clickText('Limpar filtros')
     await waitFor(() => expect(cards()).toEqual(['Gama', 'Alfa', 'Beta', 'Delta']))

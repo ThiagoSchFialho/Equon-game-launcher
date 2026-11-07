@@ -14,9 +14,9 @@ export type Action =
   | 'menu'
   | 'previousSection'
   | 'nextSection'
-  /** X: backspace on the on-screen keyboard; filters in the Library (also the X key). */
+  /** X: backspace on the on-screen keyboard; sorting in the Library (also the X key). */
   | 'secondary'
-  /** Y: space on the on-screen keyboard; search in the Library. */
+  /** Y: space on the on-screen keyboard; filters in the Library (also the Y key). */
   | 'tertiary'
   /** LT: shift on the on-screen keyboard. */
   | 'leftTrigger'

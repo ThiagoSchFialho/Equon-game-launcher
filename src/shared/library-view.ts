@@ -42,6 +42,13 @@ export function isFiltered(view: LibraryView): boolean {
   )
 }
 
+/** How many options of the filters dialog are on; the search has its own field. */
+export function activeFilterCount(view: LibraryView): number {
+  return [view.origin !== null, view.install !== 'all', view.showHidden, view.beatenOnly].filter(
+    Boolean
+  ).length
+}
+
 /** Sorting by "Ocultos" would change nothing without them, so that sort brings them in. */
 export function includesHidden(view: LibraryView): boolean {
   return view.showHidden || view.sort === 'hidden'

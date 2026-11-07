@@ -61,10 +61,12 @@ filtros do Início.
 -   Busca, filtro e ordenação acessíveis sem abandonar o contexto.
 -   O card em foco fica no centro da lista, e a rolagem acompanha o foco
     mesmo com o direcional segurado.
--   Barra: campo de busca, "Origem" e "Ordenar" à esquerda;
-    "Adicionar jogo" à direita. Y abre a busca (teclado
-    virtual) e X (controle ou teclado) abre o diálogo de filtros
-    (instalação, jogos ocultos e só jogos zerados). "Limpar filtros"
+-   Barra: campo de busca, "Filtrar" e "Ordenar" à esquerda;
+    "Adicionar jogo" à direita. "Ordenar" ou X (controle ou teclado) abrem
+    as opções de ordenação. "Filtrar", que mostra quantos filtros estão
+    ativos, ou Y (controle ou teclado) abrem o diálogo de filtros (origem,
+    instalação, jogos ocultos e só jogos zerados). A busca (teclado
+    virtual) não tem atalho: abre pelo campo na barra. "Limpar filtros"
     fica ao lado de "Ordenar" e no diálogo; mantém a ordenação. Jogos ocultos, quando mostrados, aparecem esmaecidos com o
     selo de oculto.
 -   "Ordenar": Título, Recentes, Tempo de jogo, Origem, Instalação, Ocultos
@@ -404,7 +406,7 @@ comportamento para escalonamento de interface e DPI do Windows.
     | LB / RB | `previousSection` / `nextSection` | Q / E |
     | ☰ (Menu) | `menu` | M, tecla de menu de contexto |
     | Xbox | `system`: abre e fecha o menu do sistema, em qualquer tela | Home |
-    | X / Y | `secondary` / `tertiary`: no teclado virtual, apagar / espaço; na Biblioteca, filtros / busca | X (filtros na Biblioteca) |
+    | X / Y | `secondary` / `tertiary`: no teclado virtual, apagar / espaço; na Biblioteca, ordenação / filtros; em Conquistas, trocar a ordenação / sincronizar | X / Y |
     | LT / RT | `leftTrigger` / `rightTrigger`: no teclado virtual, maiúsculas / pronto | — |
 
     Ao editar um campo de texto, o teclado físico digita normalmente (letras, Backspace, Enter) em vez de acionar atalhos.

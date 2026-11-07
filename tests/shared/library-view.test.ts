@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { GameSummary } from '../../src/shared/ipc/contract'
 import {
   DEFAULT_LIBRARY_VIEW,
+  activeFilterCount,
   applyLibraryView,
   homeGames,
   includesHidden,
@@ -133,6 +134,20 @@ describe('isFiltered and searchKey', () => {
     expect(isFiltered({ ...DEFAULT_LIBRARY_VIEW, sort: 'recent' })).toBe(false)
     expect(isFiltered({ ...DEFAULT_LIBRARY_VIEW, showHidden: true })).toBe(true)
     expect(isFiltered({ ...DEFAULT_LIBRARY_VIEW, query: 'a' })).toBe(true)
+  })
+
+  it('counts the options of the filters dialog, not the search or the sort', () => {
+    expect(activeFilterCount(DEFAULT_LIBRARY_VIEW)).toBe(0)
+    expect(activeFilterCount({ ...DEFAULT_LIBRARY_VIEW, query: 'a', sort: 'hidden' })).toBe(0)
+    expect(
+      activeFilterCount({
+        ...DEFAULT_LIBRARY_VIEW,
+        origin: 'steam',
+        install: 'missing',
+        showHidden: true,
+        beatenOnly: true
+      })
+    ).toBe(4)
   })
 
   it('folds accents, trademarks and punctuation', () => {

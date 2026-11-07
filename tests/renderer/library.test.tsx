@@ -47,6 +47,17 @@ const openLibrary = async (): Promise<void> => {
   press('e')
   await screen.findByRole('heading', { name: 'Biblioteca' })
 }
+/** Toolbar field → filters dialog → origin list → back to the filters → closed. */
+const pickOrigin = async (field: string, origin: string): Promise<void> => {
+  await click(field)
+  await screen.findByRole('dialog', { name: 'Filtros' })
+  await clickText('Origem')
+  await screen.findByRole('dialog', { name: 'Origem' })
+  await clickText(origin)
+  await screen.findByRole('dialog', { name: 'Filtros' })
+  press('Escape')
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+}
 
 describe('background activity indicator', () => {
   const indicator = (): string | null =>
@@ -115,13 +126,13 @@ describe('library organization', () => {
     expect(cards()).toEqual(['Celeste', 'Pokémon Red', 'Zelda'])
     expect(screen.getByText('3 jogos')).toBeTruthy()
     expect(screen.getByLabelText('Ordenar: Título')).toBeTruthy()
-    expect(screen.getByLabelText('Origem: Todas')).toBeTruthy()
+    expect(screen.getByLabelText('Filtrar: Nenhum')).toBeTruthy()
   })
 
-  it('searches with the on-screen keyboard (Y), ignoring accents', async () => {
+  it('searches with the on-screen keyboard, ignoring accents', async () => {
     installFakeApi(games)
     await openLibrary()
-    await pressPad(Y)
+    await click('Buscar')
     expect(await screen.findByRole('dialog', { name: 'Buscar jogo' })).toBeTruthy()
     type('pokemon')
     press('Enter')
@@ -137,8 +148,7 @@ describe('library organization', () => {
     await clickText('Tempo de jogo')
     await waitFor(() => expect(cards()).toEqual(['Pokémon Red', 'Zelda', 'Celeste']))
 
-    await click('Origem: Todas')
-    await clickText('Yuzu')
+    await pickOrigin('Filtrar: Nenhum', 'Yuzu')
     await waitFor(() => expect(cards()).toEqual(['Zelda']))
 
     // Home and back: the view stays.
@@ -146,7 +156,7 @@ describe('library organization', () => {
     await screen.findByText('Início')
     press('e')
     await waitFor(() => expect(cards()).toEqual(['Zelda']))
-    expect(screen.getByLabelText('Origem: Yuzu')).toBeTruthy()
+    expect(screen.getByLabelText('Filtrar: 1 ativo')).toBeTruthy()
     expect(screen.getByLabelText('Ordenar: Tempo de jogo')).toBeTruthy()
   })
 
@@ -162,13 +172,11 @@ describe('library organization', () => {
     await waitFor(() => expect(cards()[0]).toBe('Pokémon Red'))
     await waitFor(() => expect(focused()).toBe('Pokémon Red'))
 
-    await click('Origem: Todas')
-    await clickText('Yuzu')
+    await pickOrigin('Filtrar: Nenhum', 'Yuzu')
     await waitFor(() => expect(cards()).toEqual(['Zelda']))
     await waitFor(() => expect(focused()).toBe('Zelda'))
 
-    await click('Origem: Yuzu')
-    await clickText('Todas')
+    await pickOrigin('Filtrar: 1 ativo', 'Todas')
     await waitFor(() => expect(cards()[0]).toBe('Pokémon Red'))
     await waitFor(() => expect(focused()).toBe('Pokémon Red'))
 
@@ -185,7 +193,7 @@ describe('library organization', () => {
   it('filters by install state and shows hidden games on request', async () => {
     installFakeApi(games)
     await openLibrary()
-    await pressPad(X)
+    await pressPad(Y)
     await screen.findByRole('dialog', { name: 'Filtros' })
     await clickText('Instalação')
     await clickText('Não encontrados')
@@ -212,11 +220,64 @@ describe('library organization', () => {
     expect(screen.getByLabelText('Ordenar: Recentes')).toBeTruthy()
   })
 
-  it('opens the filters with the X key and lists only beaten games', async () => {
+  it('X opens the sorting, Y the filters, and the search has no button', async () => {
+    installFakeApi(games)
+    await openLibrary()
+    const hints = document.querySelector('.footer__hints')?.textContent ?? ''
+    expect(hints).toContain('Ordenar')
+    expect(hints).toContain('Filtrar')
+    expect(hints).not.toContain('Buscar')
+
+    await pressPad(X)
+    expect(await screen.findByRole('dialog', { name: 'Ordenar' })).toBeTruthy()
+    press('Escape')
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+
+    await pressPad(Y)
+    expect(await screen.findByRole('dialog', { name: 'Filtros' })).toBeTruthy()
+    press('Escape')
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+
+    // The search is still in the toolbar.
+    await click('Buscar')
+    expect(await screen.findByRole('dialog')).toBeTruthy()
+  })
+
+  it('has Filtrar in the toolbar, with the origin as a filter', async () => {
+    installFakeApi(games)
+    await openLibrary()
+    expect(screen.queryByLabelText(/^Origem/)).toBeNull()
+    await click('Filtrar: Nenhum')
+    await screen.findByRole('dialog', { name: 'Filtros' })
+    const labels = [...document.querySelectorAll('.choice__label')].map((l) => l.textContent)
+    expect(labels.slice(0, 4)).toEqual(['Origem', 'Instalação', 'Jogos ocultos', 'Jogos zerados'])
+
+    // B on the origin list goes back to the filters without changing anything.
+    await clickText('Origem')
+    await screen.findByRole('dialog', { name: 'Origem' })
+    press('Escape')
+    await screen.findByRole('dialog', { name: 'Filtros' })
+    expect(cards()).toHaveLength(3)
+
+    await clickText('Origem')
+    await clickText('Yuzu')
+    await screen.findByRole('dialog', { name: 'Filtros' })
+    // The dialog says which one is selected, and the filters clear it too.
+    expect(await screen.findByText('Yuzu')).toBeTruthy()
+    await clickText('Jogos zerados')
+    press('Escape')
+    await waitFor(() => expect(screen.getByLabelText('Filtrar: 2 ativos')).toBeTruthy())
+    // Nothing matches both, so the empty message offers it too; either one clears.
+    await clickText('Limpar filtros')
+    await waitFor(() => expect(screen.getByLabelText('Filtrar: Nenhum')).toBeTruthy())
+    expect(cards()).toHaveLength(3)
+  })
+
+  it('opens the filters with the Y key and lists only beaten games', async () => {
     installFakeApi([...games, summary(5, 'Hades', { beated: true })])
     await openLibrary()
     expect(screen.getByLabelText('Limpar filtros').getAttribute('aria-disabled')).toBe('true')
-    press('x')
+    press('y')
     expect(await screen.findByRole('dialog', { name: 'Filtros' })).toBeTruthy()
     await clickText('Jogos zerados')
     expect(await screen.findByText('Só zerados')).toBeTruthy()
@@ -333,7 +394,7 @@ function openMenu(): void {
 const X = 2
 const Y = 3
 
-/** Presses one standard-mapping gamepad button for a few frames (X and Y have no key). */
+/** Presses one standard-mapping gamepad button for a few frames. */
 async function pressPad(button: number): Promise<void> {
   const pad = (pressed: boolean): Gamepad =>
     ({
