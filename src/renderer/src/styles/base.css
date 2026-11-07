@@ -61,6 +61,12 @@ button {
   cursor: pointer;
 }
 
+/* While the controller is in use (input/cursor.ts); must win over every other cursor rule. */
+[data-cursor-hidden],
+[data-cursor-hidden] * {
+  cursor: none !important;
+}
+
 /* Keyboard/controller focus is drawn by the focus manager (data-focused), not :focus. */
 :focus {
   outline: none;

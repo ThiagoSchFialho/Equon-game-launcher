@@ -417,6 +417,8 @@ comportamento para escalonamento de interface e DPI do Windows.
     O mouse foca ao passar e confirma ao clicar.
 -   Não capturar entradas globais que impeçam o uso normal de campos de
     texto ou do sistema.
+-   Um comando do controle esconde o cursor do mouse; mexer ou clicar o mouse
+    o traz de volta. Sem foco na janela, o cursor não muda.
 -   Sem foco na janela, o controle é ignorado. A exceção é o primeiro aperto
     antes de o Equon ser usado: ele traz a janela para a frente e não faz mais
     nada; não age com um jogo aberto.

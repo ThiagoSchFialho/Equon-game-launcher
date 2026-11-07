@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import type { Action } from './actions'
+import { createCursorHider } from './cursor'
 import { createFocusClaimer } from './focus-claim'
 import { createGamepadMapper } from './gamepad'
 import { keyToAction } from './keyboard'
@@ -16,15 +17,20 @@ export function useInput(dispatch: (action: Action) => void): void {
   useEffect(() => {
     const mapper = createGamepadMapper()
     const claimer = createFocusClaimer(() => window.equon.app.claimFocus())
+    const cursor = createCursorHider()
     let frame = 0
 
     const poll = (now: number): void => {
       const pads = navigator.getGamepads?.() ?? []
       const pressed = pads.some((pad) => pad?.buttons.some((button) => button.pressed))
-      if (claimer.update(pressed, document.hasFocus())) {
+      const focused = document.hasFocus()
+      // Any button, even one with no action here. Without the focus it may belong to a game.
+      if (focused && pressed) cursor.hide()
+      if (claimer.update(pressed, focused)) {
         mapper.reset()
       } else {
         for (const action of mapper.update(pads, now)) {
+          cursor.hide() // The sticks are not buttons.
           claimer.markUsed()
           dispatch(action)
         }
@@ -53,6 +59,7 @@ export function useInput(dispatch: (action: Action) => void): void {
 
     return () => {
       cancelAnimationFrame(frame)
+      cursor.stop()
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('pointerdown', onPointerDown)
     }
