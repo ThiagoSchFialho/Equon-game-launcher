@@ -193,6 +193,8 @@ export function installFakeApi(
       update: async (id) => ({ ok: true, data: { id } }),
       remove: async () => ({ ok: true, data: null }),
       launch: async () => ({ ok: true, data: null }),
+      cancelLaunchCover: async () => {},
+      onLaunchCoverChanged: () => () => {},
       running: async () => [],
       setFlags: async () => ({ ok: true, data: null }),
       onRunningChanged: (listener) => {

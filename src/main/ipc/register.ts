@@ -67,6 +67,7 @@ import { z } from 'zod'
 import { listFiles, pickNative } from '../files/file-service'
 import type { ManualGameService } from '../games/manual-game-service'
 import type { SettingsService } from '../settings/settings-service'
+import type { LaunchCover } from '../launch-cover/launch-cover'
 import type { SystemControl } from '../system/system-control'
 import { getAchievementsOverview, getGameAchievements } from '../achievements/achievement-queries'
 import type { AchievementSync } from '../achievements/achievement-sync'
@@ -103,6 +104,8 @@ export interface IpcDeps {
   systemInfo?: () => SystemInfo
   /** The system menu (D-21). */
   system?: SystemControl
+  /** The image that covers the screen while a game opens (D-22). */
+  launchCover?: LaunchCover
 }
 
 const idResult = resultSchema(z.strictObject({ id: z.number().int().positive() }))
@@ -409,7 +412,16 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
   )
   ipcMain.handle(
     IpcChannel.gamesLaunch,
-    createValidatedHandler(gameIdArgs, nullResult, trusted, (id) => service.launch(id))
+    createValidatedHandler(gameIdArgs, nullResult, trusted, (id) =>
+      deps.launchCover ? deps.launchCover.run(id, () => service.launch(id)) : service.launch(id)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.gamesCancelLaunchCover,
+    createValidatedHandler(noArgs, z.undefined(), trusted, () => {
+      deps.launchCover?.cancel()
+      return undefined
+    })
   )
   ipcMain.handle(
     IpcChannel.gamesSetFlags,

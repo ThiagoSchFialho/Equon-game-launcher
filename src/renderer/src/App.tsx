@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   NavigationContext,
   currentSection,
@@ -92,8 +92,23 @@ function App(): React.JSX.Element {
     [systemMenuOpen, toggleSystemMenu]
   )
 
+  // The image over the screen while a game opens: nothing below it can be seen, so nothing
+  // below it reacts, and Back takes it away.
+  const launchCoverUp = useRef(false)
+  useEffect(
+    () =>
+      window.equon.games.onLaunchCoverChanged((active) => {
+        launchCoverUp.current = active
+      }),
+    []
+  )
+
   const dispatch = useCallback(
     (action: Parameters<FocusManager['handle']>[0]) => {
+      if (launchCoverUp.current) {
+        if (action === 'back') void window.equon.games.cancelLaunchCover()
+        return
+      }
       // Above everything: it also opens over a dialog, which would stop the action.
       if (action === 'system') toggleSystemMenu()
       else manager.handle(action)

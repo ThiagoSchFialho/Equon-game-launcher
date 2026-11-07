@@ -71,6 +71,7 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-19 | Editing the art of a game by hand | Accepted | "Editar artes" screen for any game; removed art stays removed; see §3.18 |
 | D-20 | Settings › Sistema and where preferences live | Accepted | Columns in `USERS`; starting with Windows is read from Windows; see §3.19 |
 | D-21 | System menu | Accepted | Xbox button or footer icon, on any screen: fullscreen, settings, shutdown, quit; see §3.20 |
+| D-22 | Image over the screen while a game opens | Accepted | Own topmost window; the game starts once covered; leaves 3 s after a new process takes the foreground; see §3.21 |
 | D-16 | Refresh frequency for `appdetails` metadata | Accepted | Fetched only when a game is discovered/added; failed fetches are retried (§3.14) |
 | D-17 | Steam launch mechanism | Accepted | `steam://rungameid/<appid>`, built in the main process (§3.12) |
 
@@ -409,6 +410,18 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 **Without the focus (owner's report, 2026-11-07).** Opened with Windows, the window could appear without the focus, and the controller then did nothing until a mouse click. The window now asks for the focus when it appears, and until the launcher is first used (any action, key or click), a controller press without the focus brings it to the front. That press does nothing else, works once, has no time limit (owner decision: the controller may only be picked up much later) and is refused while a game is running. The cost: a press in a game opened outside the launcher, before the launcher was used, takes the user out of that game once. `BrowserWindow.focus()` did take the focus back from another process (measured on 2026-11-07, not at login itself). Why the Xbox button alone worked in that state was not explained. The owner confirmed the fix by starting the PC with the controller (2026-11-07). Not tested, by owner decision since it is unlikely: a game opened outside the launcher before it was used. `document.hasFocus()` and the real Windows foreground can disagree (measured with throwaway windows), so in that case the launcher might keep reacting to the controller behind the game.
 
 **A game left open.** Closing the launcher does not close the game. The session is closed at its last heartbeat on the next start (`DATA_BASE_CONTEXT.md` §3.8), so the confirmation warns about it.
+
+### 3.21 D-22 — Image while a game opens (Accepted, after Phase 8)
+
+**Owner decisions (2026-11-07):** on "Jogar", the game's background fades in over the whole monitor, and only then the game starts. When the game opens, the image waits 3 s and fades out. It is in front of everything. It always leaves after 60 s; Back (B) takes it away without closing a game already started; without a background it shows the logo, and without a logo the title; fades take about 0.6 s, none with reduced motion.
+
+**When has the game opened?** What the launcher already knew was not enough: Steam reports a game before its window exists, a process starts long before it has one, and a `.url` shortcut has no process at all. So while the image is up, `src/main/launch-cover/foreground.ts` keeps a small PowerShell process asking Windows which window is in the foreground. It runs one fixed script, by absolute path, with no shell and nothing from outside in it, and it only reads. The signal is the first foreground window that is **large**, at least half of the monitor each way, of a process **started after the launch**, leaving out the launcher, the Windows shell, the Steam client and the launchers of other stores. A window that grows also counts. Every condition came from measuring: an empty foreground (`Idle`) and programs already open, such as VS Code, took the foreground while covered, and games open a small window before their own (Fortnite an 800×450 anti-cheat window, Forza Horizon 6 a 311×151 one, Assassin's Creed IV the Ubisoft launcher, `upc`, at 714×454). The launcher names are a list and will not cover every store. If PowerShell cannot run, the image leaves by its time limit.
+
+**The window** is a second `BrowserWindow`: frameless, topmost at the `screen-saver` level, on the launcher's monitor, sandboxed, with no preload. It cannot take the focus, so the launcher keeps it until the game takes it, which is what lets B reach the launcher. While it is up, the launcher ignores all input but Back, since nothing below can be seen. Windows keeps a window inside the work area, leaving the taskbar uncovered (measured: 1035 of 1080 px), so it needs `enableLargerThanScreen` and bounds set after showing. Its page is the renderer's `index.html` with a `#cover` address, which renders only `src/renderer/src/cover.ts`. A cover that cannot open never stops the game.
+
+**Known limitation.** A small window that needs an answer, such as a launcher's login or a prerequisite installer, stays behind the image until the 60 s or B, since it no longer makes the image leave.
+
+**Tested by the owner (2026-11-07), on a throwaway version:** Balatro, Fortnite, Forza Horizon 6 and Assassin's Creed IV opened as expected, with the image leaving early on the last three, which led to the size rule. The owner then confirmed the final version with the size rule. A prompt hidden behind the image did not come up in these tests.
 
 ## 4. Inconsistencies found across the project docs
 
@@ -778,6 +791,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-06 | 0.44 | Library: sort by achievement percentage; `GameSummary` carries it and the list refreshes on `achievementsChanged`. |
 | 2026-11-06 | 0.45 | "Editar artes": Steam gallery for backgrounds, with the store background and the screenshots (§3.18). |
 | 2026-11-07 | 0.46 | The window asks for the focus when it appears; until first used, a controller press brings it to the front (§3.20). |
+| 2026-11-07 | 0.47 | D-22: image over the screen while a game opens (§3.21). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

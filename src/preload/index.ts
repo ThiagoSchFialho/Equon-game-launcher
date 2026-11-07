@@ -33,6 +33,14 @@ const api: EquonApi = {
       }
       ipcRenderer.on(IpcEvent.gamesRunningChanged, handler)
       return () => ipcRenderer.removeListener(IpcEvent.gamesRunningChanged, handler)
+    },
+    cancelLaunchCover: () => ipcRenderer.invoke(IpcChannel.gamesCancelLaunchCover),
+    onLaunchCoverChanged: (listener) => {
+      const handler = (_event: IpcRendererEvent, active: unknown): void => {
+        if (typeof active === 'boolean') listener(active)
+      }
+      ipcRenderer.on(IpcEvent.launchCoverChanged, handler)
+      return () => ipcRenderer.removeListener(IpcEvent.launchCoverChanged, handler)
     }
   },
   origins: {

@@ -128,7 +128,10 @@ limitações, condições de teste e método de inicialização suportado.
 
 -   Mostrar título, arte, tempo total de jogo, origem e estado de
     instalação quando conhecidos.
--   Disponibilizar ação principal para iniciar o jogo.
+-   Disponibilizar ação principal para iniciar o jogo. Enquanto o jogo abre,
+    a imagem de fundo dele cobre o monitor inteiro, e o jogo só é chamado com
+    a tela já coberta. A imagem sai 3 s depois que o jogo abre, em no máximo
+    60 s, ou com o botão B.
 -   Mostrar tempo jogado, seja essa informação vinda de uma fonte
     externa ou registrada pelo launcher quando houver sessões
     observadas.

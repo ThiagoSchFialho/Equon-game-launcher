@@ -45,6 +45,7 @@ export const IpcChannel = {
   gamesUpdate: 'games:update',
   gamesRemove: 'games:remove',
   gamesLaunch: 'games:launch',
+  gamesCancelLaunchCover: 'games:cancel-launch-cover',
   gamesRunning: 'games:running',
   gamesSetFlags: 'games:set-flags',
   originsList: 'origins:list',
@@ -64,6 +65,8 @@ export type IpcChannel = (typeof IpcChannel)[keyof typeof IpcChannel]
 export const IpcEvent = {
   /** Payload: ids of the games currently running. */
   gamesRunningChanged: 'games:running-changed',
+  /** Payload: whether the image that covers the screen while a game opens is up. */
+  launchCoverChanged: 'games:launch-cover-changed',
   /** No payload: games were added or changed by a library scan. */
   libraryChanged: 'library:changed',
   /** No payload: achievement data, sync progress or icons changed. */
@@ -558,6 +561,9 @@ export interface EquonApi {
     setFlags(id: number, flags: GameFlagsInput): Promise<Result<null>>
     /** Subscribes to running-game changes; returns the unsubscribe function. */
     onRunningChanged(listener: (runningGameIds: number[]) => void): () => void
+    /** Takes the opening image off the screen; a game already started goes on. */
+    cancelLaunchCover(): Promise<void>
+    onLaunchCoverChanged(listener: (active: boolean) => void): () => void
   }
   origins: {
     list(): Promise<OriginInfo[]>

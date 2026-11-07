@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, Menu, safeStorage } from 'electron'
+import { app, BrowserWindow, dialog, Menu, safeStorage, screen, systemPreferences } from 'electron'
 import { execFile } from 'child_process'
 import { release, version } from 'os'
 import { join } from 'path'
@@ -13,7 +13,10 @@ import {
 } from '../infrastructure/persistence'
 import { APP_MENU } from './app-menu'
 import { handleArtworkProtocol, registerArtworkScheme } from './artwork/artwork-protocol'
+import { watchForeground } from './launch-cover/foreground'
+import { createLaunchCover, type CoverWindow, type LaunchCover } from './launch-cover/launch-cover'
 import { describeDatabaseFailure } from './database-failure'
+import { IpcEvent } from '../shared/ipc/contract'
 import { registerIpcHandlers } from './ipc/register'
 import { createCrashPolicy } from './renderer-recovery'
 import { hardenApp } from './security/harden'
@@ -66,6 +69,51 @@ app.on('second-instance', () => {
   mainWindow.focus()
 })
 
+/** The image over everything on the launcher's monitor, while a game opens (D-22). */
+async function openCoverWindow(hash: string): Promise<CoverWindow> {
+  const display = screen.getDisplayMatching(
+    mainWindow?.getBounds() ?? { x: 0, y: 0, width: 1, height: 1 }
+  ).bounds
+  // A pixel past each edge: rounding by Windows left a line uncovered (measured: 1919 of 1920).
+  const bounds = {
+    x: display.x - 1,
+    y: display.y - 1,
+    width: display.width + 2,
+    height: display.height + 2
+  }
+  const cover = new BrowserWindow({
+    ...bounds,
+    frame: false,
+    show: false,
+    resizable: false,
+    movable: false,
+    skipTaskbar: true,
+    // The launcher keeps the focus until the game takes it, so the game can.
+    focusable: false,
+    // Otherwise Windows keeps it inside the work area, above the taskbar (measured).
+    enableLargerThanScreen: true,
+    backgroundColor: '#101216',
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
+  })
+  cover.setAlwaysOnTop(true, 'screen-saver')
+  cover.setOpacity(0)
+  if (devServerUrl !== undefined) await cover.loadURL(`${devServerUrl}#${hash}`)
+  else await cover.loadFile(rendererFile, { hash })
+  return {
+    monitor: { width: display.width, height: display.height },
+    show() {
+      cover.showInactive()
+      cover.setBounds(bounds)
+    },
+    setOpacity: (opacity) => {
+      if (!cover.isDestroyed()) cover.setOpacity(opacity)
+    },
+    close: () => {
+      if (!cover.isDestroyed()) cover.destroy()
+    }
+  }
+}
+
 function createWindow(startFullscreen: boolean): void {
   mainWindow = new BrowserWindow({
     // Also the size F11 goes back to when it opens in fullscreen.
@@ -95,6 +143,7 @@ function createWindow(startFullscreen: boolean): void {
   window.on('focus', () => void steam?.rescan())
   window.on('closed', () => {
     mainWindow = null
+    launchCover?.dispose()
   })
 
   const load = (): void => {
@@ -116,6 +165,7 @@ function createWindow(startFullscreen: boolean): void {
 
 let db: SqliteDatabase | undefined
 let steam: SteamService | undefined
+let launchCover: LaunchCover | undefined
 
 app.whenReady().then(async () => {
   if (!isPrimaryInstance) return
@@ -170,8 +220,29 @@ app.whenReady().then(async () => {
     artworkCacheDir,
     services.artworkEditor
   )
+  launchCover = createLaunchCover({
+    open: async (gameId) => {
+      const game = services.queries.games.getById(gameId)
+      const kinds = services.queries.artwork.listKinds().get(gameId) ?? []
+      const art = kinds.includes('background') ? 'background' : kinds.includes('logo') ? 'logo' : ''
+      const query = new URLSearchParams({
+        game: String(gameId),
+        art,
+        version: services.queries.artwork.listVersions().get(gameId) ?? '',
+        title: game?.title ?? ''
+      })
+      return openCoverWindow(`cover?${query}`)
+    },
+    watch: (onWindow) => watchForeground(process.env['SystemRoot'], onWindow),
+    reducedMotion: () => systemPreferences.getAnimationSettings().prefersReducedMotion,
+    ownPid: process.pid,
+    now: () => Date.now(),
+    onChanged: (active) => mainWindow?.webContents.send(IpcEvent.launchCoverChanged, active),
+    onError: (error) => console.error('Could not open the launch cover:', String(error))
+  })
   registerIpcHandlers(appOrigin, {
     ...services,
+    launchCover,
     system: createSystemControl({
       window: () => mainWindow,
       isGameRunning: () => services.runner.runningGameIds().length > 0,
@@ -205,6 +276,7 @@ app.on('window-all-closed', () => {
 })
 
 app.on('will-quit', () => {
+  launchCover?.dispose()
   steam?.stop()
   db?.close()
 })

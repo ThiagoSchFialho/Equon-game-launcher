@@ -96,6 +96,11 @@ filtros do Início.
     por atalho `.url` não dão outro sinal de que algo aconteceu. "Em execução"
     tem prioridade; uma abertura pela Steam que demore mais continua em
     "Abrindo…" até terminar.
+-   Também ao apertar "Jogar", a imagem de fundo do jogo aparece com fade na
+    frente de tudo, no monitor inteiro, e só então o jogo é chamado. Ela sai com
+    fade 3 s depois que o jogo abre, ou em no máximo 60 s; B a tira da tela sem
+    fechar o jogo. Sem imagem de fundo, mostra o logo; sem logo, o título. Fades
+    de cerca de 0,6 s, e nenhum com movimento reduzido.
 
 ### Configurações
 
