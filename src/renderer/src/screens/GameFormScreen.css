@@ -33,6 +33,11 @@
   min-height: 0;
 }
 
+/* A Steam game's fields keep their width: their IGDB buttons use the room to the right. */
+.game-form__body[data-steam='true'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .game-form__fields {
   display: flex;
   flex-direction: column;
@@ -61,6 +66,15 @@
   margin: 0;
   color: var(--color-danger);
   font-size: var(--font-size-body);
+}
+
+/* A field of a Steam game with its own "Preencher com IGDB" beside it, as wide as any field. */
+.game-form__with-action {
+  display: grid;
+  grid-template-columns: minmax(0, 60rem) auto;
+  justify-content: start;
+  align-items: start;
+  gap: var(--space-3);
 }
 
 /* Read-only explanation under a launch row, aligned with the value column. */

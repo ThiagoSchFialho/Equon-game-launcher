@@ -139,6 +139,8 @@ export const t = {
     editTitle: 'Editar jogo',
     submitAdd: 'Adicionar jogo',
     fillIgdb: 'Preencher com IGDB',
+    fillIgdbField: (field: string) => `Preencher com IGDB: ${field}`,
+    igdbMissingField: 'O IGDB não tem esta informação para este jogo.',
     submitEdit: 'Salvar alterações',
     /** Footer hint of Start, on the add and edit forms. */
     save: 'Salvar',

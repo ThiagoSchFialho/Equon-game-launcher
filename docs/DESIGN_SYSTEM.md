@@ -351,6 +351,11 @@ apenas de animação para mostrar que uma ação foi ativada.
     rodapé, como o botão principal: ao adicionar, abre a busca no IGDB; ao
     editar, salva (jogos da Steam e os outros). Diálogos abertos por cima,
     como o teclado virtual, ficam com o Start para si.
+-   Em jogos da Steam, cada campo tem à direita um botão secundário
+    "Preencher com IGDB" só para ele; o controle vai do campo ao botão com
+    a direita. O aviso de que o IGDB não tem a informação aparece embaixo
+    do campo, no estilo das notas do formulário. Não há o botão que
+    preenche todos os campos de uma vez.
 
 ### Diálogos e notificações
 

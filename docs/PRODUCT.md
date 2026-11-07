@@ -334,9 +334,14 @@ limitações, condições de teste e método de inicialização suportado.
 -   Jogos da Steam também têm "Editar jogo", só com descrição,
     desenvolvedor, data de lançamento e classificação indicativa. Nome,
     executável, tempo de jogo e origem vêm da Steam e não são editados; o
-    nome aparece ao lado do título do formulário. Ali o IGDB só preenche
-    esses dados, e as artes ficam com "Editar artes". Jogos da Steam
-    continuam sem "Remover jogo".
+    nome aparece ao lado do título do formulário. Cada um desses campos tem
+    o seu próprio "Preencher com IGDB", que preenche só aquele campo e troca
+    o valor mesmo se ele já estiver preenchido (nada é gravado até salvar).
+    O primeiro botão usado pede para confirmar o jogo no IGDB; os outros
+    usam o mesmo jogo enquanto o formulário estiver aberto. Se o IGDB não
+    tiver aquela informação, um aviso aparece embaixo do campo. Os gêneros
+    continuam vindo da Steam, e as artes ficam com "Editar artes". Jogos da
+    Steam continuam sem "Remover jogo".
 -   O menu de opções de qualquer jogo tem "Editar artes", com a capa
     vertical, a capa quadrada, o logotipo e a imagem de fundo. Cada arte pode
     vir do IGDB (menos a capa quadrada), de uma galeria do SteamGridDB (menos

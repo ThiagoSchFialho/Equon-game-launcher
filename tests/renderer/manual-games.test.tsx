@@ -654,11 +654,17 @@ describe('edit game form', () => {
         'Descrição',
         'Desenvolvedor',
         'Data de lançamento',
-        'Classificação indicativa',
-        'Preencher com IGDB'
+        'Classificação indicativa'
       ]) {
         expect(await screen.findByLabelText(label)).toBeTruthy()
+        // Each field has its own IGDB button, beside it.
+        const button = screen.getByLabelText(`Preencher com IGDB: ${label}`)
+        expect(button.closest('.game-form__with-action')).toBe(
+          screen.getByLabelText(label).closest('.game-form__with-action')
+        )
       }
+      // No button for all of them at once.
+      expect(screen.queryByLabelText('Preencher com IGDB')).toBeNull()
       for (const label of [
         'Título do jogo',
         'ROM',
@@ -686,54 +692,90 @@ describe('edit game form', () => {
       expect(updateSteam.mock.calls[0][1]).toMatchObject({ description: 'From the store.' })
     })
 
-    it('saves the details only, filling from IGDB without its art', async () => {
+    const igdbGame = (
+      data: Partial<IgdbGameFill> = {}
+    ): {
+      search: Mock<EquonApi['igdb']['search']>
+      game: Mock<EquonApi['igdb']['game']>
+      applyArtwork: Mock<EquonApi['igdb']['applyArtwork']>
+    } => ({
+      search: vi.fn<EquonApi['igdb']['search']>(async () => ({
+        ok: true,
+        data: [{ id: 7, name: 'Portal 2 (IGDB)', year: 2011, developer: 'Valve' }]
+      })),
+      game: vi.fn<EquonApi['igdb']['game']>(async () => ({
+        ok: true,
+        data: {
+          name: 'Portal 2',
+          summary: 'Two portals, from IGDB.',
+          releaseDate: '2011-04-18',
+          developer: 'Valve',
+          genres: ['Puzzle'],
+          requiredAge: '10',
+          ...data
+        }
+      })),
+      applyArtwork: vi.fn<EquonApi['igdb']['applyArtwork']>()
+    })
+    const confirmGame = async (): Promise<void> => {
+      await clickText('Portal 2 (IGDB)')
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    }
+    const valueOf = (label: string): string | null | undefined =>
+      screen.getByLabelText(label).querySelector('.form-row__text')?.textContent
+
+    it('fills one field only, replacing what it had, and asks for the game once', async () => {
       const update = vi.fn<EquonApi['games']['update']>()
       const updateSteam = vi.fn<EquonApi['games']['updateSteam']>(async () => ({
         ok: true,
         data: { id: 1 }
       }))
-      const applyArtwork = vi.fn<EquonApi['igdb']['applyArtwork']>()
+      const igdb = igdbGame()
       installFakeApi([steamGame], {
-        igdb: {
-          search: async () => ({
-            ok: true,
-            data: [{ id: 7, name: 'Portal 2 (IGDB)', year: 2011, developer: 'Valve' }]
-          }),
-          game: async () => ({
-            ok: true,
-            data: {
-              name: 'Portal 2',
-              summary: 'Replaced? No.',
-              releaseDate: '2011-04-18',
-              developer: 'Valve',
-              genres: ['Puzzle'],
-              requiredAge: '10'
-            }
-          }),
-          applyArtwork
-        },
+        igdb,
         games: { update, updateSteam, getEditable: async () => steamEditable }
       })
       await openSteamEdit()
-      await click('Preencher com IGDB')
-      await clickText('Portal 2 (IGDB)')
-      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-      expect(await screen.findByText('Valve')).toBeTruthy()
+
+      await click('Preencher com IGDB: Descrição')
+      await confirmGame()
+      expect(valueOf('Descrição')).toBe('Two portals, from IGDB.')
+      expect(valueOf('Desenvolvedor')).not.toBe('Valve')
+      expect(valueOf('Data de lançamento')).not.toBe('18/04/2011')
+
+      // The game is known now: no search again.
+      await click('Preencher com IGDB: Classificação indicativa')
+      expect(screen.queryByRole('dialog')).toBeNull()
+      expect(igdb.search).toHaveBeenCalledOnce()
+      expect(valueOf('Desenvolvedor')).not.toBe('Valve')
+
       // The submit button keeps its label for every form.
       await click(/Adicionar jogo/)
       await waitFor(() => expect(updateSteam).toHaveBeenCalledOnce())
+      // Genres keep coming from Steam, and IGDB brings no art here.
       expect(updateSteam.mock.calls[0]).toEqual([
         1,
         {
-          description: 'From the store.',
-          developer: 'Valve',
-          releaseDate: '2011-04-18',
-          requiredAge: '10',
-          genres: ['Puzzle']
+          description: 'Two portals, from IGDB.',
+          developer: null,
+          releaseDate: null,
+          requiredAge: '10'
         }
       ])
       expect(update).not.toHaveBeenCalled()
-      expect(applyArtwork).not.toHaveBeenCalled()
+      expect(igdb.applyArtwork).not.toHaveBeenCalled()
+    })
+
+    it('says so when IGDB lacks that field, leaving it as it was', async () => {
+      installFakeApi([steamGame], {
+        igdb: igdbGame({ summary: null }),
+        games: { getEditable: async () => steamEditable }
+      })
+      await openSteamEdit()
+      await click('Preencher com IGDB: Descrição')
+      await confirmGame()
+      expect(valueOf('Descrição')).toBe('From the store.')
+      expect(await screen.findByText('O IGDB não tem esta informação para este jogo.')).toBeTruthy()
     })
   })
 

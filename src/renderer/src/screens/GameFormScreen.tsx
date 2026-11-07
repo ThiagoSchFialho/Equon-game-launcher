@@ -52,8 +52,26 @@ type Overlay =
   | { kind: 'file'; field: FileField }
   | { kind: 'origins' }
   | { kind: 'discard' }
-  | { kind: 'igdb' }
+  /** `field`: a Steam game filling one field, once the game is confirmed. */
+  | { kind: 'igdb'; field?: DetailField }
   | { kind: 'saved-without-igdb'; gameId: number; reason: string }
+
+/** The fields of a Steam game's form, each with its own "Preencher com IGDB" (owner decision). */
+type DetailField = 'description' | 'developer' | 'releaseDate' | 'requiredAge'
+
+/** What IGDB has for one field; null when it has nothing. */
+const igdbValue = (field: DetailField, fill: IgdbGameFill): string | null => {
+  switch (field) {
+    case 'description':
+      return fill.summary ? fill.summary.slice(0, TEXT_FIELDS.description.max) : null
+    case 'developer':
+      return fill.developer ? fill.developer.slice(0, TEXT_FIELDS.developer.max) : null
+    case 'releaseDate':
+      return fill.releaseDate
+    case 'requiredAge':
+      return fill.requiredAge
+  }
+}
 
 const EMPTY: FormState = {
   title: '',
@@ -168,6 +186,9 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
   // Adding asks only for what IGDB cannot know; metadata is typed only when editing (D-18).
   const adding = id === null
   const [igdb, setIgdb] = useState<{ id: number; genres: string[] } | null>(null)
+  // Steam: the game confirmed on IGDB, kept while the form is open, and fields it lacks.
+  const [steamFill, setSteamFill] = useState<IgdbGameFill | null>(null)
+  const [igdbMissing, setIgdbMissing] = useState<Partial<Record<DetailField, boolean>>>({})
   const [loadFailed, setLoadFailed] = useState(false)
   // After filling from IGDB, saving is the likely next step.
   const focusManager = useFocusManager()
@@ -224,6 +245,8 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
   const set = <K extends keyof FormState>(key: K, value: FormState[K]): void => {
     setForm((f) => ({ ...f, [key]: value }))
     setErrors((e) => ({ ...e, [key]: undefined }))
+    // A value typed or chosen answers the note that IGDB had none.
+    setIgdbMissing((m) => (key in m ? { ...m, [key]: undefined } : m))
   }
 
   const chooseOrigin = (origin: OriginInfo): void => {
@@ -237,6 +260,24 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
     setErrors({})
     setIgdb({ id: igdbGameId, genres: fill.genres })
     landing.current = 'form:submit'
+    setOverlay(null)
+  }
+
+  /** Steam: one field only, replacing what it had; nothing is written until saved. */
+  const fillField = (field: DetailField, fill: IgdbGameFill): void => {
+    const value = igdbValue(field, fill)
+    setIgdbMissing((all) => ({ ...all, [field]: value === null }))
+    if (value !== null) set(field, value)
+  }
+  const fromIgdb = (field: DetailField): void => {
+    if (steamFill) fillField(field, steamFill)
+    else setOverlay({ kind: 'igdb', field })
+  }
+  /** The game was just confirmed: the other buttons use it without asking again. */
+  const fillSteamField = (field: DetailField, fill: IgdbGameFill): void => {
+    setSteamFill(fill)
+    fillField(field, fill)
+    landing.current = `form:igdb:${field}`
     setOverlay(null)
   }
 
@@ -270,18 +311,14 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
   const emulatorOf = (values: FormState): EmulatorInfo | null =>
     (emulators ?? []).find((e) => e.origin === values.origin) ?? null
 
-  const saveSteam = async (
-    gameId: number,
-    values: FormState,
-    chosen: { id: number; genres: string[] } | null
-  ): Promise<number | null> => {
+  // Its genres keep coming from Steam: the form has no genre field to fill from IGDB.
+  const saveSteam = async (gameId: number, values: FormState): Promise<number | null> => {
     setSaving(true)
     const result = await window.equon.games.updateSteam(gameId, {
       description: values.description.trim() || null,
       developer: values.developer.trim() || null,
       releaseDate: values.releaseDate,
-      requiredAge: values.requiredAge,
-      ...(chosen ? { genres: chosen.genres } : {})
+      requiredAge: values.requiredAge
     })
     setSaving(false)
     if (!result.ok) {
@@ -298,7 +335,7 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
     values: FormState,
     chosen: { id: number; genres: string[] } | null
   ): Promise<number | null> => {
-    if (steam && id !== null) return saveSteam(id, values, chosen)
+    if (steam && id !== null) return saveSteam(id, values)
     const romGame = emulatorOf(values) !== null
     const noExtras = romGame || isShortcut(values.executablePath)
     const payload: ManualGameForm = {
@@ -349,7 +386,7 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
 
   const submit = (): void => {
     if (steam) {
-      void saveAndOpen(form, igdb)
+      void saveAndOpen(form, null)
       return
     }
     const local: Partial<Record<keyof FormState, string>> = {}
@@ -408,6 +445,27 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
     value: form.playtime === '' ? '' : t.form.minutes(Number(form.playtime))
   })
 
+  /** Steam: the field's own "Preencher com IGDB" beside it, and a note when IGDB lacks it. */
+  const withIgdb = (field: DetailField, row: React.JSX.Element): React.JSX.Element => {
+    if (!steam) return row
+    const label = t.form.fields[field]
+    return (
+      <>
+        <div className="game-form__with-action">
+          {row}
+          <Button
+            id={`form:igdb:${field}`}
+            label={t.form.fillIgdbField(label)}
+            onConfirm={() => fromIgdb(field)}
+          >
+            {t.form.fillIgdb}
+          </Button>
+        </div>
+        {igdbMissing[field] && <p className="game-form__note">{t.form.igdbMissingField}</p>}
+      </>
+    )
+  }
+
   return (
     <FormFrame hints={READY_HINTS}>
       <div className="game-form">
@@ -416,7 +474,7 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
           {/* The name is not edited here, so it is shown with the title. */}
           {steam && <span className="game-form__game">{form.title}</span>}
         </h1>
-        <div className="game-form__body">
+        <div className="game-form__body" data-steam={steam}>
           <div className="game-form__fields">
             {adding ? (
               <>
@@ -499,17 +557,23 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
                     )}
                   </>
                 )}
-                {textRow('description', { multiline: true, autoFocus: steam })}
-                {textRow('developer')}
-                <FormRow
-                  id="releaseDate"
-                  label={t.form.fields.releaseDate}
-                  placeholder={t.form.placeholders.releaseDate}
-                  value={isoToDisplayDate(form.releaseDate)}
-                  icon="calendar"
-                  error={errors.releaseDate}
-                  onConfirm={() => setOverlay({ kind: 'date' })}
-                />
+                {withIgdb(
+                  'description',
+                  textRow('description', { multiline: true, autoFocus: steam })
+                )}
+                {withIgdb('developer', textRow('developer'))}
+                {withIgdb(
+                  'releaseDate',
+                  <FormRow
+                    id="releaseDate"
+                    label={t.form.fields.releaseDate}
+                    placeholder={t.form.placeholders.releaseDate}
+                    value={isoToDisplayDate(form.releaseDate)}
+                    icon="calendar"
+                    error={errors.releaseDate}
+                    onConfirm={() => setOverlay({ kind: 'date' })}
+                  />
+                )}
                 {!steam && playtimeRow}
                 {!steam && (
                   <FormRow
@@ -521,14 +585,17 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
                     onConfirm={() => setOverlay({ kind: 'origin' })}
                   />
                 )}
-                <FormRow
-                  id="requiredAge"
-                  label={t.form.fields.requiredAge}
-                  value={ageLabel(form.requiredAge)}
-                  icon="chevron"
-                  error={errors.requiredAge}
-                  onConfirm={() => setOverlay({ kind: 'age' })}
-                />
+                {withIgdb(
+                  'requiredAge',
+                  <FormRow
+                    id="requiredAge"
+                    label={t.form.fields.requiredAge}
+                    value={ageLabel(form.requiredAge)}
+                    icon="chevron"
+                    error={errors.requiredAge}
+                    onConfirm={() => setOverlay({ kind: 'age' })}
+                  />
+                )}
               </>
             )}
           </div>
@@ -544,7 +611,8 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
           >
             {saving ? t.form.saving : id === null ? `+  ${t.form.submitAdd}` : t.form.submitEdit}
           </Button>
-          {!adding && (
+          {/* A Steam game fills each field from its own button instead. */}
+          {!adding && !steam && (
             <Button
               id="form:igdb"
               label={t.form.fillIgdb}
@@ -576,7 +644,9 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
                     id: igdbGameId,
                     genres: fill.genres
                   })
-              : fillFromIgdb
+              : overlay.field
+                ? (_igdbGameId, fill) => fillSteamField(overlay.field as DetailField, fill)
+                : fillFromIgdb
           }
           onSkip={adding ? () => void saveAndOpen(form, null) : undefined}
           onFailure={adding ? (reason) => void saveWithoutIgdb(reason) : undefined}
