@@ -69,6 +69,23 @@ export function isSteamRunUrl(url: string): boolean {
   return /^steam:\/\/rungameid\/[1-9]\d{0,9}$/.test(url)
 }
 
+/** Opens Steam's own window to install a game (D-23); Steam asks everything itself. */
+export function steamInstallUrl(appId: number): string {
+  if (!isSteamAppId(appId)) throw new Error('Invalid Steam App ID')
+  return `steam://install/${appId}`
+}
+
+/** Opens Steam's own confirmation to uninstall a game (D-23). */
+export function steamUninstallUrl(appId: number): string {
+  if (!isSteamAppId(appId)) throw new Error('Invalid Steam App ID')
+  return `steam://uninstall/${appId}`
+}
+
+/** True only for URLs `steamInstallUrl` and `steamUninstallUrl` can produce. */
+export function isSteamInstallActionUrl(url: string): boolean {
+  return /^steam:\/\/(install|uninstall)\/[1-9]\d{0,9}$/.test(url)
+}
+
 /** SteamID64: 17 digits (DATA_BASE_CONTEXT.md §3.3). */
 export function isSteamId64(value: string): boolean {
   return /^\d{17}$/.test(value)

@@ -3,8 +3,8 @@ import { t } from '../strings'
 import { ChoiceDialog, type ChoiceItem } from './Dialog'
 
 /**
- * Game options dialog (mockups "menu open"). "Desinstalar" is a future item, not in the
- * MVP. Edit, SteamGridDB artwork and remove are offered for non-Steam games.
+ * Game options dialog (mockups "menu open"). Edit and remove are offered for non-Steam games,
+ * and uninstall for installed Steam games, which Steam itself carries out and confirms (D-23).
  */
 export function OptionsMenu({
   title,
@@ -15,7 +15,9 @@ export function OptionsMenu({
   onAchievements,
   onEdit,
   onEditArtwork,
-  onRemove
+  onRemove,
+  onUninstall,
+  message
 }: {
   title: string
   beated: boolean
@@ -27,6 +29,9 @@ export function OptionsMenu({
   onEdit?: () => void
   onEditArtwork?: () => void
   onRemove?: () => void
+  onUninstall?: () => void
+  /** Why the last action failed. */
+  message?: string | null
 }): React.JSX.Element {
   const items: ChoiceItem[] = [
     { id: 'achievements', label: t.menu.achievements, onConfirm: onAchievements },
@@ -55,7 +60,32 @@ export function OptionsMenu({
             separated: true
           }
         ]
+      : []),
+    ...(onUninstall
+      ? [
+          {
+            id: 'uninstall',
+            label: t.menu.uninstall,
+            onConfirm: onUninstall,
+            tone: 'danger' as const,
+            separated: true
+          }
+        ]
       : [])
   ]
-  return <ChoiceDialog id="options" title={title} items={items} onClose={onClose} />
+  return (
+    <ChoiceDialog
+      id="options"
+      title={title}
+      items={items}
+      onClose={onClose}
+      footer={
+        message ? (
+          <p className="dialog__message" role="alert">
+            {message}
+          </p>
+        ) : undefined
+      }
+    />
+  )
 }

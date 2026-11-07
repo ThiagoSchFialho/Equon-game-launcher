@@ -5,7 +5,7 @@ import './Button.css'
 
 interface Props extends FocusableOptions {
   id: string
-  variant?: 'primary' | 'secondary' | 'icon'
+  variant?: 'primary' | 'play' | 'install' | 'secondary' | 'icon'
   /** Unavailable: still focusable so the reason can be read, but does nothing. */
   unavailable?: boolean
   label: string

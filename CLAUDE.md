@@ -10,7 +10,7 @@ Controller-first game launcher for Windows (Electron + React + TypeScript, embed
 
 ## Source of truth (read before coding)
 
-1. `docs/ARCHITECTURE.md` — decision log (D-01…D-22), process model, layers, security. **Start here.**
+1. `docs/ARCHITECTURE.md` — decision log (D-01…D-23), process model, layers, security. **Start here.**
 2. `docs/DATA_BASE_CONTEXT.md` — schema, integrity rules, sync rules.
 3. `docs/PRODUCT.md` — MVP scope and acceptance criteria.
 4. `docs/DESIGN_SYSTEM.md` and `design/` — visual tokens and mockups.
@@ -66,7 +66,7 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 - Discovery: Windows registry `SteamPath` (via `reg.exe`, fallback to the default folder; no user override) → `libraryfolders.vdf` → `appmanifest_*.acf` → `StateFlags`. Local scan at startup and on "Atualizar biblioteca"; a local check every 10 s and when the window gets focus applies only what changed (no network; skipped while a game is running). Ignore non-game manifests. Pin behavior with fixtures; the flags are not an official contract.
 - Owned games: after every local scan (startup and "Atualizar biblioteca"), `GetOwnedGames` creates the owned games the library is missing, with `installed = 0` only after a complete scan, otherwise `NULL`. The button never overwrites the play stats of games already synced.
 - Launch: `steam://rungameid/<appid>`, built in main from a validated numeric App ID taken from the DB, never from renderer strings. A launch counts as started only when the registry `RunningAppID` shows the game (with timeout); a session starts then. Steam sessions follow `RunningAppID` (polled every 2 s), for games started by the launcher or by Steam; the manifest `AppRunning` flag is not used (Steam does not set it).
-- Offer Play only when `installed = 1`.
+- Offer Play only when `installed = 1`. Install and uninstall open Steam's own windows (`steam://install/<appid>`, `steam://uninstall/<appid>`, D-23), built in main like the launch URL; never automate those windows or use SteamCMD.
 - Achievements: sync only the game that just closed, plus a manual full sync. Never periodic or automatic full-library sync. Validate current Steam Web API formats before implementing.
 
 ## Security

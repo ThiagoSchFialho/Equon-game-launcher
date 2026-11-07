@@ -128,6 +128,9 @@ limitações, condições de teste e método de inicialização suportado.
 
 -   Mostrar título, arte, tempo total de jogo, origem e estado de
     instalação quando conhecidos.
+-   Em jogos da Steam, instalar e desinstalar pela própria Steam: "Instalar"
+    no lugar de "Jogar" quando o jogo não está instalado, e "Desinstalar" nas
+    opções. O usuário conclui na janela da Steam, por enquanto com o mouse.
 -   Disponibilizar ação principal para iniciar o jogo. Enquanto o jogo abre,
     a imagem de fundo dele cobre o monitor inteiro, e o jogo só é chamado com
     a tela já coberta. A imagem sai 3 s depois que o jogo abre, em no máximo
@@ -443,8 +446,7 @@ O MVP poderá ser considerado funcional quando:
 -   Suporte a Linux/macOS.
 -   Temas externos e extensões.
 -   Controle remoto por celular.
--   Desinstalar jogos pelo launcher (item futuro; aparece nos mockups do
-    menu de opções, mas não faz parte do MVP).
+-   Desinstalar jogos que não sejam da Steam pelo launcher.
 
 ## 11. Riscos e perguntas em aberto
 

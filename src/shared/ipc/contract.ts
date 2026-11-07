@@ -45,6 +45,8 @@ export const IpcChannel = {
   gamesUpdate: 'games:update',
   gamesRemove: 'games:remove',
   gamesLaunch: 'games:launch',
+  gamesInstallSteam: 'games:install-steam',
+  gamesUninstallSteam: 'games:uninstall-steam',
   gamesCancelLaunchCover: 'games:cancel-launch-cover',
   gamesRunning: 'games:running',
   gamesSetFlags: 'games:set-flags',
@@ -556,6 +558,10 @@ export interface EquonApi {
     update(id: number, form: ManualGameForm): Promise<Result<{ id: number }>>
     remove(id: number): Promise<Result<null>>
     launch(id: number): Promise<Result<null>>
+    /** Opens Steam's own window; the user answers there. */
+    installSteam(id: number): Promise<Result<null>>
+    /** Opens Steam's own confirmation; the user answers there. */
+    uninstallSteam(id: number): Promise<Result<null>>
     running(): Promise<number[]>
     /** Manual flags; works for every origin and is never touched by sync. */
     setFlags(id: number, flags: GameFlagsInput): Promise<Result<null>>

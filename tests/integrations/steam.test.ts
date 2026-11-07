@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { steamStateFromFlags, steamRunUrl, isSteamRunUrl, isSteamId64 } from '../../src/core/domain'
+import {
+  steamStateFromFlags,
+  steamRunUrl,
+  steamInstallUrl,
+  steamUninstallUrl,
+  isSteamInstallActionUrl,
+  isSteamRunUrl,
+  isSteamId64
+} from '../../src/core/domain'
 import { scanSteamLibraries, type SteamFs } from '../../src/integrations/steam/library-scanner'
 import { parseRegQueryValue } from '../../src/integrations/steam/registry'
 import { createSteamAdapter, DEFAULT_STEAM_PATH } from '../../src/integrations/steam/steam-adapter'
@@ -203,6 +211,24 @@ describe('registry and URLs', () => {
     expect(isSteamRunUrl('steam://rungameid/730')).toBe(true)
     expect(isSteamRunUrl('steam://rungameid/730;calc')).toBe(false)
     expect(isSteamRunUrl('steam://install/730')).toBe(false)
+  })
+
+  it('builds and recognizes only the install and uninstall URLs', () => {
+    expect(steamInstallUrl(730)).toBe('steam://install/730')
+    expect(steamUninstallUrl(730)).toBe('steam://uninstall/730')
+    expect(() => steamInstallUrl(0)).toThrow()
+    expect(() => steamUninstallUrl(1.5)).toThrow()
+    expect(isSteamInstallActionUrl('steam://install/730')).toBe(true)
+    expect(isSteamInstallActionUrl('steam://uninstall/730')).toBe(true)
+    for (const bad of [
+      'steam://rungameid/730',
+      'steam://install/730;calc',
+      'steam://install/',
+      'steam://uninstall/0',
+      'https://install/730'
+    ]) {
+      expect(isSteamInstallActionUrl(bad), bad).toBe(false)
+    }
   })
 
   it('validates SteamID64', () => {

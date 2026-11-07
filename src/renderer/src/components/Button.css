@@ -24,6 +24,20 @@
   color: var(--color-background);
 }
 
+.button--play,
+.button--install {
+  min-width: 12.5rem;
+  color: var(--color-text-primary);
+}
+
+.button--play {
+  background: var(--color-play);
+}
+
+.button--install {
+  background: var(--color-install);
+}
+
 .button--secondary,
 .button--icon {
   background: var(--color-surface-raised);

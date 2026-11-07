@@ -91,6 +91,10 @@ filtros do Início.
     secundários.
 -   Ações secundárias em hierarquia inferior.
 -   Não inventar dados ou mostrar estatísticas sem fonte confiável.
+-   "Jogar" é verde (`color.play`). Em um jogo da Steam não instalado,
+    "Instalar", em azul (`color.install`), fica no lugar de "Jogar". Com estado desconhecido, continua "Jogar",
+    indisponível. Jogos da Steam instalados têm "Desinstalar" nas opções, em
+    vermelho. Os dois abrem a janela da própria Steam, que é quem confirma.
 -   Ao apertar "Jogar", o botão mostra "Abrindo…" e fica indisponível por
     10 s, em qualquer caso, inclusive ao sair e voltar à página: jogos abertos
     por atalho `.url` não dão outro sinal de que algo aconteceu. "Em execução"
@@ -155,6 +159,13 @@ de iluminação.
                                           discretos
 
   `color.accent`           `#D7A85B`      Acento quente, referência retrô
+
+  `color.play`             `#21963A`      Botão "Jogar", com texto claro, em
+                                          tom parecido com o da Steam
+
+  `color.install`          `#2A7FE0`      Botão "Instalar" de jogos da Steam,
+                                          com texto claro, em tom parecido
+                                          com o da Steam
 
   `color.focus`            `#F3F4F6`      Foco de navegação (branco;
                                           decisão da Fase 3)
@@ -554,7 +565,6 @@ código.
     executáveis e imagens.
 -   Configurações de movimento e acessibilidade expostas ao usuário.
 -   Se haverá temas adicionais no futuro.
--   Ação "Desinstalar" no menu de opções do jogo (item futuro; fora do MVP).
 
 ## 13. Instruções para implementação por IA
 

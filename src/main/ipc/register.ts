@@ -74,6 +74,7 @@ import type { AchievementSync } from '../achievements/achievement-sync'
 import type { ArtworkEditor } from '../artwork/artwork-editor'
 import type { ArtworkFetcher } from '../artwork/artwork-fetcher'
 import type { SteamOnline } from '../steam/steam-online'
+import type { SteamInstall } from '../steam/steam-install'
 import type { SteamService } from '../steam/steam-service'
 import { isAppUrl, type AppOrigin } from '../security/navigation'
 import {
@@ -90,6 +91,7 @@ export interface IpcDeps {
   runner: GameRunner
   window: () => BrowserWindow | null
   steam: SteamService
+  steamInstall: SteamInstall
   steamOnline: SteamOnline
   artworkFetcher: ArtworkFetcher
   artworkEditor: ArtworkEditor
@@ -415,6 +417,14 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
     createValidatedHandler(gameIdArgs, nullResult, trusted, (id) =>
       deps.launchCover ? deps.launchCover.run(id, () => service.launch(id)) : service.launch(id)
     )
+  )
+  ipcMain.handle(
+    IpcChannel.gamesInstallSteam,
+    createValidatedHandler(gameIdArgs, nullResult, trusted, (id) => deps.steamInstall.install(id))
+  )
+  ipcMain.handle(
+    IpcChannel.gamesUninstallSteam,
+    createValidatedHandler(gameIdArgs, nullResult, trusted, (id) => deps.steamInstall.uninstall(id))
   )
   ipcMain.handle(
     IpcChannel.gamesCancelLaunchCover,

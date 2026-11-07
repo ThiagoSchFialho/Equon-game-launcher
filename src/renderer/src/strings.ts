@@ -71,6 +71,9 @@ export const t = {
   game: {
     play: 'Jogar',
     opening: 'Abrindo…',
+    install: 'Instalar',
+    installOpened: 'Continue na janela da Steam.',
+    steamOpenFailed: 'Não foi possível abrir a Steam.',
     running: 'Em execução',
     steamNotInstalled: 'Jogo não instalado na Steam.',
     steamUnknown: 'Não foi possível verificar a instalação (disco da biblioteca desconectado?).',
@@ -114,6 +117,7 @@ export const t = {
     flagFailed: 'Não foi possível salvar a alteração.',
     edit: 'Editar jogo',
     editArtwork: 'Editar artes',
+    uninstall: 'Desinstalar',
     remove: 'Remover jogo',
     close: 'Fechar',
     soon: 'Em breve'

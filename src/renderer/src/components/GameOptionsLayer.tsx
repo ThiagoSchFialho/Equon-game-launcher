@@ -8,8 +8,9 @@ import { ConfirmDialog } from './Dialog'
 import { OptionsMenu } from './OptionsMenu'
 
 /**
- * Options menu for a game card (Home, Library): zerado/oculto for every
- * game; edit and remove for non-Steam games, with a confirmation before removing.
+ * Options menu for a game card (Home, Library): zerado/oculto for every game; edit and remove
+ * for non-Steam games, with a confirmation before removing; uninstall for installed Steam games,
+ * where Steam asks for the confirmation.
  */
 export function GameOptionsLayer({
   game,
@@ -22,7 +23,17 @@ export function GameOptionsLayer({
   const { reload, refresh } = useGames()
   const running = useRunning().ids.includes(game.id)
   const [confirming, setConfirming] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
   const editable = game.origin !== 'steam'
+  const uninstall = (): void => {
+    void window.equon.games.uninstallSteam(game.id).then(
+      (result) => {
+        if (result.ok) onClose()
+        else setMessage(t.game.steamOpenFailed)
+      },
+      () => setMessage(t.game.steamOpenFailed)
+    )
+  }
 
   if (confirming) {
     return (
@@ -59,6 +70,8 @@ export function GameOptionsLayer({
       onEdit={editable ? () => navigation.openGameForm(game.id) : undefined}
       onEditArtwork={() => navigation.openGameArtwork(game.id)}
       onRemove={editable && !running ? () => setConfirming(true) : undefined}
+      onUninstall={!editable && game.installed === true && !running ? uninstall : undefined}
+      message={message}
     />
   )
 }

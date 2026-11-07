@@ -6,7 +6,7 @@ import {
   recoverInterruptedSessions,
   type SecretKind
 } from '../core/application'
-import { isAllowedShortcutUrl, isSteamRunUrl } from '../core/domain'
+import { isAllowedShortcutUrl, isSteamInstallActionUrl, isSteamRunUrl } from '../core/domain'
 import { readShortcutUrl } from '../infrastructure/filesystem/shortcut-reader'
 import { createFileInspector } from '../infrastructure/filesystem/file-inspector'
 import {
@@ -38,6 +38,7 @@ import type { IpcDeps } from './ipc/register'
 import type { LoginItem, SecretCipher } from './settings/settings-service'
 import { createSettingsService } from './settings/settings-service'
 import { createBackgroundActivity } from './background-activity'
+import { createSteamInstall } from './steam/steam-install'
 import { createSteamOnline } from './steam/steam-online'
 import { createSteamService } from './steam/steam-service'
 
@@ -293,6 +294,16 @@ export function createServices(
     runner,
     window,
     steam,
+    steamInstall: createSteamInstall({
+      games,
+      runningGameIds: () => runner.runningGameIds(),
+      // Re-checked here: only these two URLs, built from a validated App ID (D-23).
+      open: async (url) => {
+        if (!isSteamInstallActionUrl(url)) throw new Error('URL not allowed')
+        await shell.openExternal(url)
+      },
+      onError: (error) => console.error('Could not open Steam:', String(error))
+    }),
     steamOnline,
     artworkFetcher,
     artworkEditor,

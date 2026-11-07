@@ -72,6 +72,7 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-20 | Settings › Sistema and where preferences live | Accepted | Columns in `USERS`; starting with Windows is read from Windows; see §3.19 |
 | D-21 | System menu | Accepted | Xbox button or footer icon, on any screen: fullscreen, settings, shutdown, quit; see §3.20 |
 | D-22 | Image over the screen while a game opens | Accepted | Own topmost window; the game starts once covered; leaves 3 s after a new process takes the foreground; see §3.21 |
+| D-23 | Installing and uninstalling Steam games | Accepted | Steam's own windows, through `steam://install` and `steam://uninstall`, built in main; see §3.22 |
 | D-16 | Refresh frequency for `appdetails` metadata | Accepted | Fetched only when a game is discovered/added; failed fetches are retried (§3.14) |
 | D-17 | Steam launch mechanism | Accepted | `steam://rungameid/<appid>`, built in the main process (§3.12) |
 
@@ -422,6 +423,16 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 **Known limitation.** A small window that needs an answer, such as a launcher's login or a prerequisite installer, stays behind the image until the 60 s or B, since it no longer makes the image leave.
 
 **Tested by the owner (2026-11-07), on a throwaway version:** Balatro, Fortnite, Forza Horizon 6 and Assassin's Creed IV opened as expected, with the image leaving early on the last three, which led to the size rule. The owner then confirmed the final version with the size rule. A prompt hidden behind the image did not come up in these tests.
+
+### 3.22 D-23 — Installing and uninstalling Steam games (Accepted, after Phase 8)
+
+**Owner decisions (2026-11-07):** on the page of a Steam game confirmed not installed (`installed = 0`), a blue "Instalar" takes the place of "Jogar". Installed Steam games have "Desinstalar" in the options. Both hand over to Steam normally, with the mouse for now.
+
+**How.** There is no public API for this, so main opens `steam://install/<appid>` or `steam://uninstall/<appid>`, built from the validated App ID in the database (`src/main/steam/steam-install.ts`) and checked against an allowlist, and Steam shows its own windows. The renderer only names the game. Steam does not say whether the user confirmed: the existing local check of the library sees what changed and the page follows it. An unknown state (`NULL`) offers neither, and "Desinstalar" is not offered while the game is running. The launcher adds no confirmation of its own, since Steam asks.
+
+**Not adopted.** Automating Steam's windows with simulated clicks, since a wrong click could confirm an uninstall and Steam may change those windows at any time; and SteamCMD, which would need the user's Steam password.
+
+**Not measured yet:** whether Steam's window appears in front of the launcher in fullscreen, and what the page shows while a game downloads.
 
 ## 4. Inconsistencies found across the project docs
 
@@ -792,6 +803,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-06 | 0.45 | "Editar artes": Steam gallery for backgrounds, with the store background and the screenshots (§3.18). |
 | 2026-11-07 | 0.46 | The window asks for the focus when it appears; until first used, a controller press brings it to the front (§3.20). |
 | 2026-11-07 | 0.47 | D-22: image over the screen while a game opens (§3.21). |
+| 2026-11-07 | 0.48 | D-23: installing and uninstalling Steam games through Steam's own windows (§3.22). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

@@ -3,6 +3,7 @@ import type { GameDetails } from '../../../shared/ipc/contract'
 import calendarIcon from '../assets/icons/game-page-calendar.svg'
 import clockIcon from '../assets/icons/game-page-clock.svg'
 import moreIcon from '../assets/icons/game-page-more.svg'
+import installIcon from '../assets/icons/game-page-install.svg'
 import playIcon from '../assets/icons/game-page-play.svg'
 import trophyIcon from '../assets/icons/game-page-trophy.svg'
 import rating10 from '../assets/ratings/10.png'
@@ -117,6 +118,17 @@ function Details({
 }): React.JSX.Element {
   const [launching, setLaunching] = useState(false)
   const [launchError, setLaunchError] = useState<string | null>(null)
+  const [installOpened, setInstallOpened] = useState(false)
+  const canInstall = game.origin === 'steam' && game.installed === false
+  const onInstall = (): void => {
+    setLaunchError(null)
+    setInstallOpened(false)
+    const failed = (): void => setLaunchError(t.game.steamOpenFailed)
+    window.equon.games.installSteam(game.id).then((result) => {
+      if (result.ok) setInstallOpened(true)
+      else failed()
+    }, failed)
+  }
   const opening = useOpening()
   const isOpening = opening.isOpening(game.id)
   const onPlay = (): void => {
@@ -130,7 +142,10 @@ function Details({
       }
     })
   }
-  const note = playNote(game, running, launching, launchError)
+  const note =
+    canInstall && installOpened && !launchError
+      ? t.game.installOpened
+      : playNote(game, running, launching, launchError)
   // A game that already started says so; a Steam launch may take longer than the 10 s.
   const playLabel = running ? t.game.running : isOpening || launching ? t.game.opening : t.game.play
   const year = releaseYear(game.releaseDate)
@@ -171,17 +186,30 @@ function Details({
 
       <div className="game__bar">
         <div className="game__actions">
-          <Button
-            id="game:play"
-            variant="primary"
-            label={playLabel}
-            unavailable={!game.launchable || running || launching || isOpening}
-            autoFocus
-            onConfirm={onPlay}
-          >
-            <img src={playIcon} alt="" />
-            {playLabel}
-          </Button>
+          {canInstall ? (
+            <Button
+              id="game:install"
+              variant="install"
+              label={t.game.install}
+              autoFocus
+              onConfirm={onInstall}
+            >
+              <img src={installIcon} alt="" />
+              {t.game.install}
+            </Button>
+          ) : (
+            <Button
+              id="game:play"
+              variant="play"
+              label={playLabel}
+              unavailable={!game.launchable || running || launching || isOpening}
+              autoFocus
+              onConfirm={onPlay}
+            >
+              <img src={playIcon} alt="" />
+              {playLabel}
+            </Button>
+          )}
           <Button id="game:more" variant="icon" label={t.game.more} onConfirm={onOpenMenu}>
             <img src={moreIcon} alt="" />
           </Button>
@@ -232,6 +260,7 @@ export function GameDetailsScreen({ id, from }: { id: number; from: Section }): 
   const { details, reload, refresh } = useGameDetails(id)
   const [overlay, setOverlay] = useState<'menu' | 'remove' | null>(null)
   const [removeError, setRemoveError] = useState<string | null>(null)
+  const [menuMessage, setMenuMessage] = useState<string | null>(null)
   const running = useRunning().ids.includes(id)
   // The sync after a game closes changes the achievement count shown here.
   useEffect(() => window.equon.achievements.onChanged(refresh), [refresh])
@@ -253,6 +282,18 @@ export function GameDetailsScreen({ id, from }: { id: number; from: Section }): 
   }, [running, refresh])
 
   useScreenActions({ back: navigation.back, menu: () => setOverlay('menu') })
+
+  const uninstall = (): void => {
+    const failed = (): void => setMenuMessage(t.game.steamOpenFailed)
+    window.equon.games.uninstallSteam(id).then((result) => {
+      if (!result.ok) {
+        failed()
+        return
+      }
+      setMenuMessage(null)
+      setOverlay(null)
+    }, failed)
+  }
 
   const remove = (): void => {
     void window.equon.games.remove(id).then((result) => {
@@ -318,7 +359,16 @@ export function GameDetailsScreen({ id, from }: { id: number; from: Section }): 
               setOverlay(null)
             })
           }}
-          onClose={() => setOverlay(null)}
+          onClose={() => {
+            setMenuMessage(null)
+            setOverlay(null)
+          }}
+          message={menuMessage}
+          onUninstall={
+            details.data.origin === 'steam' && details.data.installed === true && !running
+              ? uninstall
+              : undefined
+          }
           onAchievements={() => navigation.openGameAchievements(id)}
           onEdit={details.data.editable ? () => navigation.openGameForm(id) : undefined}
           onEditArtwork={() => navigation.openGameArtwork(id)}
