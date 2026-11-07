@@ -126,6 +126,7 @@ describe('launch cover', () => {
   let stopped: number
   let reduced: boolean
   let openFails: boolean
+  let hideLoading: () => Promise<void>
 
   const game = (extra: Partial<ForegroundWindow> = {}): ForegroundWindow => ({
     pid: 7,
@@ -145,6 +146,7 @@ describe('launch cover', () => {
     stopped = 0
     reduced = false
     openFails = false
+    hideLoading = async () => {}
     launchOk.mockReset()
     launchOk.mockImplementation(async () => {
       order.push(`launch at ${opacity.at(-1)}`)
@@ -156,6 +158,10 @@ describe('launch cover', () => {
         return {
           monitor: MONITOR,
           show: () => order.push('show'),
+          hideLoading: () => {
+            order.push(`hide loading at ${opacity.at(-1)}`)
+            return hideLoading()
+          },
           setOpacity: (value) => opacity.push(value),
           close: () => {
             closed += 1
@@ -197,11 +203,11 @@ describe('launch cover', () => {
     await expect(run).resolves.toEqual(OK)
   })
 
-  it('leaves 1 s after the game window appears, not before', async () => {
+  it('leaves 2 s after the game window appears, not before', async () => {
     await untilCovered()
     await vi.advanceTimersByTimeAsync(5000)
     onWindow(game())
-    await vi.advanceTimersByTimeAsync(900)
+    await vi.advanceTimersByTimeAsync(1900)
     expect(active).toEqual([true])
     expect(closed).toBe(0)
 
@@ -213,12 +219,45 @@ describe('launch cover', () => {
     expect(closed).toBe(1)
   })
 
-  it('counts the 1 s from the first window of the game', async () => {
+  it('takes Carregando away at once 2 s after the game window, before the image fades', async () => {
     await untilCovered()
     onWindow(game())
-    await vi.advanceTimersByTimeAsync(600)
+    await vi.advanceTimersByTimeAsync(1900)
+    expect(order).toEqual(['show', 'launch at 1'])
+    await vi.advanceTimersByTimeAsync(100)
+    expect(order).toEqual(['show', 'launch at 1', 'hide loading at 1'])
+    await vi.advanceTimersByTimeAsync(700)
+    expect(opacity.at(-1)).toBe(0)
+  })
+
+  it('takes Carregando away before the fade out when leaving otherwise', async () => {
+    await untilCovered()
+    cover.cancel()
+    expect(order).toEqual(['show', 'launch at 1', 'hide loading at 1'])
+  })
+
+  it('fades out anyway when the page does not answer, or fails', async () => {
+    hideLoading = () => new Promise(() => {})
+    await untilCovered()
+    cover.cancel()
+    await vi.advanceTimersByTimeAsync(900)
+    expect(closed).toBe(1)
+
+    hideLoading = async () => {
+      throw new Error('gone')
+    }
+    await untilCovered()
+    cover.cancel()
+    await vi.advanceTimersByTimeAsync(700)
+    expect(closed).toBe(2)
+  })
+
+  it('counts the 2 s from the first window of the game', async () => {
+    await untilCovered()
+    onWindow(game())
+    await vi.advanceTimersByTimeAsync(1200)
     onWindow({ ...game(), pid: 8, process: 'other' })
-    await vi.advanceTimersByTimeAsync(400)
+    await vi.advanceTimersByTimeAsync(800)
     expect(active).toEqual([true, false])
   })
 
@@ -242,14 +281,14 @@ describe('launch cover', () => {
     expect(active).toEqual([true])
   })
 
-  it('stays through a splash window and counts the 1 s from the game', async () => {
+  it('stays through a splash window and counts the 2 s from the game', async () => {
     await untilCovered()
     onWindow(game({ pid: 12, process: 'FortniteClient_EAC', width: 800, height: 450 }))
     await vi.advanceTimersByTimeAsync(8000)
     expect(active).toEqual([true])
 
     onWindow(game({ pid: 13, process: 'FortniteClient' }))
-    await vi.advanceTimersByTimeAsync(900)
+    await vi.advanceTimersByTimeAsync(1900)
     expect(active).toEqual([true])
     await vi.advanceTimersByTimeAsync(100)
     expect(active).toEqual([true, false])
@@ -261,7 +300,7 @@ describe('launch cover', () => {
     await vi.advanceTimersByTimeAsync(5000)
     expect(active).toEqual([true])
     onWindow(game())
-    await vi.advanceTimersByTimeAsync(1000)
+    await vi.advanceTimersByTimeAsync(2000)
     expect(active).toEqual([true, false])
   })
 

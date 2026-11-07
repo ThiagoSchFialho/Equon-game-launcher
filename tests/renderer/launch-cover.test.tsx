@@ -101,7 +101,21 @@ describe('the cover page', () => {
     const root = page({ game: '7', art: '', title: '<b>Tidebound</b>' })
     expect(root.querySelector('img')).toBeNull()
     expect(root.querySelector('b')).toBeNull()
-    expect(root.textContent).toBe('<b>Tidebound</b>')
+    expect(root.firstElementChild?.textContent).toBe('<b>Tidebound</b>')
+  })
+
+  it('says Carregando in the corner, with three dots, whatever it shows', () => {
+    const queries: Record<string, string>[] = [
+      { game: '7', art: 'launch' },
+      { game: '7', art: 'logo' },
+      { game: '7', art: '', title: 'Tidebound' }
+    ]
+    for (const query of queries) {
+      const status = page(query).querySelector('[role="status"]')
+      expect(status?.className).toBe('cover__loading')
+      expect(status?.textContent).toBe('Carregando...')
+      expect(status?.querySelectorAll('.cover__dot[aria-hidden="true"]')).toHaveLength(3)
+    }
   })
 
   it('takes no address from outside', () => {

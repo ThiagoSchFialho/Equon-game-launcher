@@ -133,7 +133,7 @@ limitações, condições de teste e método de inicialização suportado.
     opções. O usuário conclui na janela da Steam, por enquanto com o mouse.
 -   Disponibilizar ação principal para iniciar o jogo. Enquanto o jogo abre,
     a imagem de abertura dele (por padrão, a imagem de fundo) cobre o monitor
-    inteiro, e o jogo só é chamado com a tela já coberta. A imagem sai 1 s
+    inteiro, e o jogo só é chamado com a tela já coberta. A imagem sai 2 s
     depois que o jogo abre, em no máximo
     60 s, ou com o botão B.
 -   Mostrar tempo jogado, seja essa informação vinda de uma fonte

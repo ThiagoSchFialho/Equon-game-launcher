@@ -75,6 +75,8 @@ app.on('second-instance', () => {
   mainWindow.focus()
 })
 
+const COVER_HIDE_LOADING_CSS = '.cover__loading { visibility: hidden !important; }'
+
 /** The image over everything on the launcher's monitor, while a game opens (D-22). */
 async function openCoverWindow(hash: string): Promise<CoverWindow> {
   const display = screen.getDisplayMatching(
@@ -110,6 +112,10 @@ async function openCoverWindow(hash: string): Promise<CoverWindow> {
     show() {
       cover.showInactive()
       cover.setBounds(bounds)
+    },
+    // Fixed CSS, no script: the class is the one in the renderer's cover.css.
+    hideLoading: async () => {
+      if (!cover.isDestroyed()) await cover.webContents.insertCSS(COVER_HIDE_LOADING_CSS)
     },
     setOpacity: (opacity) => {
       if (!cover.isDestroyed()) cover.setOpacity(opacity)

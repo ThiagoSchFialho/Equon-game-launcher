@@ -1,5 +1,9 @@
 // User-facing text (pt-BR). Code and identifiers stay in English.
 export const t = {
+  /** The image over the screen while a game opens; its three dots are added by the page. */
+  cover: {
+    loading: 'Carregando'
+  },
   nav: {
     home: 'Início',
     library: 'Biblioteca',

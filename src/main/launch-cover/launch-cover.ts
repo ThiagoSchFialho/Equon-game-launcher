@@ -7,8 +7,10 @@ export function coverArt(kinds: readonly ArtworkKind[]): 'launch' | 'background'
 
 const FADE_MS = 600
 const FADE_STEP_MS = 16
+/** The fade out waits this long at most for "Carregando..." to go. */
+const HIDE_LOADING_LIMIT_MS = 200
 /** The game's window stays covered this long after it appears (owner decision). */
-const AFTER_GAME_WINDOW_MS = 1000
+const AFTER_GAME_WINDOW_MS = 2000
 /** The whole screen is covered, so it must always leave (owner decision). */
 const TIME_LIMIT_MS = 60_000
 /** Process start times are not exact, and a game may start just before the launch returns. */
@@ -65,6 +67,8 @@ export interface CoverWindow {
   /** The monitor it covers. */
   monitor: Size
   show(): void
+  /** "Carregando..." goes at once, so only the image fades out (owner decision). */
+  hideLoading(): Promise<void>
   setOpacity(opacity: number): void
   close(): void
 }
@@ -152,7 +156,11 @@ export function createLaunchCover(deps: LaunchCoverDeps): LaunchCover {
           cover.close()
           return
         }
-        void fade(0, () => true).finally(() => cover.close())
+        // A page that does not answer must not keep the image on the screen.
+        const hidden = cover.hideLoading().catch((error: unknown) => deps.onError?.(error))
+        void Promise.race([hidden, wait(HIDE_LOADING_LIMIT_MS)])
+          .then(() => fade(0, () => true))
+          .finally(() => cover.close())
       }
 
       leave = finish

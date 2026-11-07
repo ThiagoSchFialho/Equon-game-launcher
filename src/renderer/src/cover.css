@@ -1,0 +1,66 @@
+/* "Carregando..." on the launch cover (ARCHITECTURE.md §3.21). The window fades as a whole. */
+.cover__loading {
+  position: absolute;
+  right: var(--space-12);
+  bottom: var(--space-12);
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-screen-title);
+  font-weight: var(--font-weight-semibold);
+  /*
+   * Readable over a light image too (owner's report: hard to see): a tight dark edge around each
+   * letter and dot, and a wider shadow below. The dots inherit it.
+   */
+  text-shadow:
+    0 0 0.125rem rgb(0 0 0 / 0.9),
+    0 0 0.375rem rgb(0 0 0 / 0.8),
+    0 0.125rem 1rem rgb(0 0 0 / 0.7);
+}
+
+/* The dots keep their space while hidden, so the word never moves. */
+.cover__dot {
+  animation: 1.2s step-end infinite;
+}
+.cover__dot:nth-child(1) {
+  animation-name: cover-dot-1;
+}
+.cover__dot:nth-child(2) {
+  animation-name: cover-dot-2;
+}
+.cover__dot:nth-child(3) {
+  animation-name: cover-dot-3;
+}
+
+@keyframes cover-dot-1 {
+  0% {
+    opacity: 0;
+  }
+  25%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes cover-dot-2 {
+  0% {
+    opacity: 0;
+  }
+  50%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes cover-dot-3 {
+  0% {
+    opacity: 0;
+  }
+  75%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cover__dot {
+    animation: none;
+  }
+}
