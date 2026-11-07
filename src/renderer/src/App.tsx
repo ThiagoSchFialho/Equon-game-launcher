@@ -76,6 +76,8 @@ function App(): React.JSX.Element {
   const activity = useBackgroundActivityLoader()
   // Steam scans (startup, "Atualizar biblioteca") add or change games.
   useEffect(() => window.equon.library.onChanged(games.refresh), [games.refresh])
+  // The Library can sort by achievement percentage.
+  useEffect(() => window.equon.achievements.onChanged(games.refresh), [games.refresh])
 
   const [systemMenuOpen, setSystemMenuOpen] = useState(false)
   const toggleSystemMenu = useCallback(() => {

@@ -20,6 +20,7 @@ import { StateMessage } from '../components/StateMessage'
 import { ToolbarField } from '../components/ToolbarField'
 import { TopBar } from '../components/TopBar'
 import { useGames } from '../data/games'
+import { formatPercent, formatPlaytime } from '../data/format'
 import { useLibraryView } from '../data/library-view'
 import { useFocusFirstOnChange, useFocusManager, useScreenActions } from '../focus/focus-context'
 import { FocusScope } from '../focus/FocusProvider'
@@ -42,12 +43,22 @@ const SORTS: LibrarySort[] = [
   'title',
   'recent',
   'playtime',
+  'achievements',
   'origin',
   'install',
   'hidden',
   'beaten'
 ]
 const INSTALLS: InstallFilter[] = ['all', 'installed', 'missing']
+
+/** The number behind the current order, on the card; null when there is none to show. */
+function cardStat(game: GameSummary, sort: LibrarySort): string | null {
+  if (sort === 'playtime') return formatPlaytime(game.playtime)
+  if (sort === 'achievements' && game.achievementPercent !== null) {
+    return formatPercent(game.achievementPercent)
+  }
+  return null
+}
 
 type Overlay =
   | { kind: 'menu'; game: GameSummary }
@@ -147,6 +158,7 @@ export function LibraryScreen(): React.JSX.Element {
             key={game.id}
             game={game}
             variant="square"
+            stat={cardStat(game, view.sort)}
             scroll="follow"
             autoFocus={index === 0}
             onConfirm={() => navigation.openGame(game.id)}

@@ -312,6 +312,8 @@ export interface GameSummary {
   artwork: ArtworkKind[]
   /** Changes when any of this game's art is replaced. */
   artworkVersion: string | null
+  /** 0–100 of the known achievements; null when none are known (not the same as 0). */
+  achievementPercent: number | null
 }
 
 export interface AchievementSummary {

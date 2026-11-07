@@ -24,7 +24,8 @@ const badges = (title: string): (string | null)[] =>
 
 const openLibrary = async (): Promise<void> => {
   render(<App />)
-  await screen.findByText('12h 22m')
+  await screen.findByText('Início')
+  await waitFor(() => expect(document.querySelector('.game-card')).toBeTruthy())
   press('e')
   await waitFor(() => expect(document.querySelector('.library__grid')).toBeTruthy())
 }
@@ -53,7 +54,82 @@ describe('Library sorts and badges', () => {
     await screen.findByRole('dialog', { name: 'Ordenar' })
     expect(
       [...document.querySelectorAll('.choice__label')].map((label) => label.textContent)
-    ).toEqual(['Título', 'Recentes', 'Tempo de jogo', 'Origem', 'Instalação', 'Ocultos', 'Zerados'])
+    ).toEqual([
+      'Título',
+      'Recentes',
+      'Tempo de jogo',
+      '% de conquistas',
+      'Origem',
+      'Instalação',
+      'Ocultos',
+      'Zerados'
+    ])
+  })
+
+  it('sorts by achievements and follows a sync that changes the percentage', async () => {
+    let listeners: (() => void)[] = []
+    let percent = 10
+    const list = (): ReturnType<typeof summary>[] => [
+      summary(1, 'Alfa', { achievementPercent: percent }),
+      summary(2, 'Beta', { achievementPercent: 50 }),
+      summary(3, 'Gama')
+    ]
+    installFakeApi(list(), {
+      games: { list: async () => list() },
+      achievements: {
+        onChanged: (listener) => {
+          listeners.push(listener)
+          return () => {
+            listeners = listeners.filter((other) => other !== listener)
+          }
+        }
+      }
+    })
+    await openLibrary()
+    await sortBy('% de conquistas')
+    expect(cards()).toEqual(['Beta', 'Alfa', 'Gama'])
+
+    percent = 100
+    act(() => listeners.forEach((listener) => listener()))
+    await waitFor(() => expect(cards()).toEqual(['Alfa', 'Beta', 'Gama']))
+  })
+
+  const stat = (title: string): string | null =>
+    screen.getByLabelText(title).querySelector('.game-card__stat')?.textContent ?? null
+
+  it('shows the percentage only while sorting by it, rounded down, never for no achievements', async () => {
+    installFakeApi([
+      summary(1, 'Quase', { achievementPercent: 99.9 }),
+      summary(2, 'Zero', { achievementPercent: 0 }),
+      summary(3, 'Sem')
+    ])
+    await openLibrary()
+    expect(document.querySelector('.game-card__stat')).toBeNull()
+
+    await sortBy('% de conquistas')
+    expect(stat('Quase')).toBe('99%')
+    expect(stat('Zero')).toBe('0%')
+    expect(stat('Sem')).toBeNull()
+    expect(screen.getByLabelText('Quase').getAttribute('aria-description')).toContain('99%')
+
+    await sortBy('Título')
+    expect(document.querySelector('.game-card__stat')).toBeNull()
+  })
+
+  it('shows hours and minutes only while sorting by playtime', async () => {
+    installFakeApi([
+      summary(1, 'Longo', { playtime: 742 }),
+      summary(2, 'Curto', { playtime: 45 }),
+      summary(3, 'Novo', { playtime: 0 })
+    ])
+    await openLibrary()
+    await sortBy('Tempo de jogo')
+    expect(stat('Longo')).toBe('12h 22m')
+    expect(stat('Curto')).toBe('45m')
+    expect(stat('Novo')).toBe('0m')
+
+    await sortBy('Recentes')
+    expect(document.querySelector('.game-card__stat')).toBeNull()
   })
 
   it('shows hidden games while sorting by them, and hides them again after', async () => {

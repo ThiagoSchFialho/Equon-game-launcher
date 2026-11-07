@@ -24,6 +24,7 @@ export const summary = (
   hidden: false,
   artwork: [],
   artworkVersion: null,
+  achievementPercent: null,
   ...extra
 })
 

@@ -11,10 +11,12 @@ import './GameCard.css'
 interface Props extends FocusableOptions {
   game: GameSummary
   variant: 'square' | 'portrait'
+  /** The value the Library is sorted by, shown at the bottom right. */
+  stat?: string | null
 }
 
 /** Focusable game card: square cover in the Library, portrait cover on Home. */
-export function GameCard({ game, variant, ...focusOptions }: Props): React.JSX.Element {
+export function GameCard({ game, variant, stat, ...focusOptions }: Props): React.JSX.Element {
   const { setElement, focused, mouse } = useFocusable<HTMLButtonElement>(
     `game-card:${variant}:${game.id}`,
     focusOptions
@@ -33,7 +35,9 @@ export function GameCard({ game, variant, ...focusOptions }: Props): React.JSX.E
       data-focused={focused}
       data-hidden={game.hidden}
       aria-label={game.title}
-      aria-description={badges.map((badge) => badge.label).join(', ') || undefined}
+      aria-description={
+        [...badges.map((badge) => badge.label), ...(stat ? [stat] : [])].join(', ') || undefined
+      }
       tabIndex={-1}
       {...mouse}
     >
@@ -54,6 +58,7 @@ export function GameCard({ game, variant, ...focusOptions }: Props): React.JSX.E
           ))}
         </span>
       )}
+      {stat && <span className="game-card__stat">{stat}</span>}
     </button>
   )
 }

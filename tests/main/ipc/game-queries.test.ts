@@ -13,6 +13,7 @@ import {
   createLaunchConfigRepository,
   createOriginRepository
 } from '../../../src/infrastructure/persistence'
+import type { AchievementUpsert } from '../../../src/core/application'
 import { gameDetailsSchema, gameSummaryListSchema } from '../../../src/shared/ipc/schemas'
 import { createTestDb } from '../../helpers/db'
 
@@ -66,7 +67,8 @@ describe('game queries', () => {
           beated: false,
           hidden: false,
           artwork: ['cover_square'],
-          artworkVersion: null
+          artworkVersion: null,
+          achievementPercent: null
         },
         {
           id: hidden.id,
@@ -79,10 +81,39 @@ describe('game queries', () => {
           beated: false,
           hidden: true,
           artwork: [],
-          artworkVersion: null
+          artworkVersion: null,
+          achievementPercent: null
         }
       ].sort((a, b) => a.title.localeCompare(b.title))
     )
+    expect(gameSummaryListSchema.safeParse(list).success).toBe(true)
+  })
+
+  it('lists the achievement percentage, telling 0% from no known achievements', () => {
+    const achievement = (apiName: string, unlocked: boolean): AchievementUpsert => ({
+      apiName,
+      displayName: apiName,
+      description: null,
+      icon: null,
+      unlocked,
+      unlockedAt: null,
+      globalPercent: 10,
+      tier: 'gold'
+    })
+    const half = deps.games.create({ origin: 'manual', title: 'Half' })
+    const zero = deps.games.create({ origin: 'manual', title: 'Zero' })
+    const none = deps.games.create({ origin: 'manual', title: 'None' })
+    deps.achievements.upsertForGame(half.id, [achievement('A', true), achievement('B', false)])
+    deps.achievements.upsertForGame(zero.id, [achievement('A', false)])
+
+    const list = listGameSummaries(deps)
+    const percent = (id: number): number | null | undefined =>
+      list.find((g) => g.id === id)?.achievementPercent
+
+    expect(percent(half.id)).toBe(deps.achievements.progress(half.id).percent)
+    expect(percent(half.id)).toBeGreaterThan(0)
+    expect(percent(zero.id)).toBe(0)
+    expect(percent(none.id)).toBeNull()
     expect(gameSummaryListSchema.safeParse(list).success).toBe(true)
   })
 

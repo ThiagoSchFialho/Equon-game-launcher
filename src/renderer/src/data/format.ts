@@ -8,6 +8,11 @@ export function formatPlaytime(minutes: number): string {
   return h > 0 ? `${h}h ${m}m` : `${m}m`
 }
 
+/** 98.2 → "98%": rounded down, so only a complete game reads 100%. */
+export function formatPercent(percent: number): string {
+  return `${Math.floor(percent)}%`
+}
+
 const MS_PER_DAY = 86_400_000
 
 function localDayNumber(date: Date): number {

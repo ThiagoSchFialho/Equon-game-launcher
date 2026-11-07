@@ -34,6 +34,7 @@ export const t = {
       title: 'Título',
       recent: 'Recentes',
       playtime: 'Tempo de jogo',
+      achievements: '% de conquistas',
       origin: 'Origem',
       install: 'Instalação',
       hidden: 'Ocultos',

@@ -23,6 +23,7 @@ const game = (id: number, title: string, extra: Partial<GameSummary> = {}): Game
   hidden: false,
   artwork: [],
   artworkVersion: null,
+  achievementPercent: null,
   ...extra
 })
 
@@ -46,6 +47,19 @@ describe('applyLibraryView', () => {
   it('sorts by recent activity (never played last) and by playtime', () => {
     expect(ids({ sort: 'recent' })).toEqual([3, 1, 5, 6, 2])
     expect(ids({ sort: 'playtime' })).toEqual([2, 1, 3, 5, 6])
+  })
+
+  it('sorts by achievement percentage, a real 0% before games without achievements', () => {
+    const list = [
+      game(1, 'Sem conquistas'),
+      game(2, 'Zero', { achievementPercent: 0 }),
+      game(3, 'Metade B', { achievementPercent: 50 }),
+      game(4, 'Metade A', { achievementPercent: 50 }),
+      game(5, 'Platina', { achievementPercent: 100 }),
+      game(6, 'Outro sem')
+    ]
+    const view = { ...DEFAULT_LIBRARY_VIEW, sort: 'achievements' as const }
+    expect(applyLibraryView(list, view).map((g) => g.id)).toEqual([5, 4, 3, 2, 6, 1])
   })
 
   it('sorts by origin name, then by title', () => {

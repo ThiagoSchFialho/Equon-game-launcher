@@ -285,7 +285,8 @@ const gameSummaryShape = {
   beated: z.boolean(),
   hidden: z.boolean(),
   artwork: z.array(artworkKindSchema),
-  artworkVersion: z.string().nullable()
+  artworkVersion: z.string().nullable(),
+  achievementPercent: z.number().min(0).max(100).nullable()
 }
 
 export const gameSummarySchema = z.strictObject(gameSummaryShape) satisfies z.ZodType<GameSummary>

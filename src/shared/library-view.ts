@@ -7,7 +7,7 @@ import type { GameSummary } from './ipc/contract'
  */
 
 export type LibrarySort =
-  'title' | 'recent' | 'playtime' | 'origin' | 'install' | 'hidden' | 'beaten'
+  'title' | 'recent' | 'playtime' | 'achievements' | 'origin' | 'install' | 'hidden' | 'beaten'
 /** "Unknown" install states only appear under `all`: they are not reliable. */
 export type InstallFilter = 'all' | 'installed' | 'missing'
 
@@ -77,6 +77,14 @@ const byRecent = (a: GameSummary, b: GameSummary): number => {
   return b.timeLastPlayed.localeCompare(a.timeLastPlayed)
 }
 
+/** Highest percentage first; games without known achievements last, after a real 0%. */
+const byAchievements = (a: GameSummary, b: GameSummary): number => {
+  if (a.achievementPercent === b.achievementPercent) return byTitle(a, b)
+  if (a.achievementPercent === null) return 1
+  if (b.achievementPercent === null) return -1
+  return b.achievementPercent - a.achievementPercent
+}
+
 /** Installed, then unknown, then not installed. */
 const installRank = (game: GameSummary): number =>
   game.installed === true ? 0 : game.installed === null ? 1 : 2
@@ -85,6 +93,7 @@ const SORTS: Record<LibrarySort, (a: GameSummary, b: GameSummary) => number> = {
   title: byTitle,
   recent: byRecent,
   playtime: (a, b) => b.playtime - a.playtime || byTitle(a, b),
+  achievements: byAchievements,
   origin: (a, b) => collator.compare(a.originName, b.originName) || byTitle(a, b),
   install: (a, b) => installRank(a) - installRank(b) || byTitle(a, b),
   hidden: (a, b) => Number(b.hidden) - Number(a.hidden) || byTitle(a, b),
