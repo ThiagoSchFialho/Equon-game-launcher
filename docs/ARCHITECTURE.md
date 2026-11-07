@@ -805,6 +805,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-07 | 0.47 | D-22: image over the screen while a game opens (§3.21). |
 | 2026-11-07 | 0.48 | D-23: installing and uninstalling Steam games through Steam's own windows (§3.22). |
 | 2026-11-07 | 0.49 | Settings › Armazenamento: free space of each disk, read in main with one fixed, read-only PowerShell script (`src/main/system/drives.ts`), by absolute path, with no shell. Network drives are left out. |
+| 2026-11-07 | 0.50 | `.url` shortcuts: opening one moves the game's last played time forward (`DATA_BASE_CONTEXT.md` §3.7); playtime is still not measured. |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

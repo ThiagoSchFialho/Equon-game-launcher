@@ -124,6 +124,24 @@ describe('GameRepository.upsertSteamGame', () => {
   })
 })
 
+describe('GameRepository.markPlayed', () => {
+  it('moves last played forward only, and touches nothing else', () => {
+    const id = games.create({ origin: 'manual', title: 'Fortnite' }).id
+    games.markPlayed(id, '2026-11-07T10:00:00Z')
+    expect(games.getById(id)).toMatchObject({ timeLastPlayed: '2026-11-07T10:00:00Z', playtime: 0 })
+    games.markPlayed(id, '2026-11-01T10:00:00Z')
+    expect(games.getById(id)?.timeLastPlayed).toBe('2026-11-07T10:00:00Z')
+    games.markPlayed(id, '2026-11-08T10:00:00Z')
+    expect(games.getById(id)?.timeLastPlayed).toBe('2026-11-08T10:00:00Z')
+  })
+
+  it('survives a recompute from sessions, which also only moves forward', () => {
+    const id = games.create({ origin: 'manual', title: 'Fortnite' }).id
+    games.markPlayed(id, '2026-11-07T10:00:00Z')
+    expect(games.recomputePlayStats(id).timeLastPlayed).toBe('2026-11-07T10:00:00Z')
+  })
+})
+
 describe('GameRepository.recomputePlayStats', () => {
   const addSession = (
     gameId: number,

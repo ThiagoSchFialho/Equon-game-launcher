@@ -112,7 +112,8 @@ export function resolveLaunchPlan(
  * it runs, and completed in the same transaction that recomputes playtime
  * when the process exits. Only the process the launcher started is observed;
  * games that hand off to another launcher end their session early, and .url
- * shortcuts are opened without any session (no process to observe).
+ * shortcuts are opened without any session (no process to observe), only moving
+ * last played to when they were opened.
  */
 export function createGameRunner(deps: GameRunnerDeps): GameRunner {
   const running = new Map<number, number>() // gameId → sessionId
@@ -170,6 +171,8 @@ export function createGameRunner(deps: GameRunnerDeps): GameRunner {
         } catch (error) {
           throw new LaunchError('start-failed', detail(error))
         }
+        // No session to count: last played is when it was opened, and playtime stays as it is.
+        deps.games.markPlayed(gameId, now())
         return
       }
 

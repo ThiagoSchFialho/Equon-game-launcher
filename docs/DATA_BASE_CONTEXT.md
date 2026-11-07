@@ -211,7 +211,7 @@ Regras:
 - `CHECK ((executable_path IS NULL) <> (rom_path IS NULL))`: exatamente um dos dois é preenchido.
 - Só existe para jogos com origem diferente de `steam` (verificado na camada de aplicação).
 - **Jogos do Yuzu (origem `yuzu`):** guardam só `rom_path`; o emulador vem da tabela `EMULATORS` (3.12) e é resolvido na hora de abrir, então trocar o `yuzu.exe` vale para todos os jogos. `arguments` e `working_directory` não são usados.
-- **Atalhos `.url` (decidido na Fase 4):** `executable_path` pode apontar para um atalho de internet do Windows. O processo principal lê o arquivo, extrai o endereço (`URL=`) e só aceita os protocolos `com.epicgames.launcher:` (Epic), `steam:`, `uplay:` (Ubisoft), `origin2:` e `link2ea:` (EA) e `battlenet:`, conferidos ao salvar e de novo ao abrir. O endereço é aberto pelo Windows (nunca por shell). Como nenhum processo é observado, **o tempo de jogo desses jogos não é medido**.
+- **Atalhos `.url` (decidido na Fase 4):** `executable_path` pode apontar para um atalho de internet do Windows. O processo principal lê o arquivo, extrai o endereço (`URL=`) e só aceita os protocolos `com.epicgames.launcher:` (Epic), `steam:`, `uplay:` (Ubisoft), `origin2:` e `link2ea:` (EA) e `battlenet:`, conferidos ao salvar e de novo ao abrir. O endereço é aberto pelo Windows (nunca por shell). Como nenhum processo é observado, **o tempo de jogo desses jogos não é medido**. Ao abrir o atalho com sucesso, `GAMES.time_last_played` passa a ser esse momento (decisão do dono do projeto, 2026-11-07): sem sessão, a "última sessão" é quando o jogo foi aberto pelo launcher, e ela também só avança.
 - Todos os caminhos são **entrada não confiável**: validar se o arquivo existe e tem uma extensão permitida (`.exe`, `.url`, ROMs do Yuzu); nunca montar uma linha de comando como texto; passar argumentos como lista, sem shell.
 - Jogos da Steam são lançados por `steam://rungameid/<appid>` (D-17) e não usam esta tabela.
 - Jogos da Epic que só abrem pelo cliente oficial podem exigir outra forma de lançamento; validar na Fase 4.
@@ -432,7 +432,7 @@ API REST v2 com chave pessoal gratuita. Fornece capa quadrada e logo (e, para jo
 | Estado de instalação desconhecido | `installed` nulo (`NULL` = desconhecido) | D-06 |
 | Estado de instalação de jogos manuais | Existência do executável; erro de leitura → `NULL` | Fase 4 |
 | Emuladores | Tabela `EMULATORS` (só Yuzu); jogos guardam a ROM e o emulador é resolvido ao abrir | Fase 4 |
-| Atalhos `.url` | Aceitos com lista de protocolos permitidos; tempo de jogo não medido | Fase 4 |
+| Atalhos `.url` | Aceitos com lista de protocolos permitidos; tempo de jogo não medido; última sessão = quando o launcher abriu o atalho | Fase 4 |
 | Tempo de jogo informado pelo usuário | `games.playtime_offset`, somado às sessões | Fase 4 |
 | Configuração de lançamento manual | Tabela `GAME_LAUNCH_CONFIGS` | D-07 |
 | Sessões e arredondamento | Tabela `PLAY_SESSIONS`; `playtime` derivado dos segundos | D-08 |

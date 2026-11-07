@@ -109,12 +109,15 @@ function Details({
   game,
   from,
   running,
-  onOpenMenu
+  onOpenMenu,
+  onLaunched
 }: {
   game: GameDetails
   from: Section
   running: boolean
   onOpenMenu: () => void
+  /** A .url game changes its last played time at once, with no running state to wait for. */
+  onLaunched: () => void
 }): React.JSX.Element {
   const [launching, setLaunching] = useState(false)
   const [launchError, setLaunchError] = useState<string | null>(null)
@@ -137,9 +140,8 @@ function Details({
     setLaunchError(null)
     void window.equon.games.launch(game.id).then((result) => {
       setLaunching(false)
-      if (!result.ok) {
-        setLaunchError(t.launchErrors[result.error.code] ?? t.launchErrors['start-failed'])
-      }
+      if (result.ok) onLaunched()
+      else setLaunchError(t.launchErrors[result.error.code] ?? t.launchErrors['start-failed'])
     })
   }
   const note =
@@ -332,6 +334,10 @@ export function GameDetailsScreen({ id, from }: { id: number; from: Section }): 
         from={from}
         running={running}
         onOpenMenu={() => setOverlay('menu')}
+        onLaunched={() => {
+          refresh()
+          refreshGames()
+        }}
       />
     )
   }

@@ -307,6 +307,23 @@ describe('game runner: emulators and shortcuts', () => {
     expect(createSessionRepository(db).listRunning()).toEqual([])
   })
 
+  it('moves last played to when a .url shortcut was opened, and leaves playtime alone', async () => {
+    const id = addGame('manual', 'C:/Games/Epic.url', null)
+    shortcutTargets.set('C:/Games/Epic.url', 'com.epicgames.launcher://apps/x?action=launch')
+    await runner.launch(id)
+    expect(games().getById(id)).toMatchObject({
+      timeLastPlayed: '2026-11-02T10:00:00Z',
+      playtime: 0
+    })
+  })
+
+  it('does not move last played when the shortcut could not be opened', async () => {
+    const id = addGame('manual', 'C:/Games/Bad.url', null)
+    shortcutTargets.set('C:/Games/Bad.url', 'https://example.com')
+    await expect(runner.launch(id)).rejects.toMatchObject({ code: 'shortcut-invalid' })
+    expect(games().getById(id)?.timeLastPlayed).toBeNull()
+  })
+
   it('refuses shortcuts whose target changed to a forbidden URL', async () => {
     const id = addGame('manual', 'C:/Games/Bad.url', null)
     shortcutTargets.set('C:/Games/Bad.url', 'https://example.com')

@@ -115,6 +115,9 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
         WHEN @lastPlayed IS NOT NULL AND (time_last_played IS NULL OR @lastPlayed > time_last_played)
         THEN @lastPlayed ELSE time_last_played END
     WHERE id = @id RETURNING *`)
+  const updateLastPlayed = db.prepare<[string, number, string]>(`
+    UPDATE games SET time_last_played = ?
+    WHERE id = ? AND (time_last_played IS NULL OR time_last_played < ?)`)
   // Steam is the source of truth at sync time: overwrite last played when it reports one.
   const applySteamSync = db.prepare<Record<string, unknown>, { id: number }>(`
     UPDATE games SET
@@ -195,6 +198,10 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
     delete: (id) => remove.run(id).changes > 0,
 
     recomputePlayStats: (id) => recomputePlayStats(id),
+
+    markPlayed: (id, at) => {
+      updateLastPlayed.run(at, id, at)
+    },
 
     setArtworkChecked: (id, checkedAt) => {
       updateArtworkChecked.run(checkedAt, id)

@@ -108,6 +108,11 @@ export interface GameRepository {
    */
   recomputePlayStats(id: number): Game
   /**
+   * A game opened through a .url shortcut has no session to count, so its last played time is
+   * when the launcher opened it (DATA_BASE_CONTEXT.md §3.7). Only moves forward.
+   */
+  markPlayed(id: number, at: string): void
+  /**
    * Applies a Steam playtime sync in one transaction: for each steam game
    * already stored, sets the baseline and sync time, overwrites
    * time_last_played (when Steam reports one) and recomputes playtime.

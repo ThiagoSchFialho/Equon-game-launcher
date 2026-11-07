@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../../src/renderer/src/App'
 import { OPENING_MS } from '../../src/renderer/src/data/opening'
 import type { EquonApi } from '../../src/shared/ipc/contract'
-import { installFakeApi, summary } from './fake-api'
+import { details, installFakeApi, summary } from './fake-api'
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true })
@@ -137,6 +137,18 @@ describe('the Play button answers every press', () => {
     expect(screen.getByLabelText('Abrindo…').getAttribute('aria-disabled')).toBe('true')
     await act(async () => finish({ ok: true, data: null }))
     await waitFor(() => expect(screen.getByLabelText('Jogar')).toBeTruthy())
+  })
+
+  it('reads the game again after it opened, for its new last played time', async () => {
+    const get = vi.fn<EquonApi['games']['get']>(async () => details(summary(1, 'Fortnite')))
+    const list = vi.fn<EquonApi['games']['list']>(async () => [summary(1, 'Fortnite')])
+    installFakeApi([summary(1, 'Fortnite')], { games: { get, list } })
+    await openGame()
+    const pageReads = get.mock.calls.length
+    const listReads = list.mock.calls.length
+    await play()
+    await waitFor(() => expect(get.mock.calls.length).toBeGreaterThan(pageReads))
+    await waitFor(() => expect(list.mock.calls.length).toBeGreaterThan(listReads))
   })
 
   it('leaves an unavailable game as it was', async () => {
