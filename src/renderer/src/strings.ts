@@ -293,6 +293,7 @@ export const t = {
     },
     fromIgdb: 'Imagem do IGDB',
     fromGrid: 'Selecionar imagem do SteamGridDB',
+    fromSteam: 'Imagens da Steam',
     fromFile: 'Selecionar imagem do PC',
     remove: 'Remover imagem',
     save: 'Salvar',
@@ -307,6 +308,16 @@ export const t = {
     downloadFailed: 'Não foi possível baixar a imagem. Tente de novo.',
     noImageIgdb: 'O IGDB não tem esta imagem para este jogo.',
     noImageGrid: 'O SteamGridDB não tem imagens deste tipo para este jogo.',
+    noImageSteam: 'A Steam não tem imagens 16:9 deste jogo.',
+    steamErrors: {
+      network: 'Sem conexão com a Steam. Tente mais tarde.',
+      unavailable: 'A Steam está indisponível agora. Tente mais tarde.',
+      'not-found': 'A Steam não encontrou este jogo.',
+      'invalid-response': 'A Steam respondeu de forma inesperada. Tente mais tarde.'
+    } as Record<string, string>,
+    steamGalleryTitle: 'Imagens da Steam',
+    storeBackground: 'Fundo da loja',
+    screenshot: (n: number) => `Print ${n}`,
     proportion: {
       cover_portrait: 'A capa vertical precisa ter proporção entre 2:3 e 3:4.',
       cover_square: 'A capa quadrada precisa ter proporção 1:1.',

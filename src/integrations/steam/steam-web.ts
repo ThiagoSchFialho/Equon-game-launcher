@@ -270,22 +270,21 @@ const appArtworkSchema = z.record(
       data: z.object({
         header_image: z.string().optional(),
         background_raw: z.string().optional(),
-        screenshots: z.array(z.object({ path_full: z.string() })).optional()
+        screenshots: z
+          .array(z.object({ path_full: z.string(), path_thumbnail: z.string().optional() }))
+          .optional()
       })
     }),
     z.object({ success: z.literal(false) })
   ])
 )
 
-/**
- * Store artwork URLs (owner decisions, Phase 6c): `header_image` for the
- * Achievements screen and `background_raw` as the game page background; when
- * the store only has a generated, blurred background, the first screenshot.
- */
-export async function fetchAppArtwork(
+type AppArtworkData = Extract<z.infer<typeof appArtworkSchema>[string], { success: true }>['data']
+
+async function requestAppArtwork(
   get: HttpGet,
   appId: number
-): Promise<SteamWebResult<{ header: string | null; background: string | null }>> {
+): Promise<SteamWebResult<AppArtworkData>> {
   if (!isSteamAppId(appId)) return { ok: false, error: 'not-found' }
   let response
   try {
@@ -298,16 +297,59 @@ export async function fetchAppArtwork(
   const parsed = appArtworkSchema.safeParse(response.json)
   const entry = parsed.success ? parsed.data[String(appId)] : undefined
   if (!entry) return { ok: false, error: 'invalid-response' }
-  if (!entry.success) return { ok: false, error: 'not-found' }
+  return entry.success ? { ok: true, data: entry.data } : { ok: false, error: 'not-found' }
+}
+
+const ownBackground = (data: AppArtworkData): string | null =>
+  data.background_raw && !isGeneratedStoreBackground(data.background_raw)
+    ? data.background_raw
+    : null
+
+/**
+ * Store artwork URLs (owner decisions, Phase 6c): `header_image` for the
+ * Achievements screen and `background_raw` as the game page background; when
+ * the store only has a generated, blurred background, the first screenshot.
+ */
+export async function fetchAppArtwork(
+  get: HttpGet,
+  appId: number
+): Promise<SteamWebResult<{ header: string | null; background: string | null }>> {
+  const result = await requestAppArtwork(get, appId)
+  if (!result.ok) return result
   return {
     ok: true,
     data: {
-      header: entry.data.header_image || null,
-      background:
-        entry.data.background_raw && !isGeneratedStoreBackground(entry.data.background_raw)
-          ? entry.data.background_raw
-          : (entry.data.screenshots?.[0]?.path_full ?? null)
+      header: result.data.header_image || null,
+      background: ownBackground(result.data) ?? result.data.screenshots?.[0]?.path_full ?? null
     }
+  }
+}
+
+export interface AppBackgroundChoice {
+  url: string
+  thumbnail: string
+  /** The store's own background, not a screenshot. */
+  store: boolean
+}
+
+/** What "Editar artes" offers for a background: the store's own one first, then the screenshots. */
+export async function fetchAppBackgroundChoices(
+  get: HttpGet,
+  appId: number
+): Promise<SteamWebResult<AppBackgroundChoice[]>> {
+  const result = await requestAppArtwork(get, appId)
+  if (!result.ok) return result
+  const store = ownBackground(result.data)
+  return {
+    ok: true,
+    data: [
+      ...(store ? [{ url: store, thumbnail: store, store: true }] : []),
+      ...(result.data.screenshots ?? []).map((shot) => ({
+        url: shot.path_full,
+        thumbnail: shot.path_thumbnail ?? shot.path_full,
+        store: false
+      }))
+    ]
   }
 }
 

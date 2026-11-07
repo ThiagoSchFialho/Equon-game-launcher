@@ -9,7 +9,8 @@ import {
   parseAchievementIconUrl,
   parseArtworkUrl,
   parseDraftArtworkUrl,
-  parseGridThumbnailUrl
+  parseGridThumbnailUrl,
+  parseSteamChoiceUrl
 } from './artwork-url'
 
 /** Must run before the app is ready. */
@@ -24,7 +25,7 @@ export function handleArtworkProtocol(
   artwork: ArtworkRepository,
   achievements: AchievementRepository,
   cacheDir: string,
-  editor: Pick<ArtworkEditor, 'draftImage' | 'gridThumbnail'>
+  editor: Pick<ArtworkEditor, 'draftImage' | 'gridThumbnail' | 'steamThumbnail'>
 ): void {
   const served = (image: ServedImage | null): Response =>
     image
@@ -37,6 +38,8 @@ export function handleArtworkProtocol(
     if (draftKind !== null) return served(editor.draftImage(draftKind))
     const assetId = parseGridThumbnailUrl(request.url)
     if (assetId !== null) return served(await editor.gridThumbnail(assetId))
+    const choiceId = parseSteamChoiceUrl(request.url)
+    if (choiceId !== null) return served(await editor.steamThumbnail(choiceId))
     const iconTarget = parseAchievementIconUrl(request.url)
     if (iconTarget !== null) {
       const achievement = achievements.getById(iconTarget.id)

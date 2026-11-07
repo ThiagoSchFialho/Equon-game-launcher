@@ -2,11 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import {
   artworkUrl,
   draftArtworkUrl,
+  gridThumbnailUrl,
+  steamChoiceThumbnailUrl,
   type ArtworkDraftInfo,
   type ArtworkEditKind,
   type GameSummary,
   type GridAssetInfo,
-  type Result
+  type Result,
+  type SteamChoiceInfo
 } from '../../../shared/ipc/contract'
 import { currentSection, useNavigation } from '../app/navigation'
 import deleteIcon from '../assets/icons/delete.svg'
@@ -15,7 +18,7 @@ import { ConfirmDialog } from '../components/Dialog'
 import { FileBrowserDialog } from '../components/FileBrowserDialog'
 import { Footer, type Hint } from '../components/Footer'
 import { GameSearchDialog } from '../components/GameSearchDialog'
-import { GridGalleryDialog } from '../components/GridGalleryDialog'
+import { GridGalleryDialog, type GalleryItem } from '../components/GridGalleryDialog'
 import { StateMessage } from '../components/StateMessage'
 import { TopBar } from '../components/TopBar'
 import { useGames } from '../data/games'
@@ -25,15 +28,18 @@ import { FocusScope } from '../focus/FocusProvider'
 import { errorMessage, t } from '../strings'
 import './GameArtworkScreen.css'
 
-/** Offered per kind: IGDB has no square covers, and SteamGridDB's banners are not 16:9. */
-const PANELS: readonly { kind: ArtworkEditKind; igdb: boolean; grid: boolean }[] = [
-  { kind: 'cover_portrait', igdb: true, grid: true },
-  { kind: 'cover_square', igdb: false, grid: true },
-  { kind: 'logo', igdb: true, grid: true },
-  { kind: 'background', igdb: true, grid: false }
+/**
+ * Offered per kind: IGDB has no square covers, and SteamGridDB's banners are not 16:9.
+ * Steam's screenshots and store background only fit a background, and only for its own games.
+ */
+const PANELS: readonly { kind: ArtworkEditKind; igdb: boolean; grid: boolean; steam: boolean }[] = [
+  { kind: 'cover_portrait', igdb: true, grid: true, steam: false },
+  { kind: 'cover_square', igdb: false, grid: true, steam: false },
+  { kind: 'logo', igdb: true, grid: true, steam: false },
+  { kind: 'background', igdb: true, grid: false, steam: true }
 ]
 
-type Source = 'file' | 'igdb' | 'grid'
+type Source = 'file' | 'igdb' | 'grid' | 'steam'
 type Change = { type: 'draft'; version: number } | { type: 'removed' }
 type Note = { text: string; tone: 'info' | 'error' }
 
@@ -43,8 +49,9 @@ type Overlay =
   | { kind: 'grid-search'; art: ArtworkEditKind }
   | {
       kind: 'gallery'
+      source: 'grid' | 'steam'
       art: ArtworkEditKind
-      assets: GridAssetInfo[]
+      items: GalleryItem[]
       picking: boolean
       error: string | null
     }
@@ -56,12 +63,32 @@ const HINTS: Hint[] = [
   { button: 'B', label: t.hints.back }
 ]
 
+const gridItems = (assets: readonly GridAssetInfo[]): GalleryItem[] =>
+  assets.map(({ id, width, height }) => {
+    const size = `${width}×${height}`
+    return {
+      id,
+      source: gridThumbnailUrl(id),
+      label: t.artEditor.galleryItem(size),
+      caption: size
+    }
+  })
+
+const steamItems = (choices: readonly SteamChoiceInfo[]): GalleryItem[] => {
+  let shot = 0
+  return choices.map(({ id, store }) => {
+    const label = store ? t.artEditor.storeBackground : t.artEditor.screenshot(++shot)
+    return { id, source: steamChoiceThumbnailUrl(id), label, caption: label }
+  })
+}
+
 function errorText(source: Source, code: string, kind: ArtworkEditKind): string {
   if (code === 'wrong-proportion') return t.artEditor.proportion[kind]
   if (code === 'download-failed') return t.artEditor.downloadFailed
   if (code === 'no-image') {
     return source === 'grid' ? t.artEditor.noImageGrid : t.artEditor.noImageIgdb
   }
+  if (source === 'steam') return t.artEditor.steamErrors[code] ?? t.artEditor.steamErrors.network
   if (source === 'igdb') return t.igdb.errors[code] ?? t.igdb.errors.network
   if (source === 'grid') return t.steamGridDb.errors[code] ?? t.steamGridDb.errors.network
   return errorMessage(code)
@@ -177,7 +204,14 @@ export function GameArtworkScreen({ id }: { id: number }): React.JSX.Element {
     if (!result.ok) {
       note(kind, { text: errorText('grid', result.error.code, kind), tone: 'error' })
     } else if (result.data.length > 0) {
-      setOverlay({ kind: 'gallery', art: kind, assets: result.data, picking: false, error: null })
+      setOverlay({
+        kind: 'gallery',
+        source: 'grid',
+        art: kind,
+        items: gridItems(result.data),
+        picking: false,
+        error: null
+      })
     } else if (gridGameId === null) {
       setOverlay({ kind: 'grid-search', art: kind })
     } else {
@@ -190,14 +224,43 @@ export function GameArtworkScreen({ id }: { id: number }): React.JSX.Element {
     else setOverlay({ kind: 'grid-search', art: kind })
   }
 
+  const fromSteam = async (kind: ArtworkEditKind): Promise<void> => {
+    setBusy(kind)
+    note(kind, { text: t.artEditor.searchingImages, tone: 'info' })
+    const result = await window.equon.artworkEdit
+      .steamChoices(id)
+      .catch((): Result<SteamChoiceInfo[]> => ({ ok: false, error: { code: 'network' } }))
+    setBusy(null)
+    note(kind, null)
+    if (!result.ok) {
+      note(kind, { text: errorText('steam', result.error.code, kind), tone: 'error' })
+    } else if (result.data.length === 0) {
+      note(kind, { text: t.artEditor.noImageSteam, tone: 'error' })
+    } else {
+      setOverlay({
+        kind: 'gallery',
+        source: 'steam',
+        art: kind,
+        items: steamItems(result.data),
+        picking: false,
+        error: null
+      })
+    }
+  }
+
   const pickFromGallery = async (
     gallery: Extract<Overlay, { kind: 'gallery' }>,
-    assetId: number
+    itemId: number
   ): Promise<void> => {
     setOverlay({ ...gallery, picking: true, error: null })
-    const result = await window.equon.artworkEdit
-      .fromGrid(id, gallery.art, assetId)
-      .catch((): Result<ArtworkDraftInfo> => ({ ok: false, error: { code: 'network' } }))
+    const pending =
+      gallery.source === 'steam'
+        ? window.equon.artworkEdit.fromSteam(id, itemId)
+        : window.equon.artworkEdit.fromGrid(id, gallery.art, itemId)
+    const result = await pending.catch((): Result<ArtworkDraftInfo> => ({
+      ok: false,
+      error: { code: 'network' }
+    }))
     if (result.ok) {
       setChanges((all) => ({
         ...all,
@@ -209,7 +272,7 @@ export function GameArtworkScreen({ id }: { id: number }): React.JSX.Element {
       setOverlay({
         ...gallery,
         picking: false,
-        error: errorText('grid', result.error.code, gallery.art)
+        error: errorText(gallery.source, result.error.code, gallery.art)
       })
     }
   }
@@ -261,7 +324,7 @@ export function GameArtworkScreen({ id }: { id: number }): React.JSX.Element {
           <span className="art-editor__game">{shown.title}</span>
         </h1>
         <div className="art-editor__panels">
-          {PANELS.map(({ kind, igdb, grid }, index) => {
+          {PANELS.map(({ kind, igdb, grid, steam }, index) => {
             const change = changes[kind]
             const hasArt = change?.type === 'draft' || (!change && shown.artwork.includes(kind))
             const current = notes[kind]
@@ -310,6 +373,18 @@ export function GameArtworkScreen({ id }: { id: number }): React.JSX.Element {
                       onConfirm={() => fromGrid(kind)}
                     >
                       {t.artEditor.fromGrid}
+                    </Button>
+                  )}
+                  {steam && isSteam && (
+                    <Button
+                      id={`art:${kind}:steam`}
+                      label={`${t.artEditor.fromSteam}: ${t.artEditor.kinds[kind]}`}
+                      scroll="none"
+                      onFocus={() => revealPanel(kind)}
+                      unavailable={busy !== null}
+                      onConfirm={() => void fromSteam(kind)}
+                    >
+                      {t.artEditor.fromSteam}
                     </Button>
                   )}
                   <Button
@@ -441,8 +516,11 @@ export function GameArtworkScreen({ id }: { id: number }): React.JSX.Element {
       )}
       {overlay?.kind === 'gallery' && (
         <GridGalleryDialog
+          title={
+            overlay.source === 'steam' ? t.artEditor.steamGalleryTitle : t.artEditor.galleryTitle
+          }
           kind={overlay.art}
-          assets={overlay.assets}
+          items={overlay.items}
           picking={overlay.picking}
           error={overlay.error}
           onClose={() => setOverlay(null)}

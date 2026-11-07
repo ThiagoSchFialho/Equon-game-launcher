@@ -378,6 +378,8 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 
 **SteamGridDB gallery.** Up to 40 static images, best voted first, without adult or joke entries. Thumbnails come through `equon-art://grid/<assetId>`: main downloads them on demand from the image allowlist, checks their real type and serves them from memory, since the renderer has no network access. The renderer names an asset id main listed and never sends a URL.
 
+**Steam gallery (owner decision, 2026-11-06).** For the background of a Steam game: the store's own background first, called "Fundo da loja", then the screenshots, up to 40 images, as `equon-art://steam/<choiceId>` thumbnails with the same rules as the SteamGridDB gallery. A generated, blurred store background is not offered. Opening the gallery asks `appdetails` once, on the user's request, and reads only artwork fields, so it is the one exception to "only on discovery/add" (D-16) and never changes the game's metadata or `metadata_fetched_at`. Only images that fit are listed (owner decision). Steam does not report sizes, so main measures the thumbnails, a few at a time, and keeps them to show in the gallery. Thumbnails keep the proportion of the image (measured on 2026-11-06 on the owner's 25 oldest games: 71 of 145 screenshots were not 16:9, such as 1024×768 with a 451×338 thumbnail; about 71 KB each). The download is still validated, so an image that gets through this way is refused, and the gallery stays open and says why. Choice ids are never reused while the app runs, not even for the same game: the browser may keep an image by its address, so one address must never mean two images (owner's report: the gallery of a game opened showing another game's images).
+
 **Removed art** lives in `GAME_ARTWORK_REMOVED` (`DATA_BASE_CONTEXT.md` §3.9.1). `ArtworkRepository.save` refuses automatic art for those kinds and a user choice clears the mark; the queue and the IGDB fill treat them as present, so nothing is downloaded for them.
 
 ### 3.19 D-20 — Settings › Sistema (Accepted, after Phase 8)
@@ -772,6 +774,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-06 | 0.42 | D-21: system menu on the Xbox button (button 16, measured); the gear in the top bar is gone (§3.20). |
 | 2026-11-06 | 0.43 | Library: sorts by origin, install state, hidden and beaten (`PRODUCT.md` §6.4); "Instalado" and "Zerado" badges on its cards. |
 | 2026-11-06 | 0.44 | Library: sort by achievement percentage; `GameSummary` carries it and the list refreshes on `achievementsChanged`. |
+| 2026-11-06 | 0.45 | "Editar artes": Steam gallery for backgrounds, with the store background and the screenshots (§3.18). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

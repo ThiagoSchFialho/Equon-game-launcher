@@ -311,6 +311,7 @@ apenas de animação para mostrar que uma ação foi ativada.
 -   Start salva de qualquer ponto da tela, com a dica no rodapé.
 -   A capa vertical é mostrada como no Início: 2:3 e esticada. As outras mantêm a proporção.
 -   Só aparecem os botões de fontes que têm aquela arte. "Remover imagem" fica indisponível quando não há o que remover.
+-   "Imagens da Steam" aparece só na imagem de fundo de jogos da Steam e abre uma galeria com o "Fundo da loja", quando o jogo tem um próprio, e as prints ("Print 1", "Print 2"...). Só são listadas imagens 16:9.
 -   Ações de remover nesta tela e nas Configurações usam o ícone `delete.svg`.
 
 ### Diálogos e notificações

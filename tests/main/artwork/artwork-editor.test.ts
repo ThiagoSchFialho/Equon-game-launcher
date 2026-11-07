@@ -40,6 +40,8 @@ let dir: string
 let db: SqliteDatabase
 let editor: ArtworkEditor
 let size: { width: number; height: number }
+/** When set, JPEGs measure this and PNGs `size`, to give images different proportions. */
+let jpgSize: { width: number; height: number } | null
 let gridKey: string | null
 let json: unknown
 let igdbAnswer: IgdbResult<IgdbGameData | null>
@@ -73,7 +75,7 @@ const build = (cacheDir: string): ArtworkEditor =>
       return igdbAnswer
     },
     cacheDir,
-    decode: () => size,
+    decode: (bytes) => (bytes[0] === JPG[0] && jpgSize ? jpgSize : size),
     clock: { now: () => new Date('2026-11-05T12:00:00Z') },
     onLibraryChanged: () => {
       libraryChanged += 1
@@ -84,6 +86,7 @@ beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'equon-editor-'))
   db = createTestDb()
   size = { width: 1920, height: 1080 }
+  jpgSize = null
   gridKey = KEY
   json = undefined
   igdbAnswer = { ok: true, data: igdbData }
@@ -379,5 +382,240 @@ describe('art editor: SteamGridDB gallery', () => {
 
     editor.end()
     expect(await editor.gridThumbnail(2)).toBeNull()
+  })
+})
+
+describe('art editor: Steam gallery', () => {
+  const ASSETS = 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/620'
+  const RAW = `${ASSETS}/page_bg_raw.jpg`
+  const FULL = `${ASSETS}/ss_a.1920x1080.jpg`
+  const THUMB = `${ASSETS}/ss_a.600x338.jpg`
+
+  beforeEach(() => {
+    json = {
+      '620': {
+        success: true,
+        data: {
+          background_raw: RAW,
+          screenshots: [{ path_full: FULL, path_thumbnail: THUMB }]
+        }
+      }
+    }
+    downloads.set(RAW, PNG)
+    downloads.set(THUMB, JPG)
+    editor.begin(steamId)
+  })
+
+  it('lists only images that fit a background, measuring their thumbnails', async () => {
+    jpgSize = { width: 451, height: 338 }
+    const result = await editor.steamChoices(steamId)
+    expect(result).toEqual({ ok: true, data: [{ id: 1, store: true }] })
+    expect(await editor.steamThumbnail(2)).toBeNull()
+    expect(await editor.fromSteam(steamId, 2)).toEqual({
+      ok: false,
+      error: { code: 'not-found' }
+    })
+  })
+
+  it('accepts a thumbnail rounded to 600×337', async () => {
+    jpgSize = { width: 600, height: 337 }
+    const result = await editor.steamChoices(steamId)
+    expect(result.ok && result.data.length).toBe(2)
+  })
+
+  it('numbers what is left without gaps, keeping each image', async () => {
+    const WIDE = `${ASSETS}/ss_wide.jpg`
+    const OLD = `${ASSETS}/ss_old.jpg`
+    json = {
+      '620': {
+        success: true,
+        data: {
+          screenshots: [
+            { path_full: `${OLD}.full`, path_thumbnail: OLD },
+            { path_full: `${WIDE}.full`, path_thumbnail: WIDE }
+          ]
+        }
+      }
+    }
+    downloads.set(OLD, JPG)
+    downloads.set(WIDE, PNG)
+    downloads.set(`${WIDE}.full`, PNG)
+    jpgSize = { width: 1024, height: 768 }
+    expect(await editor.steamChoices(steamId)).toEqual({
+      ok: true,
+      data: [{ id: 1, store: false }]
+    })
+    expect(await editor.fromSteam(steamId, 1)).toMatchObject({ ok: true })
+    editor.save(steamId, [])
+    expect(artwork().get(steamId, 'background')?.sourceUrl).toBe(`${WIDE}.full`)
+  })
+
+  it('has an empty list when nothing fits, which is not a failure', async () => {
+    size = { width: 1024, height: 768 }
+    expect(await editor.steamChoices(steamId)).toEqual({ ok: true, data: [] })
+  })
+
+  it('drops a thumbnail that did not download, and fails only when none did', async () => {
+    downloads.delete(THUMB)
+    expect(await editor.steamChoices(steamId)).toEqual({
+      ok: true,
+      data: [{ id: 1, store: true }]
+    })
+    editor.begin(steamId)
+    downloads.delete(RAW)
+    expect(await editor.steamChoices(steamId)).toEqual({
+      ok: false,
+      error: { code: 'download-failed' }
+    })
+  })
+
+  it('measures a few thumbnails at a time', async () => {
+    let open = 0
+    let most = 0
+    json = {
+      '620': {
+        success: true,
+        data: {
+          screenshots: Array.from({ length: 20 }, (_, i) => ({ path_full: `${ASSETS}/${i}.jpg` }))
+        }
+      }
+    }
+    getBytes.mockImplementation(async () => {
+      open += 1
+      most = Math.max(most, open)
+      await Promise.resolve()
+      open -= 1
+      return PNG
+    })
+    await editor.steamChoices(steamId)
+    expect(getBytes).toHaveBeenCalledTimes(20)
+    expect(most).toBeLessThanOrEqual(6)
+  })
+
+  it('never gives one id to two images: the browser may keep an image by its address', async () => {
+    const OTHER = `${ASSETS}/other.jpg`
+    const ids = async (gameId: number): Promise<number[]> => {
+      const result = await editor.steamChoices(gameId)
+      return result.ok ? result.data.map((choice) => choice.id) : []
+    }
+    const first = await ids(steamId)
+    expect(first).toHaveLength(2)
+
+    // Another game, right after: its thumbnails must have addresses of their own.
+    const otherId = createGameRepository(db).upsertSteamGame({
+      steamAppId: 400,
+      title: 'Portal'
+    }).id
+    json = {
+      '400': { success: true, data: { screenshots: [{ path_full: OTHER, path_thumbnail: OTHER }] } }
+    }
+    downloads.set(OTHER, PNG)
+    editor.begin(otherId)
+    const second = await ids(otherId)
+    expect(second).toHaveLength(1)
+    expect(first).not.toContain(second[0])
+
+    // An old address does not serve the new game, and the new one serves its own image.
+    expect(await editor.steamThumbnail(first[0])).toBeNull()
+    expect((await editor.steamThumbnail(second[0]))?.mime).toBe('image/png')
+
+    // Opening the same gallery again is new as well.
+    expect(second).not.toContain((await ids(otherId))[0])
+  })
+
+  it('lists ids only: the addresses stay in main', async () => {
+    const result = await editor.steamChoices(steamId)
+    expect(result).toEqual({
+      ok: true,
+      data: [
+        { id: 1, store: true },
+        { id: 2, store: false }
+      ]
+    })
+    expect(JSON.stringify(result)).not.toContain('steamstatic')
+    expect(requested[0]).toContain('appids=620')
+  })
+
+  it('has nothing for a game that is not from Steam', async () => {
+    editor.begin(manualId)
+    expect(await editor.steamChoices(manualId)).toEqual({
+      ok: false,
+      error: { code: 'not-found' }
+    })
+    expect(requested).toEqual([])
+  })
+
+  it('keeps the choice in memory, and saves it as chosen by the user from Steam', async () => {
+    downloads.set(FULL, PNG)
+    await editor.steamChoices(steamId)
+    expect(await editor.fromSteam(steamId, 2)).toMatchObject({ ok: true })
+    expect(artwork().get(steamId, 'background')).toBeNull()
+    expect(editor.draftImage('background')?.mime).toBe('image/png')
+
+    expect(editor.save(steamId, [])).toEqual({ ok: true, data: null })
+    expect(artwork().get(steamId, 'background')).toMatchObject({
+      source: 'steam',
+      sourceUrl: FULL,
+      userSelected: true
+    })
+  })
+
+  it('refuses an image of another proportion, and one it never listed', async () => {
+    downloads.set(FULL, PNG)
+    await editor.steamChoices(steamId)
+    size = { width: 1024, height: 768 }
+    expect(await editor.fromSteam(steamId, 2)).toEqual({
+      ok: false,
+      error: { code: 'wrong-proportion' }
+    })
+    expect(editor.draftImage('background')).toBeNull()
+    expect(await editor.fromSteam(steamId, 99)).toEqual({
+      ok: false,
+      error: { code: 'not-found' }
+    })
+  })
+
+  it('reports a failed download', async () => {
+    await editor.steamChoices(steamId)
+    expect(await editor.fromSteam(steamId, 2)).toEqual({
+      ok: false,
+      error: { code: 'download-failed' }
+    })
+  })
+
+  it('shows the thumbnails it measured without downloading them again', async () => {
+    await editor.steamChoices(steamId)
+    expect(getBytes).toHaveBeenCalledTimes(2)
+    expect(getBytes).toHaveBeenCalledWith(RAW)
+    expect(getBytes).toHaveBeenCalledWith(THUMB)
+    expect((await editor.steamThumbnail(2))?.mime).toBe('image/jpeg')
+    await editor.steamThumbnail(2)
+    expect(getBytes).toHaveBeenCalledTimes(2)
+    expect(await editor.steamThumbnail(99)).toBeNull()
+
+    editor.end()
+    expect(await editor.steamThumbnail(2)).toBeNull()
+  })
+
+  it('offers no more than 40 images', async () => {
+    json = {
+      '620': {
+        success: true,
+        data: {
+          screenshots: Array.from({ length: 60 }, (_, i) => ({
+            path_full: `${ASSETS}/ss_${i}.jpg`
+          }))
+        }
+      }
+    }
+    getBytes.mockResolvedValue(PNG)
+    const result = await editor.steamChoices(steamId)
+    expect(result.ok && result.data.length).toBe(40)
+  })
+
+  it('ignores the answer when the user already left the screen', async () => {
+    const pending = editor.steamChoices(steamId)
+    editor.end()
+    expect(await pending).toEqual({ ok: false, error: { code: 'not-found' } })
   })
 })

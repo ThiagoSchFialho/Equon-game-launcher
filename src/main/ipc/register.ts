@@ -52,7 +52,9 @@ import {
   artworkEditFromExternalArgs,
   artworkEditFromFileArgs,
   artworkEditFromGridArgs,
+  artworkEditFromSteamArgs,
   artworkEditSaveArgs,
+  steamChoiceListSchema,
   gridAssetListSchema,
   artworkKindListSchema,
   artworkSearchArgs,
@@ -331,6 +333,24 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
       resultSchema(artworkDraftSchema),
       trusted,
       (gameId, kind, assetId) => deps.artworkEditor.fromGrid(gameId, kind, assetId)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.artworkEditSteamChoices,
+    createValidatedHandler(
+      artworkEditBeginArgs,
+      resultSchema(steamChoiceListSchema),
+      trusted,
+      (gameId) => deps.artworkEditor.steamChoices(gameId)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.artworkEditFromSteam,
+    createValidatedHandler(
+      artworkEditFromSteamArgs,
+      resultSchema(artworkDraftSchema),
+      trusted,
+      (gameId, choiceId) => deps.artworkEditor.fromSteam(gameId, choiceId)
     )
   )
   ipcMain.handle(

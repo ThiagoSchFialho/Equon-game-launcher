@@ -34,6 +34,8 @@ export const IpcChannel = {
   artworkEditFromIgdb: 'artwork-edit:from-igdb',
   artworkEditGridAssets: 'artwork-edit:grid-assets',
   artworkEditFromGrid: 'artwork-edit:from-grid',
+  artworkEditSteamChoices: 'artwork-edit:steam-choices',
+  artworkEditFromSteam: 'artwork-edit:from-steam',
   artworkEditSave: 'artwork-edit:save',
   gamesList: 'games:list',
   gamesGet: 'games:get',
@@ -274,6 +276,18 @@ export function gridThumbnailUrl(assetId: number): string {
   return `${ARTWORK_SCHEME}://grid/${assetId}`
 }
 
+/** Thumbnail of a Steam background choice, also brought by main. */
+export function steamChoiceThumbnailUrl(choiceId: number): string {
+  return `${ARTWORK_SCHEME}://steam/${choiceId}`
+}
+
+/** One background Steam offers for a game; its addresses stay in main. */
+export interface SteamChoiceInfo {
+  id: number
+  /** The store's own background, not a screenshot. */
+  store: boolean
+}
+
 export interface ArtworkDraftInfo {
   /** Tells the browser this preview is a new image. */
   version: number
@@ -512,6 +526,9 @@ export interface EquonApi {
       kind: ArtworkEditKind,
       assetId: number
     ): Promise<Result<ArtworkDraftInfo>>
+    /** The background of a Steam game: its store background and screenshots. */
+    steamChoices(gameId: number): Promise<Result<SteamChoiceInfo[]>>
+    fromSteam(gameId: number, choiceId: number): Promise<Result<ArtworkDraftInfo>>
     save(gameId: number, remove: ArtworkEditKind[]): Promise<Result<null>>
   }
   settings: {

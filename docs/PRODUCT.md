@@ -324,8 +324,10 @@ limitações, condições de teste e método de inicialização suportado.
 -   O menu de opções de qualquer jogo tem "Editar artes", com a capa
     vertical, a capa quadrada, o logotipo e a imagem de fundo. Cada arte pode
     vir do IGDB (menos a capa quadrada), de uma galeria do SteamGridDB (menos
-    a imagem de fundo) ou de um arquivo do PC, e pode ser removida. Nada muda
-    até o usuário salvar, e uma arte removida não volta sozinha.
+    a imagem de fundo) ou de um arquivo do PC, e pode ser removida. Em jogos da
+    Steam, a imagem de fundo também pode vir de uma galeria com o fundo da
+    loja e as prints em 16:9. Nada muda até o usuário salvar, e uma arte removida não
+    volta sozinha.
 -   Os metadados da Steam (título, descrição, desenvolvedor, data,
     classificação indicativa e gêneros) e as artes são obtidos **apenas
     quando o jogo é descoberto ou adicionado**; não há atualização

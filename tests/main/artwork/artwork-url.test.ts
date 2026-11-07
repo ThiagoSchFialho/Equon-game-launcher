@@ -3,14 +3,16 @@ import {
   parseAchievementIconUrl,
   parseArtworkUrl,
   parseDraftArtworkUrl,
-  parseGridThumbnailUrl
+  parseGridThumbnailUrl,
+  parseSteamChoiceUrl
 } from '../../../src/main/artwork/artwork-url'
 import {
   ARTWORK_KINDS as SHARED_KINDS,
   achievementIconUrl,
   artworkUrl,
   draftArtworkUrl,
-  gridThumbnailUrl
+  gridThumbnailUrl,
+  steamChoiceThumbnailUrl
 } from '../../../src/shared/ipc/contract'
 import { ARTWORK_KINDS as DOMAIN_KINDS } from '../../../src/core/domain'
 
@@ -122,6 +124,21 @@ describe('addresses of the art editor', () => {
       'https://grid/42'
     ]) {
       expect(parseGridThumbnailUrl(bad), bad).toBeNull()
+    }
+  })
+
+  it('reads a thumbnail of the Steam gallery, apart from the SteamGridDB one', () => {
+    expect(parseSteamChoiceUrl(steamChoiceThumbnailUrl(3))).toBe(3)
+    expect(parseGridThumbnailUrl(steamChoiceThumbnailUrl(3))).toBeNull()
+    expect(parseSteamChoiceUrl(gridThumbnailUrl(3))).toBeNull()
+    for (const bad of [
+      'equon-art://steam/0',
+      'equon-art://steam/x',
+      'equon-art://steam/3/more',
+      'equon-art://steam/3?v=1',
+      'https://steam/3'
+    ]) {
+      expect(parseSteamChoiceUrl(bad), bad).toBeNull()
     }
   })
 })

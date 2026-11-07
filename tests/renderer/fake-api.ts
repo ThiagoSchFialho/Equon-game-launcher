@@ -214,6 +214,8 @@ export function installFakeApi(
       fromIgdb: async () => ({ ok: true, data: { version: 1 } }),
       gridAssets: async () => ({ ok: true, data: [] }),
       fromGrid: async () => ({ ok: true, data: { version: 1 } }),
+      steamChoices: async () => ({ ok: true, data: [] }),
+      fromSteam: async () => ({ ok: true, data: { version: 1 } }),
       save: async () => ({ ok: true, data: null }),
       ...overrides.artworkEdit
     },

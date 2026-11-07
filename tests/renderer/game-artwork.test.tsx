@@ -88,7 +88,7 @@ describe('Editar artes', () => {
     expect(buttons('Capa vertical')).toEqual([igdb, grid, file, remove])
     expect(buttons('Capa quadrada')).toEqual([grid, file, remove])
     expect(buttons('Logo')).toEqual([igdb, grid, file, remove])
-    expect(buttons('Imagem de fundo')).toEqual([igdb, file, remove])
+    expect(buttons('Imagem de fundo')).toEqual([igdb, 'Imagens da Steam', file, remove])
     expect(screen.queryByRole('heading', { name: 'Cabeçalho' })).toBeNull()
   })
 
@@ -320,6 +320,101 @@ describe('Imagem do IGDB', () => {
     await open()
     await click('Imagem do IGDB: Logo')
     expect(await screen.findByText('Sem conexão com o IGDB. Tente mais tarde.')).toBeTruthy()
+  })
+})
+
+describe('Steam gallery', () => {
+  const button = 'Imagens da Steam: Imagem de fundo'
+  const choices: EquonApi['artworkEdit']['steamChoices'] = async () => ({
+    ok: true,
+    data: [
+      { id: 1, store: true },
+      { id: 2, store: false },
+      { id: 3, store: false }
+    ]
+  })
+
+  it('is offered only for the background of a Steam game', async () => {
+    installFakeApi([steam()])
+    await open()
+    expect(screen.getByLabelText(button)).toBeTruthy()
+    expect(screen.queryByLabelText(/^Imagens da Steam: (?!Imagem de fundo)/)).toBeNull()
+    cleanup()
+
+    installFakeApi([summary(1, 'Tidebound')])
+    await open()
+    expect(screen.queryByLabelText(button)).toBeNull()
+  })
+
+  it('names the store background and numbers the screenshots, and the choice previews', async () => {
+    const fromSteam = vi.fn<EquonApi['artworkEdit']['fromSteam']>(async () => ({
+      ok: true,
+      data: { version: 4 }
+    }))
+    const save = vi.fn<EquonApi['artworkEdit']['save']>(async () => ({ ok: true, data: null }))
+    installFakeApi([steam()], { artworkEdit: { steamChoices: choices, fromSteam, save } })
+    await open()
+    await click(button)
+
+    const dialog = await screen.findByRole('dialog', { name: 'Imagens da Steam' })
+    expect([...dialog.querySelectorAll('img')].map((img) => img.getAttribute('src'))).toEqual([
+      'equon-art://steam/1',
+      'equon-art://steam/2',
+      'equon-art://steam/3'
+    ])
+    expect(within(dialog).getByText('Fundo da loja')).toBeTruthy()
+    expect(within(dialog).getByText('Print 2')).toBeTruthy()
+    expect(dialog.querySelector('[data-focused="true"]')?.getAttribute('aria-label')).toBe(
+      'Fundo da loja'
+    )
+
+    await click('Print 1')
+    await waitFor(() => expect(fromSteam).toHaveBeenCalledWith(1, 2))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(previewOf('background').querySelector('img')?.getAttribute('src')).toBe(
+      'equon-art://draft/background?v=4'
+    )
+    expect(save).not.toHaveBeenCalled()
+  })
+
+  it('keeps the gallery open and explains an image of another proportion', async () => {
+    installFakeApi([steam()], {
+      artworkEdit: {
+        steamChoices: choices,
+        fromSteam: async () => ({ ok: false, error: { code: 'wrong-proportion' } })
+      }
+    })
+    await open()
+    await click(button)
+    await screen.findByRole('dialog', { name: 'Imagens da Steam' })
+    await click('Print 1')
+    expect((await screen.findByRole('alert')).textContent).toContain('16:9')
+    expect(screen.getByRole('dialog', { name: 'Imagens da Steam' })).toBeTruthy()
+  })
+
+  it.each([
+    ['network', 'Sem conexão com a Steam. Tente mais tarde.'],
+    ['unavailable', 'A Steam está indisponível agora. Tente mais tarde.'],
+    ['not-found', 'A Steam não encontrou este jogo.']
+  ])('explains %s in the panel', async (code, message) => {
+    installFakeApi([steam()], {
+      artworkEdit: { steamChoices: async () => ({ ok: false, error: { code } }) }
+    })
+    await open()
+    await click(button)
+    expect(await within(panelOf('Imagem de fundo')).findByText(message)).toBeTruthy()
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('says so when Steam has no images', async () => {
+    installFakeApi([steam()])
+    await open()
+    await click(button)
+    expect(
+      await within(panelOf('Imagem de fundo')).findByText(
+        'A Steam não tem imagens 16:9 deste jogo.'
+      )
+    ).toBeTruthy()
   })
 })
 

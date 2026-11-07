@@ -30,12 +30,21 @@ export function parseDraftArtworkUrl(url: string): ArtworkEditKind | null {
   return kind.success ? kind.data : null
 }
 
-/** Parses `equon-art://grid/<assetId>`, a thumbnail of the SteamGridDB gallery. */
-export function parseGridThumbnailUrl(url: string): number | null {
+function parseThumbnailId(url: string, host: string): number | null {
   const parsed = plainUrl(url)
-  if (parsed?.hostname !== 'grid' || parsed.search !== '') return null
+  if (parsed?.hostname !== host || parsed.search !== '') return null
   const match = /^\/([1-9]\d{0,15})$/.exec(parsed.pathname)
   return match ? Number(match[1]) : null
+}
+
+/** Parses `equon-art://grid/<assetId>`, a thumbnail of the SteamGridDB gallery. */
+export function parseGridThumbnailUrl(url: string): number | null {
+  return parseThumbnailId(url, 'grid')
+}
+
+/** Parses `equon-art://steam/<choiceId>`, a thumbnail of the Steam background gallery. */
+export function parseSteamChoiceUrl(url: string): number | null {
+  return parseThumbnailId(url, 'steam')
 }
 
 /** Parses `equon-art://achievement/<id>/<locked|unlocked>`; anything else is rejected. */
