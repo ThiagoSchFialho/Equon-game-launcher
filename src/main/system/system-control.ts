@@ -2,7 +2,13 @@ import type { Result } from '../../shared/ipc/contract'
 
 /** The window and processes behind a port, so tests never touch them. */
 export interface SystemControlDeps {
-  window(): { isFullScreen(): boolean; setFullScreen(fullscreen: boolean): void } | null
+  window(): {
+    isFullScreen(): boolean
+    setFullScreen(fullscreen: boolean): void
+    show(): void
+    focus(): void
+  } | null
+  isGameRunning(): boolean
   /** Runs a fixed program with a fixed argument list, never through a shell. */
   run(file: string, args: readonly string[]): Promise<void>
   quit(): void
@@ -14,6 +20,8 @@ export interface SystemControl {
   isFullscreen(): boolean
   /** Returns the new state. */
   toggleFullscreen(): boolean
+  /** Brings the launcher to the front, never over a running game. Returns whether it asked. */
+  claimFocus(): boolean
   shutdown(): Promise<Result<null>>
   quit(): void
 }
@@ -31,6 +39,14 @@ export function createSystemControl(deps: SystemControlDeps): SystemControl {
       const next = !isFullscreen()
       deps.window()?.setFullScreen(next)
       return next
+    },
+
+    claimFocus() {
+      const window = deps.window()
+      if (!window || deps.isGameRunning()) return false
+      window.show()
+      window.focus()
+      return true
     },
 
     async shutdown() {

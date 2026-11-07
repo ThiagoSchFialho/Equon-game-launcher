@@ -406,6 +406,8 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 
 **Security.** The renderer only asks for "shutdown", with no arguments. Main runs one fixed program, `%SystemRoot%\System32\shutdown.exe /s /t 0`, with `execFile` and no shell (`src/main/system/system-control.ts`). A delay of 0 does not force programs to close, so Windows may still ask about unsaved work; a higher delay would imply `/f`.
 
+**Without the focus (owner's report, 2026-11-07).** Opened with Windows, the window could appear without the focus, and the controller then did nothing until a mouse click. The window now asks for the focus when it appears, and until the launcher is first used (any action, key or click), a controller press without the focus brings it to the front. That press does nothing else, works once, has no time limit (owner decision: the controller may only be picked up much later) and is refused while a game is running. The cost: a press in a game opened outside the launcher, before the launcher was used, takes the user out of that game once. `BrowserWindow.focus()` did take the focus back from another process (measured on 2026-11-07, not at login itself). Why the Xbox button alone worked in that state was not explained. The owner confirmed the fix by starting the PC with the controller (2026-11-07). Not tested, by owner decision since it is unlikely: a game opened outside the launcher before it was used. `document.hasFocus()` and the real Windows foreground can disagree (measured with throwaway windows), so in that case the launcher might keep reacting to the controller behind the game.
+
 **A game left open.** Closing the launcher does not close the game. The session is closed at its last heartbeat on the next start (`DATA_BASE_CONTEXT.md` §3.8), so the confirmation warns about it.
 
 ## 4. Inconsistencies found across the project docs
@@ -775,6 +777,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-06 | 0.43 | Library: sorts by origin, install state, hidden and beaten (`PRODUCT.md` §6.4); "Instalado" and "Zerado" badges on its cards. |
 | 2026-11-06 | 0.44 | Library: sort by achievement percentage; `GameSummary` carries it and the list refreshes on `achievementsChanged`. |
 | 2026-11-06 | 0.45 | "Editar artes": Steam gallery for backgrounds, with the store background and the screenshots (§3.18). |
+| 2026-11-07 | 0.46 | The window asks for the focus when it appears; until first used, a controller press brings it to the front (§3.20). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

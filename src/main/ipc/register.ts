@@ -149,6 +149,10 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
       createValidatedHandler(noArgs, z.boolean(), trusted, () => system.toggleFullscreen())
     )
     ipcMain.handle(
+      IpcChannel.appClaimFocus,
+      createValidatedHandler(noArgs, z.boolean(), trusted, () => system.claimFocus())
+    )
+    ipcMain.handle(
       IpcChannel.appShutdown,
       createValidatedHandler(noArgs, nullResult, trusted, () => system.shutdown())
     )

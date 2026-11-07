@@ -7,6 +7,7 @@ export const IpcChannel = {
   appGetSystemInfo: 'app:get-system-info',
   appIsFullscreen: 'app:is-fullscreen',
   appToggleFullscreen: 'app:toggle-fullscreen',
+  appClaimFocus: 'app:claim-focus',
   appShutdown: 'app:shutdown',
   appQuit: 'app:quit',
   libraryRefresh: 'library:refresh',
@@ -464,6 +465,8 @@ export interface EquonApi {
     isFullscreen(): Promise<boolean>
     /** Resolves with the new state. */
     toggleFullscreen(): Promise<boolean>
+    /** Brings the launcher to the front, unless a game is running. Resolves with whether it did. */
+    claimFocus(): Promise<boolean>
     /** Turns the computer off. Takes no arguments: main runs one fixed command. */
     shutdown(): Promise<Result<null>>
     quit(): Promise<null>

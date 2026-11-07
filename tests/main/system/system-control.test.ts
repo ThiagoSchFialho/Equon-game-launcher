@@ -16,7 +16,8 @@ const setup = (
     state = value
   })
   const control = createSystemControl({
-    window: () => ({ isFullScreen: () => state, setFullScreen }),
+    window: () => ({ isFullScreen: () => state, setFullScreen, show: () => {}, focus: () => {} }),
+    isGameRunning: () => false,
     run,
     quit,
     systemRoot: 'C:\\WINDOWS'
@@ -53,15 +54,37 @@ describe('system control', () => {
     expect(setFullScreen).toHaveBeenLastCalledWith(true)
   })
 
+  it('brings the window to the front, unless a game is running', () => {
+    let running = false
+    const show = vi.fn()
+    const focus = vi.fn()
+    const control = createSystemControl({
+      window: () => ({ isFullScreen: () => false, setFullScreen: () => {}, show, focus }),
+      isGameRunning: () => running,
+      run: async () => {},
+      quit: () => {},
+      systemRoot: undefined
+    })
+    expect(control.claimFocus()).toBe(true)
+    expect(show).toHaveBeenCalledOnce()
+    expect(focus).toHaveBeenCalledOnce()
+
+    running = true
+    expect(control.claimFocus()).toBe(false)
+    expect(focus).toHaveBeenCalledOnce()
+  })
+
   it('does nothing without a window', () => {
     const control = createSystemControl({
       window: () => null,
+      isGameRunning: () => false,
       run: async () => {},
       quit: () => {},
       systemRoot: undefined
     })
     expect(control.isFullscreen()).toBe(false)
     expect(() => control.toggleFullscreen()).not.toThrow()
+    expect(control.claimFocus()).toBe(false)
   })
 
   it('quits only when asked', () => {

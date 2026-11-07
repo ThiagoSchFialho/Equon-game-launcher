@@ -86,7 +86,11 @@ function createWindow(startFullscreen: boolean): void {
   const window = mainWindow
   // Hidden for good, even with Alt; the shortcuts of the menu keep working.
   window.setMenuBarVisibility(false)
-  window.on('ready-to-show', () => window.show())
+  window.on('ready-to-show', () => {
+    window.show()
+    // Opened with Windows, showing it is not enough to get the focus, and the controller needs it.
+    window.focus()
+  })
   // Coming back from Steam: no need to wait for the next check.
   window.on('focus', () => void steam?.rescan())
   window.on('closed', () => {
@@ -170,6 +174,7 @@ app.whenReady().then(async () => {
     ...services,
     system: createSystemControl({
       window: () => mainWindow,
+      isGameRunning: () => services.runner.runningGameIds().length > 0,
       run: (file, args) =>
         new Promise((resolve, reject) => {
           execFile(file, [...args], { windowsHide: true }, (error) =>

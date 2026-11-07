@@ -111,6 +111,7 @@ export function installFakeApi(
       }),
       isFullscreen: async () => false,
       toggleFullscreen: async () => true,
+      claimFocus: async () => true,
       shutdown: async () => ({ ok: true, data: null }),
       quit: async () => null,
       ...overrides.app

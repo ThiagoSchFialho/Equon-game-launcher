@@ -13,6 +13,7 @@ const api: EquonApi = {
     getSystemInfo: () => ipcRenderer.invoke(IpcChannel.appGetSystemInfo),
     isFullscreen: () => ipcRenderer.invoke(IpcChannel.appIsFullscreen),
     toggleFullscreen: () => ipcRenderer.invoke(IpcChannel.appToggleFullscreen),
+    claimFocus: () => ipcRenderer.invoke(IpcChannel.appClaimFocus),
     shutdown: () => ipcRenderer.invoke(IpcChannel.appShutdown),
     quit: () => ipcRenderer.invoke(IpcChannel.appQuit)
   },
