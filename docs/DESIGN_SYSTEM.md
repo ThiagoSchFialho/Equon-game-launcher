@@ -91,6 +91,11 @@ filtros do Início.
     secundários.
 -   Ações secundárias em hierarquia inferior.
 -   Não inventar dados ou mostrar estatísticas sem fonte confiável.
+-   Ao apertar "Jogar", o botão mostra "Abrindo…" e fica indisponível por
+    10 s, em qualquer caso, inclusive ao sair e voltar à página: jogos abertos
+    por atalho `.url` não dão outro sinal de que algo aconteceu. "Em execução"
+    tem prioridade; uma abertura pela Steam que demore mais continua em
+    "Abrindo…" até terminar.
 
 ### Configurações
 

@@ -70,6 +70,7 @@ export const t = {
   },
   game: {
     play: 'Jogar',
+    opening: 'Abrindo…',
     running: 'Em execução',
     steamNotInstalled: 'Jogo não instalado na Steam.',
     steamUnknown: 'Não foi possível verificar a instalação (disco da biblioteca desconectado?).',

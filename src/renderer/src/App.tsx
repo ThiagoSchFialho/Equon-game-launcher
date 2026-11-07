@@ -21,6 +21,7 @@ import { AchievementSortContext, type AchievementSortState } from './data/achiev
 import { BackgroundActivityContext, useBackgroundActivityLoader } from './data/background-activity'
 import { GamesContext, useGamesLoader } from './data/games'
 import { LibraryViewContext, type LibraryViewState } from './data/library-view'
+import { OpeningContext, useOpeningLoader } from './data/opening'
 import { RunningContext, useRunningLoader } from './data/running'
 import { FocusManager } from './focus/focus-manager'
 import { FocusProvider } from './focus/FocusProvider'
@@ -74,6 +75,7 @@ function App(): React.JSX.Element {
     [achievementSort]
   )
   const activity = useBackgroundActivityLoader()
+  const opening = useOpeningLoader()
   // Steam scans (startup, "Atualizar biblioteca") add or change games.
   useEffect(() => window.equon.library.onChanged(games.refresh), [games.refresh])
   // The Library can sort by achievement percentage.
@@ -148,12 +150,14 @@ function App(): React.JSX.Element {
             <LibraryViewContext.Provider value={libraryViewState}>
               <AchievementSortContext.Provider value={achievementSortState}>
                 <BackgroundActivityContext.Provider value={activity}>
-                  <SystemMenuContext.Provider value={systemMenu}>
-                    <ScreenErrorBoundary key={JSON.stringify(route)}>
-                      <CurrentScreen route={route} />
-                    </ScreenErrorBoundary>
-                    {systemMenuOpen && <SystemMenu onClose={() => setSystemMenuOpen(false)} />}
-                  </SystemMenuContext.Provider>
+                  <OpeningContext.Provider value={opening}>
+                    <SystemMenuContext.Provider value={systemMenu}>
+                      <ScreenErrorBoundary key={JSON.stringify(route)}>
+                        <CurrentScreen route={route} />
+                      </ScreenErrorBoundary>
+                      {systemMenuOpen && <SystemMenu onClose={() => setSystemMenuOpen(false)} />}
+                    </SystemMenuContext.Provider>
+                  </OpeningContext.Provider>
                 </BackgroundActivityContext.Provider>
               </AchievementSortContext.Provider>
             </LibraryViewContext.Provider>

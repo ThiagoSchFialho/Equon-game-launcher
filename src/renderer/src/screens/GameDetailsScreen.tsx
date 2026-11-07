@@ -28,6 +28,7 @@ import {
   type AgeRatingKey
 } from '../data/format'
 import { useGameDetails, useGames } from '../data/games'
+import { useOpening } from '../data/opening'
 import { useRunning } from '../data/running'
 import { useScreenActions } from '../focus/focus-context'
 import { FocusScope } from '../focus/FocusProvider'
@@ -116,7 +117,10 @@ function Details({
 }): React.JSX.Element {
   const [launching, setLaunching] = useState(false)
   const [launchError, setLaunchError] = useState<string | null>(null)
+  const opening = useOpening()
+  const isOpening = opening.isOpening(game.id)
   const onPlay = (): void => {
+    opening.start(game.id)
     setLaunching(true)
     setLaunchError(null)
     void window.equon.games.launch(game.id).then((result) => {
@@ -127,6 +131,8 @@ function Details({
     })
   }
   const note = playNote(game, running, launching, launchError)
+  // A game that already started says so; a Steam launch may take longer than the 10 s.
+  const playLabel = running ? t.game.running : isOpening || launching ? t.game.opening : t.game.play
   const year = releaseYear(game.releaseDate)
   const rating = ageRatingKey(game.requiredAge)
   const byline = [year, game.developer].filter(Boolean).join(' • ')
@@ -168,13 +174,13 @@ function Details({
           <Button
             id="game:play"
             variant="primary"
-            label={running ? t.game.running : t.game.play}
-            unavailable={!game.launchable || running || launching}
+            label={playLabel}
+            unavailable={!game.launchable || running || launching || isOpening}
             autoFocus
             onConfirm={onPlay}
           >
             <img src={playIcon} alt="" />
-            {running ? t.game.running : t.game.play}
+            {playLabel}
           </Button>
           <Button id="game:more" variant="icon" label={t.game.more} onConfirm={onOpenMenu}>
             <img src={moreIcon} alt="" />

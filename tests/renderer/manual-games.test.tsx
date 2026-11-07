@@ -53,7 +53,8 @@ describe('play from game details', () => {
     const callsBefore = get.mock.calls.length
     act(() => emit([]))
     await waitFor(() => expect(get.mock.calls.length).toBeGreaterThan(callsBefore))
-    expect(await screen.findByLabelText('Jogar')).toBeTruthy()
+    // Within the 10 s of the press, which the play-feedback tests follow to the end.
+    expect(await screen.findByLabelText('Abrindo…')).toBeTruthy()
   })
 
   it('explains launch failures and unavailable states', async () => {
