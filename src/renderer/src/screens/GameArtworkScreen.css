@@ -80,7 +80,8 @@
 }
 
 .art-editor__preview[data-kind='logo'],
-.art-editor__preview[data-kind='background'] {
+.art-editor__preview[data-kind='background'],
+.art-editor__preview[data-kind='launch'] {
   aspect-ratio: 16 / 9;
 }
 

@@ -370,7 +370,7 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
       artworkEditFromSteamArgs,
       resultSchema(artworkDraftSchema),
       trusted,
-      (gameId, choiceId) => deps.artworkEditor.fromSteam(gameId, choiceId)
+      (gameId, kind, choiceId) => deps.artworkEditor.fromSteam(gameId, kind, choiceId)
     )
   )
   ipcMain.handle(

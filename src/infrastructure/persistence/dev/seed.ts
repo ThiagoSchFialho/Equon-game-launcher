@@ -64,7 +64,9 @@ const SIZES: Record<ArtworkKind, [number, number]> = {
   cover_portrait: [600, 900],
   logo: [800, 300],
   background: [1920, 1080],
-  header: [460, 215]
+  header: [460, 215],
+  // Not seeded: only the user picks one, and the cover falls back to the background.
+  launch: [1920, 1080]
 }
 
 function artwork(kind: ArtworkKind, hue: number): Buffer {

@@ -19,6 +19,39 @@ describe('migrate', () => {
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1)
   })
 
+  it('0013 keeps existing art and removal marks, and accepts the launch image', () => {
+    const db = openDatabase(':memory:')
+    migrate(db, migrations.slice(0, 12))
+    const gameId = db
+      .prepare<[], { id: number }>(
+        "INSERT INTO games (origin, title) VALUES ('manual', 'A') RETURNING id"
+      )
+      .get()!.id
+    db.prepare(
+      "INSERT INTO game_artwork (game_id, kind, local_path, source, user_selected) VALUES (?, 'logo', 'a/logo.png', 'user', 1)"
+    ).run(gameId)
+    db.prepare(
+      "INSERT INTO game_artwork_removed (game_id, kind, removed_at) VALUES (?, 'header', '2026-11-07T10:00:00Z')"
+    ).run(gameId)
+
+    migrate(db, migrations)
+
+    expect(db.prepare('SELECT kind, user_selected FROM game_artwork').all()).toEqual([
+      { kind: 'logo', user_selected: 1 }
+    ])
+    expect(db.prepare('SELECT kind FROM game_artwork_removed').all()).toEqual([{ kind: 'header' }])
+    const insert = (kind: string): void => {
+      db.prepare(
+        "INSERT INTO game_artwork (game_id, kind, local_path, source) VALUES (?, ?, 'a/x.png', 'user')"
+      ).run(gameId, kind)
+    }
+    insert('launch')
+    expect(() => insert('poster')).toThrow(/CHECK/)
+    // Deleting the game still takes its art along.
+    db.prepare('DELETE FROM games WHERE id = ?').run(gameId)
+    expect(db.prepare('SELECT count(*) AS n FROM game_artwork').get()).toEqual({ n: 0 })
+  })
+
   it('is a no-op when the database is up to date', () => {
     const db = openDatabase(':memory:')
     migrate(db, migrations)

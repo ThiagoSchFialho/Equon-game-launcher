@@ -100,10 +100,11 @@ filtros do Início.
     por atalho `.url` não dão outro sinal de que algo aconteceu. "Em execução"
     tem prioridade; uma abertura pela Steam que demore mais continua em
     "Abrindo…" até terminar.
--   Também ao apertar "Jogar", a imagem de fundo do jogo aparece com fade na
+-   Também ao apertar "Jogar", a imagem de abertura do jogo aparece com fade na
     frente de tudo, no monitor inteiro, e só então o jogo é chamado. Ela sai com
-    fade 3 s depois que o jogo abre, ou em no máximo 60 s; B a tira da tela sem
-    fechar o jogo. Sem imagem de fundo, mostra o logo; sem logo, o título. Fades
+    fade 1 s depois que o jogo abre, ou em no máximo 60 s; B a tira da tela sem
+    fechar o jogo. Sem imagem de abertura, mostra a imagem de fundo; sem ela, o
+    logo; sem logo, o título. Fades
     de cerca de 0,6 s, e nenhum com movimento reduzido.
 
 ### Configurações
@@ -370,7 +371,7 @@ desativadas.
 
 ### Tipos de arte por jogo
 
-Cada jogo pode ter cinco artes. Os nomes abaixo são os mesmos usados no
+Cada jogo pode ter seis artes. Os nomes abaixo são os mesmos usados no
 banco de dados (`GAME_ARTWORK.kind`). A capa vertical e a quadrada são
 artes independentes; nenhuma é recortada a partir da outra.
 
@@ -381,6 +382,7 @@ artes independentes; nenhuma é recortada a partir da outra.
 | `logo` | Logotipo, preferencialmente com transparência | Detalhes do jogo, sobre o fundo |
 | `background` | Imagem 1920×1080 (16:9) | Detalhes do jogo, como arte dominante |
 | `header` | Imagem larga (`header_image` da Steam, cerca de 2:1) | Lista de conquistas, miniatura de cada jogo |
+| `launch` | Imagem de abertura, 16:9, com `cover`; sem ela, usa-se o `background` | Tela inteira enquanto o jogo abre |
 
 ### Regras
 

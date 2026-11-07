@@ -132,8 +132,9 @@ limitações, condições de teste e método de inicialização suportado.
     no lugar de "Jogar" quando o jogo não está instalado, e "Desinstalar" nas
     opções. O usuário conclui na janela da Steam, por enquanto com o mouse.
 -   Disponibilizar ação principal para iniciar o jogo. Enquanto o jogo abre,
-    a imagem de fundo dele cobre o monitor inteiro, e o jogo só é chamado com
-    a tela já coberta. A imagem sai 3 s depois que o jogo abre, em no máximo
+    a imagem de abertura dele (por padrão, a imagem de fundo) cobre o monitor
+    inteiro, e o jogo só é chamado com a tela já coberta. A imagem sai 1 s
+    depois que o jogo abre, em no máximo
     60 s, ou com o botão B.
 -   Mostrar tempo jogado, seja essa informação vinda de uma fonte
     externa ou registrada pelo launcher quando houver sessões
@@ -304,9 +305,11 @@ limitações, condições de teste e método de inicialização suportado.
 
 ### 6.9 Artes e metadados
 
--   Cada jogo pode ter cinco artes: **capa quadrada** (Biblioteca),
+-   Cada jogo pode ter seis artes: **capa quadrada** (Biblioteca),
     **capa vertical 2:3** (Início, esticada para caber inteira), **logotipo**, **imagem
-    1920×1080** e **imagem de cabeçalho** (header).
+    1920×1080**, **imagem de cabeçalho** (header) e **imagem de abertura**
+    (mostrada enquanto o jogo abre; por padrão é a imagem de fundo, e o
+    usuário pode escolher outra em "Editar artes").
 -   Fontes: Steam (`header_image` e capturas de tela dos metadados),
     SteamGridDB (capas quadrada e vertical e logotipo, com chave de API
     pessoal gratuita), IGDB (capa vertical, logotipo e imagem de fundo, com

@@ -3,13 +3,15 @@ import {
   artworkUrl,
   draftArtworkUrl,
   gridThumbnailUrl,
+  STEAM_GALLERY_KINDS,
   steamChoiceThumbnailUrl,
   type ArtworkDraftInfo,
   type ArtworkEditKind,
   type GameSummary,
   type GridAssetInfo,
   type Result,
-  type SteamChoiceInfo
+  type SteamChoiceInfo,
+  type SteamGalleryKind
 } from '../../../shared/ipc/contract'
 import { currentSection, useNavigation } from '../app/navigation'
 import deleteIcon from '../assets/icons/delete.svg'
@@ -30,14 +32,18 @@ import './GameArtworkScreen.css'
 
 /**
  * Offered per kind: IGDB has no square covers, and SteamGridDB's banners are not 16:9.
- * Steam's screenshots and store background only fit a background, and only for its own games.
+ * Steam's screenshots and store background only fit 16:9 art, and only for its own games.
  */
 const PANELS: readonly { kind: ArtworkEditKind; igdb: boolean; grid: boolean; steam: boolean }[] = [
   { kind: 'cover_portrait', igdb: true, grid: true, steam: false },
   { kind: 'cover_square', igdb: false, grid: true, steam: false },
   { kind: 'logo', igdb: true, grid: true, steam: false },
-  { kind: 'background', igdb: true, grid: false, steam: true }
+  { kind: 'background', igdb: true, grid: false, steam: true },
+  { kind: 'launch', igdb: true, grid: false, steam: true }
 ]
+
+const isSteamGalleryKind = (kind: ArtworkEditKind): kind is SteamGalleryKind =>
+  (STEAM_GALLERY_KINDS as readonly string[]).includes(kind)
 
 type Source = 'file' | 'igdb' | 'grid' | 'steam'
 type Change = { type: 'draft'; version: number } | { type: 'removed' }
@@ -94,20 +100,24 @@ function errorText(source: Source, code: string, kind: ArtworkEditKind): string 
   return errorMessage(code)
 }
 
-function Preview({
-  game,
-  kind,
-  change
-}: {
-  game: GameSummary
-  kind: ArtworkEditKind
+/** What a kind will show after Salvar: the pending image, the stored one, or none. */
+function imageSource(
+  game: GameSummary,
+  kind: ArtworkEditKind,
   change: Change | undefined
+): string | null {
+  if (change?.type === 'draft') return draftArtworkUrl(kind, change.version)
+  if (!change && game.artwork.includes(kind)) return artworkUrl(game.id, kind, game.artworkVersion)
+  return null
+}
+
+function Preview({
+  kind,
+  source
+}: {
+  kind: ArtworkEditKind
+  source: string | null
 }): React.JSX.Element {
-  let source: string | null = null
-  if (change?.type === 'draft') source = draftArtworkUrl(kind, change.version)
-  else if (!change && game.artwork.includes(kind)) {
-    source = artworkUrl(game.id, kind, game.artworkVersion)
-  }
   return (
     <div className="art-editor__preview" data-kind={kind}>
       {source ? (
@@ -253,10 +263,11 @@ export function GameArtworkScreen({ id }: { id: number }): React.JSX.Element {
     itemId: number
   ): Promise<void> => {
     setOverlay({ ...gallery, picking: true, error: null })
+    const art = gallery.art
     const pending =
-      gallery.source === 'steam'
-        ? window.equon.artworkEdit.fromSteam(id, itemId)
-        : window.equon.artworkEdit.fromGrid(id, gallery.art, itemId)
+      gallery.source === 'steam' && isSteamGalleryKind(art)
+        ? window.equon.artworkEdit.fromSteam(id, art, itemId)
+        : window.equon.artworkEdit.fromGrid(id, art, itemId)
     const result = await pending.catch((): Result<ArtworkDraftInfo> => ({
       ok: false,
       error: { code: 'network' }
@@ -327,7 +338,15 @@ export function GameArtworkScreen({ id }: { id: number }): React.JSX.Element {
           {PANELS.map(({ kind, igdb, grid, steam }, index) => {
             const change = changes[kind]
             const hasArt = change?.type === 'draft' || (!change && shown.artwork.includes(kind))
-            const current = notes[kind]
+            const own = imageSource(shown, kind, change)
+            // With no launch image of its own, the game opens over its background.
+            const fallback =
+              kind === 'launch' && own === null
+                ? imageSource(shown, 'background', changes.background)
+                : null
+            const current =
+              notes[kind] ??
+              (fallback ? { text: t.artEditor.usingBackground, tone: 'info' as const } : undefined)
             return (
               <section
                 key={kind}
@@ -338,7 +357,7 @@ export function GameArtworkScreen({ id }: { id: number }): React.JSX.Element {
               >
                 <div className="art-editor__side">
                   <h2 className="art-editor__name">{t.artEditor.kinds[kind]}</h2>
-                  <Preview game={shown} kind={kind} change={change} />
+                  <Preview kind={kind} source={own ?? fallback} />
                   {current && (
                     <p
                       className="art-editor__note"

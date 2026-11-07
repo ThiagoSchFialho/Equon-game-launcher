@@ -85,6 +85,12 @@ describe('the cover page', () => {
     expect(image?.style.objectFit).toBe('cover')
   })
 
+  it('shows the launch image the same way', () => {
+    const image = page({ game: '7', art: 'launch', version: 'v1' }).querySelector('img')
+    expect(image?.getAttribute('src')).toBe('equon-art://game/7/launch?v=v1')
+    expect(image?.style.objectFit).toBe('cover')
+  })
+
   it('without one, shows the logo whole', () => {
     const image = page({ game: '7', art: 'logo' }).querySelector('img')
     expect(image?.getAttribute('src')).toBe('equon-art://game/7/logo')

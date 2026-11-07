@@ -14,7 +14,12 @@ import {
 import { APP_MENU } from './app-menu'
 import { handleArtworkProtocol, registerArtworkScheme } from './artwork/artwork-protocol'
 import { watchForeground } from './launch-cover/foreground'
-import { createLaunchCover, type CoverWindow, type LaunchCover } from './launch-cover/launch-cover'
+import {
+  coverArt,
+  createLaunchCover,
+  type CoverWindow,
+  type LaunchCover
+} from './launch-cover/launch-cover'
 import { describeDatabaseFailure } from './database-failure'
 import { IpcEvent } from '../shared/ipc/contract'
 import { registerIpcHandlers } from './ipc/register'
@@ -224,11 +229,9 @@ app.whenReady().then(async () => {
   launchCover = createLaunchCover({
     open: async (gameId) => {
       const game = services.queries.games.getById(gameId)
-      const kinds = services.queries.artwork.listKinds().get(gameId) ?? []
-      const art = kinds.includes('background') ? 'background' : kinds.includes('logo') ? 'logo' : ''
       const query = new URLSearchParams({
         game: String(gameId),
-        art,
+        art: coverArt(services.queries.artwork.listKinds().get(gameId) ?? []),
         version: services.queries.artwork.listVersions().get(gameId) ?? '',
         title: game?.title ?? ''
       })

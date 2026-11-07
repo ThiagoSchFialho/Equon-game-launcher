@@ -17,17 +17,21 @@ import type { IgdbGameData } from '../../integrations/igdb/games'
 import type { IgdbResult } from '../../integrations/igdb/igdb'
 import { fetchAppBackgroundChoices } from '../../integrations/steam/steam-web'
 import { listAssets, type SteamGridDbTarget } from '../../integrations/steamgriddb/assets'
-import type {
-  ArtworkDraftInfo,
-  ArtworkEditKind,
-  GridAssetInfo,
-  Result,
-  SteamChoiceInfo
+import {
+  STEAM_GALLERY_KINDS,
+  type ArtworkDraftInfo,
+  type ArtworkEditKind,
+  type GridAssetInfo,
+  type Result,
+  type SteamChoiceInfo,
+  type SteamGalleryKind
 } from '../../shared/ipc/contract'
 import { igdbArtUrls } from './artwork-fetcher'
 
 /** Kinds with no source on IGDB (square covers) or none that fits on SteamGridDB (backgrounds). */
-const IGDB_KINDS: readonly ArtworkEditKind[] = ['cover_portrait', 'logo', 'background']
+const IGDB_KINDS: readonly ArtworkEditKind[] = ['cover_portrait', 'logo', 'background', 'launch']
+/** The launch image is a background-shaped picture: it comes from the same IGDB image. */
+const igdbKind = (kind: ArtworkEditKind): ArtworkKind => (kind === 'launch' ? 'background' : kind)
 const GRID_KINDS = ['cover_portrait', 'cover_square', 'logo'] as const
 type GridKind = (typeof GRID_KINDS)[number]
 const isGridKind = (kind: ArtworkEditKind): kind is GridKind =>
@@ -90,9 +94,13 @@ export interface ArtworkEditor {
     kind: ArtworkEditKind,
     assetId: number
   ): Promise<Result<ArtworkDraftInfo>>
-  /** The store background and screenshots of a Steam game, for its background. */
+  /** The store background and screenshots of a Steam game, for its background or launch image. */
   steamChoices(gameId: number): Promise<Result<SteamChoiceInfo[]>>
-  fromSteam(gameId: number, choiceId: number): Promise<Result<ArtworkDraftInfo>>
+  fromSteam(
+    gameId: number,
+    kind: SteamGalleryKind,
+    choiceId: number
+  ): Promise<Result<ArtworkDraftInfo>>
   /** Applies what is pending, and removes `remove`; a kind in both ends up removed. */
   save(gameId: number, remove: readonly ArtworkEditKind[]): Result<null>
   /** Served by the art protocol, so the preview needs no file on disk. */
@@ -219,7 +227,8 @@ export function createArtworkEditor(deps: ArtworkEditorDeps): ArtworkEditor {
       } else return fail('not-found')
       if (!answer.ok) return fail(answer.error)
       if (!answer.data) return fail('not-found')
-      const url = igdbArtUrls(answer.data).find(([each]) => each === kind)?.[1] ?? null
+      const wanted = igdbKind(kind)
+      const url = igdbArtUrls(answer.data).find(([each]) => each === wanted)?.[1] ?? null
       return url === null ? fail('no-image') : download(gameId, kind, url, 'igdb')
     },
 
@@ -273,10 +282,10 @@ export function createArtworkEditor(deps: ArtworkEditorDeps): ArtworkEditor {
       return { ok: true, data: choices }
     },
 
-    async fromSteam(gameId, choiceId) {
+    async fromSteam(gameId, kind, choiceId) {
       const image = steamImages.get(choiceId)
-      if (!image) return fail('not-found')
-      return download(gameId, 'background', image.url, 'steam')
+      if (!image || !STEAM_GALLERY_KINDS.includes(kind)) return fail('not-found')
+      return download(gameId, kind, image.url, 'steam')
     },
 
     save(gameId, remove) {

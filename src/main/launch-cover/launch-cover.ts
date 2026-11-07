@@ -1,9 +1,14 @@
-import type { Result } from '../../shared/ipc/contract'
+import type { ArtworkKind, Result } from '../../shared/ipc/contract'
+
+/** The art the cover shows, in order (owner decision); '' shows the title. */
+export function coverArt(kinds: readonly ArtworkKind[]): 'launch' | 'background' | 'logo' | '' {
+  return (['launch', 'background', 'logo'] as const).find((kind) => kinds.includes(kind)) ?? ''
+}
 
 const FADE_MS = 600
 const FADE_STEP_MS = 16
 /** The game's window stays covered this long after it appears (owner decision). */
-const AFTER_GAME_WINDOW_MS = 3000
+const AFTER_GAME_WINDOW_MS = 1000
 /** The whole screen is covered, so it must always leave (owner decision). */
 const TIME_LIMIT_MS = 60_000
 /** Process start times are not exact, and a game may start just before the launch returns. */

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { parseForegroundLine } from '../../../src/main/launch-cover/foreground'
 import {
+  coverArt,
   createLaunchCover,
   isGameWindow,
   type ForegroundWindow,
@@ -11,6 +12,15 @@ import type { Result } from '../../../src/shared/ipc/contract'
 const OWN_PID = 100
 const OK: Result<null> = { ok: true, data: null }
 const MONITOR = { width: 1920, height: 1080 }
+
+describe('the art the cover shows', () => {
+  it('is the launch image, then the background, then the logo, then the title', () => {
+    expect(coverArt(['logo', 'background', 'launch'])).toBe('launch')
+    expect(coverArt(['logo', 'background', 'header'])).toBe('background')
+    expect(coverArt(['cover_portrait', 'logo'])).toBe('logo')
+    expect(coverArt(['cover_square', 'header'])).toBe('')
+  })
+})
 
 describe('isGameWindow', () => {
   const launchedAt = 50_000
@@ -187,11 +197,11 @@ describe('launch cover', () => {
     await expect(run).resolves.toEqual(OK)
   })
 
-  it('leaves 3 s after the game window appears, not before', async () => {
+  it('leaves 1 s after the game window appears, not before', async () => {
     await untilCovered()
     await vi.advanceTimersByTimeAsync(5000)
     onWindow(game())
-    await vi.advanceTimersByTimeAsync(2900)
+    await vi.advanceTimersByTimeAsync(900)
     expect(active).toEqual([true])
     expect(closed).toBe(0)
 
@@ -203,12 +213,12 @@ describe('launch cover', () => {
     expect(closed).toBe(1)
   })
 
-  it('counts the 3 s from the first window of the game', async () => {
+  it('counts the 1 s from the first window of the game', async () => {
     await untilCovered()
     onWindow(game())
-    await vi.advanceTimersByTimeAsync(2000)
+    await vi.advanceTimersByTimeAsync(600)
     onWindow({ ...game(), pid: 8, process: 'other' })
-    await vi.advanceTimersByTimeAsync(1000)
+    await vi.advanceTimersByTimeAsync(400)
     expect(active).toEqual([true, false])
   })
 
@@ -232,14 +242,14 @@ describe('launch cover', () => {
     expect(active).toEqual([true])
   })
 
-  it('stays through a splash window and counts the 3 s from the game', async () => {
+  it('stays through a splash window and counts the 1 s from the game', async () => {
     await untilCovered()
     onWindow(game({ pid: 12, process: 'FortniteClient_EAC', width: 800, height: 450 }))
     await vi.advanceTimersByTimeAsync(8000)
     expect(active).toEqual([true])
 
     onWindow(game({ pid: 13, process: 'FortniteClient' }))
-    await vi.advanceTimersByTimeAsync(2900)
+    await vi.advanceTimersByTimeAsync(900)
     expect(active).toEqual([true])
     await vi.advanceTimersByTimeAsync(100)
     expect(active).toEqual([true, false])
@@ -251,7 +261,7 @@ describe('launch cover', () => {
     await vi.advanceTimersByTimeAsync(5000)
     expect(active).toEqual([true])
     onWindow(game())
-    await vi.advanceTimersByTimeAsync(3000)
+    await vi.advanceTimersByTimeAsync(1000)
     expect(active).toEqual([true, false])
   })
 

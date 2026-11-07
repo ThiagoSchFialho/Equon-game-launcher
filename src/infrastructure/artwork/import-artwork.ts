@@ -8,6 +8,7 @@ export const MAX_ARTWORK_BYTES = 20 * 1024 * 1024
 /** Expected proportion per kind (width / height); logo and header are free. */
 const RATIOS: Partial<Record<ArtworkKind, number>> = {
   background: 16 / 9,
+  launch: 16 / 9,
   cover_square: 1,
   cover_portrait: 2 / 3
 }

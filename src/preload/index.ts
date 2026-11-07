@@ -105,8 +105,8 @@ const api: EquonApi = {
     fromGrid: (gameId, kind, assetId) =>
       ipcRenderer.invoke(IpcChannel.artworkEditFromGrid, gameId, kind, assetId),
     steamChoices: (gameId) => ipcRenderer.invoke(IpcChannel.artworkEditSteamChoices, gameId),
-    fromSteam: (gameId, choiceId) =>
-      ipcRenderer.invoke(IpcChannel.artworkEditFromSteam, gameId, choiceId),
+    fromSteam: (gameId, kind, choiceId) =>
+      ipcRenderer.invoke(IpcChannel.artworkEditFromSteam, gameId, kind, choiceId),
     save: (gameId, remove) => ipcRenderer.invoke(IpcChannel.artworkEditSave, gameId, remove)
   },
   settings: {

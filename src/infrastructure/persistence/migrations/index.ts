@@ -10,6 +10,7 @@ import igdbCredentials from './0009_igdb_credentials.sql?raw'
 import artworkSourceIgdb from './0010_artwork_source_igdb.sql?raw'
 import artworkRemoved from './0011_artwork_removed.sql?raw'
 import startFullscreen from './0012_start_fullscreen.sql?raw'
+import artworkLaunch from './0013_artwork_launch.sql?raw'
 
 export interface Migration {
   version: number
@@ -30,5 +31,6 @@ export const migrations: readonly Migration[] = [
   { version: 9, name: '0009_igdb_credentials', sql: igdbCredentials },
   { version: 10, name: '0010_artwork_source_igdb', sql: artworkSourceIgdb },
   { version: 11, name: '0011_artwork_removed', sql: artworkRemoved },
-  { version: 12, name: '0012_start_fullscreen', sql: startFullscreen }
+  { version: 12, name: '0012_start_fullscreen', sql: startFullscreen },
+  { version: 13, name: '0013_artwork_launch', sql: artworkLaunch }
 ]

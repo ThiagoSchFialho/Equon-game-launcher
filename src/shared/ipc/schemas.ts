@@ -2,6 +2,7 @@ import { z } from 'zod'
 import {
   ARTWORK_EDIT_KINDS,
   ARTWORK_KINDS,
+  STEAM_GALLERY_KINDS,
   type AchievementsOverview,
   type AchievementSyncStatus,
   type AppInfo,
@@ -230,9 +231,12 @@ export const artworkEditBeginArgs = z.tuple([id])
 export const artworkEditFromFileArgs = z.tuple([id, artworkEditKind, path])
 export const artworkEditFromExternalArgs = z.tuple([id, artworkEditKind, externalId.nullable()])
 export const artworkEditFromGridArgs = z.tuple([id, artworkEditKind, externalId])
-export const artworkEditFromSteamArgs = z.tuple([id, externalId])
+export const artworkEditFromSteamArgs = z.tuple([id, z.enum(STEAM_GALLERY_KINDS), externalId])
 export const steamChoiceListSchema = z.array(z.strictObject({ id: externalId, store: z.boolean() }))
-export const artworkEditSaveArgs = z.tuple([id, z.array(artworkEditKind).max(4)])
+export const artworkEditSaveArgs = z.tuple([
+  id,
+  z.array(artworkEditKind).max(ARTWORK_EDIT_KINDS.length)
+])
 export const artworkDraftSchema = z.strictObject({ version: z.number().int().positive() })
 export const gridAssetListSchema = z.array(
   z.strictObject({

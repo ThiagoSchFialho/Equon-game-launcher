@@ -3,7 +3,9 @@ export const ARTWORK_KINDS = [
   'cover_portrait',
   'logo',
   'background',
-  'header'
+  'header',
+  // Shown over the screen while the game opens (D-22); only chosen by the user.
+  'launch'
 ] as const
 export type ArtworkKind = (typeof ARTWORK_KINDS)[number]
 

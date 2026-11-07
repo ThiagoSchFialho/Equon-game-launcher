@@ -259,7 +259,8 @@ export const ARTWORK_KINDS = [
   'cover_portrait',
   'logo',
   'background',
-  'header'
+  'header',
+  'launch'
 ] as const
 export type ArtworkKind = (typeof ARTWORK_KINDS)[number]
 
@@ -281,8 +282,18 @@ export function artworkUrl(gameId: number, kind: ArtworkKind, version?: string |
 }
 
 /** The art "Editar artes" handles; the header keeps coming from its sources. */
-export const ARTWORK_EDIT_KINDS = ['cover_portrait', 'cover_square', 'logo', 'background'] as const
+export const ARTWORK_EDIT_KINDS = [
+  'cover_portrait',
+  'cover_square',
+  'logo',
+  'background',
+  'launch'
+] as const
 export type ArtworkEditKind = (typeof ARTWORK_EDIT_KINDS)[number]
+
+/** 16:9 kinds the Steam gallery (store background and screenshots) can fill. */
+export const STEAM_GALLERY_KINDS = ['background', 'launch'] as const
+export type SteamGalleryKind = (typeof STEAM_GALLERY_KINDS)[number]
 
 /** Preview of an image chosen but not saved yet. */
 export function draftArtworkUrl(kind: ArtworkEditKind, version: number): string {
@@ -548,9 +559,13 @@ export interface EquonApi {
       kind: ArtworkEditKind,
       assetId: number
     ): Promise<Result<ArtworkDraftInfo>>
-    /** The background of a Steam game: its store background and screenshots. */
+    /** For the background or launch image of a Steam game: its store background and screenshots. */
     steamChoices(gameId: number): Promise<Result<SteamChoiceInfo[]>>
-    fromSteam(gameId: number, choiceId: number): Promise<Result<ArtworkDraftInfo>>
+    fromSteam(
+      gameId: number,
+      kind: SteamGalleryKind,
+      choiceId: number
+    ): Promise<Result<ArtworkDraftInfo>>
     save(gameId: number, remove: ArtworkEditKind[]): Promise<Result<null>>
   }
   settings: {

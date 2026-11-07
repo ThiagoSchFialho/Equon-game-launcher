@@ -217,6 +217,17 @@ describe('art editor: removing', () => {
     expect(artwork().listRemoved().get(manualId)).toBeUndefined()
   })
 
+  it('removes the launch image alone, leaving the background it falls back to', () => {
+    editor.fromFile(manualId, 'background', localImage())
+    editor.fromFile(manualId, 'launch', localImage())
+    editor.save(manualId, [])
+    editor.begin(manualId)
+    expect(editor.save(manualId, ['launch'])).toEqual({ ok: true, data: null })
+    expect(artwork().get(manualId, 'launch')).toBeNull()
+    expect(artwork().get(manualId, 'background')).not.toBeNull()
+    expect(existsSync(join(dir, 'cache', String(manualId), 'background.png'))).toBe(true)
+  })
+
   it('saves and removes different kinds in one go', () => {
     editor.fromFile(manualId, 'background', localImage())
     editor.save(manualId, ['logo'])
@@ -244,6 +255,18 @@ describe('art editor: IGDB', () => {
     downloads.set(`${IGDB}/art.jpg`, JPG)
     expect(await editor.fromIgdb(manualId, 'background', 7)).toMatchObject({ ok: true })
     expect(igdbAsked).toEqual(['game:7'])
+  })
+
+  it('gives the launch image the same IGDB image as the background, kept apart from it', async () => {
+    downloads.set(`${IGDB}/art.jpg`, JPG)
+    expect(await editor.fromIgdb(manualId, 'launch', 7)).toMatchObject({ ok: true })
+    editor.save(manualId, [])
+    expect(artwork().get(manualId, 'launch')).toMatchObject({
+      source: 'igdb',
+      sourceUrl: `${IGDB}/art.jpg`,
+      userSelected: true
+    })
+    expect(artwork().get(manualId, 'background')).toBeNull()
   })
 
   it('explains what cannot be done', async () => {
@@ -411,7 +434,7 @@ describe('art editor: Steam gallery', () => {
     const result = await editor.steamChoices(steamId)
     expect(result).toEqual({ ok: true, data: [{ id: 1, store: true }] })
     expect(await editor.steamThumbnail(2)).toBeNull()
-    expect(await editor.fromSteam(steamId, 2)).toEqual({
+    expect(await editor.fromSteam(steamId, 'background', 2)).toEqual({
       ok: false,
       error: { code: 'not-found' }
     })
@@ -445,7 +468,7 @@ describe('art editor: Steam gallery', () => {
       ok: true,
       data: [{ id: 1, store: false }]
     })
-    expect(await editor.fromSteam(steamId, 1)).toMatchObject({ ok: true })
+    expect(await editor.fromSteam(steamId, 'background', 1)).toMatchObject({ ok: true })
     editor.save(steamId, [])
     expect(artwork().get(steamId, 'background')?.sourceUrl).toBe(`${WIDE}.full`)
   })
@@ -548,7 +571,7 @@ describe('art editor: Steam gallery', () => {
   it('keeps the choice in memory, and saves it as chosen by the user from Steam', async () => {
     downloads.set(FULL, PNG)
     await editor.steamChoices(steamId)
-    expect(await editor.fromSteam(steamId, 2)).toMatchObject({ ok: true })
+    expect(await editor.fromSteam(steamId, 'background', 2)).toMatchObject({ ok: true })
     expect(artwork().get(steamId, 'background')).toBeNull()
     expect(editor.draftImage('background')?.mime).toBe('image/png')
 
@@ -560,16 +583,25 @@ describe('art editor: Steam gallery', () => {
     })
   })
 
+  it('fills the launch image from the same gallery', async () => {
+    downloads.set(FULL, PNG)
+    await editor.steamChoices(steamId)
+    expect(await editor.fromSteam(steamId, 'launch', 2)).toMatchObject({ ok: true })
+    editor.save(steamId, [])
+    expect(artwork().get(steamId, 'launch')).toMatchObject({ source: 'steam', sourceUrl: FULL })
+    expect(artwork().get(steamId, 'background')).toBeNull()
+  })
+
   it('refuses an image of another proportion, and one it never listed', async () => {
     downloads.set(FULL, PNG)
     await editor.steamChoices(steamId)
     size = { width: 1024, height: 768 }
-    expect(await editor.fromSteam(steamId, 2)).toEqual({
+    expect(await editor.fromSteam(steamId, 'background', 2)).toEqual({
       ok: false,
       error: { code: 'wrong-proportion' }
     })
     expect(editor.draftImage('background')).toBeNull()
-    expect(await editor.fromSteam(steamId, 99)).toEqual({
+    expect(await editor.fromSteam(steamId, 'background', 99)).toEqual({
       ok: false,
       error: { code: 'not-found' }
     })
@@ -577,7 +609,7 @@ describe('art editor: Steam gallery', () => {
 
   it('reports a failed download', async () => {
     await editor.steamChoices(steamId)
-    expect(await editor.fromSteam(steamId, 2)).toEqual({
+    expect(await editor.fromSteam(steamId, 'background', 2)).toEqual({
       ok: false,
       error: { code: 'download-failed' }
     })

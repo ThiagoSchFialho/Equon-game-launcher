@@ -89,7 +89,35 @@ describe('Editar artes', () => {
     expect(buttons('Capa quadrada')).toEqual([grid, file, remove])
     expect(buttons('Logo')).toEqual([igdb, grid, file, remove])
     expect(buttons('Imagem de fundo')).toEqual([igdb, 'Imagens da Steam', file, remove])
+    expect(buttons('Imagem de abertura')).toEqual([igdb, 'Imagens da Steam', file, remove])
     expect(screen.queryByRole('heading', { name: 'Cabeçalho' })).toBeNull()
+  })
+
+  it('shows the background as the launch image until one of its own is chosen', async () => {
+    installFakeApi([steam({ artwork: ['background'], artworkVersion: 'v1' })], {
+      files: { list: pickFile }
+    })
+    await open()
+    const launch = (): string | null | undefined =>
+      previewOf('launch').querySelector('img')?.getAttribute('src')
+    expect(launch()).toBe('equon-art://game/1/background?v=v1')
+    expect(within(panelOf('Imagem de abertura')).getByText('Usando a imagem de fundo')).toBeTruthy()
+    // Nothing of its own to remove.
+    expect(
+      screen.getByLabelText('Remover imagem: Imagem de abertura').getAttribute('aria-disabled')
+    ).toBe('true')
+
+    await click('Selecionar imagem do PC: Imagem de abertura')
+    await clickText('art.png')
+    await waitFor(() => expect(launch()).toBe('equon-art://draft/launch?v=1'))
+    expect(within(panelOf('Imagem de abertura')).queryByText('Usando a imagem de fundo')).toBeNull()
+  })
+
+  it('follows a background chosen or removed on the same visit', async () => {
+    installFakeApi([steam({ artwork: ['background'] })])
+    await open()
+    await click('Remover imagem: Imagem de fundo')
+    expect(previewOf('launch').querySelector('img')).toBeNull()
   })
 
   it('previews what the game has, and has nothing to remove otherwise', async () => {
@@ -334,11 +362,14 @@ describe('Steam gallery', () => {
     ]
   })
 
-  it('is offered only for the background of a Steam game', async () => {
+  it('is offered only for the 16:9 art of a Steam game', async () => {
     installFakeApi([steam()])
     await open()
     expect(screen.getByLabelText(button)).toBeTruthy()
-    expect(screen.queryByLabelText(/^Imagens da Steam: (?!Imagem de fundo)/)).toBeNull()
+    expect(screen.getByLabelText('Imagens da Steam: Imagem de abertura')).toBeTruthy()
+    expect(
+      screen.queryByLabelText(/^Imagens da Steam: (?!Imagem de fundo|Imagem de abertura)/)
+    ).toBeNull()
     cleanup()
 
     installFakeApi([summary(1, 'Tidebound')])
@@ -369,7 +400,7 @@ describe('Steam gallery', () => {
     )
 
     await click('Print 1')
-    await waitFor(() => expect(fromSteam).toHaveBeenCalledWith(1, 2))
+    await waitFor(() => expect(fromSteam).toHaveBeenCalledWith(1, 'background', 2))
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
     expect(previewOf('background').querySelector('img')?.getAttribute('src')).toBe(
       'equon-art://draft/background?v=4'
