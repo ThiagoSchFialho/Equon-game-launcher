@@ -16,6 +16,7 @@ import type {
   GameRepository,
   LaunchConfigRepository,
   ManualGameFields,
+  SteamGameFields,
   UnitOfWork
 } from './ports'
 
@@ -66,6 +67,24 @@ function requireFile(field: string, state: FileState): void {
   if (state === 'unreadable') fail(field, 'unreadable')
 }
 
+/** The fields every game's form has: a Steam game edits only these. */
+export function validateGameDetails(input: SteamGameFields): SteamGameFields {
+  const releaseDate = input.releaseDate?.trim() || null
+  if (releaseDate !== null && !isValidIsoDate(releaseDate)) fail('releaseDate', 'invalid')
+  if (
+    input.requiredAge !== null &&
+    !(REQUIRED_AGES as readonly string[]).includes(input.requiredAge)
+  ) {
+    fail('requiredAge', 'invalid')
+  }
+  return {
+    description: optionalText(input.description, 'description'),
+    developer: optionalText(input.developer, 'developer'),
+    releaseDate,
+    requiredAge: input.requiredAge
+  }
+}
+
 /**
  * Validates and normalizes a manual game before saving. Launch paths are
  * untrusted (ARCHITECTURE.md §7):
@@ -85,15 +104,7 @@ export function validateManualGame(
     fail('origin', 'invalid')
   }
 
-  const releaseDate = input.releaseDate?.trim() || null
-  if (releaseDate !== null && !isValidIsoDate(releaseDate)) fail('releaseDate', 'invalid')
-
-  if (
-    input.requiredAge !== null &&
-    !(REQUIRED_AGES as readonly string[]).includes(input.requiredAge)
-  ) {
-    fail('requiredAge', 'invalid')
-  }
+  const details = validateGameDetails(input)
 
   if (
     !Number.isInteger(input.playtimeOffset) ||
@@ -106,10 +117,7 @@ export function validateManualGame(
   const fields = {
     origin: input.origin,
     title,
-    description: optionalText(input.description, 'description'),
-    developer: optionalText(input.developer, 'developer'),
-    releaseDate,
-    requiredAge: input.requiredAge,
+    ...details,
     playtimeOffset: input.playtimeOffset
   }
 

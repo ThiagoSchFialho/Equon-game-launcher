@@ -161,6 +161,24 @@ describe('add game form', () => {
     await clickText(name)
   }
 
+  it('submits with Start, like the button, and says so in the footer', async () => {
+    const igdb = igdbFake()
+    installFakeApi([summary(1, 'A')], { igdb })
+    await openForm()
+    const hints = [...document.querySelectorAll('.footer .hint')].map((hint) => hint.textContent)
+    expect(hints).toEqual(['Salvar', 'ASelecionar', 'BVoltar'])
+
+    // Nothing typed yet: the same errors as the button.
+    press('m')
+    expect(await screen.findAllByText('Campo obrigatório.')).toHaveLength(2)
+
+    // Not while the keyboard is open: it keeps the key for itself (here, a typed letter).
+    await click(/Título do jogo/)
+    press('m')
+    expect(screen.getByRole('dialog')).toBeTruthy()
+    expect(igdb.search).not.toHaveBeenCalled()
+  })
+
   it('asks only for the title, executable, playtime and arguments', async () => {
     installFakeApi([summary(1, 'A')])
     await openForm()
@@ -587,6 +605,15 @@ describe('edit game form', () => {
     await waitFor(() => expect(applyArtwork).toHaveBeenCalledWith(1, 7))
   })
 
+  it('saves with Start', async () => {
+    const update = vi.fn<EquonApi['games']['update']>(async () => ({ ok: true, data: { id: 1 } }))
+    installFakeApi([summary(1, 'Mine')], { games: { update, getEditable: async () => editable } })
+    await openEdit()
+    press('m')
+    await waitFor(() => expect(update).toHaveBeenCalledOnce())
+    expect(update.mock.calls[0][1]).toMatchObject({ title: 'Mine', description: 'My own words.' })
+  })
+
   it('keeps an IGDB failure on screen, changing nothing', async () => {
     const update = vi.fn<EquonApi['games']['update']>(async () => ({ ok: true, data: { id: 1 } }))
     installFakeApi([summary(1, 'Mine')], {
@@ -597,6 +624,117 @@ describe('edit game form', () => {
     await click('Preencher com IGDB')
     expect(await screen.findByText('Sem conexão com o IGDB. Tente mais tarde.')).toBeTruthy()
     expect(update).not.toHaveBeenCalled()
+  })
+
+  describe('of a Steam game', () => {
+    const steamEditable: typeof editable = {
+      id: 1,
+      form: {
+        ...editable!.form,
+        title: 'Portal 2',
+        origin: 'steam',
+        executablePath: '',
+        description: 'From the store.'
+      }
+    }
+    const steamGame = summary(1, 'Portal 2', { origin: 'steam', originName: 'Steam' })
+    const openSteamEdit = async (): Promise<void> => {
+      render(<App />)
+      await screen.findByText('12h 22m')
+      press('m')
+      await clickText('Editar jogo')
+      await screen.findByRole('heading', { name: /Editar jogo/ })
+    }
+
+    it('offers only the details, showing the name it does not edit', async () => {
+      installFakeApi([steamGame], { games: { getEditable: async () => steamEditable } })
+      await openSteamEdit()
+      expect(screen.getByRole('heading', { name: /Editar jogo/ }).textContent).toContain('Portal 2')
+      for (const label of [
+        'Descrição',
+        'Desenvolvedor',
+        'Data de lançamento',
+        'Classificação indicativa',
+        'Preencher com IGDB'
+      ]) {
+        expect(await screen.findByLabelText(label)).toBeTruthy()
+      }
+      for (const label of [
+        'Título do jogo',
+        'ROM',
+        'Executável',
+        'Tempo de jogo',
+        'Origem',
+        'Argumentos',
+        'Pasta de trabalho'
+      ]) {
+        expect(screen.queryByLabelText(label)).toBeNull()
+      }
+    })
+
+    it('saves with Start too', async () => {
+      const updateSteam = vi.fn<EquonApi['games']['updateSteam']>(async () => ({
+        ok: true,
+        data: { id: 1 }
+      }))
+      installFakeApi([steamGame], {
+        games: { updateSteam, getEditable: async () => steamEditable }
+      })
+      await openSteamEdit()
+      press('m')
+      await waitFor(() => expect(updateSteam).toHaveBeenCalledOnce())
+      expect(updateSteam.mock.calls[0][1]).toMatchObject({ description: 'From the store.' })
+    })
+
+    it('saves the details only, filling from IGDB without its art', async () => {
+      const update = vi.fn<EquonApi['games']['update']>()
+      const updateSteam = vi.fn<EquonApi['games']['updateSteam']>(async () => ({
+        ok: true,
+        data: { id: 1 }
+      }))
+      const applyArtwork = vi.fn<EquonApi['igdb']['applyArtwork']>()
+      installFakeApi([steamGame], {
+        igdb: {
+          search: async () => ({
+            ok: true,
+            data: [{ id: 7, name: 'Portal 2 (IGDB)', year: 2011, developer: 'Valve' }]
+          }),
+          game: async () => ({
+            ok: true,
+            data: {
+              name: 'Portal 2',
+              summary: 'Replaced? No.',
+              releaseDate: '2011-04-18',
+              developer: 'Valve',
+              genres: ['Puzzle'],
+              requiredAge: '10'
+            }
+          }),
+          applyArtwork
+        },
+        games: { update, updateSteam, getEditable: async () => steamEditable }
+      })
+      await openSteamEdit()
+      await click('Preencher com IGDB')
+      await clickText('Portal 2 (IGDB)')
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+      expect(await screen.findByText('Valve')).toBeTruthy()
+      // The submit button keeps its label for every form.
+      await click(/Adicionar jogo/)
+      await waitFor(() => expect(updateSteam).toHaveBeenCalledOnce())
+      expect(updateSteam.mock.calls[0]).toEqual([
+        1,
+        {
+          description: 'From the store.',
+          developer: 'Valve',
+          releaseDate: '2011-04-18',
+          requiredAge: '10',
+          genres: ['Puzzle']
+        }
+      ])
+      expect(update).not.toHaveBeenCalled()
+      expect(applyArtwork).not.toHaveBeenCalled()
+    })
   })
 
   it('warns when Yuzu is not configured', async () => {
@@ -698,13 +836,13 @@ describe('remove game', () => {
     await waitFor(() => expect(remove).toHaveBeenCalledWith(1))
   })
 
-  it('offers no edit or remove for Steam games', async () => {
+  it('offers edit but no remove for Steam games', async () => {
     installFakeApi([summary(1, 'Portal 2', { origin: 'steam', originName: 'Steam' })])
     render(<App />)
     await screen.findByText('12h 22m')
     press('m')
     await screen.findByRole('dialog', { name: 'Portal 2' })
-    expect(screen.queryByText('Editar jogo')).toBeNull()
+    expect(screen.getByText('Editar jogo')).toBeTruthy()
     expect(screen.queryByText('Remover jogo')).toBeNull()
   })
 })

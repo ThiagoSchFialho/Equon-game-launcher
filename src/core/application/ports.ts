@@ -63,7 +63,19 @@ export interface ManualGameFields {
   playtimeOffset: number
 }
 
-/** Data the Steam adapter owns. Missing or empty values never replace stored ones. */
+/**
+ * What the user may edit on a Steam game (owner decision): no title, launch, playtime or origin,
+ * which come from Steam.
+ */
+export type SteamGameFields = Pick<
+  ManualGameFields,
+  'description' | 'developer' | 'releaseDate' | 'requiredAge'
+>
+
+/**
+ * Data the Steam adapter owns. Missing or empty values never replace stored ones, and store
+ * metadata only fills what is empty: the user may have edited it.
+ */
 export interface SteamGameUpsert {
   steamAppId: number
   title: string
@@ -99,6 +111,8 @@ export interface GameRepository {
   setFlags(id: number, flags: GameFlags): Game
   /** Updates the user-editable fields of a non-Steam game (not flags or playtime itself). */
   updateManual(id: number, fields: ManualGameFields): Game
+  /** Writes only these fields, and only for a Steam game; NotFoundError otherwise. */
+  updateSteamDetails(id: number, fields: SteamGameFields): Game
   /** Writes the install state; callers never pass false after a failed read. */
   setInstalled(id: number, installed: InstallState): void
   delete(id: number): boolean

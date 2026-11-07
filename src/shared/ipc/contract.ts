@@ -44,6 +44,7 @@ export const IpcChannel = {
   gamesGetEditable: 'games:get-editable',
   gamesCreate: 'games:create',
   gamesUpdate: 'games:update',
+  gamesUpdateSteam: 'games:update-steam',
   gamesRemove: 'games:remove',
   gamesLaunch: 'games:launch',
   gamesInstallSteam: 'games:install-steam',
@@ -437,6 +438,13 @@ export interface ManualGameForm {
   /** A new background image to import; null keeps the current one. */
 }
 
+/** What a Steam game's form edits (owner decision); everything else comes from Steam. */
+export type SteamGameForm = Pick<
+  ManualGameForm,
+  'description' | 'developer' | 'releaseDate' | 'requiredAge' | 'genres'
+>
+
+/** A Steam game comes with origin 'steam' and no launch fields; only its details are edited. */
 export interface EditableGame {
   id: number
   form: ManualGameForm
@@ -585,6 +593,7 @@ export interface EquonApi {
     getEditable(id: number): Promise<EditableGame | null>
     create(form: ManualGameForm): Promise<Result<{ id: number }>>
     update(id: number, form: ManualGameForm): Promise<Result<{ id: number }>>
+    updateSteam(id: number, form: SteamGameForm): Promise<Result<{ id: number }>>
     remove(id: number): Promise<Result<null>>
     launch(id: number): Promise<Result<null>>
     /** Opens Steam's own window; the user answers there. */

@@ -810,6 +810,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-07 | 0.50 | `.url` shortcuts: opening one moves the game's last played time forward (`DATA_BASE_CONTEXT.md` §3.7); playtime is still not measured. |
 | 2026-11-07 | 0.51 | "Imagem de abertura": art kind `launch` (migration 0013), edited in "Editar artes" and shown first while a game opens (§3.18, §3.21); the image leaves 1 s after the game opens instead of 3 s. |
 | 2026-11-07 | 0.52 | The launch cover says "Carregando" with animated dots in the bottom right corner, gone at once before the fade out; it leaves 2 s after the game opens (§3.21). |
+| 2026-11-07 | 0.53 | "Editar jogo" for Steam games, with description, developer, release date and age rating only (owner decision). Its own IPC channel (`games:update-steam`) with a strict schema of those fields, and a repository write limited to Steam games; store metadata now only fills empty fields (`DATA_BASE_CONTEXT.md` §3.1, §4.2). Start submits the add and edit forms, like their main button. |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

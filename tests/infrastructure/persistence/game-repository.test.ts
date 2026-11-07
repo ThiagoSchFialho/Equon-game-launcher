@@ -124,6 +124,47 @@ describe('GameRepository.upsertSteamGame', () => {
   })
 })
 
+describe('GameRepository: user edits of a Steam game', () => {
+  it('store metadata only fills what is empty, keeping what the user edited', () => {
+    const { id } = games.upsertSteamGame({ steamAppId: 620, title: 'Portal 2' })
+    games.updateSteamDetails(id, {
+      description: 'My words.',
+      developer: null,
+      releaseDate: '2011-04-18',
+      requiredAge: null
+    })
+    const updated = games.upsertSteamGame({
+      steamAppId: 620,
+      title: 'Portal 2',
+      description: 'From the store.',
+      developer: 'Valve',
+      releaseDate: '2011-04-19',
+      requiredAge: '10',
+      metadataFetchedAt: '2026-11-07T10:00:00Z'
+    })
+    expect(updated).toMatchObject({
+      description: 'My words.',
+      developer: 'Valve',
+      releaseDate: '2011-04-18',
+      requiredAge: '10',
+      metadataFetchedAt: '2026-11-07T10:00:00Z'
+    })
+  })
+
+  it('writes only the details, and only for a Steam game', () => {
+    const { id } = games.upsertSteamGame({ steamAppId: 620, title: 'Portal 2' })
+    const fields = { description: 'A', developer: 'B', releaseDate: null, requiredAge: 'L' }
+    expect(games.updateSteamDetails(id, fields)).toMatchObject({
+      ...fields,
+      title: 'Portal 2',
+      origin: 'steam'
+    })
+    const manual = games.create({ origin: 'manual', title: 'Mine' })
+    expect(() => games.updateSteamDetails(manual.id, fields)).toThrow(NotFoundError)
+    expect(games.getById(manual.id)?.description).toBeNull()
+  })
+})
+
 describe('GameRepository.markPlayed', () => {
   it('moves last played forward only, and touches nothing else', () => {
     const id = games.create({ origin: 'manual', title: 'Fortnite' }).id

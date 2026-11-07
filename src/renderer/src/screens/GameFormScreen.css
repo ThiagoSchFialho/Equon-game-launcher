@@ -6,9 +6,23 @@
 }
 
 .game-form__title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
   margin: var(--space-2) 0 var(--space-6);
   font-size: var(--font-size-display);
   font-weight: var(--font-weight-bold);
+}
+
+/* The name of a Steam game, which its form does not edit; as in "Editar artes". */
+.game-form__game {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .game-form__body {

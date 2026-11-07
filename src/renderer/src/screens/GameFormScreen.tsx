@@ -150,8 +150,10 @@ const HINTS: Hint[] = [
   { button: 'A', label: t.hints.select },
   { button: 'B', label: t.hints.back }
 ]
+/** Start saves from anywhere on the form, as in "Editar artes". */
+const READY_HINTS: Hint[] = [{ button: 'menu', label: t.form.save }, ...HINTS]
 
-/** Add (id null) or edit form for a non-Steam game (mockups "add game"). */
+/** Add (id null) or edit form (mockups "add game"); a Steam game edits only its details. */
 export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element {
   const navigation = useNavigation()
   const { reload: reloadGames } = useGames()
@@ -210,6 +212,8 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
     )
   }, [id, loadOrigins])
 
+  // A Steam game edits only its details (owner decision): no name, launch, playtime or origin.
+  const steam = initial?.origin === 'steam'
   const userOrigins = useMemo(() => (origins ?? []).filter((o) => o.key !== 'steam'), [origins])
   const selectedOrigin = userOrigins.find((o) => o.key === form.origin)
   // Emulator games only need the ROM; the emulator and its arguments come from §3.12.
@@ -254,15 +258,47 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
   const leave = (): void => navigation.back()
   const cancel = (): void => (dirty ? setOverlay({ kind: 'discard' }) : leave())
 
-  useScreenActions({ back: cancel })
+  // Start saves like the button; the dialogs on top keep it for themselves.
+  const ready = !loadFailed && origins !== null && emulators !== null && initial !== null
+  useScreenActions({
+    back: cancel,
+    menu: () => {
+      if (ready && !saving) submit()
+    }
+  })
 
   const emulatorOf = (values: FormState): EmulatorInfo | null =>
     (emulators ?? []).find((e) => e.origin === values.origin) ?? null
+
+  const saveSteam = async (
+    gameId: number,
+    values: FormState,
+    chosen: { id: number; genres: string[] } | null
+  ): Promise<number | null> => {
+    setSaving(true)
+    const result = await window.equon.games.updateSteam(gameId, {
+      description: values.description.trim() || null,
+      developer: values.developer.trim() || null,
+      releaseDate: values.releaseDate,
+      requiredAge: values.requiredAge,
+      ...(chosen ? { genres: chosen.genres } : {})
+    })
+    setSaving(false)
+    if (!result.ok) {
+      const row = ERROR_ROW[result.error.field ?? ''] ?? 'description'
+      setErrors({ [row]: errorMessage(result.error.code) })
+      return null
+    }
+    // Its art stays with "Editar artes": IGDB fills only the details here.
+    reloadGames()
+    return result.data.id
+  }
 
   const save = async (
     values: FormState,
     chosen: { id: number; genres: string[] } | null
   ): Promise<number | null> => {
+    if (steam && id !== null) return saveSteam(id, values, chosen)
     const romGame = emulatorOf(values) !== null
     const noExtras = romGame || isShortcut(values.executablePath)
     const payload: ManualGameForm = {
@@ -312,6 +348,10 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
   }
 
   const submit = (): void => {
+    if (steam) {
+      void saveAndOpen(form, igdb)
+      return
+    }
     const local: Partial<Record<keyof FormState, string>> = {}
     if (form.title.trim() === '') local.title = errorMessage('required')
     if (emulator) {
@@ -369,9 +409,13 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
   })
 
   return (
-    <FormFrame>
+    <FormFrame hints={READY_HINTS}>
       <div className="game-form">
-        <h1 className="game-form__title">{id === null ? t.form.addTitle : t.form.editTitle}</h1>
+        <h1 className="game-form__title">
+          {id === null ? t.form.addTitle : t.form.editTitle}
+          {/* The name is not edited here, so it is shown with the title. */}
+          {steam && <span className="game-form__game">{form.title}</span>}
+        </h1>
         <div className="game-form__body">
           <div className="game-form__fields">
             {adding ? (
@@ -400,8 +444,8 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
               </>
             ) : (
               <>
-                {textRow('title', { required: true, autoFocus: true })}
-                {emulator ? (
+                {!steam && textRow('title', { required: true, autoFocus: true })}
+                {steam ? null : emulator ? (
                   <>
                     <FormRow
                       id="rom"
@@ -455,7 +499,7 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
                     )}
                   </>
                 )}
-                {textRow('description', { multiline: true })}
+                {textRow('description', { multiline: true, autoFocus: steam })}
                 {textRow('developer')}
                 <FormRow
                   id="releaseDate"
@@ -466,15 +510,17 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
                   error={errors.releaseDate}
                   onConfirm={() => setOverlay({ kind: 'date' })}
                 />
-                {playtimeRow}
-                <FormRow
-                  id="origin"
-                  label={t.form.fields.origin}
-                  value={selectedOrigin?.name ?? form.origin}
-                  icon="chevron"
-                  error={errors.origin}
-                  onConfirm={() => setOverlay({ kind: 'origin' })}
-                />
+                {!steam && playtimeRow}
+                {!steam && (
+                  <FormRow
+                    id="origin"
+                    label={t.form.fields.origin}
+                    value={selectedOrigin?.name ?? form.origin}
+                    icon="chevron"
+                    error={errors.origin}
+                    onConfirm={() => setOverlay({ kind: 'origin' })}
+                  />
+                )}
                 <FormRow
                   id="requiredAge"
                   label={t.form.fields.requiredAge}
@@ -657,14 +703,20 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
 }
 
 /** Screen chrome shared by the loading, error and ready states. */
-function FormFrame({ children }: { children: React.ReactNode }): React.JSX.Element {
+function FormFrame({
+  children,
+  hints = HINTS
+}: {
+  children: React.ReactNode
+  hints?: Hint[]
+}): React.JSX.Element {
   const navigation = useNavigation()
   return (
     <FocusScope id="screen:game-form">
       <div className="screen">
         <TopBar active={currentSection(navigation.route)} />
         <main className="screen__main">{children}</main>
-        <Footer hints={HINTS} />
+        <Footer hints={hints} />
       </div>
     </FocusScope>
   )

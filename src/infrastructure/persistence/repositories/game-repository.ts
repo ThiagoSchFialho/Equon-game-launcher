@@ -58,7 +58,8 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
   const selectAll = db.prepare<[], GameRow>('SELECT * FROM games ORDER BY title COLLATE NOCASE, id')
 
   // Sync-owned columns only. NULLIF/COALESCE: an empty or missing value never
-  // replaces a stored one. hidden, beated, playtime, time_last_played,
+  // replaces a stored one, and store metadata only fills what is empty, since the
+  // user may have edited it. hidden, beated, playtime, time_last_played,
   // installed and the Steam playtime baseline are deliberately absent.
   const upsertSteam = db.prepare<Record<string, unknown>, GameRow>(`
     INSERT INTO games (origin, steam_id, title, description, developer, release_date, required_age, metadata_fetched_at)
@@ -66,10 +67,10 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
             NULLIF(@releaseDate, ''), NULLIF(@requiredAge, ''), @metadataFetchedAt)
     ON CONFLICT (steam_id) DO UPDATE SET
       title               = COALESCE(NULLIF(trim(excluded.title), ''), games.title),
-      description         = COALESCE(excluded.description, games.description),
-      developer           = COALESCE(excluded.developer, games.developer),
-      release_date        = COALESCE(excluded.release_date, games.release_date),
-      required_age        = COALESCE(excluded.required_age, games.required_age),
+      description         = COALESCE(games.description, excluded.description),
+      developer           = COALESCE(games.developer, excluded.developer),
+      release_date        = COALESCE(games.release_date, excluded.release_date),
+      required_age        = COALESCE(games.required_age, excluded.required_age),
       metadata_fetched_at = COALESCE(excluded.metadata_fetched_at, games.metadata_fetched_at)
     RETURNING *`)
 
@@ -92,6 +93,12 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
       origin = @origin, title = @title, description = @description, developer = @developer,
       release_date = @releaseDate, required_age = @requiredAge, playtime_offset = @playtimeOffset
     WHERE id = @id AND origin <> 'steam'
+    RETURNING *`)
+  const updateSteamDetails = db.prepare<Record<string, unknown>, GameRow>(`
+    UPDATE games SET
+      description = @description, developer = @developer,
+      release_date = @releaseDate, required_age = @requiredAge
+    WHERE id = @id AND origin = 'steam'
     RETURNING *`)
   const updateInstalled = db.prepare<[number | null, number]>(
     'UPDATE games SET installed = ? WHERE id = ?'
@@ -190,6 +197,18 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
         // The offset may have changed: playtime is derived from it.
         return recomputePlayStats(id)
       })(),
+
+    updateSteamDetails: (id, fields) =>
+      found(
+        updateSteamDetails.get({
+          id,
+          description: fields.description,
+          developer: fields.developer,
+          releaseDate: fields.releaseDate,
+          requiredAge: fields.requiredAge
+        }),
+        id
+      ),
 
     setInstalled: (id, installed) => {
       updateInstalled.run(toNullableBit(installed), id)

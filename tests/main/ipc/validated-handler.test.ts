@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { createValidatedHandler, IpcRejectedError } from '../../../src/main/ipc/validated-handler'
-import { gamesSetFlagsArgs } from '../../../src/shared/ipc/schemas'
+import { gamesSetFlagsArgs, gamesUpdateSteamArgs } from '../../../src/shared/ipc/schemas'
 
 const trusted = { senderFrame: { url: 'app://trusted' } }
 const isTrustedSender = (url: string): boolean => url === 'app://trusted'
@@ -44,6 +44,25 @@ describe('createValidatedHandler', () => {
       secret: 'leak'
     }))
     await expect(handler(trusted)).rejects.toThrow()
+  })
+})
+
+describe('games:update-steam arguments', () => {
+  const details = { description: null, developer: 'Valve', releaseDate: null, requiredAge: null }
+
+  it('takes the details only: never a name, launch, playtime or origin', () => {
+    expect(gamesUpdateSteamArgs.safeParse([1, details]).success).toBe(true)
+    expect(gamesUpdateSteamArgs.safeParse([1, { ...details, genres: ['Puzzle'] }]).success).toBe(
+      true
+    )
+    for (const extra of [
+      { title: 'Renamed' },
+      { executablePath: 'C:\\evil.exe' },
+      { playtimeOffset: 9 },
+      { origin: 'manual' }
+    ]) {
+      expect(gamesUpdateSteamArgs.safeParse([1, { ...details, ...extra }]).success).toBe(false)
+    }
   })
 })
 

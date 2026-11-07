@@ -378,7 +378,9 @@ export function GameDetailsScreen({ id, from }: { id: number; from: Section }): 
           onAchievements={() => navigation.openGameAchievements(id)}
           onEdit={details.data.editable ? () => navigation.openGameForm(id) : undefined}
           onEditArtwork={() => navigation.openGameArtwork(id)}
-          onRemove={details.data.editable && !running ? () => setOverlay('remove') : undefined}
+          onRemove={
+            details.data.origin !== 'steam' && !running ? () => setOverlay('remove') : undefined
+          }
         />
       )}
       {overlay === 'remove' && details.status === 'ready' && details.data && (

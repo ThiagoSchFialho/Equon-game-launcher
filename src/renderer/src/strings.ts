@@ -140,6 +140,8 @@ export const t = {
     submitAdd: 'Adicionar jogo',
     fillIgdb: 'Preencher com IGDB',
     submitEdit: 'Salvar alterações',
+    /** Footer hint of Start, on the add and edit forms. */
+    save: 'Salvar',
     cancel: 'Cancelar',
     saving: 'Salvando…',
     loading: 'Carregando…',

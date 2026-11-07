@@ -23,6 +23,7 @@ import {
   gamesSetFlagsArgs,
   gameSummaryListSchema,
   gamesUpdateArgs,
+  gamesUpdateSteamArgs,
   nativePickResultSchema,
   noArgs,
   originInfoSchema,
@@ -417,6 +418,12 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
     IpcChannel.gamesUpdate,
     createValidatedHandler(gamesUpdateArgs, idResult, trusted, (id, form) =>
       service.update(id, form)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.gamesUpdateSteam,
+    createValidatedHandler(gamesUpdateSteamArgs, idResult, trusted, (id, form) =>
+      service.updateSteam(id, form)
     )
   )
   ipcMain.handle(

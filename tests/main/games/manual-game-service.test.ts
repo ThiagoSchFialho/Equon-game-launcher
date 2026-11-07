@@ -105,6 +105,53 @@ describe('manual game service', () => {
     })
   })
 
+  it('edits only the details of a Steam game, validated, and never a manual one', async () => {
+    const games = createGameRepository(db)
+    const genres = createGenreRepository(db)
+    const steam = games.upsertSteamGame({ steamAppId: 620, title: 'Portal 2' })
+    db.prepare('UPDATE games SET playtime = 42, installed = 1 WHERE id = ?').run(steam.id)
+    const details = {
+      description: '  Two portals.  ',
+      developer: 'Valve',
+      releaseDate: '2011-04-18',
+      requiredAge: '10',
+      genres: ['Puzzle']
+    }
+    expect(await service.updateSteam(steam.id, details)).toEqual({
+      ok: true,
+      data: { id: steam.id }
+    })
+    expect(games.getById(steam.id)).toMatchObject({
+      title: 'Portal 2',
+      origin: 'steam',
+      steamAppId: 620,
+      description: 'Two portals.',
+      developer: 'Valve',
+      releaseDate: '2011-04-18',
+      requiredAge: '10',
+      playtime: 42,
+      installed: true
+    })
+    expect(genres.listForGame(steam.id).map((g) => g.name)).toEqual(['Puzzle'])
+
+    expect(await service.updateSteam(steam.id, { ...details, releaseDate: '2011-02-30' })).toEqual({
+      ok: false,
+      error: { code: 'invalid', field: 'releaseDate' }
+    })
+    expect(await service.updateSteam(steam.id, { ...details, requiredAge: '17' })).toEqual({
+      ok: false,
+      error: { code: 'invalid', field: 'requiredAge' }
+    })
+
+    const created = await service.create(form())
+    const manualId = created.ok ? created.data.id : 0
+    expect(await service.updateSteam(manualId, details)).toEqual({
+      ok: false,
+      error: { code: 'not-found' }
+    })
+    expect(games.getById(manualId)?.developer).toBeNull()
+  })
+
   it('removes a game and its artwork, but not while it runs or for Steam games', async () => {
     const created = await service.create(form())
     const id = created.ok ? created.data.id : 0

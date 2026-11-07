@@ -18,6 +18,7 @@ import {
   type ManualGameForm,
   type OriginInfo,
   type SettingsInfo,
+  type SteamGameForm,
   type SteamSyncInfo,
   type SystemInfo
 } from './contract'
@@ -49,6 +50,14 @@ export const manualGameFormSchema = z.strictObject({
 
 export const gamesCreateArgs = z.tuple([manualGameFormSchema])
 export const gamesUpdateArgs = z.tuple([id, manualGameFormSchema])
+export const steamGameFormSchema = manualGameFormSchema.pick({
+  description: true,
+  developer: true,
+  releaseDate: true,
+  requiredAge: true,
+  genres: true
+}) satisfies z.ZodType<SteamGameForm>
+export const gamesUpdateSteamArgs = z.tuple([id, steamGameFormSchema])
 export const gameIdArgs = z.tuple([id])
 export const gamesSetFlagsArgs = z.tuple([
   id,

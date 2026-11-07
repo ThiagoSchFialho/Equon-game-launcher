@@ -192,6 +192,7 @@ export function installFakeApi(
       getEditable: async () => null,
       create: async () => ({ ok: true, data: { id: 99 } }),
       update: async (id) => ({ ok: true, data: { id } }),
+      updateSteam: async (id) => ({ ok: true, data: { id } }),
       remove: async () => ({ ok: true, data: null }),
       launch: async () => ({ ok: true, data: null }),
       installSteam: async () => ({ ok: true, data: null }),

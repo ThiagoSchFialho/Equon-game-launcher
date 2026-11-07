@@ -345,6 +345,13 @@ apenas de animação para mostrar que uma ação foi ativada.
 -   "Imagens da Steam" aparece só na imagem de fundo de jogos da Steam e abre uma galeria com o "Fundo da loja", quando o jogo tem um próprio, e as prints ("Print 1", "Print 2"...). Só são listadas imagens 16:9.
 -   Ações de remover nesta tela e nas Configurações usam o ícone `delete.svg`.
 
+### Adicionar e editar jogo
+
+-   Start salva de qualquer ponto do formulário, com a dica "Salvar" no
+    rodapé, como o botão principal: ao adicionar, abre a busca no IGDB; ao
+    editar, salva (jogos da Steam e os outros). Diálogos abertos por cima,
+    como o teclado virtual, ficam com o Start para si.
+
 ### Diálogos e notificações
 
 -   Usar diálogos para decisões que exigem confirmação.

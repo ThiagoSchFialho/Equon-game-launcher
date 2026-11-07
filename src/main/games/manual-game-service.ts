@@ -7,6 +7,7 @@ import {
   NotFoundError,
   OriginInUseError,
   saveManualGame,
+  validateGameDetails,
   validateManualGame,
   isAbsoluteWindowsPath,
   type EmulatorRepository,
@@ -34,7 +35,8 @@ import type {
   EmulatorInfo,
   ManualGameForm,
   OriginInfo,
-  Result
+  Result,
+  SteamGameForm
 } from '../../shared/ipc/contract'
 
 export interface ManualGameServiceDeps {
@@ -83,6 +85,8 @@ const toOriginInfo = (origin: Origin): OriginInfo => ({ ...origin })
 export interface ManualGameService {
   create(form: ManualGameForm): Promise<Result<{ id: number }>>
   update(id: number, form: ManualGameForm): Promise<Result<{ id: number }>>
+  /** Only the details of a Steam game; title, launch and playtime stay Steam's. */
+  updateSteam(id: number, form: SteamGameForm): Promise<Result<{ id: number }>>
   remove(id: number): Promise<Result<null>>
   launch(id: number): Promise<Result<null>>
   setFlags(id: number, flags: GameFlags): Promise<Result<null>>
@@ -119,16 +123,32 @@ export function createManualGameService(deps: ManualGameServiceDeps): ManualGame
         { inspector: deps.inspector, originExists, readShortcut: deps.readShortcut }
       )
       const game = saveManualGame(deps, input, id)
-      // Filled from IGDB: the genres of a game that has them are not replaced.
-      if (genres && genres.length > 0 && deps.genres.listForGame(game.id).length === 0) {
-        deps.genres.setGameGenres(game.id, genres)
-      }
+      fillGenres(game.id, genres)
       return { id: game.id }
     })
+
+  // Filled from IGDB: the genres of a game that has them are not replaced.
+  const fillGenres = (gameId: number, genres: string[] | undefined): void => {
+    if (genres && genres.length > 0 && deps.genres.listForGame(gameId).length === 0) {
+      deps.genres.setGameGenres(gameId, genres)
+    }
+  }
 
   return {
     create: (form: ManualGameForm) => save(form),
     update: (id: number, form: ManualGameForm) => save(form, id),
+
+    updateSteam: (id: number, form: SteamGameForm) =>
+      asResult(() => {
+        const { genres, ...fields } = form
+        const details = validateGameDetails(fields)
+        return deps.uow.transaction(() => {
+          // NotFoundError for anything but a Steam game.
+          const game = deps.games.updateSteamDetails(id, details)
+          fillGenres(game.id, genres)
+          return { id: game.id }
+        })
+      }),
 
     remove: (id: number): Promise<Result<null>> =>
       asResult(() => {

@@ -85,6 +85,7 @@ Regras:
 - `steam_playtime_baseline`, `steam_synced_at` e `playtime_offset` são internos: a interface mostra só `playtime` e `time_last_played`.
 - Possíveis duplicidades entre um jogo manual e um jogo Steam **não** são mescladas automaticamente: vão para revisão do usuário.
 - `metadata_fetched_at IS NULL` significa que os metadados ainda não foram obtidos (ou a tentativa falhou) e podem ser tentados de novo. Um jogo sem descrição de verdade, mas com `metadata_fetched_at` preenchido, **não** é buscado outra vez.
+- Em jogos Steam, o usuário pode editar só `description`, `developer`, `release_date` e `required_age` (decisão do dono do projeto, 2026-11-07). `title`, `steam_id`, `origin`, o tempo de jogo e a configuração de execução continuam vindo só da Steam. Por isso os metadados da loja (`appdetails`) **só preenchem esses campos quando estão vazios** e nunca trocam um valor já salvo; uma edição feita antes de os metadados chegarem não se perde.
 
 ### 3.2 Estado de instalação de jogos Steam (D-06, D-12)
 
@@ -360,7 +361,7 @@ Decisão do dono do projeto (Fase 6b): consultado em português (`l=brazilian&cc
 
 `name` e `required_age` não são usados (o título vem do manifesto local). Verificar o indicador de sucesso (`success: false` para apps que não são jogos ou não existem), tratar todos os campos como opcionais e normalizar antes de salvar (entidades HTML decodificadas, espaços colapsados). Validado em uma resposta real em 2026-11-03. Fila de 1 requisição a cada 1,5 s (limite informado pela comunidade: ~200 a cada 5 minutos).
 
-**Frequência (D-16):** consultado **apenas quando o jogo é descoberto ou adicionado**. Sem refresh periódico e sem refresh na abertura. Falha não conta como concluído (`metadata_fetched_at` continua `NULL`) e é tentada de novo em um refresh posterior da biblioteca, com tentativas limitadas. Nunca sobrescrever `hidden`/`beated` nem trocar valores válidos por vazios.
+**Frequência (D-16):** consultado **apenas quando o jogo é descoberto ou adicionado**. Sem refresh periódico e sem refresh na abertura. Falha não conta como concluído (`metadata_fetched_at` continua `NULL`) e é tentada de novo em um refresh posterior da biblioteca, com tentativas limitadas. Nunca sobrescrever `hidden`/`beated` nem trocar valores válidos por vazios. Descrição, desenvolvedora, data de lançamento e classificação só são gravadas quando o campo está vazio, porque o usuário pode tê-las editado (seção 3.1).
 
 ### 3.11 Sincronização do tempo de jogo com a Steam
 

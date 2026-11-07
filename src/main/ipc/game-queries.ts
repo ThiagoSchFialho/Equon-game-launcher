@@ -120,7 +120,8 @@ export function getGameDetails(deps: GameQueryDeps, id: number): GameDetails | n
       progress.total > 0
         ? { total: progress.total, unlocked: progress.unlocked, platinum: progress.platinum }
         : null,
-    editable: game.origin !== BuiltinOrigin.steam,
+    // Steam games edit only their details (owner decision); removing stays non-Steam only.
+    editable: true,
     launchable: launchIssue === null,
     launchIssue,
     // .url shortcuts hand the game to a store launcher: no process to observe.
@@ -128,11 +129,11 @@ export function getGameDetails(deps: GameQueryDeps, id: number): GameDetails | n
   }
 }
 
-/** The add/edit form values of a non-Steam game, or null. */
+/** The edit form values of a game, or null; a Steam game has no launch fields. */
 export function getEditableGame(deps: GameQueryDeps, id: number): EditableGame | null {
   const game = deps.games.getById(id)
-  if (!game || game.origin === BuiltinOrigin.steam) return null
-  const config = deps.configs.get(id)
+  if (!game) return null
+  const config = game.origin === BuiltinOrigin.steam ? null : deps.configs.get(id)
   return {
     id,
     form: {

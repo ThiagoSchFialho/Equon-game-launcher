@@ -24,6 +24,7 @@ const api: EquonApi = {
     getEditable: (id) => ipcRenderer.invoke(IpcChannel.gamesGetEditable, id),
     create: (form) => ipcRenderer.invoke(IpcChannel.gamesCreate, form),
     update: (id, form) => ipcRenderer.invoke(IpcChannel.gamesUpdate, id, form),
+    updateSteam: (id, form) => ipcRenderer.invoke(IpcChannel.gamesUpdateSteam, id, form),
     remove: (id) => ipcRenderer.invoke(IpcChannel.gamesRemove, id),
     launch: (id) => ipcRenderer.invoke(IpcChannel.gamesLaunch, id),
     installSteam: (id) => ipcRenderer.invoke(IpcChannel.gamesInstallSteam, id),
