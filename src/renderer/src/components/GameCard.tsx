@@ -1,9 +1,9 @@
 import type { GameSummary } from '../../../shared/ipc/contract'
 import type { FocusableOptions } from '../focus/focus-manager'
 import { useFocusable } from '../focus/focus-context'
+import beatenIcon from '../assets/icons/badge-beaten.svg'
 import hiddenIcon from '../assets/icons/badge-hidden.svg'
 import installedIcon from '../assets/icons/badge-installed.svg'
-import trophyIcon from '../assets/icons/trophy.svg'
 import { t } from '../strings'
 import { Artwork } from './Artwork'
 import './GameCard.css'
@@ -24,7 +24,7 @@ export function GameCard({ game, variant, ...focusOptions }: Props): React.JSX.E
     game.hidden && { label: t.library.hiddenBadge, icon: hiddenIcon },
     variant === 'square' &&
       game.installed === true && { label: t.library.installedBadge, icon: installedIcon },
-    variant === 'square' && game.beated && { label: t.library.beatenBadge, icon: trophyIcon }
+    variant === 'square' && game.beated && { label: t.library.beatenBadge, icon: beatenIcon }
   ].filter((badge) => badge !== false)
   return (
     <button

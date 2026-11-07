@@ -39,13 +39,13 @@
 .game-card__badge {
   display: grid;
   place-items: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2rem;
+  height: 2rem;
   background: var(--color-surface-raised);
   border-radius: 50%;
 }
 
 .game-card__badge img {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.25rem;
+  height: 1.25rem;
 }
