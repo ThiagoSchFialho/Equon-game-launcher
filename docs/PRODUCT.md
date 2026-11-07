@@ -222,6 +222,7 @@ limitações, condições de teste e método de inicialização suportado.
 -   Aba "Emuladores" para indicar o executável de cada emulador suportado.
 -   Aba "Sistema" com as opções "Iniciar em tela cheia" e "Iniciar com o
     sistema", desmarcadas por padrão.
+-   Aba "Armazenamento" com o espaço livre de cada disco.
 -   Aba "Sobre" com informações básicas do sistema.
 -   Opções para adicionar, editar e remover jogos manuais.
 -   Informações básicas de diagnóstico para facilitar suporte.

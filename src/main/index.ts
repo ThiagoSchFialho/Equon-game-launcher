@@ -21,6 +21,7 @@ import { registerIpcHandlers } from './ipc/register'
 import { createCrashPolicy } from './renderer-recovery'
 import { hardenApp } from './security/harden'
 import { createServices } from './services'
+import { listDrives } from './system/drives'
 import { createSystemControl } from './system/system-control'
 import type { SteamService } from './steam/steam-service'
 import type { AppOrigin } from './security/navigation'
@@ -243,6 +244,7 @@ app.whenReady().then(async () => {
   registerIpcHandlers(appOrigin, {
     ...services,
     launchCover,
+    listDrives: () => listDrives(process.env['SystemRoot']),
     system: createSystemControl({
       window: () => mainWindow,
       isGameRunning: () => services.runner.runningGameIds().length > 0,

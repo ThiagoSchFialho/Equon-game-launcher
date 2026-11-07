@@ -76,6 +76,16 @@ export const settingsSetSecretArgs = z.tuple([
 /** A checkbox of Settings › Sistema. */
 export const settingsSetEnabledArgs = z.tuple([z.boolean()])
 
+export const driveListSchema = z.array(
+  z.strictObject({
+    letter: z.string().regex(/^[A-Z]:$/),
+    label: z.string().nullable(),
+    removable: z.boolean(),
+    totalBytes: z.number().positive(),
+    freeBytes: z.number().nonnegative()
+  })
+)
+
 export const systemInfoSchema = z.strictObject({
   appVersion: z.string(),
   electron: z.string(),

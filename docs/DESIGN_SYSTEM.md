@@ -118,7 +118,8 @@ filtros do Início.
     abas, igual ao da página do jogo e alcançado com o direcional para cima;
     o trabalho em segundo plano aparece no rodapé.
 -   Layout (mockup `settings ideas2`): barra lateral com as abas
-    "Conexões", "Emuladores", "Sistema" e "Sobre"; conteúdo à direita.
+    "Conexões", "Emuladores", "Sistema", "Armazenamento" e "Sobre"; conteúdo
+    à direita.
 -   Conexões: Steam (ID Steam; chave da Steam API com Alterar/Remover ou
     Configurar; "Testar conexão"), SteamGridDB (chave; "Testar conexão")
     e o painel "Biblioteca" com "Atualizar biblioteca" e o resultado da
@@ -131,6 +132,9 @@ filtros do Início.
 -   Sistema: checkboxes "Iniciar em tela cheia" e "Iniciar com o sistema",
     salvos assim que mudam. A segunda fica indisponível, com o motivo, fora
     da versão instalada.
+-   Armazenamento: um cartão por disco local ou removível, com nome e letra,
+    barra do espaço usado e "X GB livres de Y GB", lidos ao abrir a aba. A
+    barra usa `color.install` e fica em `color.danger` com menos de 10% livre.
 -   Sobre: versão do Equon, sistema, pasta da Steam detectada, pasta de
     dados, versão do banco e versões de Electron, Chromium e Node.js.
 
@@ -163,7 +167,7 @@ de iluminação.
   `color.play`             `#21963A`      Botão "Jogar", com texto claro, em
                                           tom parecido com o da Steam
 
-  `color.install`          `#2A7FE0`      Botão "Instalar" de jogos da Steam,
+  `color.install`          `#2A7FE0`      Barra de disco e botão "Instalar" de jogos da Steam,
                                           com texto claro, em tom parecido
                                           com o da Steam
 

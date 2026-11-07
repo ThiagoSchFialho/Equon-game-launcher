@@ -13,6 +13,19 @@ export function formatPercent(percent: number): string {
   return `${Math.floor(percent)}%`
 }
 
+const number = (value: number, digits: number): string =>
+  (Math.floor(value * 10 ** digits) / 10 ** digits).toLocaleString('pt-BR', {
+    maximumFractionDigits: digits
+  })
+
+/** As Windows shows it, in units of 1024 and cut, not rounded: "75,5 GB", "931 GB", "1,5 TB". */
+export function formatBytes(bytes: number): string {
+  const gb = bytes / 1024 ** 3
+  if (gb >= 1024) return `${number(gb / 1024, 1)} TB`
+  if (gb >= 1) return `${number(gb, gb < 100 ? 1 : 0)} GB`
+  return `${number(bytes / 1024 ** 2, 0)} MB`
+}
+
 const MS_PER_DAY = 86_400_000
 
 function localDayNumber(date: Date): number {

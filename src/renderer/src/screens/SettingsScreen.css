@@ -233,6 +233,55 @@
   border-radius: var(--radius-panel);
 }
 
+.settings__drives {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.settings__drive {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+}
+
+.settings__drive-name {
+  margin: 0;
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-medium);
+}
+
+.settings__drive-bar {
+  height: 1.25rem;
+  overflow: hidden;
+  background: var(--color-surface-raised);
+  border-radius: var(--radius-button);
+}
+
+.settings__drive-used {
+  height: 100%;
+  background: var(--color-install);
+  transform-origin: left;
+}
+
+.settings__drive-used[data-low='true'] {
+  background: var(--color-danger);
+}
+
+.settings__drive-space {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-meta);
+}
+
 .settings__about {
   display: flex;
   flex-direction: column;

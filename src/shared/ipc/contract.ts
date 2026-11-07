@@ -5,6 +5,7 @@
 export const IpcChannel = {
   appGetInfo: 'app:get-info',
   appGetSystemInfo: 'app:get-system-info',
+  appListDrives: 'app:list-drives',
   appIsFullscreen: 'app:is-fullscreen',
   appToggleFullscreen: 'app:toggle-fullscreen',
   appClaimFocus: 'app:claim-focus',
@@ -80,6 +81,17 @@ export const IpcEvent = {
 export interface AppInfo {
   name: string
   version: string
+}
+
+/** Settings › Armazenamento: one disk of this PC. */
+export interface DriveInfo {
+  /** "C:" */
+  letter: string
+  /** The name given in Windows; null when it has none. */
+  label: string | null
+  removable: boolean
+  totalBytes: number
+  freeBytes: number
 }
 
 /** Settings › Sobre. */
@@ -467,6 +479,8 @@ export interface EquonApi {
   app: {
     getInfo(): Promise<AppInfo>
     getSystemInfo(): Promise<SystemInfo>
+    /** Settings › Armazenamento. */
+    listDrives(): Promise<Result<DriveInfo[]>>
     isFullscreen(): Promise<boolean>
     /** Resolves with the new state. */
     toggleFullscreen(): Promise<boolean>

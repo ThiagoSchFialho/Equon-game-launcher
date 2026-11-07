@@ -380,7 +380,21 @@ export const t = {
   },
   settings: {
     title: 'Configurações',
-    tabs: { connections: 'Conexões', emulators: 'Emuladores', system: 'Sistema', about: 'Sobre' },
+    tabs: {
+      connections: 'Conexões',
+      emulators: 'Emuladores',
+      system: 'Sistema',
+      storage: 'Armazenamento',
+      about: 'Sobre'
+    },
+    storage: {
+      loading: 'Lendo os discos…',
+      error: 'Não foi possível ler os discos.',
+      empty: 'Nenhum disco encontrado.',
+      local: 'Disco Local',
+      removable: 'Disco removível',
+      space: (free: string, total: string) => `${free} livres de ${total}`
+    },
     system: {
       startFullscreen: 'Iniciar em tela cheia',
       startFullscreenHint:

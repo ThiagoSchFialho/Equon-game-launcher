@@ -3,7 +3,7 @@ import { fetchIgdbFill, searchIgdbGames } from '../../integrations/igdb/games'
 import type { IgdbClient, IgdbResult } from '../../integrations/igdb/igdb'
 import type { BackgroundActivityTracker } from '../background-activity'
 import type { GameRunner, UserRepository } from '../../core/application'
-import { IpcChannel, type SystemInfo } from '../../shared/ipc/contract'
+import { IpcChannel, type DriveInfo, type Result, type SystemInfo } from '../../shared/ipc/contract'
 import {
   appGetInfoArgs,
   appInfoSchema,
@@ -33,6 +33,7 @@ import {
   resultSchema,
   runningIdsSchema,
   libraryRefreshInfoSchema,
+  driveListSchema,
   settingsInfoSchema,
   settingsSetEnabledArgs,
   settingsSetSecretArgs,
@@ -104,6 +105,8 @@ export interface IpcDeps {
   settings: SettingsService
   /** Settings › Sobre. */
   systemInfo?: () => SystemInfo
+  /** Settings › Armazenamento. */
+  listDrives?: () => Promise<Result<DriveInfo[]>>
   /** The system menu (D-21). */
   system?: SystemControl
   /** The image that covers the screen while a game opens (D-22). */
@@ -140,6 +143,14 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
     ipcMain.handle(
       IpcChannel.appGetSystemInfo,
       createValidatedHandler(noArgs, systemInfoSchema, trusted, () => systemInfo())
+    )
+  }
+
+  if (deps.listDrives) {
+    const list = deps.listDrives
+    ipcMain.handle(
+      IpcChannel.appListDrives,
+      createValidatedHandler(noArgs, resultSchema(driveListSchema), trusted, () => list())
     )
   }
 

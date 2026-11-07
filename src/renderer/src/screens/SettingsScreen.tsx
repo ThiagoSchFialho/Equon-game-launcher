@@ -13,6 +13,7 @@ import editIcon from '../assets/icons/edit.svg'
 import gamepadIcon from '../assets/icons/gamepad.svg'
 import infoIcon from '../assets/icons/info.svg'
 import settingsIcon from '../assets/icons/settings.svg'
+import storageIcon from '../assets/icons/storage.svg'
 import steamIcon from '../assets/icons/steam-white.svg'
 import syncIcon from '../assets/icons/sync.svg'
 import { currentSection, useNavigation } from '../app/navigation'
@@ -24,6 +25,7 @@ import { Footer, type Hint } from '../components/Footer'
 import { FormRow } from '../components/FormRow'
 import { OnScreenKeyboard } from '../components/OnScreenKeyboard'
 import { StateMessage } from '../components/StateMessage'
+import { StorageSettings } from '../components/StorageSettings'
 import { SystemSettings } from '../components/SystemSettings'
 import { useGames } from '../data/games'
 import { useFocusable, useScreenActions } from '../focus/focus-context'
@@ -31,7 +33,7 @@ import { FocusScope } from '../focus/FocusProvider'
 import { errorMessage, t } from '../strings'
 import './SettingsScreen.css'
 
-type Tab = 'connections' | 'emulators' | 'system' | 'about'
+type Tab = 'connections' | 'emulators' | 'system' | 'storage' | 'about'
 type Overlay = { kind: 'steamId' } | { kind: 'secret'; secret: SecretKind; label: string }
 
 const HINTS: Hint[] = [
@@ -39,7 +41,7 @@ const HINTS: Hint[] = [
   { button: 'B', label: t.hints.back }
 ]
 
-/** Settings (mockup "settings ideas2"): Conexões, Emuladores, Sistema and Sobre. Keys never come back from main. */
+/** Settings (mockup "settings ideas2"): Conexões, Emuladores, Sistema, Armazenamento and Sobre. Keys never come back from main. */
 export function SettingsScreen(): React.JSX.Element {
   const navigation = useNavigation()
   const [tab, setTab] = useState<Tab>('connections')
@@ -86,6 +88,8 @@ export function SettingsScreen(): React.JSX.Element {
     content = <EmulatorsSettings />
   } else if (tab === 'system') {
     content = <SystemSettings info={info} onChanged={setInfo} />
+  } else if (tab === 'storage') {
+    content = <StorageSettings />
   } else {
     content = <About steamPath={info.steamPath} />
   }
@@ -134,6 +138,13 @@ export function SettingsScreen(): React.JSX.Element {
                 icon={settingsIcon}
                 label={t.settings.tabs.system}
                 selected={tab === 'system'}
+                onSelect={setTab}
+              />
+              <SettingsTab
+                id="storage"
+                icon={storageIcon}
+                label={t.settings.tabs.storage}
+                selected={tab === 'storage'}
                 onSelect={setTab}
               />
               <SettingsTab

@@ -109,6 +109,7 @@ export function installFakeApi(
         dataPath: 'C:\\Users\\u\\AppData\\Roaming\\equon-game-launcher-dev',
         schemaVersion: 12
       }),
+      listDrives: async () => ({ ok: true, data: [] }),
       isFullscreen: async () => false,
       toggleFullscreen: async () => true,
       claimFocus: async () => true,

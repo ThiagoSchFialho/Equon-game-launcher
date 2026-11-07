@@ -11,6 +11,7 @@ const api: EquonApi = {
   app: {
     getInfo: () => ipcRenderer.invoke(IpcChannel.appGetInfo),
     getSystemInfo: () => ipcRenderer.invoke(IpcChannel.appGetSystemInfo),
+    listDrives: () => ipcRenderer.invoke(IpcChannel.appListDrives),
     isFullscreen: () => ipcRenderer.invoke(IpcChannel.appIsFullscreen),
     toggleFullscreen: () => ipcRenderer.invoke(IpcChannel.appToggleFullscreen),
     claimFocus: () => ipcRenderer.invoke(IpcChannel.appClaimFocus),
