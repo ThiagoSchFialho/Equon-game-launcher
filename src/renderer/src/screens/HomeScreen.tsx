@@ -46,11 +46,14 @@ function Carousel({
   })
   const focusedGame = games[Math.min(index, games.length - 1)]
   return (
-    <div className="home__carousel">
-      {/* The focused card stays at a fixed position; the track moves with transform. */}
-      <div className="home__track" style={{ '--index': index } as React.CSSProperties}>
+    <div
+      className="home__carousel"
+      style={{ '--index': index, '--count': games.length } as React.CSSProperties}
+    >
+      {/* The focused card goes to the middle; the track moves with transform (HomeScreen.css). */}
+      <div className="home__track">
         {games.map((game, i) => (
-          <div key={game.id} className="home__slot" data-before={i < index}>
+          <div key={game.id} className="home__slot">
             <GameCard
               game={game}
               variant="portrait"

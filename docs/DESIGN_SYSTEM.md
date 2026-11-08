@@ -54,6 +54,13 @@ Mostra todos os jogos instalados e não ocultos (sem limite), pela última sess�
 recente primeiro). A regra é fixa; o usuário não altera a ordem nem os
 filtros do Início.
 
+Os cards ficam numa fila horizontal, e o card em foco fica no centro da
+tela, com o nome e o tempo de jogo embaixo dele (decisão do dono do
+projeto). Nas pontas a fila para, sem espaço vazio antes do primeiro card
+nem depois do último: o primeiro fica na margem esquerda e o último à
+mesma distância da direita, então ali o card em foco sai do centro. Se
+todos couberem na tela, a fila fica parada a partir da esquerda.
+
 ### Biblioteca
 
 -   Densidade equilibrada: cards grandes o suficiente para reconhecer a
@@ -237,7 +244,7 @@ separados por resolução.
 Adotar uma escala baseada em múltiplos de 4 px: - `space-1`: 4 px -
 `space-2`: 8 px - `space-3`: 12 px - `space-4`: 16 px - `space-5`: 20
 px - `space-6`: 24 px - `space-8`: 32 px - `space-10`: 40 px -
-`space-12`: 48 px - `space-16`: 64 px
+`space-12`: 48 px - `space-14`: 56 px - `space-16`: 64 px
 
 Usar margens externas generosas e espaçamento consistente entre regiões.
 Ajustar densidade pela composição, não reduzindo indiscriminadamente

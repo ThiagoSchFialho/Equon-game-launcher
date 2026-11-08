@@ -1,7 +1,21 @@
+/*
+ * The focused card sits in the middle of the screen (owner decision). At the ends the track
+ * stops instead, so there is no empty space before the first card or after the last: the
+ * first stays at the left edge and the last at the same distance from the right edge.
+ * `--index` (focused card) and `--count` come from the component; 100cqw is this width.
+ */
 .home__carousel {
-  --card-width: 26.625rem;
-  --card-gap: var(--space-12);
-  padding: calc(var(--space-16) + var(--space-12)) 0 0 13.625rem;
+  --card-width: 25.5rem;
+  --card-gap: var(--space-14);
+  /* Where the first card sits, and the same distance from the right for the last one. */
+  --edge: 13.625rem;
+  --step: calc(var(--card-width) + var(--card-gap));
+  --track: calc(var(--count) * var(--card-width) + (var(--count) - 1) * var(--card-gap));
+  --centered: calc(50cqw - var(--card-width) / 2 - var(--index) * var(--step));
+  /* min/max order: with few games the track just stays at the left edge. */
+  --shift: min(var(--edge), max(calc(100cqw - var(--edge) - var(--track)), var(--centered)));
+  container-type: inline-size;
+  padding: calc(var(--space-16) + var(--space-12)) 0 0;
   overflow: hidden;
   height: 100%;
 }
@@ -11,23 +25,21 @@
   gap: var(--card-gap);
   /* Pad vertically so the focus ring is never clipped by overflow. */
   padding: var(--space-2) 0;
-  transform: translateX(calc(var(--index) * -1 * (var(--card-width) + var(--card-gap))));
+  transform: translateX(var(--shift));
   transition: transform var(--motion-screen) var(--motion-easing);
 }
 
+/* Every card at full strength, before and after the focused one (owner decision). */
 .home__slot {
   flex: 0 0 var(--card-width);
-  transition: opacity var(--motion-screen) var(--motion-easing);
 }
 
-/* Cards already passed fade out so they don't compete with the focused one. */
-.home__slot[data-before='true'] {
-  opacity: 0.25;
-}
-
+/* Under the focused card, wherever the track put it. */
 .home__focused-info {
   width: var(--card-width);
   padding-top: var(--space-6);
+  transform: translateX(calc(var(--shift) + var(--index) * var(--step)));
+  transition: transform var(--motion-screen) var(--motion-easing);
 }
 
 .home__title {

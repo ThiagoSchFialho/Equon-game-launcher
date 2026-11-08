@@ -342,13 +342,13 @@ describe('home rules', () => {
     act(() => chosen.click())
     await waitFor(() => expect(document.querySelector('.home__track')).toBeNull())
 
-    // The index the track has the moment it enters the page.
+    // The index the carousel has the moment it enters the page.
     const first: (string | undefined)[] = []
     const observer = new MutationObserver((records) => {
       for (const record of records) {
         for (const node of record.addedNodes) {
-          const track = (node as Element).querySelector?.<HTMLElement>('.home__track')
-          if (track) first.push(track.style.getPropertyValue('--index'))
+          const carousel = (node as Element).querySelector?.<HTMLElement>('.home__carousel')
+          if (carousel) first.push(carousel.style.getPropertyValue('--index'))
         }
       }
     })
