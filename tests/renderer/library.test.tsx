@@ -329,6 +329,36 @@ describe('manual flags from the options menu', () => {
   })
 })
 
+describe('home: name under the focused card', () => {
+  it('fades out, then shows the new name under the new card, without sliding', async () => {
+    installFakeApi([summary(1, 'Alpha'), summary(2, 'Beta')])
+    render(<App />)
+    const info = (): HTMLElement => document.querySelector('.home__focused-info') as HTMLElement
+    // The Home orders by last session: read the order instead of assuming it.
+    const onTrack = (): string[] =>
+      Array.from(document.querySelectorAll('.home__track .game-card')).map(
+        (card) => card.getAttribute('aria-label') ?? ''
+      )
+    await waitFor(() => expect(onTrack()).toHaveLength(2))
+    const [first, second] = onTrack()
+    await waitFor(() => expect(info()?.textContent).toContain(first))
+    // Opening the screen is not a change: nothing fades.
+    expect(info().getAttribute('data-hidden')).toBe('false')
+    expect(info().style.getPropertyValue('--index')).toBe('0')
+
+    press('ArrowRight')
+    const focused = document.querySelector('[data-focused="true"]')?.getAttribute('aria-label')
+    expect(focused).toBe(second)
+    // Hidden at once, still the old name and place.
+    expect(info().getAttribute('data-hidden')).toBe('true')
+    expect(info().textContent).toContain(first)
+
+    await waitFor(() => expect(info().getAttribute('data-hidden')).toBe('false'))
+    expect(info().textContent).toContain(second)
+    expect(info().style.getPropertyValue('--index')).toBe('1')
+  })
+})
+
 describe('home rules', () => {
   it('comes back from a game already on its card, without the track travelling', async () => {
     installFakeApi([summary(1, 'A'), summary(2, 'B'), summary(3, 'C')])

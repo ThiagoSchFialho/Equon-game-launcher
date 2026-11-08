@@ -45,15 +45,23 @@
   --card-gap: var(--space-14);
   /* Where the first card sits, and the same distance from the right for the last one. */
   --edge: 13.625rem;
+  container-type: inline-size;
+  padding: calc(var(--space-16) + var(--space-12)) 0 0;
+  overflow: hidden;
+  height: 100%;
+}
+
+/*
+ * Where the track stands for the card `--index`. Declared on both: the name below the cards
+ * has an `--index` of its own (the card it is under), so it works the formula out for it.
+ */
+.home__carousel,
+.home__focused-info {
   --step: calc(var(--card-width) + var(--card-gap));
   --track: calc(var(--count) * var(--card-width) + (var(--count) - 1) * var(--card-gap));
   --centered: calc(50cqw - var(--card-width) / 2 - var(--index) * var(--step));
   /* min/max order: with few games the track just stays at the left edge. */
   --shift: min(var(--edge), max(calc(100cqw - var(--edge) - var(--track)), var(--centered)));
-  container-type: inline-size;
-  padding: calc(var(--space-16) + var(--space-12)) 0 0;
-  overflow: hidden;
-  height: 100%;
 }
 
 .home__track {
@@ -70,12 +78,20 @@
   flex: 0 0 var(--card-width);
 }
 
-/* Under the focused card, wherever the track put it. */
+/*
+ * Under the focused card, wherever the track puts it. It does not slide along (owner
+ * decision): a quick fade out, a jump while hidden, a quick fade in (HomeScreen.tsx).
+ */
 .home__focused-info {
   width: var(--card-width);
   padding-top: var(--space-6);
   transform: translateX(calc(var(--shift) + var(--index) * var(--step)));
-  transition: transform var(--motion-screen) var(--motion-easing);
+  transition: opacity var(--info-fade) var(--motion-easing);
+  --info-fade: calc(var(--motion-focus) / 2);
+}
+
+.home__focused-info[data-hidden='true'] {
+  opacity: 0;
 }
 
 .home__title {

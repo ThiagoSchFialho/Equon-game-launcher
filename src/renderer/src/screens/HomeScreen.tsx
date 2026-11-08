@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { GameSummary } from '../../../shared/ipc/contract'
 import homeClockIcon from '../assets/icons/home-clock.svg'
 import { useNavigation } from '../app/navigation'
@@ -10,6 +10,7 @@ import { TopBar } from '../components/TopBar'
 import { formatPlaytime } from '../data/format'
 import { useGames } from '../data/games'
 import { useFocusManager, useScreenActions } from '../focus/focus-context'
+import { prefersReducedMotion } from '../focus/focus-manager'
 import { FocusScope } from '../focus/FocusProvider'
 import { homeGames } from '../../../shared/library-view'
 import { t } from '../strings'
@@ -26,6 +27,8 @@ const MENU_HINTS: Hint[] = [
 ]
 
 const HOME_SCOPE = 'screen:home'
+/** Each half of the name's fade: half of --motion-focus (HomeScreen.css). */
+const INFO_FADE_MS = 70
 
 function Carousel({
   games,
@@ -44,7 +47,33 @@ function Carousel({
       0
     )
   })
-  const focusedGame = games[Math.min(index, games.length - 1)]
+  // The name and playtime fade out, move while hidden and fade in under the new card.
+  const [infoIndex, setInfoIndex] = useState(index)
+  const [infoHidden, setInfoHidden] = useState(false)
+  const infoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () => () => {
+      if (infoTimer.current) clearTimeout(infoTimer.current)
+    },
+    []
+  )
+  const focusCard = (i: number): void => {
+    setIndex(i)
+    // Already there, as when the screen opens or comes back: nothing to fade.
+    if (i === infoIndex && !infoTimer.current) return
+    if (infoTimer.current) clearTimeout(infoTimer.current)
+    // A held direction keeps it hidden: it only shows where the focus stops.
+    setInfoHidden(true)
+    infoTimer.current = setTimeout(
+      () => {
+        infoTimer.current = null
+        setInfoIndex(i)
+        setInfoHidden(false)
+      },
+      prefersReducedMotion() ? 0 : INFO_FADE_MS
+    )
+  }
+  const focusedGame = games[Math.min(infoIndex, games.length - 1)]
   return (
     <div
       className="home__carousel"
@@ -59,7 +88,7 @@ function Carousel({
               variant="portrait"
               scroll="none"
               autoFocus={i === 0}
-              onFocus={() => setIndex(i)}
+              onFocus={() => focusCard(i)}
               onConfirm={() => navigation.openGame(game.id)}
               onMenu={() => onMenu(game)}
             />
@@ -67,7 +96,11 @@ function Carousel({
         ))}
       </div>
       {focusedGame && (
-        <div className="home__focused-info">
+        <div
+          className="home__focused-info"
+          data-hidden={infoHidden}
+          style={{ '--index': infoIndex } as React.CSSProperties}
+        >
           <p className="home__title">{focusedGame.title}</p>
           {focusedGame.playtime > 0 && (
             <p className="home__playtime">

@@ -59,7 +59,10 @@ tela, com o nome e o tempo de jogo embaixo dele (decisão do dono do
 projeto). Nas pontas a fila para, sem espaço vazio antes do primeiro card
 nem depois do último: o primeiro fica na margem esquerda e o último à
 mesma distância da direita, então ali o card em foco sai do centro. Se
-todos couberem na tela, a fila fica parada a partir da esquerda.
+todos couberem na tela, a fila fica parada a partir da esquerda. Quando o
+foco muda, o nome e o tempo de jogo não deslizam junto: somem num fade
+rápido e aparecem num fade rápido embaixo do novo card (metade de
+`--motion-focus` cada; sem fade com movimento reduzido).
 
 O fundo do Início não é liso (decisão do dono do projeto): sobre
 `--color-background` há um brilho radial bem sutil do centro, na cor
