@@ -21,7 +21,6 @@ files:
   - '!node_modules/better-sqlite3/prebuilds/win32-arm64*'
 # A native module cannot be loaded from inside the asar archive.
 asarUnpack:
-  - resources/**
   - '**/*.node'
 win:
   executableName: equon
