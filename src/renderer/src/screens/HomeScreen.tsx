@@ -120,7 +120,7 @@ export function HomeScreen(): React.JSX.Element {
 
   return (
     <FocusScope id={HOME_SCOPE}>
-      <div className="screen">
+      <div className="screen home">
         <TopBar active="home" />
         <main className="screen__main">{content}</main>
         <Footer hints={menuGame ? MENU_HINTS : HINTS} />

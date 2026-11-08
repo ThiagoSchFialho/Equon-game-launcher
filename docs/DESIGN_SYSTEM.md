@@ -61,6 +61,13 @@ nem depois do último: o primeiro fica na margem esquerda e o último à
 mesma distância da direita, então ali o card em foco sai do centro. Se
 todos couberem na tela, a fila fica parada a partir da esquerda.
 
+O fundo do Início não é liso (decisão do dono do projeto): sobre
+`--color-background` há um brilho radial bem sutil do centro, na cor
+`--color-surface-raised`, e uma vinheta igualmente sutil que escurece as
+bordas. Ambos são estáticos; o rodapé mantém a cor própria. Para não
+aparecerem anéis entre os tons (banding, em telas de 8 bits), os degradês
+usam paradas suavizadas e um ruído fino, quase invisível, por cima.
+
 ### Biblioteca
 
 -   Densidade equilibrada: cards grandes o suficiente para reconhecer a

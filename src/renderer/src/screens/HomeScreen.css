@@ -1,4 +1,40 @@
 /*
+ * A less empty background (owner decision), both very subtle: a glow from the middle in the
+ * raised surface color, and a vignette that darkens the edges. Static; the footer keeps its own.
+ *
+ * Such a small change of color has few shades on an 8-bit screen and shows as rings (owner's
+ * report). Two remedies: eased stops instead of a straight line, and a fine noise on top that
+ * dithers the steps away. The noise is a tiny inline SVG (the CSP allows data: images).
+ */
+.home {
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  background:
+    var(--noise),
+    radial-gradient(
+      ellipse at center,
+      transparent 50%,
+      rgb(0 0 0 / 0.04) 62%,
+      rgb(0 0 0 / 0.12) 74%,
+      rgb(0 0 0 / 0.23) 87%,
+      rgb(0 0 0 / 0.35) 100%
+    ),
+    radial-gradient(
+      ellipse at center,
+      color-mix(in srgb, var(--color-surface-raised) 60%, transparent) 0%,
+      color-mix(in srgb, var(--color-surface-raised) 50%, transparent) 15%,
+      color-mix(in srgb, var(--color-surface-raised) 33%, transparent) 32%,
+      color-mix(in srgb, var(--color-surface-raised) 15%, transparent) 50%,
+      color-mix(in srgb, var(--color-surface-raised) 4%, transparent) 62%,
+      transparent 70%
+    ),
+    var(--color-background);
+  background-size:
+    160px 160px,
+    auto,
+    auto;
+}
+
+/*
  * The focused card sits in the middle of the screen (owner decision). At the ends the track
  * stops instead, so there is no empty space before the first card or after the last: the
  * first stays at the left edge and the last at the same distance from the right edge.
