@@ -74,7 +74,8 @@ usam paradas suavizadas e um ruído fino, quase invisível, por cima.
     arte, com quantidade suficiente para navegar pela coleção.
 -   Busca, filtro e ordenação acessíveis sem abandonar o contexto.
 -   O card em foco fica no centro da lista, e a rolagem acompanha o foco
-    mesmo com o direcional segurado.
+    mesmo com o direcional segurado. Passar de uma linha para a outra leva
+    cerca de 125 ms (decisão do dono do projeto: metade do tempo anterior).
 -   Barra: campo de busca, "Filtrar" e "Ordenar" à esquerda;
     "Adicionar jogo" à direita. "Ordenar" ou X (controle ou teclado) abrem
     as opções de ordenação. "Filtrar", que mostra quantos filtros estão

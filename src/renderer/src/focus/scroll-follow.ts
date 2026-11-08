@@ -5,8 +5,11 @@
  * time, so the distance stays bounded: speed × time constant.
  */
 
-/** Smaller is faster: about 5× this to finish a single step. */
-export const FOLLOW_TIME_CONSTANT_MS = 50
+/**
+ * Smaller is faster: about 5× this to finish a single step. Halved from 50 (owner decision):
+ * a row of the Library now settles in about 125 ms.
+ */
+export const FOLLOW_TIME_CONSTANT_MS = 25
 /** Closer than this is already there. */
 const ARRIVED_PX = 0.5
 

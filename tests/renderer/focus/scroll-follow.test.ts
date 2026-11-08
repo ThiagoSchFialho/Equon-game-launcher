@@ -17,6 +17,16 @@ describe('followStep', () => {
     expect(followStep(0, 1000, 100_000)).toBe(1000)
   })
 
+  it('settles one row of the Library in under 200 ms (owner: twice as fast as before)', () => {
+    let position = 0
+    let elapsed = 0
+    while (position !== 311) {
+      position = followStep(position, 311, 16)
+      elapsed += 16
+    }
+    expect(elapsed).toBeLessThan(200)
+  })
+
   it('arrives exactly, so the animation can end', () => {
     expect(followStep(999.8, 1000, 16)).toBe(1000)
     expect(followStep(1000, 1000, 16)).toBe(1000)
