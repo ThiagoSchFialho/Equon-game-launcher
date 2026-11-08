@@ -229,7 +229,11 @@ limitações, condições de teste e método de inicialização suportado.
     jogos comprados e não instalados da conta Steam.
 -   Aba "Emuladores" para indicar o executável de cada emulador suportado.
 -   Aba "Sistema" com as opções "Iniciar em tela cheia" e "Iniciar com o
-    sistema", desmarcadas por padrão.
+    sistema", desmarcadas por padrão, e "Sons da interface", marcada por
+    padrão.
+-   Sons da interface: ao mover o foco, confirmar, voltar, jogar ou
+    instalar, abrir um modal e abrir o menu do sistema. Em silêncio
+    enquanto um jogo está aberto ou com o Equon em segundo plano.
 -   Aba "Armazenamento" com o espaço livre de cada disco.
 -   Aba "Sobre" com informações básicas do sistema.
 -   Opções para adicionar, editar e remover jogos manuais.

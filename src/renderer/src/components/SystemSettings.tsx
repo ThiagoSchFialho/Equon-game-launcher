@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import type { Result, SettingsInfo } from '../../../shared/ipc/contract'
+import { useUiSounds } from '../sound/sound-context'
 import { errorMessage, t } from '../strings'
 import { Checkbox } from './Checkbox'
 
-type Option = 'startFullscreen' | 'openAtLogin'
+type Option = 'startFullscreen' | 'openAtLogin' | 'uiSounds'
 
 /** Settings › Sistema (D-20): each checkbox is saved as soon as it changes. */
 export function SystemSettings({
@@ -14,8 +15,13 @@ export function SystemSettings({
   onChanged: (info: SettingsInfo) => void
 }): React.JSX.Element {
   const [errors, setErrors] = useState<Partial<Record<Option, string>>>({})
+  const sounds = useUiSounds()
 
-  const apply = (option: Option, action: Promise<Result<SettingsInfo>>): void => {
+  const apply = (
+    option: Option,
+    action: Promise<Result<SettingsInfo>>,
+    afterSave?: (saved: SettingsInfo) => void
+  ): void => {
     const fail = (message: string): void => setErrors((e) => ({ ...e, [option]: message }))
     action.then(
       (result) => {
@@ -24,6 +30,7 @@ export function SystemSettings({
           return
         }
         setErrors((e) => ({ ...e, [option]: undefined }))
+        afterSave?.(result.data)
         onChanged(result.data)
       },
       () => fail(t.settings.system.saveFailed)
@@ -64,6 +71,22 @@ export function SystemSettings({
         {errors.openAtLogin && (
           <p className="form-row__error" role="alert">
             {errors.openAtLogin}
+          </p>
+        )}
+        <Checkbox
+          id="settings:ui-sounds"
+          label={t.settings.system.uiSounds}
+          description={t.settings.system.uiSoundsHint}
+          checked={info.uiSounds}
+          onChange={(checked) =>
+            apply('uiSounds', window.equon.settings.setUiSounds(checked), (saved) =>
+              sounds.setEnabled(saved.uiSounds)
+            )
+          }
+        />
+        {errors.uiSounds && (
+          <p className="form-row__error" role="alert">
+            {errors.uiSounds}
           </p>
         )}
       </div>

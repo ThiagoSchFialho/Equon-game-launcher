@@ -20,6 +20,7 @@ import {
 } from '../data/achievements'
 import { useFocusable, useFocusFirstOnChange, useScreenActions } from '../focus/focus-context'
 import { FocusScope } from '../focus/FocusProvider'
+import { useUiSounds } from '../sound/sound-context'
 import { t } from '../strings'
 import './AchievementsScreen.css'
 
@@ -44,11 +45,16 @@ export function AchievementsScreen(): React.JSX.Element {
     if (!running) void window.equon.achievements.syncAll()
   }
   const toggleSort = (): void => setSort(nextAchievementSort(sort))
+  const sounds = useUiSounds()
 
   useScreenActions({
     previousSection: () => navigation.stepSection(-1),
     nextSection: () => navigation.stepSection(1),
-    secondary: toggleSort,
+    // X changes the sort at once, with the sound of confirming it (owner decision).
+    secondary: () => {
+      sounds.play('confirm')
+      toggleSort()
+    },
     tertiary: sync
   })
 

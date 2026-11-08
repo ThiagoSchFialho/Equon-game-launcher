@@ -222,6 +222,12 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
     )
   )
   ipcMain.handle(
+    IpcChannel.settingsSetUiSounds,
+    createValidatedHandler(settingsSetEnabledArgs, settingsResult, trusted, (enabled) =>
+      deps.settings.setUiSounds(enabled)
+    )
+  )
+  ipcMain.handle(
     IpcChannel.settingsSetSecret,
     createValidatedHandler(settingsSetSecretArgs, settingsResult, trusted, (kind, value) => {
       const result = deps.settings.setSecret(kind, value)

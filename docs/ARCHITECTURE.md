@@ -73,6 +73,7 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-21 | System menu | Accepted | Xbox button or footer icon, on any screen: fullscreen, settings, shutdown, quit; see §3.20 |
 | D-22 | Image over the screen while a game opens | Accepted | Own topmost window; the game starts once covered; leaves 2 s after a new process takes the foreground; see §3.21 |
 | D-23 | Installing and uninstalling Steam games | Accepted | Steam's own windows, through `steam://install` and `steam://uninstall`, built in main; see §3.22 |
+| D-24 | Interface sounds | Accepted | Sounds on moving, confirming, going back and opening modals; on by default, `USERS.ui_sounds`; silent while a game runs; see §3.23 |
 | D-16 | Refresh frequency for `appdetails` metadata | Accepted | Fetched only when a game is discovered/added; failed fetches are retried (§3.14) |
 | D-17 | Steam launch mechanism | Accepted | `steam://rungameid/<appid>`, built in the main process (§3.12) |
 
@@ -437,6 +438,18 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 **Not adopted.** Automating Steam's windows with simulated clicks, since a wrong click could confirm an uninstall and Steam may change those windows at any time; and SteamCMD, which would need the user's Steam password.
 
 **Not measured yet:** whether Steam's window appears in front of the launcher in fullscreen, and what the page shows while a game downloads.
+
+### 3.23 D-24 — Interface sounds (Accepted, after Phase 8)
+
+**Owner decisions (2026-11-08):** sounds from the free "Cosy User Interface SFX" pack by Jacob (SampleKingdom), which allows commercial use (`design/sounds/CREDITS.md`, credited under Configurações › Sobre). Moving the focus plays `SFX_Item_Select`, confirming `SFX_Button_1`, going back `SFX_Back`, Jogar and Instalar `SFX_Button_2`, opening a modal (options, filters, sort, confirmations, keyboard, file browser) `SFX_Notification`, and opening the system menu `SFX_Dialogue_VO_Frank_004`. `SFX_Positive_Feedback` is not used yet. A "Sons da interface" checkbox in Configurações › Sistema, on by default (`USERS.ui_sounds`, migration 0016).
+
+**Where they come from.** The six used files are copied into `src/renderer/src/assets/sounds/`, named by what they do (`design/` is not packaged). The focus manager already sees every user action, from the controller, the keyboard or the mouse, so it reports a cue for a move, a confirm, a back or a section change (`onCue`), and only for those: focus that moves by itself (a screen opening, focus coming back) stays silent. Buttons can ask for another confirm sound (`confirmSound: 'play'`). An item that moves the focus itself on a direction (the achievements columns of a game) gets the move sound too; one that changes a value instead (the date picker) stays silent. `DialogFrame` plays the modal sound when it opens and the system menu its own. Screen shortcuts are silent unless they ask: X changing the sort of Conquistas plays the confirm sound (owner decision).
+
+**One press, one sound.** A press that opens a modal reports a confirm, then the modal opens a moment later: within 80 ms the stronger sound wins (system menu, modal, play, confirm or back, move) and the weaker one stops. A held direction restarts the move sound instead of stacking it. Volume 0.5.
+
+**Silence.** Off in Settings, while a game runs, under the launch image (D-22) and while the window is in the background. The renderer reads the setting once and Settings updates it as it changes.
+
+**Security.** The CSP gains `media-src 'self'`: audio only from the app itself.
 
 ## 4. Inconsistencies found across the project docs
 
@@ -816,6 +829,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-07 | 0.54 | Steam games' edit form: a "Preencher com IGDB" per field, replacing that field only; the game confirmed on IGDB is kept while the form is open; genres stay Steam's (owner decision). |
 | 2026-11-07 | 0.55 | Emulator ROM folder (migration 0014, `emulators.rom_directory`): its loose `.nsp`/`.xci` games are added at startup, on "Atualizar biblioteca" and when the folder is chosen, and filled from IGDB only under the very same name, an exception to D-18's confirmation (§3.17, `DATA_BASE_CONTEXT.md` §3.12). |
 | 2026-11-07 | 0.56 | Steam's DEJUS rating: an age DEJUS does not have (Steam generates "6") goes up to the nearest official rating, never down (`DATA_BASE_CONTEXT.md` §4.2). Migration 0015 has the unrated Steam games fetch their store data once more (a one-time exception to D-16, like 0005). |
+| 2026-11-08 | 0.57 | D-24: interface sounds, with "Sons da interface" in Configurações › Sistema (`USERS.ui_sounds`, migration 0016) and `media-src 'self'` in the CSP (§3.23). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

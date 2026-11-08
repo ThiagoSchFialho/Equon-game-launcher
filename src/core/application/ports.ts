@@ -282,6 +282,9 @@ export interface UserRepository {
   setSecret(kind: SecretKind, encrypted: Uint8Array | null): void
   getStartFullscreen(): boolean
   setStartFullscreen(enabled: boolean): void
+  /** Settings › Sistema › "Sons da interface"; on by default. */
+  getUiSounds(): boolean
+  setUiSounds(enabled: boolean): void
   getTrophyCounters(): TrophyCounters
   /** Recomputes counters from ACHIEVEMENTS; never increments blindly. */
   recomputeTrophyCounters(): TrophyCounters

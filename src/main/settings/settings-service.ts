@@ -34,6 +34,7 @@ export interface SettingsService {
   setSecret(kind: SecretKind, value: string | null): Result<SettingsInfo>
   setStartFullscreen(enabled: boolean): Result<SettingsInfo>
   setOpenAtLogin(enabled: boolean): Result<SettingsInfo>
+  setUiSounds(enabled: boolean): Result<SettingsInfo>
 }
 
 /**
@@ -54,6 +55,7 @@ export function createSettingsService(deps: SettingsServiceDeps): SettingsServic
     lastRefresh: deps.steam.lastRefresh(),
     lastSync: deps.lastSync(),
     startFullscreen: deps.users.getStartFullscreen(),
+    uiSounds: deps.users.getUiSounds(),
     openAtLogin: deps.loginItem.available() && deps.loginItem.enabled(),
     openAtLoginAvailable: deps.loginItem.available()
   })
@@ -90,6 +92,11 @@ export function createSettingsService(deps: SettingsServiceDeps): SettingsServic
 
     setStartFullscreen(enabled) {
       deps.users.setStartFullscreen(enabled)
+      return { ok: true, data: get() }
+    },
+
+    setUiSounds(enabled) {
+      deps.users.setUiSounds(enabled)
       return { ok: true, data: get() }
     },
 

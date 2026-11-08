@@ -31,6 +31,10 @@ export function createUserRepository(db: SqliteDatabase): UserRepository {
   const updateStartFullscreen = db.prepare<[number]>(
     'UPDATE users SET start_fullscreen = ? WHERE id = 1'
   )
+  const selectUiSounds = db.prepare<[], { ui_sounds: number }>(
+    'SELECT ui_sounds FROM users WHERE id = 1'
+  )
+  const updateUiSounds = db.prepare<[number]>('UPDATE users SET ui_sounds = ? WHERE id = 1')
 
   // One fixed statement per secret column; column names never come from input.
   const secrets: Record<
@@ -81,6 +85,11 @@ export function createUserRepository(db: SqliteDatabase): UserRepository {
     getStartFullscreen: () => selectStartFullscreen.get()?.start_fullscreen === 1,
     setStartFullscreen: (enabled) => {
       updateStartFullscreen.run(enabled ? 1 : 0)
+    },
+    // No row yet (first start): the column's default.
+    getUiSounds: () => (selectUiSounds.get()?.ui_sounds ?? 1) === 1,
+    setUiSounds: (enabled) => {
+      updateUiSounds.run(enabled ? 1 : 0)
     },
     getTrophyCounters: () => selectCounters.get() as TrophyCounters,
     recomputeTrophyCounters: () => recompute.get() as TrophyCounters

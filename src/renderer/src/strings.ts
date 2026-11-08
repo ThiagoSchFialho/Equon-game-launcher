@@ -420,6 +420,9 @@ export const t = {
       openAtLogin: 'Iniciar com o sistema',
       openAtLoginHint: 'Abre o Equon quando você entra no Windows.',
       openAtLoginUnavailable: 'Disponível só na versão instalada do Equon.',
+      uiSounds: 'Sons da interface',
+      uiSoundsHint:
+        'Sons ao navegar, confirmar e voltar. Ficam em silêncio enquanto um jogo está aberto.',
       saveFailed: 'Não foi possível salvar esta opção. Tente de novo.'
     },
     steam: 'Steam',

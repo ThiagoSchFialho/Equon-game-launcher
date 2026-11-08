@@ -23,6 +23,8 @@ export function Button({
 }: Props): React.JSX.Element {
   const { setElement, focused, mouse } = useFocusable<HTMLButtonElement>(id, {
     ...focusOptions,
+    // Play and Install have a sound of their own (owner decision).
+    confirmSound: variant === 'play' || variant === 'install' ? 'play' : undefined,
     onConfirm: unavailable ? undefined : onConfirm
   })
   return (

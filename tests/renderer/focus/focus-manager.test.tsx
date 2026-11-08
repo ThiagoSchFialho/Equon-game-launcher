@@ -31,6 +31,92 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+describe('sound cues', () => {
+  function Actions({ onBack }: { onBack: () => void }): null {
+    useScreenActions({ back: onBack, nextSection: () => {} })
+    return null
+  }
+
+  it('reports what the user did, and nothing for focus that moves by itself', async () => {
+    const cues: string[] = []
+    const manager = new FocusManager({ onCue: (cue) => cues.push(cue) })
+    render(
+      <FocusProvider manager={manager}>
+        <FocusScope id="screen">
+          <Actions onBack={() => {}} />
+          <Item id="a" x={0} onConfirm={() => {}} />
+          <Item id="b" x={1} onConfirm={() => {}} confirmSound="play" />
+          <Item id="c" x={2} />
+        </FocusScope>
+      </FocusProvider>
+    )
+    await act(async () => {})
+    // The screen opening put the focus on "a": silent.
+    expect(cues).toEqual([])
+
+    act(() => void manager.handle('right'))
+    act(() => void manager.handle('confirm'))
+    act(() => void manager.handle('left'))
+    act(() => void manager.handle('confirm'))
+    act(() => void manager.handle('back'))
+    act(() => void manager.handle('nextSection'))
+    expect(cues).toEqual(['navigate', 'play', 'navigate', 'confirm', 'back', 'navigate'])
+
+    // Nothing to confirm, or nowhere to go: silent.
+    act(() => void manager.handle('left'))
+    act(() => manager.focus('c'))
+    act(() => void manager.handle('confirm'))
+    expect(cues).toHaveLength(6)
+
+    // A mouse click confirms with the same sound.
+    act(() => manager.activate('b'))
+    expect(cues.at(-1)).toBe('play')
+  })
+
+  it('a move an item makes itself sounds the same; a value it changes stays silent', async () => {
+    const cues: string[] = []
+    const manager = new FocusManager({ onCue: (cue) => cues.push(cue) })
+    let value = 0
+    render(
+      <FocusProvider manager={manager}>
+        <FocusScope id="screen">
+          {/* Like an achievements column: down moves to the next one by itself. */}
+          <Item
+            id="row1"
+            x={0}
+            autoFocus
+            onDirection={(d) => {
+              if (d !== 'down') return false
+              manager.focus('row2')
+              return true
+            }}
+          />
+          <Item id="row2" x={0} y={1} />
+          {/* Like the date picker: up changes the value, the focus stays. */}
+          <Item
+            id="date"
+            x={1}
+            onDirection={(d) => {
+              if (d !== 'up') return false
+              value += 1
+              return true
+            }}
+          />
+        </FocusScope>
+      </FocusProvider>
+    )
+    await act(async () => {})
+    act(() => void manager.handle('down'))
+    expect(manager.focusedId).toBe('row2')
+    expect(cues).toEqual(['navigate'])
+
+    act(() => manager.focus('date'))
+    act(() => void manager.handle('up'))
+    expect(value).toBe(1)
+    expect(cues).toEqual(['navigate'])
+  })
+})
+
 describe('scroll animation', () => {
   it('jumps when focus is restored and animates when the user moves it', async () => {
     const scroll = vi.fn()
@@ -83,7 +169,9 @@ function Item({
   y = 0,
   onConfirm,
   onMenu,
-  autoFocus
+  autoFocus,
+  confirmSound,
+  onDirection
 }: {
   id: string
   x: number
@@ -91,11 +179,15 @@ function Item({
   onConfirm?: () => void
   onMenu?: () => void
   autoFocus?: boolean
+  confirmSound?: 'play'
+  onDirection?: (direction: 'up' | 'down' | 'left' | 'right') => boolean
 }): React.JSX.Element {
   const { setElement, focused, mouse } = useFocusable<HTMLButtonElement>(id, {
     onConfirm,
     onMenu,
-    autoFocus
+    autoFocus,
+    confirmSound,
+    onDirection
   })
   return (
     <button ref={setElement} data-x={x} data-y={y} data-focused={focused} {...mouse}>

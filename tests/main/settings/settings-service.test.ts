@@ -63,10 +63,22 @@ describe('settings service', () => {
       lastRefresh: null,
       lastSync: null,
       startFullscreen: false,
+      uiSounds: true,
       openAtLogin: false,
       openAtLoginAvailable: true
     })
     expect(settingsInfoSchema.safeParse(info).success).toBe(true)
+  })
+
+  it('has interface sounds on by default, stored as 0 or 1', () => {
+    const stored = (): number =>
+      (db.prepare('SELECT ui_sounds AS v FROM users').get() as { v: number }).v
+    expect(stored()).toBe(1)
+    expect(settings.setUiSounds(false)).toMatchObject({ ok: true, data: { uiSounds: false } })
+    expect(stored()).toBe(0)
+    expect(settings.setUiSounds(true)).toMatchObject({ ok: true, data: { uiSounds: true } })
+    expect(stored()).toBe(1)
+    expect(() => db.prepare('UPDATE users SET ui_sounds = 2').run()).toThrow()
   })
 
   it('validates and stores the SteamID64', () => {

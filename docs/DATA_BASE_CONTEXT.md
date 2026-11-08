@@ -126,6 +126,7 @@ Uma única linha, com a configuração do usuário local.
 | `silver` | `INTEGER NOT NULL DEFAULT 0` | Conquistas prata desbloqueadas; `CHECK (>= 0)` |
 | `bronze` | `INTEGER NOT NULL DEFAULT 0` | Conquistas bronze desbloqueadas; `CHECK (>= 0)` |
 | `start_fullscreen` | `INTEGER NOT NULL DEFAULT 0` | Abrir o launcher em tela cheia (D-20); `CHECK (IN (0, 1))` |
+| `ui_sounds` | `INTEGER NOT NULL DEFAULT 1` | "Sons da interface" (D-24), ligados por padrão; `CHECK (IN (0, 1))`. Migração `0016` |
 
 Regras:
 

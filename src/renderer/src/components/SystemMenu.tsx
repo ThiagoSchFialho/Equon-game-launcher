@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigation } from '../app/navigation'
 import { useRunning } from '../data/running'
+import { useUiSounds } from '../sound/sound-context'
 import { useScreenActions } from '../focus/focus-context'
 import { FocusScope } from '../focus/FocusProvider'
 import { t } from '../strings'
@@ -18,6 +19,9 @@ export function SystemMenu({ onClose }: { onClose: () => void }): React.JSX.Elem
   const [shutdownFailed, setShutdownFailed] = useState(false)
   const shuttingDown = useRef(false)
   const gameOpen = useRunning().ids.length > 0
+  // Its own sound when it opens (owner decision); going back to the list is not opening it.
+  const sounds = useUiSounds()
+  useEffect(() => sounds.play('system-menu'), [sounds])
 
   const shutdown = (): void => {
     if (shuttingDown.current) return

@@ -270,6 +270,7 @@ export const settingsInfoSchema = z.strictObject({
   lastRefresh: libraryRefreshInfoSchema.nullable(),
   lastSync: steamSyncInfoSchema.nullable(),
   startFullscreen: z.boolean(),
+  uiSounds: z.boolean(),
   openAtLogin: z.boolean(),
   openAtLoginAvailable: z.boolean()
 }) satisfies z.ZodType<SettingsInfo>

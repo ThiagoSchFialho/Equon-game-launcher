@@ -17,6 +17,7 @@ export const IpcChannel = {
   settingsSetSecret: 'settings:set-secret',
   settingsSetStartFullscreen: 'settings:set-start-fullscreen',
   settingsSetOpenAtLogin: 'settings:set-open-at-login',
+  settingsSetUiSounds: 'settings:set-ui-sounds',
   settingsTestConnection: 'settings:test-connection',
   libraryDuplicates: 'library:duplicates',
   libraryDismissDuplicate: 'library:dismiss-duplicate',
@@ -249,6 +250,8 @@ export interface SettingsInfo {
   lastRefresh: LibraryRefreshInfo | null
   lastSync: SteamSyncInfo | null
   startFullscreen: boolean
+  /** "Sons da interface": feedback sounds on navigation and actions. */
+  uiSounds: boolean
   /** As Windows reports it, so turning it off in the Task Manager shows here. */
   openAtLogin: boolean
   /** False when unpackaged: it would register the bare Electron binary. */
@@ -588,6 +591,7 @@ export interface EquonApi {
     /** Takes effect the next time the launcher opens. */
     setStartFullscreen(enabled: boolean): Promise<Result<SettingsInfo>>
     setOpenAtLogin(enabled: boolean): Promise<Result<SettingsInfo>>
+    setUiSounds(enabled: boolean): Promise<Result<SettingsInfo>>
     /** One live request with the stored credentials. */
     testConnection(kind: 'steam' | 'steamgriddb' | 'igdb'): Promise<Result<ConnectionTest>>
   }

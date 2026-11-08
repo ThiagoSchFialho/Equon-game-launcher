@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { useFocusable, useScreenActions } from '../focus/focus-context'
+import { useUiSounds } from '../sound/sound-context'
 import type { ScreenActions } from '../focus/focus-manager'
 import { FocusScope } from '../focus/FocusProvider'
 import './Dialog.css'
@@ -24,6 +25,9 @@ export function DialogFrame({
   children: ReactNode
 }): React.JSX.Element {
   useScreenActions({ back: onClose, ...actions }, true)
+  // Opening a modal has its own sound (owner decision); changing its content does not.
+  const sounds = useUiSounds()
+  useEffect(() => sounds.play('modal-open'), [sounds])
   return (
     <FocusScope id={`dialog:${id}`}>
       <div className="dialog__backdrop" onClick={onClose} />

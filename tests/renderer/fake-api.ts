@@ -75,6 +75,8 @@ export const settingsInfo = (extra: Partial<SettingsInfo> = {}): SettingsInfo =>
   lastRefresh: null,
   lastSync: null,
   startFullscreen: false,
+  // Off in the fake app, so tests that are not about sound never touch audio (jsdom has none).
+  uiSounds: false,
   openAtLogin: false,
   openAtLoginAvailable: true,
   ...extra
@@ -174,6 +176,7 @@ export function installFakeApi(
         data: settingsInfo({ startFullscreen })
       }),
       setOpenAtLogin: async (openAtLogin) => ({ ok: true, data: settingsInfo({ openAtLogin }) }),
+      setUiSounds: async (uiSounds) => ({ ok: true, data: settingsInfo({ uiSounds }) }),
       setSecret: async (kind, value) => ({
         ok: true,
         data: settingsInfo({

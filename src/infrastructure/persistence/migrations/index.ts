@@ -13,6 +13,7 @@ import startFullscreen from './0012_start_fullscreen.sql?raw'
 import artworkLaunch from './0013_artwork_launch.sql?raw'
 import emulatorRomDirectory from './0014_emulator_rom_directory.sql?raw'
 import refetchUnratedSteam from './0015_refetch_unrated_steam.sql?raw'
+import uiSounds from './0016_ui_sounds.sql?raw'
 
 export interface Migration {
   version: number
@@ -36,5 +37,6 @@ export const migrations: readonly Migration[] = [
   { version: 12, name: '0012_start_fullscreen', sql: startFullscreen },
   { version: 13, name: '0013_artwork_launch', sql: artworkLaunch },
   { version: 14, name: '0014_emulator_rom_directory', sql: emulatorRomDirectory },
-  { version: 15, name: '0015_refetch_unrated_steam', sql: refetchUnratedSteam }
+  { version: 15, name: '0015_refetch_unrated_steam', sql: refetchUnratedSteam },
+  { version: 16, name: '0016_ui_sounds', sql: uiSounds }
 ]

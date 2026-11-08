@@ -19,7 +19,12 @@ export interface FocusableOptions {
   scroll?: 'nearest' | 'center' | 'follow' | 'none'
   /** Never chosen automatically (initial focus, re-homing); reached by direction or mouse only. */
   manualOnly?: boolean
+  /** The sound of confirming it, when not the usual one (Play and Install). */
+  confirmSound?: 'play'
 }
+
+/** What the focus manager reports for the interface sounds (sound/ui-sounds.ts). */
+export type FocusCue = 'navigate' | 'confirm' | 'back' | 'play'
 
 interface Entry extends FocusableOptions {
   id: string
@@ -64,6 +69,15 @@ export class FocusManager {
   private ensureQueued = false
   private follower = createScrollFollower()
   focusedId: string | null = null
+  /**
+   * Hears what the user did: a move, a confirm, a back. Only user actions, never focus that
+   * moves by itself (a screen opening, focus coming back), so those stay silent.
+   */
+  private readonly onCue: ((cue: FocusCue) => void) | null
+
+  constructor(options: { onCue?: (cue: FocusCue) => void } = {}) {
+    this.onCue = options.onCue ?? null
+  }
 
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener)
@@ -174,7 +188,10 @@ export class FocusManager {
   /** Mouse click: focus and confirm. */
   activate(id: string): void {
     this.focus(id)
-    this.entries.get(id)?.onConfirm?.()
+    const entry = this.entries.get(id)
+    if (!entry?.onConfirm) return
+    this.onCue?.(entry.confirmSound ?? 'confirm')
+    entry.onConfirm()
   }
 
   /** Mouse right click: focus and open the element's menu. */
@@ -190,16 +207,28 @@ export class FocusManager {
 
     if (isDirection(action)) {
       if (!current) return false
-      if (current.onDirection?.(action)) return true
+      if (current.onDirection) {
+        const before = this.focusedId
+        if (current.onDirection(action)) {
+          // An item that moves the focus itself (an achievements column) moves it all the same;
+          // one that changes a value (the date picker) keeps it, and stays silent.
+          if (this.focusedId !== before) this.onCue?.('navigate')
+          return true
+        }
+      }
       const candidates = this.scopeEntries(current.scope)
         .filter((e) => e.id !== current.id)
         .map((e) => ({ id: e.id, rect: rectOf(e.el) }))
       const next = findNext(rectOf(current.el), candidates, action)
-      if (next) this.focus(next)
+      if (next) {
+        this.onCue?.('navigate')
+        this.focus(next)
+      }
       return next !== null
     }
     if (action === 'confirm') {
       if (!current?.onConfirm) return false
+      this.onCue?.(current.confirmSound ?? 'confirm')
       current.onConfirm()
       return true
     }
@@ -211,6 +240,9 @@ export class FocusManager {
       const { handlers, modal } = this.handlers[i]
       const handler = handlers[action]
       if (handler) {
+        if (action === 'back') this.onCue?.('back')
+        // LB/RB move between sections, like a move of the focus.
+        else if (action === 'previousSection' || action === 'nextSection') this.onCue?.('navigate')
         handler()
         return true
       }

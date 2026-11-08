@@ -26,6 +26,8 @@ import { RunningContext, useRunningLoader } from './data/running'
 import { FocusManager } from './focus/focus-manager'
 import { FocusProvider } from './focus/FocusProvider'
 import { useInput } from './input/useInput'
+import { createAppSounds } from './sound/app-sounds'
+import { UiSoundsContext } from './sound/sound-context'
 import { AchievementsScreen } from './screens/AchievementsScreen'
 import { GameAchievementsScreen } from './screens/GameAchievementsScreen'
 import { GameDetailsScreen } from './screens/GameDetailsScreen'
@@ -58,7 +60,9 @@ function CurrentScreen({ route }: { route: Route }): React.JSX.Element {
 }
 
 function App(): React.JSX.Element {
-  const [manager] = useState(() => new FocusManager())
+  const [sounds] = useState(() => createAppSounds())
+  // It reports what the user did (move, confirm, back) for the sounds.
+  const [manager] = useState(() => new FocusManager({ onCue: sounds.play }))
   const [route, setRoute] = useState<Route>({ name: 'home' })
   const games = useGamesLoader()
   // Survives navigation, resets on restart (PRODUCT.md §6.4).
@@ -99,9 +103,20 @@ function App(): React.JSX.Element {
     () =>
       window.equon.games.onLaunchCoverChanged((active) => {
         launchCoverUp.current = active
+        sounds.setLaunchCover(active)
       }),
-    []
+    [sounds]
   )
+
+  // Interface sounds: created once (the context never changes, so a dialog does not play its
+  // sound again); off until Settings answers, silent while a game runs.
+  useEffect(() => {
+    void window.equon.settings.get().then(
+      (info) => sounds.setEnabled(info.uiSounds),
+      () => {}
+    )
+  }, [sounds])
+  useEffect(() => sounds.setGameRunning(running.ids.length > 0), [sounds, running.ids])
 
   const dispatch = useCallback(
     (action: Parameters<FocusManager['handle']>[0]) => {
@@ -159,26 +174,28 @@ function App(): React.JSX.Element {
 
   return (
     <FocusProvider manager={manager}>
-      <NavigationContext.Provider value={navigation}>
-        <GamesContext.Provider value={games}>
-          <RunningContext.Provider value={running}>
-            <LibraryViewContext.Provider value={libraryViewState}>
-              <AchievementSortContext.Provider value={achievementSortState}>
-                <BackgroundActivityContext.Provider value={activity}>
-                  <OpeningContext.Provider value={opening}>
-                    <SystemMenuContext.Provider value={systemMenu}>
-                      <ScreenErrorBoundary key={JSON.stringify(route)}>
-                        <CurrentScreen route={route} />
-                      </ScreenErrorBoundary>
-                      {systemMenuOpen && <SystemMenu onClose={() => setSystemMenuOpen(false)} />}
-                    </SystemMenuContext.Provider>
-                  </OpeningContext.Provider>
-                </BackgroundActivityContext.Provider>
-              </AchievementSortContext.Provider>
-            </LibraryViewContext.Provider>
-          </RunningContext.Provider>
-        </GamesContext.Provider>
-      </NavigationContext.Provider>
+      <UiSoundsContext.Provider value={sounds}>
+        <NavigationContext.Provider value={navigation}>
+          <GamesContext.Provider value={games}>
+            <RunningContext.Provider value={running}>
+              <LibraryViewContext.Provider value={libraryViewState}>
+                <AchievementSortContext.Provider value={achievementSortState}>
+                  <BackgroundActivityContext.Provider value={activity}>
+                    <OpeningContext.Provider value={opening}>
+                      <SystemMenuContext.Provider value={systemMenu}>
+                        <ScreenErrorBoundary key={JSON.stringify(route)}>
+                          <CurrentScreen route={route} />
+                        </ScreenErrorBoundary>
+                        {systemMenuOpen && <SystemMenu onClose={() => setSystemMenuOpen(false)} />}
+                      </SystemMenuContext.Provider>
+                    </OpeningContext.Provider>
+                  </BackgroundActivityContext.Provider>
+                </AchievementSortContext.Provider>
+              </LibraryViewContext.Provider>
+            </RunningContext.Provider>
+          </GamesContext.Provider>
+        </NavigationContext.Provider>
+      </UiSoundsContext.Provider>
     </FocusProvider>
   )
 }

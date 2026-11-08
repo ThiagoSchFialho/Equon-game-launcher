@@ -154,9 +154,9 @@ usam paradas suavizadas e um ruído fino, quase invisível, por cima.
     configurada", nunca o valor.
 -   Emuladores: uma linha por emulador suportado, com o executável
     configurado; trocar vale para todos os jogos do emulador.
--   Sistema: checkboxes "Iniciar em tela cheia" e "Iniciar com o sistema",
-    salvos assim que mudam. A segunda fica indisponível, com o motivo, fora
-    da versão instalada.
+-   Sistema: checkboxes "Iniciar em tela cheia", "Iniciar com o sistema" e
+    "Sons da interface", salvos assim que mudam. "Iniciar com o sistema"
+    fica indisponível, com o motivo, fora da versão instalada.
 -   Armazenamento: um cartão por disco local ou removível, com nome e letra,
     barra do espaço usado e "X GB livres de Y GB", lidos ao abrir a aba. A
     barra usa `color.install` e fica em `color.danger` com menos de 10% livre.
