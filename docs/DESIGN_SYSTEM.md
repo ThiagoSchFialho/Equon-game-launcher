@@ -436,7 +436,7 @@ artes independentes; nenhuma é recortada a partir da outra.
 | --- | --- | --- |
 | `cover_square` | Capa quadrada (1:1) | Biblioteca (grade de cards) |
 | `cover_portrait` | Capa vertical, exibida em 2:3 e sempre esticada para caber inteira, sem corte nem barras (decisão do dono do projeto) | Início (cards de continuar jogando e recentes) |
-| `logo` | Logotipo, preferencialmente com transparência | Detalhes do jogo, sobre o fundo |
+| `logo` | Logotipo, preferencialmente com transparência; `contain`, centralizado no seu espaço (sem logo, o nome do jogo, também centralizado) | Detalhes do jogo, sobre o fundo |
 | `background` | Imagem 1920×1080 (16:9) | Detalhes do jogo, como arte dominante |
 | `header` | Imagem larga (`header_image` da Steam, cerca de 2:1) | Lista de conquistas, miniatura de cada jogo |
 | `launch` | Imagem de abertura, 16:9, com `cover`; sem ela, usa-se o `background` | Tela inteira enquanto o jogo abre |

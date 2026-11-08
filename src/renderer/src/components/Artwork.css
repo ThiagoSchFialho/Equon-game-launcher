@@ -48,20 +48,20 @@
   opacity: 1;
 }
 
-/* Logos keep their proportions over any background. */
+/* Logos keep their proportions over any background, centered in their space (owner decision). */
 .artwork--logo {
   background: none;
 }
 .artwork--logo .artwork__image {
   object-fit: contain;
-  object-position: left center;
+  object-position: center;
 }
 .artwork--logo .artwork__placeholder {
   background: none;
-  place-items: center start;
+  place-items: center;
   padding: 0;
   color: var(--color-text-primary);
   font-size: var(--font-size-display);
   font-weight: var(--font-weight-bold);
-  text-align: left;
+  text-align: center;
 }
