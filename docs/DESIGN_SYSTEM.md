@@ -343,6 +343,10 @@ apenas de animação para mostrar que uma ação foi ativada.
 
 ### Navegação
 
+-   A barra superior (Início, Biblioteca, Conquistas) é uma pílula em
+    `--color-surface` a 75% de opacidade, com a borda `--color-border` e
+    uma sombra forte (`0 0.5rem 2rem`, preto a 50%), para se destacar sobre
+    o fundo e a arte do jogo (decisão do dono do projeto).
 -   Trabalho em segundo plano (sincronização de conquistas, inclusive a
     espera depois de fechar um jogo; sincronização dos jogos da Steam;
     download de artes) aparece à esquerda da barra superior (nas telas sem barra superior, como
