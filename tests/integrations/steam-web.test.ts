@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { NetworkError, isAllowedImageUrl, type HttpGet } from '../../src/integrations/http'
 import {
+  dejusRating,
   fetchAppBackgroundChoices,
   fetchAppDetails,
   fetchOwnedGames,
@@ -82,6 +83,35 @@ describe('fetchAppDetails', () => {
       data: { requiredAge: null }
     })
     expect(await fetchAppDetails(rated(null), 1)).toMatchObject({ ok: true })
+  })
+
+  it('takes an age DEJUS does not have up to the nearest rating, never down', async () => {
+    // Measured on 2026-11-07: Assetto Corsa (244210) has a generated DEJUS "6".
+    const generated = fake(200, {
+      '244210': {
+        success: true,
+        data: { ratings: { dejus: { rating_generated: '1', rating: '6', required_age: '6' } } }
+      }
+    })
+    expect(await fetchAppDetails(generated, 244210)).toMatchObject({ data: { requiredAge: '10' } })
+
+    const cases: [string, string | null][] = [
+      ['0', 'L'],
+      ['3', '10'],
+      ['6', '10'],
+      ['10', '10'],
+      ['11', '12'],
+      ['13', '14'],
+      ['15', '16'],
+      ['17', '18'],
+      ['21', '18'],
+      ['l', 'L'],
+      ['ER', null],
+      ['-3', null],
+      ['6+', null]
+    ]
+    for (const [given, expected] of cases)
+      expect([given, dejusRating(given)]).toEqual([given, expected])
   })
 
   it('reports unknown apps, bad bodies, HTTP errors and network failures', async () => {

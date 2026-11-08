@@ -19,6 +19,29 @@ describe('migrate', () => {
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1)
   })
 
+  it('0015 asks the store again only for Steam games without an age rating', () => {
+    const db = openDatabase(':memory:')
+    migrate(db, migrations.slice(0, 14))
+    const add = (origin: string, steamId: number | null, age: string | null): number =>
+      db
+        .prepare<[string, number | null, string | null], { id: number }>(
+          `INSERT INTO games (origin, title, steam_id, required_age, metadata_fetched_at)
+           VALUES (?, 'G', ?, ?, '2026-11-04T23:00:00Z') RETURNING id`
+        )
+        .get(origin, steamId, age)!.id
+    const unrated = add('steam', 244210, null)
+    const rated = add('steam', 620, '10')
+    const manual = add('manual', null, null)
+
+    migrate(db, migrations)
+
+    const fetchedAt = (id: number): unknown =>
+      db.prepare('SELECT metadata_fetched_at AS at FROM games WHERE id = ?').get(id)
+    expect(fetchedAt(unrated)).toEqual({ at: null })
+    expect(fetchedAt(rated)).toEqual({ at: '2026-11-04T23:00:00Z' })
+    expect(fetchedAt(manual)).toEqual({ at: '2026-11-04T23:00:00Z' })
+  })
+
   it('0013 keeps existing art and removal marks, and accepts the launch image', () => {
     const db = openDatabase(':memory:')
     migrate(db, migrations.slice(0, 12))

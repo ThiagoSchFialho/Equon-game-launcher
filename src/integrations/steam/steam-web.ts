@@ -61,12 +61,22 @@ function decodeEntities(text: string): string {
     .replace(/&amp;/g, '&')
 }
 
-/** DEJUS ratings shown by the age badges (owner decision); anything else is pendente. */
+/** DEJUS ratings shown by the age badges (owner decision). */
 const DEJUS = new Set(['L', '10', '12', '14', '16', '18'])
+const DEJUS_AGES = [10, 12, 14, 16, 18] as const
 
-function dejusRating(rating: string | undefined): string | null {
+/**
+ * Steam also generates ratings DEJUS does not have, such as "6" (measured: Assetto Corsa,
+ * `rating_generated: "1"`). An age goes to the nearest rating at or above it, never below
+ * (owner decision): 0 is L, 6 is 10, 13 is 14, and above 18 stays 18. Anything else is pendente.
+ */
+export function dejusRating(rating: string | undefined): string | null {
   const value = rating?.trim().toUpperCase() ?? ''
-  return DEJUS.has(value) ? value : null
+  if (DEJUS.has(value)) return value
+  if (!/^\d{1,2}$/.test(value)) return null
+  const age = Number(value)
+  if (age === 0) return 'L'
+  return String(DEJUS_AGES.find((each) => each >= age) ?? 18)
 }
 
 const PT_MONTHS = [
