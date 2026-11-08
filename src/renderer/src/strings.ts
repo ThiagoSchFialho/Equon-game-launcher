@@ -271,7 +271,14 @@ export const t = {
     change: 'Trocar executável',
     remove: 'Remover emulador',
     close: 'Fechar',
-    changeNote: 'A troca vale para todos os jogos deste emulador.'
+    changeNote: 'A troca vale para todos os jogos deste emulador.',
+    romDirectory: (emulator: string) => `Pasta das ROMs (${emulator})`,
+    romDirectoryEmpty: 'Opcional — escolha a pasta das suas ROMs',
+    romDirectoryNote:
+      'Os arquivos .nsp e .xci soltos na pasta das ROMs viram jogos ao escolher a pasta, ao abrir o launcher e em "Atualizar biblioteca". Com o IGDB configurado, dados e artes são preenchidos quando o nome bater.',
+    romDirectoryChange: 'Trocar pasta',
+    romDirectoryRemove: 'Remover pasta',
+    romDirectoryRemoveNote: 'Remover a pasta não remove os jogos que vieram dela.'
   },
   igdb: {
     title: 'Preencher com IGDB',
@@ -501,6 +508,7 @@ export const t = {
   activity: {
     achievements: 'Sincronizando conquistas…',
     library: 'Sincronizando jogos da Steam…',
+    roms: 'Buscando dados das ROMs no IGDB…',
     metadata: 'Sincronizando jogos da Steam…',
     artwork: 'Baixando artes…',
     progress: (done: number, total: number) => `${done} de ${total}`

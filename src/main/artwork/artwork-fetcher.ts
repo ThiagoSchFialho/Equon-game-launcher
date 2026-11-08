@@ -69,9 +69,15 @@ export interface ArtworkFetcher {
   /**
    * A manual game filled from IGDB (D-18): logo and background from IGDB, the rest from
    * SteamGridDB under the same name, then an IGDB portrait cover if there is still none.
+   * `gridFirst` (games from a ROM folder, owner decision): only the background from IGDB
+   * first; the logo, like the covers, comes from SteamGridDB, with IGDB's as the fallback.
    * Only what the game does not have yet.
    */
-  applyIgdb(gameId: number, igdbGameId: number): Promise<Result<ArtworkKind[]>>
+  applyIgdb(
+    gameId: number,
+    igdbGameId: number,
+    options?: { gridFirst?: boolean }
+  ): Promise<Result<ArtworkKind[]>>
 }
 
 /** Where IGDB keeps each image of a game; null when it has none that fits. */
@@ -327,7 +333,12 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
         : { ok: false, error: { code: result.error } }
     },
 
-    async applyIgdb(gameId, igdbGameId) {
+    async applyIgdb(gameId, igdbGameId, options = {}) {
+      const igdbFirst: ArtworkKind[] = options.gridFirst ? ['background'] : IGDB_FIRST
+      // After SteamGridDB, IGDB covers what it could not.
+      const igdbFallback: ArtworkKind[] = options.gridFirst
+        ? ['logo', 'cover_portrait']
+        : ['cover_portrait']
       const game = deps.games.getById(gameId)
       if (!game || game.origin === BuiltinOrigin.steam) {
         return { ok: false, error: { code: 'not-found' } }
@@ -344,7 +355,7 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
       const saved: ArtworkKind[] = []
       const urls = igdbArtUrls(data)
       const wanted = urls.filter(
-        ([kind, url]) => url !== null && IGDB_FIRST.includes(kind) && !have().includes(kind)
+        ([kind, url]) => url !== null && igdbFirst.includes(kind) && !have().includes(kind)
       )
       for (const [index, [kind, url]] of wanted.entries()) {
         deps.onProgress?.({ done: index, total: wanted.length })
@@ -378,14 +389,16 @@ export function createArtworkFetcher(deps: ArtworkFetcherDeps): ArtworkFetcher {
       }
 
       // SteamGridDB comes first for portrait covers; IGDB covers what it could not.
-      const cover = urls.find(([kind]) => kind === 'cover_portrait')?.[1] ?? null
-      if (
-        cover !== null &&
-        !have().includes('cover_portrait') &&
-        (await store(game, 'cover_portrait', cover, 'igdb', true))
-      ) {
-        saved.push('cover_portrait')
-        deps.onLibraryChanged()
+      for (const kind of igdbFallback) {
+        const url = urls.find(([each]) => each === kind)?.[1] ?? null
+        if (
+          url !== null &&
+          !have().includes(kind) &&
+          (await store(game, kind, url, 'igdb', true))
+        ) {
+          saved.push(kind)
+          deps.onLibraryChanged()
+        }
       }
       return { ok: true, data: saved }
     }

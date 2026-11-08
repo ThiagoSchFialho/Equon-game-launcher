@@ -58,6 +58,7 @@ export const IpcChannel = {
   originsRemove: 'origins:remove',
   emulatorsList: 'emulators:list',
   emulatorsSet: 'emulators:set',
+  emulatorsSetRomDirectory: 'emulators:set-rom-directory',
   emulatorsRemove: 'emulators:remove',
   filesList: 'files:list',
   filesPickNative: 'files:pick-native'
@@ -413,6 +414,8 @@ export interface EmulatorInfo {
   romExtensions: string[]
   /** null = not configured. */
   executablePath: string | null
+  /** Folder whose loose .nsp and .xci files become games; null when not set. */
+  romDirectory: string | null
 }
 
 /** Add/edit form of a non-Steam game. Paths are untrusted and re-validated in main. */
@@ -484,7 +487,8 @@ export interface IgdbGameFill {
 }
 
 /** Background work the top bar reports. */
-export type BackgroundTask = 'achievements' | 'library' | 'metadata' | 'artwork'
+/** `roms`: games from an emulator's ROM folder being filled from IGDB. */
+export type BackgroundTask = 'achievements' | 'library' | 'roms' | 'metadata' | 'artwork'
 
 export interface BackgroundActivity {
   task: BackgroundTask
@@ -618,6 +622,8 @@ export interface EquonApi {
   emulators: {
     list(): Promise<EmulatorInfo[]>
     set(key: string, executablePath: string): Promise<Result<EmulatorInfo>>
+    /** null removes the folder; its games stay. Saving a folder adds its ROMs in the background. */
+    setRomDirectory(key: string, directory: string | null): Promise<Result<null>>
     remove(key: string): Promise<Result<null>>
   }
   files: {

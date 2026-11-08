@@ -6,8 +6,9 @@ export const ACTIVITY_SETTLE_MS = 400
 /**
  * First running task wins. Achievements come first: that sync is short and its
  * result is what the user is waiting for, while the artwork queue can run for minutes.
+ * The ROM folder comes before the art its games bring, so its count stays on screen.
  */
-const ORDER: readonly BackgroundTask[] = ['achievements', 'library', 'metadata', 'artwork']
+const ORDER: readonly BackgroundTask[] = ['achievements', 'library', 'roms', 'metadata', 'artwork']
 
 export type TaskProgress = { done: number; total: number }
 

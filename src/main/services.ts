@@ -1,5 +1,6 @@
 import { nativeImage, shell, type BrowserWindow } from 'electron'
 import { readdir, readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import {
   createGameRunner,
   createSteamSessions,
@@ -26,13 +27,19 @@ import { createProcessLauncher } from '../infrastructure/process/process-launche
 import { readSteamRegistryValue } from '../integrations/steam/registry'
 import { createSteamAdapter } from '../integrations/steam/steam-adapter'
 import { createFetchBytes, fetchGet, fetchPost } from '../integrations/http'
-import { fetchIgdbGame, fetchIgdbSteamGame } from '../integrations/igdb/games'
+import {
+  fetchIgdbFill,
+  fetchIgdbGame,
+  fetchIgdbSteamGame,
+  searchIgdbGames
+} from '../integrations/igdb/games'
 import { createIgdbClient } from '../integrations/igdb/igdb'
 import { MAX_ARTWORK_BYTES, webpSize } from '../infrastructure/artwork/import-artwork'
 import { createAchievementSync } from './achievements/achievement-sync'
 import { createArtworkEditor } from './artwork/artwork-editor'
 import { createArtworkFetcher } from './artwork/artwork-fetcher'
 import { IpcEvent } from '../shared/ipc/contract'
+import { createRomLibrary } from './emulators/rom-library'
 import { createManualGameService } from './games/manual-game-service'
 import type { IpcDeps } from './ipc/register'
 import type { LoginItem, SecretCipher } from './settings/settings-service'
@@ -242,6 +249,36 @@ export function createServices(
     onError: (error) => console.error('Artwork save failed:', String(error))
   })
 
+  const romLibrary = createRomLibrary({
+    games,
+    configs,
+    emulators,
+    genres,
+    uow,
+    inspector,
+    // Loose files only: a link or a folder is not a ROM here (owner decision).
+    listFiles: async (directory) =>
+      (await readdir(directory, { withFileTypes: true }))
+        .filter((entry) => entry.isFile())
+        .map((entry) => entry.name),
+    join,
+    igdb: {
+      configured: () => secret('igdb-client-id') !== null && secret('igdb-client-secret') !== null,
+      search: (term) => searchIgdbGames(igdb, term),
+      fill: (id) => fetchIgdbFill(igdb, id),
+      // Logo and covers from SteamGridDB first (owner decision); IGDB gives the background.
+      applyArtwork: (gameId, igdbGameId) =>
+        artworkFetcher.applyIgdb(gameId, igdbGameId, { gridFirst: true })
+    },
+    onLibraryChanged: () => window()?.webContents.send(IpcEvent.libraryChanged),
+    onProgress: (progress) => activity.update('roms', progress),
+    // Names only, to see why a game was not matched.
+    onNoMatch: (title, results) =>
+      console.warn(`IGDB has no game named "${title}"; it found:`, results.join(' | ') || '—'),
+    // Messages only: request URLs (which may hold keys) are never logged.
+    onError: (error) => console.error('ROM folder failed:', String(error))
+  })
+
   const steam = createSteamService({
     games,
     uow,
@@ -258,6 +295,8 @@ export function createServices(
       steamOnline.syncOwnedGames({ updatePlaytime: first, scanComplete }),
     isGameRunning: () => runner.runningGameIds().length > 0,
     afterRefresh: ({ retryArtwork }) => {
+      // At startup and on "Atualizar biblioteca", the ROM folders too; no network until IGDB.
+      void romLibrary.scan().catch((error) => console.error('ROM folder failed:', String(error)))
       void steamOnline
         .fetchMissingMetadata()
         .catch((error) => console.error('Steam metadata failed:', String(error)))
@@ -308,6 +347,7 @@ export function createServices(
     artworkFetcher,
     artworkEditor,
     achievementSync,
+    romLibrary,
     activity,
     igdb,
     users,

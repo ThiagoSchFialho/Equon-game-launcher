@@ -204,7 +204,8 @@ describe('manual game service', () => {
         name: 'Yuzu',
         origin: 'yuzu',
         romExtensions: ['.nsp', '.xci', '.nca', '.nro', '.nso'],
-        executablePath: null
+        executablePath: null,
+        romDirectory: null
       }
     ])
     writeFileSync(join(dir, 'yuzu.exe'), '')

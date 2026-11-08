@@ -32,11 +32,15 @@ export interface OriginRepository {
   delete(key: OriginKey): void
 }
 
-/** Executables the user configured for supported emulators (DATA_BASE_CONTEXT.md §3.12). */
+/** Executables and ROM folders the user configured for supported emulators (§3.12). */
 export interface EmulatorRepository {
   list(): EmulatorConfig[]
   get(key: EmulatorKey): EmulatorConfig | null
+  /** Keeps the ROM folder. */
   set(key: EmulatorKey, executablePath: string): EmulatorConfig
+  /** Only for a configured emulator: null when it has no executable yet. */
+  setRomDirectory(key: EmulatorKey, romDirectory: string | null): EmulatorConfig | null
+  /** Removes the ROM folder too. */
   remove(key: EmulatorKey): boolean
 }
 

@@ -1,6 +1,6 @@
 # CLAUDE.md — Equon Game Launcher
 
-Controller-first game launcher for Windows (Electron + React + TypeScript, embedded SQLite). One local user, one Steam account. Games come from Steam (automatic) and manual entries. There is **no** automatic Epic/GOG integration: those games are added manually. Origins are an extensible table (built-in `steam`, `manual`, `yuzu`, `ps2`; the user can add more, e.g. a new emulator); only `steam` has an automatic adapter. Emulators are a separate feature (`EMULATORS`, only Yuzu): Yuzu games store just the ROM and open with `yuzu.exe -f -g "<rom>"`.
+Controller-first game launcher for Windows (Electron + React + TypeScript, embedded SQLite). One local user, one Steam account. Games come from Steam (automatic) and manual entries. There is **no** automatic Epic/GOG integration: those games are added manually. Origins are an extensible table (built-in `steam`, `manual`, `yuzu`, `ps2`; the user can add more, e.g. a new emulator); only `steam` has an automatic adapter. Emulators are a separate feature (`EMULATORS`, only Yuzu): Yuzu games store just the ROM and open with `yuzu.exe -f -g "<rom>"`. A configured emulator may have a ROM folder whose loose `.nsp`/`.xci` games are added automatically (`DATA_BASE_CONTEXT.md` §3.12).
 
 ## Language
 

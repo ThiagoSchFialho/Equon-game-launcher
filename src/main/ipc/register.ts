@@ -3,6 +3,7 @@ import { fetchIgdbFill, searchIgdbGames } from '../../integrations/igdb/games'
 import type { IgdbClient, IgdbResult } from '../../integrations/igdb/igdb'
 import type { BackgroundActivityTracker } from '../background-activity'
 import type { GameRunner, UserRepository } from '../../core/application'
+import { EMULATOR_KEYS, type EmulatorKey } from '../../core/domain'
 import { IpcChannel, type DriveInfo, type Result, type SystemInfo } from '../../shared/ipc/contract'
 import {
   appGetInfoArgs,
@@ -13,6 +14,7 @@ import {
   emulatorListSchema,
   emulatorsRemoveArgs,
   emulatorsSetArgs,
+  emulatorsSetRomDirectoryArgs,
   filesListArgs,
   filesPickNativeArgs,
   gameDetailsResultSchema,
@@ -67,6 +69,7 @@ import {
 } from '../../shared/ipc/schemas'
 import { z } from 'zod'
 import { listFiles, pickNative } from '../files/file-service'
+import type { RomLibrary } from '../emulators/rom-library'
 import type { ManualGameService } from '../games/manual-game-service'
 import type { SettingsService } from '../settings/settings-service'
 import type { LaunchCover } from '../launch-cover/launch-cover'
@@ -98,6 +101,8 @@ export interface IpcDeps {
   artworkFetcher: ArtworkFetcher
   artworkEditor: ArtworkEditor
   achievementSync: AchievementSync
+  /** The ROM folders of the emulators. */
+  romLibrary: RomLibrary
   igdb: IgdbClient
   activity: BackgroundActivityTracker
   users: UserRepository
@@ -116,6 +121,9 @@ export interface IpcDeps {
 
 const idResult = resultSchema(z.strictObject({ id: z.number().int().positive() }))
 const nullResult = resultSchema(z.null())
+
+const isEmulatorKey = (key: string): key is EmulatorKey =>
+  (EMULATOR_KEYS as readonly string[]).includes(key)
 const originResult = resultSchema(originInfoSchema)
 const settingsResult = resultSchema(settingsInfoSchema)
 
@@ -498,6 +506,14 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
       resultSchema(emulatorInfoSchema),
       trusted,
       (key, path) => service.setEmulator(key, path)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.emulatorsSetRomDirectory,
+    createValidatedHandler(emulatorsSetRomDirectoryArgs, nullResult, trusted, (key, directory) =>
+      isEmulatorKey(key)
+        ? deps.romLibrary.setDirectory(key, directory)
+        : { ok: false as const, error: { code: 'not-found' } }
     )
   )
   ipcMain.handle(

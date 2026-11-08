@@ -552,6 +552,39 @@ describe('artwork fetcher: filled from IGDB', () => {
     expect(artwork().get(id, 'logo')).toMatchObject({ source: 'igdb' })
   })
 
+  describe('for a game from a ROM folder (gridFirst)', () => {
+    const LOGO = 'https://cdn2.steamgriddb.com/logo/l.png'
+    beforeEach(() => {
+      gridKey = KEY
+      json.set('search/autocomplete', {
+        status: 200,
+        json: { success: true, data: [{ id: 9, name: 'hollow quest' }] }
+      })
+    })
+
+    it('takes the logo from SteamGridDB, and only the background from IGDB first', async () => {
+      const id = manual()
+      igdbAnswer = { ok: true, data: game() }
+      json.set('/logos/game/9', {
+        status: 200,
+        json: { success: true, data: [{ id: 2, url: LOGO, width: 800, height: 300, score: 1 }] }
+      })
+      image(LOGO, 800, 300)
+      await fetcher.applyIgdb(id, 7, { gridFirst: true })
+      expect(artwork().get(id, 'logo')).toMatchObject({ source: 'steamgriddb', sourceUrl: LOGO })
+      expect(artwork().get(id, 'background')).toMatchObject({ source: 'igdb' })
+    })
+
+    it("falls back to IGDB's logo and cover when SteamGridDB has none", async () => {
+      const id = manual()
+      igdbAnswer = { ok: true, data: game() }
+      json.set('/logos/game/9', { status: 200, json: { success: true, data: [] } })
+      await fetcher.applyIgdb(id, 7, { gridFirst: true })
+      expect(artwork().get(id, 'logo')).toMatchObject({ source: 'igdb' })
+      expect(artwork().get(id, 'cover_portrait')).toMatchObject({ source: 'igdb' })
+    })
+  })
+
   it('takes nothing from SteamGridDB under a different name', async () => {
     gridKey = KEY
     const id = manual()

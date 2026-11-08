@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Fragment, useCallback, useEffect, useState } from 'react'
 import type { EmulatorInfo, Result } from '../../../shared/ipc/contract'
 import { useGames } from '../data/games'
 import { errorMessage, t } from '../strings'
@@ -7,13 +7,20 @@ import { FileBrowserDialog } from './FileBrowserDialog'
 import { FormRow } from './FormRow'
 import { StateMessage } from './StateMessage'
 
+/** Errors of the folder row are kept apart from the executable's. */
+const folderKey = (emulator: EmulatorInfo): string => `${emulator.key}:roms`
+
 type Overlay =
-  { kind: 'actions'; emulator: EmulatorInfo } | { kind: 'pick'; emulator: EmulatorInfo }
+  | { kind: 'actions'; emulator: EmulatorInfo }
+  | { kind: 'pick'; emulator: EmulatorInfo }
+  | { kind: 'folder-actions'; emulator: EmulatorInfo }
+  | { kind: 'pick-folder'; emulator: EmulatorInfo }
 
 /**
  * Settings › Emuladores (DATA_BASE_CONTEXT.md §3.12): point each supported
  * emulator to its executable. The path serves every game of the emulator's
- * origin, so changing it here applies to all of them.
+ * origin, so changing it here applies to all of them. A configured emulator
+ * can also have a folder whose loose ROMs become games.
  */
 export function EmulatorsSettings(): React.JSX.Element {
   const { refresh: refreshGames } = useGames()
@@ -61,19 +68,40 @@ export function EmulatorsSettings(): React.JSX.Element {
     <div className="settings__sections">
       <p className="settings__subtitle">{t.emulators.subtitle}</p>
       {emulators.map((emulator) => (
-        <FormRow
-          key={emulator.key}
-          id={`emulator-${emulator.key}`}
-          label={emulator.name}
-          value={emulator.executablePath}
-          placeholder={t.emulators.notConfigured(`${emulator.key}.exe`)}
-          icon="browse"
-          error={errors[emulator.key] || undefined}
-          onConfirm={() =>
-            setOverlay({ kind: emulator.executablePath ? 'actions' : 'pick', emulator })
-          }
-        />
+        <Fragment key={emulator.key}>
+          <FormRow
+            id={`emulator-${emulator.key}`}
+            label={emulator.name}
+            value={emulator.executablePath}
+            placeholder={t.emulators.notConfigured(`${emulator.key}.exe`)}
+            icon="browse"
+            error={errors[emulator.key] || undefined}
+            onConfirm={() =>
+              setOverlay({ kind: emulator.executablePath ? 'actions' : 'pick', emulator })
+            }
+          />
+          {/* The folder belongs to a configured emulator: its games open with it. */}
+          {emulator.executablePath && (
+            <FormRow
+              id={`emulator-${emulator.key}-roms`}
+              label={t.emulators.romDirectory(emulator.name)}
+              value={emulator.romDirectory}
+              placeholder={t.emulators.romDirectoryEmpty}
+              icon="browse"
+              error={errors[folderKey(emulator)] || undefined}
+              onConfirm={() =>
+                setOverlay({
+                  kind: emulator.romDirectory ? 'folder-actions' : 'pick-folder',
+                  emulator
+                })
+              }
+            />
+          )}
+        </Fragment>
       ))}
+      {emulators.some((emulator) => emulator.executablePath) && (
+        <p className="settings__subtitle">{t.emulators.romDirectoryNote}</p>
+      )}
 
       {overlay?.kind === 'actions' && (
         <ChoiceDialog
@@ -97,6 +125,47 @@ export function EmulatorsSettings(): React.JSX.Element {
                 void run(overlay.emulator.key, window.equon.emulators.remove(overlay.emulator.key))
             }
           ]}
+        />
+      )}
+      {overlay?.kind === 'folder-actions' && (
+        <ChoiceDialog
+          id="emulator-folder-actions"
+          title={t.emulators.romDirectory(overlay.emulator.name)}
+          onClose={() => setOverlay(null)}
+          footer={<p className="dialog__message">{t.emulators.romDirectoryRemoveNote}</p>}
+          items={[
+            {
+              id: 'change',
+              label: t.emulators.romDirectoryChange,
+              onConfirm: () => setOverlay({ kind: 'pick-folder', emulator: overlay.emulator })
+            },
+            { id: 'close', label: t.emulators.close, onConfirm: () => setOverlay(null) },
+            {
+              id: 'remove',
+              label: t.emulators.romDirectoryRemove,
+              tone: 'danger',
+              separated: true,
+              onConfirm: () =>
+                void run(
+                  folderKey(overlay.emulator),
+                  window.equon.emulators.setRomDirectory(overlay.emulator.key, null)
+                )
+            }
+          ]}
+        />
+      )}
+      {overlay?.kind === 'pick-folder' && (
+        <FileBrowserDialog
+          kind="directory"
+          // Changing the folder starts where the current one is.
+          initialPath={overlay.emulator.romDirectory}
+          onClose={() => setOverlay(null)}
+          onPick={(path) =>
+            void run(
+              folderKey(overlay.emulator),
+              window.equon.emulators.setRomDirectory(overlay.emulator.key, path)
+            )
+          }
         />
       )}
       {overlay?.kind === 'pick' && (

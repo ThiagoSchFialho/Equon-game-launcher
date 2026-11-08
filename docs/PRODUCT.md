@@ -118,6 +118,13 @@ com o computador ligado a uma TV.
     executável dele. Ao adicionar um jogo, escolher uma ROM no campo
     Executável, com o Yuzu configurado, já faz dele um jogo do Yuzu; o
     launcher abre o jogo direto no emulador.
+-   **Pasta das ROMs:** um emulador configurado pode ter uma pasta de ROMs.
+    Os arquivos `.nsp` e `.xci` soltos nela (sem subpastas, sem
+    atualizações nem DLCs) viram jogos sozinhos, com o nome tirado do
+    arquivo, ao escolher a pasta, ao abrir o launcher e em "Atualizar
+    biblioteca". Com o IGDB configurado, dados e artes são preenchidos
+    quando um resultado tem o mesmo nome; senão, o jogo fica com o nome do
+    arquivo. Um jogo removido volta enquanto a ROM estiver na pasta.
 
 As integrações devem ser implementadas por adaptadores independentes.
 Não presumir que todas as lojas ofereçam APIs públicas equivalentes.

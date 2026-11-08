@@ -208,7 +208,8 @@ function toEmulatorInfo(key: EmulatorKey, config: EmulatorConfig | null): Emulat
     name: emulator.name,
     origin: emulator.origin,
     romExtensions: [...emulator.romExtensions],
-    executablePath: config?.executablePath ?? null
+    executablePath: config?.executablePath ?? null,
+    romDirectory: config?.romDirectory ?? null
   }
 }
 

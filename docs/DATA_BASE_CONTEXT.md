@@ -336,10 +336,17 @@ Emuladores suportados pelo launcher e o executável que o usuário configurou pa
 | --- | --- | --- |
 | `key` | `TEXT PRIMARY KEY` | `CHECK (key IN ('yuzu'))`; igual à `key` da origem dos jogos desse emulador |
 | `executable_path` | `TEXT NOT NULL` | Caminho do executável do emulador (`.exe`), entrada não confiável |
+| `rom_directory` | `TEXT` | Pasta das ROMs (opcional), entrada não confiável: caminho absoluto de uma pasta existente, validado no processo principal. Migração `0014` |
 
 Regras:
 
 - Configurado na aba "Emuladores" das Configurações; pode ser trocado ou removido.
+- **Pasta das ROMs (decisão do dono do projeto, 2026-11-07):** só para um emulador já configurado. Trocar o executável mantém a pasta; remover o emulador ou a pasta não remove os jogos que vieram dela.
+  - Lida ao escolher a pasta, ao abrir o launcher e em "Atualizar biblioteca" (nunca na verificação de 10 s). Só os **arquivos soltos** nela: sem subpastas e sem atalhos/links, até 5000 itens.
+  - Viram jogos só os arquivos `.nsp` e `.xci` de jogos inteiros: atualizações (title ID entre colchetes terminando em `800`), conteúdo extra (title ID que não termina em `000`) e arquivos marcados `[UPD]`/`(DLC)` ficam de fora. Os outros formatos continuam podendo ser adicionados à mão.
+  - Cada ROM nova vira um jogo com a origem do emulador, `installed = 1` e o nome do arquivo sem a extensão, sem as etiquetas entre `[ ]` e `( )`, com `_` trocado por espaço e com o artigo de volta na frente quando o arquivo o põe no fim ("Legend of Zelda, The - Link's Awakening" vira "The Legend of Zelda - Link's Awakening"). Uma ROM que já é de algum jogo (comparando o caminho sem diferenciar maiúsculas) não é adicionada de novo. Uma pasta que não pode ser lida não adiciona nem muda nada.
+  - Um jogo removido pelo usuário volta na próxima leitura enquanto a ROM estiver na pasta (as remoções não são guardadas, decisão do dono). Uma ROM que sumiu segue a regra de instalação de sempre (`installed = 0`).
+  - Com o IGDB configurado, cada jogo novo é buscado pelo nome, um de cada vez. Só um resultado com **o mesmo nome** (sem diferenciar maiúsculas, acentos, ™/®/© e pontuação) preenche o jogo, sem confirmação do usuário (exceção à D-18): nome oficial, descrição, desenvolvedora, data, classificação, gêneros e artes. Nas artes, só a imagem de fundo vem primeiro do IGDB; logo, capa vertical, capa quadrada e cabeçalho vêm do SteamGridDB pelo mesmo nome, e o IGDB só cobre o logo e a capa vertical que faltarem (decisão do dono do projeto). Sem resultado igual, ou com falha, o jogo fica com o nome do arquivo, e o log do processo principal registra os nomes que o IGDB devolveu. Enquanto isso acontece, o rodapé mostra "Buscando dados das ROMs no IGDB…" com a contagem.
 - **Yuzu:** ROMs `.nsp`, `.xci`, `.nca`, `.nro` e `.nso`. O jogo abre com `yuzu.exe -f -g "<rom>"` (`-f` tela cheia, `-g` jogo), montado no processo principal como lista de argumentos, sem shell.
 - Estado de instalação de um jogo do Yuzu: existência da ROM (mesmas regras de 3.2). Sem o emulador configurado (ou com o executável ausente), o jogo não pode ser iniciado e a interface explica o motivo.
 

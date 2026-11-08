@@ -51,12 +51,16 @@ export const origins: OriginInfo[] = [
   { key: 'yuzu', name: 'Yuzu', builtin: true }
 ]
 
-export const yuzu = (executablePath: string | null = null): EmulatorInfo => ({
+export const yuzu = (
+  executablePath: string | null = null,
+  romDirectory: string | null = null
+): EmulatorInfo => ({
   key: 'yuzu',
   name: 'Yuzu',
   origin: 'yuzu',
   romExtensions: ['.nsp', '.xci', '.nca', '.nro', '.nso'],
-  executablePath
+  executablePath,
+  romDirectory
 })
 
 export const settingsInfo = (extra: Partial<SettingsInfo> = {}): SettingsInfo => ({
@@ -229,6 +233,7 @@ export function installFakeApi(
     emulators: {
       list: async () => [yuzu()],
       set: async (_key, path) => ({ ok: true, data: yuzu(path) }),
+      setRomDirectory: async () => ({ ok: true, data: null }),
       remove: async () => ({ ok: true, data: null }),
       ...overrides.emulators
     },

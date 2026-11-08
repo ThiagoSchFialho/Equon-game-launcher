@@ -132,7 +132,7 @@ export const igdbGameSchema = z
 
 export const backgroundActivitySchema = z
   .strictObject({
-    task: z.enum(['achievements', 'library', 'metadata', 'artwork']),
+    task: z.enum(['achievements', 'library', 'roms', 'metadata', 'artwork']),
     done: z.number().int().nonnegative(),
     total: z.number().int().nonnegative()
   })
@@ -279,6 +279,7 @@ export const originsRenameArgs = z.tuple([originKey, z.string().max(100)])
 export const originsRemoveArgs = z.tuple([originKey])
 export const emulatorsSetArgs = z.tuple([originKey, path])
 export const emulatorsRemoveArgs = z.tuple([originKey])
+export const emulatorsSetRomDirectoryArgs = z.tuple([originKey, path.nullable()])
 
 export const pickKindSchema = z.enum([
   'executable',
@@ -366,7 +367,8 @@ export const emulatorInfoSchema = z.strictObject({
   name: z.string().min(1),
   origin: originKey,
   romExtensions: z.array(z.string()),
-  executablePath: z.string().nullable()
+  executablePath: z.string().nullable(),
+  romDirectory: z.string().nullable()
 }) satisfies z.ZodType<EmulatorInfo>
 
 export const emulatorListSchema = z.array(emulatorInfoSchema)

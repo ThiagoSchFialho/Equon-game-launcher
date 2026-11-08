@@ -830,6 +830,65 @@ describe('emulators in Settings', () => {
     press('Escape')
     expect(await screen.findByText('1 jogo')).toBeTruthy()
   })
+
+  it('offers a ROM folder once the emulator is configured, and removes it', async () => {
+    let folder: string | null = null
+    const setRomDirectory = vi.fn<EquonApi['emulators']['setRomDirectory']>(
+      async (_key, directory) => {
+        folder = directory
+        return { ok: true, data: null }
+      }
+    )
+    installFakeApi([summary(1, 'A')], {
+      emulators: { list: async () => [yuzu('C:\\Yuzu\\yuzu.exe', folder)], setRomDirectory },
+      files: {
+        list: async (path) => ({
+          ok: true,
+          data:
+            path === null
+              ? {
+                  path: null,
+                  parent: null,
+                  entries: [{ name: 'Roms', path: 'D:\\Roms', type: 'directory' }],
+                  truncated: false
+                }
+              : { path: 'D:\\Roms', parent: null, entries: [], truncated: false }
+        })
+      }
+    })
+    render(<App />)
+    await screen.findByText('12h 22m')
+    await click('Menu do sistema')
+    await clickText('Configurações')
+    await clickText('Emuladores')
+    expect(await screen.findByText('Opcional — escolha a pasta das suas ROMs')).toBeTruthy()
+    expect(screen.getByText(/Os arquivos \.nsp e \.xci soltos/)).toBeTruthy()
+
+    await click('Pasta das ROMs (Yuzu)')
+    await clickText('Roms')
+    await clickText('Usar esta pasta')
+    await waitFor(() => expect(setRomDirectory).toHaveBeenCalledWith('yuzu', 'D:\\Roms'))
+    expect(await screen.findByText('D:\\Roms')).toBeTruthy()
+
+    await click('Pasta das ROMs (Yuzu)')
+    expect(
+      await screen.findByText('Remover a pasta não remove os jogos que vieram dela.')
+    ).toBeTruthy()
+    await clickText('Remover pasta')
+    expect(setRomDirectory).toHaveBeenLastCalledWith('yuzu', null)
+    expect(await screen.findByText('Opcional — escolha a pasta das suas ROMs')).toBeTruthy()
+  })
+
+  it('has no ROM folder before the emulator is configured', async () => {
+    installFakeApi([summary(1, 'A')])
+    render(<App />)
+    await screen.findByText('12h 22m')
+    await click('Menu do sistema')
+    await clickText('Configurações')
+    await clickText('Emuladores')
+    await screen.findByText('Não configurado — escolha o yuzu.exe')
+    expect(screen.queryByLabelText('Pasta das ROMs (Yuzu)')).toBeNull()
+  })
 })
 
 /** A file-browser folder with one compatible file. */

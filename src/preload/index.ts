@@ -122,6 +122,8 @@ const api: EquonApi = {
   emulators: {
     list: () => ipcRenderer.invoke(IpcChannel.emulatorsList),
     set: (key, path) => ipcRenderer.invoke(IpcChannel.emulatorsSet, key, path),
+    setRomDirectory: (key, directory) =>
+      ipcRenderer.invoke(IpcChannel.emulatorsSetRomDirectory, key, directory),
     remove: (key) => ipcRenderer.invoke(IpcChannel.emulatorsRemove, key)
   },
   files: {
