@@ -73,6 +73,7 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-21 | System menu | Accepted | Xbox button or footer icon, on any screen: fullscreen, settings, shutdown, quit; see §3.20 |
 | D-22 | Image over the screen while a game opens | Accepted | Own topmost window; the game starts once covered; leaves 2 s after a new process takes the foreground; see §3.21 |
 | D-23 | Installing and uninstalling Steam games | Accepted | Steam's own windows, through `steam://install` and `steam://uninstall`, built in main; see §3.22 |
+| D-25 | Game art behind the Home screen | Accepted | Settings › Aparência: the focused game's launch image, blurred and darkened by the user's levels; `USERS.home_art_*`; see §3.24 |
 | D-24 | Interface sounds | Accepted | Sounds on moving, confirming, going back and opening modals; on by default, `USERS.ui_sounds`; silent while a game runs; see §3.23 |
 | D-16 | Refresh frequency for `appdetails` metadata | Accepted | Fetched only when a game is discovered/added; failed fetches are retried (§3.14) |
 | D-17 | Steam launch mechanism | Accepted | `steam://rungameid/<appid>`, built in the main process (§3.12) |
@@ -450,6 +451,16 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 **Silence.** Off in Settings, while a game runs, under the launch image (D-22) and while the window is in the background. The renderer reads the setting once and Settings updates it as it changes.
 
 **Security.** The CSP gains `media-src 'self'`: audio only from the app itself.
+
+### 3.24 D-25 — Game art behind the Home screen (Accepted, after Phase 8)
+
+**Owner decisions (2026-11-08):** a new Settings tab, "Aparência", with "Mostrar arte do jogo como background" (off by default) and two levels the user sets: "Desfoque" (0 to 10, default 4) and "Escurecimento" (0% to 90% in steps of 10, default 60%). When on, the Home screen shows the focused game's launch image behind everything, blurred and darkened; a game with no launch image uses its background image, as the launch cover does (D-22), and one with neither shows the usual background.
+
+**Where it lives.** Three `USERS` columns (`home_art_background`, `home_art_blur`, `home_art_dim`, migration 0017), each with a range `CHECK`; the IPC schema takes only what changed, within range and step. The renderer reads them once at start (`data/home-art.ts`) and Settings updates them as they change, shown at once and undone if saving fails.
+
+**The levels** are a new focusable control (`components/LevelRow.tsx`): left and right change the value when they can, and at the end of the range they move the focus on as usual, so it is never trapped. Each step plays the move sound (D-24). The mouse uses − and +. Unavailable, with the reason readable, while the option is off.
+
+**The image.** `components/HomeArtBackdrop.tsx`, portalled onto the whole Home screen (the carousel's container query makes it a containing block, so it could not cover the top bar from inside). Blur is level × 0.25rem through a CSS `filter`, which is set, never animated; the image is scaled 1.1 so the blurred edges stay outside the screen. Darkening is a black layer at the chosen opacity. A new game's image fades in over the previous one (opacity only, `--motion-screen`; none with reduced motion), and the old one leaves when the fade ends. It changes only once the focus stops for 150 ms, so a held direction does not swap a large blurred image every 110 ms; the first image, when the screen opens or comes back, shows at once.
 
 ## 4. Inconsistencies found across the project docs
 
@@ -831,6 +842,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-07 | 0.56 | Steam's DEJUS rating: an age DEJUS does not have (Steam generates "6") goes up to the nearest official rating, never down (`DATA_BASE_CONTEXT.md` §4.2). Migration 0015 has the unrated Steam games fetch their store data once more (a one-time exception to D-16, like 0005). |
 | 2026-11-08 | 0.57 | D-24: interface sounds, with "Sons da interface" in Configurações › Sistema (`USERS.ui_sounds`, migration 0016) and `media-src 'self'` in the CSP (§3.23). |
 | 2026-11-08 | 0.58 | D-24: LB/RB play JDSherbert's swipe, kept out of the public repo by its license, with the move sound as the fallback (§3.23). |
+| 2026-11-08 | 0.59 | D-25: game art behind the Home screen, set in a new Settings tab, "Aparência" (`USERS.home_art_*`, migration 0017; §3.24). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

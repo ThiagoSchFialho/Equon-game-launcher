@@ -231,6 +231,10 @@ limitações, condições de teste e método de inicialização suportado.
 -   Aba "Sistema" com as opções "Iniciar em tela cheia" e "Iniciar com o
     sistema", desmarcadas por padrão, e "Sons da interface", marcada por
     padrão.
+-   Aba "Aparência" com "Mostrar arte do jogo como background", desmarcada
+    por padrão: no Início, a imagem de abertura do jogo em foco fica atrás
+    de tudo, desfocada e escurecida. O usuário escolhe o desfoque (0 a 10)
+    e o escurecimento (0% a 90%).
 -   Sons da interface: ao mover o foco, trocar de seção (LB/RB), confirmar,
     voltar, jogar ou instalar, abrir um modal e abrir o menu do sistema. Em silêncio
     enquanto um jogo está aberto ou com o Equon em segundo plano.

@@ -118,6 +118,7 @@ const api: EquonApi = {
       ipcRenderer.invoke(IpcChannel.settingsSetStartFullscreen, enabled),
     setOpenAtLogin: (enabled) => ipcRenderer.invoke(IpcChannel.settingsSetOpenAtLogin, enabled),
     setUiSounds: (enabled) => ipcRenderer.invoke(IpcChannel.settingsSetUiSounds, enabled),
+    setHomeArt: (changes) => ipcRenderer.invoke(IpcChannel.settingsSetHomeArt, changes),
     testConnection: (kind) => ipcRenderer.invoke(IpcChannel.settingsTestConnection, kind)
   },
   emulators: {

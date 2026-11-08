@@ -1,0 +1,76 @@
+/* Like a checkbox row of Settings (Checkbox.css), with a stepped bar on the right. */
+.level-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  min-height: 4.25rem;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-card);
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-gap);
+  transition: outline-color var(--motion-focus) var(--motion-easing);
+}
+
+.level-row[data-focused='true'] {
+  outline-color: var(--color-focus);
+}
+
+.level-row[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+
+.level-row[aria-disabled='true'] .level-row__label,
+.level-row[aria-disabled='true'] .level-row__control {
+  opacity: 0.5;
+}
+
+.level-row__label {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-medium);
+}
+
+.level-row__control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.level-row__step {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-card-title);
+  background: var(--color-surface-raised);
+  border-radius: var(--radius-button);
+}
+
+.level-row__step:disabled {
+  opacity: 0.4;
+}
+
+.level-row__bar {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.level-row__tick {
+  width: 1.25rem;
+  height: 0.75rem;
+  background: var(--color-surface-raised);
+  border-radius: var(--space-1);
+}
+
+.level-row__tick[data-on='true'] {
+  background: var(--color-accent);
+}
+
+.level-row__value {
+  min-width: 3.5rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body);
+  text-align: right;
+}

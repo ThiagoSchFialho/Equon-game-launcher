@@ -64,10 +64,38 @@ describe('settings service', () => {
       lastSync: null,
       startFullscreen: false,
       uiSounds: true,
+      homeArt: { enabled: false, blur: 4, dim: 60 },
       openAtLogin: false,
       openAtLoginAvailable: true
     })
     expect(settingsInfoSchema.safeParse(info).success).toBe(true)
+  })
+
+  it('stores the Home background art: off by default, each value on its own, within its range', () => {
+    expect(settings.setHomeArt({ enabled: true })).toMatchObject({
+      ok: true,
+      data: { homeArt: { enabled: true, blur: 4, dim: 60 } }
+    })
+    expect(settings.setHomeArt({ blur: 10 }).ok && settings.get().homeArt).toEqual({
+      enabled: true,
+      blur: 10,
+      dim: 60
+    })
+    expect(settings.setHomeArt({ dim: 0, enabled: false }).ok && settings.get().homeArt).toEqual({
+      enabled: false,
+      blur: 10,
+      dim: 0
+    })
+    // The table refuses what the IPC schema already refuses.
+    for (const bad of [
+      'home_art_blur = 11',
+      'home_art_blur = -1',
+      'home_art_dim = 95',
+      'home_art_dim = 35',
+      'home_art_background = 2'
+    ]) {
+      expect(() => db.prepare(`UPDATE users SET ${bad}`).run()).toThrow()
+    }
   })
 
   it('has interface sounds on by default, stored as 0 or 1', () => {

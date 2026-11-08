@@ -127,6 +127,9 @@ Uma única linha, com a configuração do usuário local.
 | `bronze` | `INTEGER NOT NULL DEFAULT 0` | Conquistas bronze desbloqueadas; `CHECK (>= 0)` |
 | `start_fullscreen` | `INTEGER NOT NULL DEFAULT 0` | Abrir o launcher em tela cheia (D-20); `CHECK (IN (0, 1))` |
 | `ui_sounds` | `INTEGER NOT NULL DEFAULT 1` | "Sons da interface" (D-24), ligados por padrão; `CHECK (IN (0, 1))`. Migração `0016` |
+| `home_art_background` | `INTEGER NOT NULL DEFAULT 0` | "Mostrar arte do jogo como background" (D-25), desligado por padrão; `CHECK (IN (0, 1))`. Migração `0017` |
+| `home_art_blur` | `INTEGER NOT NULL DEFAULT 4` | Nível de desfoque dessa arte; `CHECK (BETWEEN 0 AND 10)`. Migração `0017` |
+| `home_art_dim` | `INTEGER NOT NULL DEFAULT 60` | Escurecimento dessa arte, em %; `CHECK (BETWEEN 0 AND 90 AND home_art_dim % 10 = 0)`. Migração `0017` |
 
 Regras:
 

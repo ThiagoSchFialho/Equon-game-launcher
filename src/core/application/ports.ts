@@ -273,6 +273,15 @@ export interface TrophyCounters {
 export type SecretKind =
   'steam-api-key' | 'steamgriddb-api-key' | 'igdb-client-id' | 'igdb-client-secret'
 
+/** The Home background preference (D-25). */
+export interface HomeArtPreference {
+  enabled: boolean
+  /** Level 0 to 10. */
+  blur: number
+  /** Percent, 0 to 90 in steps of 10. */
+  dim: number
+}
+
 export interface UserRepository {
   /** SteamID64 (17 digits) or null. */
   getSteamId(): string | null
@@ -285,6 +294,10 @@ export interface UserRepository {
   /** Settings › Sistema › "Sons da interface"; on by default. */
   getUiSounds(): boolean
   setUiSounds(enabled: boolean): void
+  /** Settings › Aparência: the focused game's art behind the Home screen (D-25). */
+  getHomeArt(): HomeArtPreference
+  /** Values already validated by the caller; the table's CHECKs guard them too. */
+  setHomeArt(changes: Partial<HomeArtPreference>): void
   getTrophyCounters(): TrophyCounters
   /** Recomputes counters from ACHIEVEMENTS; never increments blindly. */
   recomputeTrophyCounters(): TrophyCounters

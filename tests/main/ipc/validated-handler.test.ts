@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { createValidatedHandler, IpcRejectedError } from '../../../src/main/ipc/validated-handler'
-import { gamesSetFlagsArgs, gamesUpdateSteamArgs } from '../../../src/shared/ipc/schemas'
+import {
+  gamesSetFlagsArgs,
+  gamesUpdateSteamArgs,
+  settingsSetHomeArtArgs
+} from '../../../src/shared/ipc/schemas'
 
 const trusted = { senderFrame: { url: 'app://trusted' } }
 const isTrustedSender = (url: string): boolean => url === 'app://trusted'
@@ -63,6 +67,22 @@ describe('games:update-steam arguments', () => {
     ]) {
       expect(gamesUpdateSteamArgs.safeParse([1, { ...details, ...extra }]).success).toBe(false)
     }
+  })
+})
+
+describe('settings:set-home-art arguments', () => {
+  it('takes what changed, within range and step, and nothing else', () => {
+    const ok = (changes: unknown): boolean => settingsSetHomeArtArgs.safeParse([changes]).success
+    expect(ok({ enabled: true })).toBe(true)
+    expect(ok({ blur: 0 })).toBe(true)
+    expect(ok({ blur: 10, dim: 90 })).toBe(true)
+    expect(ok({})).toBe(false)
+    expect(ok({ blur: 11 })).toBe(false)
+    expect(ok({ blur: 2.5 })).toBe(false)
+    expect(ok({ dim: 35 })).toBe(false)
+    expect(ok({ dim: 100 })).toBe(false)
+    expect(ok({ enabled: 1 })).toBe(false)
+    expect(ok({ blur: 4, url: 'x' })).toBe(false)
   })
 })
 

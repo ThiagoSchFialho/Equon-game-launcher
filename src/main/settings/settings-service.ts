@@ -1,6 +1,11 @@
 import type { SecretKind, UserRepository } from '../../core/application'
 import { isSteamId64 } from '../../core/domain'
-import type { Result, SettingsInfo, SteamSyncInfo } from '../../shared/ipc/contract'
+import type {
+  HomeArtSettings,
+  Result,
+  SettingsInfo,
+  SteamSyncInfo
+} from '../../shared/ipc/contract'
 import type { SteamService } from '../steam/steam-service'
 
 /** Electron safeStorage behind a port, so tests need no Electron. */
@@ -35,6 +40,8 @@ export interface SettingsService {
   setStartFullscreen(enabled: boolean): Result<SettingsInfo>
   setOpenAtLogin(enabled: boolean): Result<SettingsInfo>
   setUiSounds(enabled: boolean): Result<SettingsInfo>
+  /** Values validated by the IPC schema (ranges and steps) before they get here. */
+  setHomeArt(changes: Partial<HomeArtSettings>): Result<SettingsInfo>
 }
 
 /**
@@ -56,6 +63,7 @@ export function createSettingsService(deps: SettingsServiceDeps): SettingsServic
     lastSync: deps.lastSync(),
     startFullscreen: deps.users.getStartFullscreen(),
     uiSounds: deps.users.getUiSounds(),
+    homeArt: deps.users.getHomeArt(),
     openAtLogin: deps.loginItem.available() && deps.loginItem.enabled(),
     openAtLoginAvailable: deps.loginItem.available()
   })
@@ -97,6 +105,11 @@ export function createSettingsService(deps: SettingsServiceDeps): SettingsServic
 
     setUiSounds(enabled) {
       deps.users.setUiSounds(enabled)
+      return { ok: true, data: get() }
+    },
+
+    setHomeArt(changes) {
+      deps.users.setHomeArt(changes)
       return { ok: true, data: get() }
     },
 

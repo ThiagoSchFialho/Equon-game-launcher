@@ -71,6 +71,14 @@ bordas. Ambos são estáticos; o rodapé mantém a cor própria. Para não
 aparecerem anéis entre os tons (banding, em telas de 8 bits), os degradês
 usam paradas suavizadas e um ruído fino, quase invisível, por cima.
 
+Com "Mostrar arte do jogo como background" (Configurações › Aparência,
+D-25), a imagem de abertura do jogo em foco (ou a imagem de fundo, se ele
+não tiver) cobre a tela atrás de tudo, desfocada e escurecida nos níveis
+escolhidos pelo usuário. Ela é ampliada 10% para as bordas desfocadas
+ficarem fora da tela. Ao trocar de jogo, a nova entra num fade cruzado
+(`--motion-screen`, só opacidade; sem fade com movimento reduzido), e só
+depois que o foco para por 150 ms.
+
 ### Biblioteca
 
 -   Densidade equilibrada: cards grandes o suficiente para reconhecer a
@@ -142,8 +150,14 @@ usam paradas suavizadas e um ruído fino, quase invisível, por cima.
     abas, igual ao da página do jogo e alcançado com o direcional para cima;
     o trabalho em segundo plano aparece no rodapé.
 -   Layout (mockup `settings ideas2`): barra lateral com as abas
-    "Conexões", "Emuladores", "Sistema", "Armazenamento" e "Sobre"; conteúdo
-    à direita.
+    "Conexões", "Emuladores", "Sistema", "Aparência", "Armazenamento" e
+    "Sobre"; conteúdo à direita.
+-   Aparência: checkbox "Mostrar arte do jogo como background" e dois
+    níveis, "Desfoque" e "Escurecimento", indisponíveis enquanto ela está
+    desmarcada. Um nível é uma linha focável com o nome à esquerda e, à
+    direita, "−", uma barra de passos em `--color-accent`, "+" e o valor;
+    esquerda e direita mudam o valor e, no fim da faixa, movem o foco
+    normalmente. Cada passo toca o som de mover o foco.
 -   Conexões: no topo, o painel "Biblioteca" com "Atualizar biblioteca" e o
     resultado da última leitura, sempre com o horário e o que mudou
     ("nenhuma novidade" quando nada mudou); se os jogos não instalados não

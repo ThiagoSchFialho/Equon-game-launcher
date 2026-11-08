@@ -402,6 +402,7 @@ export const t = {
       connections: 'Conexões',
       emulators: 'Emuladores',
       system: 'Sistema',
+      appearance: 'Aparência',
       storage: 'Armazenamento',
       about: 'Sobre'
     },
@@ -412,6 +413,13 @@ export const t = {
       local: 'Disco Local',
       removable: 'Disco removível',
       space: (free: string, total: string) => `${free} livres de ${total}`
+    },
+    appearance: {
+      homeArt: 'Mostrar arte do jogo como background',
+      homeArtHint:
+        'No Início, a imagem de abertura do jogo em foco fica atrás de tudo, desfocada e escurecida.',
+      blur: 'Desfoque',
+      dim: 'Escurecimento'
     },
     system: {
       startFullscreen: 'Iniciar em tela cheia',

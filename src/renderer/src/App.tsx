@@ -20,6 +20,8 @@ import { SYSTEM_MENU_SCOPE, SystemMenu } from './components/SystemMenu'
 import { AchievementSortContext, type AchievementSortState } from './data/achievements'
 import { BackgroundActivityContext, useBackgroundActivityLoader } from './data/background-activity'
 import { GamesContext, useGamesLoader } from './data/games'
+import { DEFAULT_HOME_ART, HomeArtContext, type HomeArtState } from './data/home-art'
+import type { HomeArtSettings } from '../../shared/ipc/contract'
 import { LibraryViewContext, type LibraryViewState } from './data/library-view'
 import { OpeningContext, useOpeningLoader } from './data/opening'
 import { RunningContext, useRunningLoader } from './data/running'
@@ -110,9 +112,18 @@ function App(): React.JSX.Element {
 
   // Interface sounds: created once (the context never changes, so a dialog does not play its
   // sound again); off until Settings answers, silent while a game runs.
+  // The Home background (D-25): read once, then Settings › Aparência keeps it up to date.
+  const [homeArtSettings, setHomeArtSettings] = useState<HomeArtSettings>(DEFAULT_HOME_ART)
+  const homeArt = useMemo<HomeArtState>(
+    () => ({ settings: homeArtSettings, set: setHomeArtSettings }),
+    [homeArtSettings]
+  )
   useEffect(() => {
     void window.equon.settings.get().then(
-      (info) => sounds.setEnabled(info.uiSounds),
+      (info) => {
+        sounds.setEnabled(info.uiSounds)
+        setHomeArtSettings(info.homeArt)
+      },
       () => {}
     )
   }, [sounds])
@@ -175,26 +186,30 @@ function App(): React.JSX.Element {
   return (
     <FocusProvider manager={manager}>
       <UiSoundsContext.Provider value={sounds}>
-        <NavigationContext.Provider value={navigation}>
-          <GamesContext.Provider value={games}>
-            <RunningContext.Provider value={running}>
-              <LibraryViewContext.Provider value={libraryViewState}>
-                <AchievementSortContext.Provider value={achievementSortState}>
-                  <BackgroundActivityContext.Provider value={activity}>
-                    <OpeningContext.Provider value={opening}>
-                      <SystemMenuContext.Provider value={systemMenu}>
-                        <ScreenErrorBoundary key={JSON.stringify(route)}>
-                          <CurrentScreen route={route} />
-                        </ScreenErrorBoundary>
-                        {systemMenuOpen && <SystemMenu onClose={() => setSystemMenuOpen(false)} />}
-                      </SystemMenuContext.Provider>
-                    </OpeningContext.Provider>
-                  </BackgroundActivityContext.Provider>
-                </AchievementSortContext.Provider>
-              </LibraryViewContext.Provider>
-            </RunningContext.Provider>
-          </GamesContext.Provider>
-        </NavigationContext.Provider>
+        <HomeArtContext.Provider value={homeArt}>
+          <NavigationContext.Provider value={navigation}>
+            <GamesContext.Provider value={games}>
+              <RunningContext.Provider value={running}>
+                <LibraryViewContext.Provider value={libraryViewState}>
+                  <AchievementSortContext.Provider value={achievementSortState}>
+                    <BackgroundActivityContext.Provider value={activity}>
+                      <OpeningContext.Provider value={opening}>
+                        <SystemMenuContext.Provider value={systemMenu}>
+                          <ScreenErrorBoundary key={JSON.stringify(route)}>
+                            <CurrentScreen route={route} />
+                          </ScreenErrorBoundary>
+                          {systemMenuOpen && (
+                            <SystemMenu onClose={() => setSystemMenuOpen(false)} />
+                          )}
+                        </SystemMenuContext.Provider>
+                      </OpeningContext.Provider>
+                    </BackgroundActivityContext.Provider>
+                  </AchievementSortContext.Provider>
+                </LibraryViewContext.Provider>
+              </RunningContext.Provider>
+            </GamesContext.Provider>
+          </NavigationContext.Provider>
+        </HomeArtContext.Provider>
       </UiSoundsContext.Provider>
     </FocusProvider>
   )

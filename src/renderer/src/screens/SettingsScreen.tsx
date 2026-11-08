@@ -7,6 +7,7 @@ import type {
   SteamSyncInfo,
   SystemInfo
 } from '../../../shared/ipc/contract'
+import appearanceIcon from '../assets/icons/appearance.svg'
 import checkIcon from '../assets/icons/check-circle.svg'
 import deleteIcon from '../assets/icons/delete.svg'
 import editIcon from '../assets/icons/edit.svg'
@@ -18,6 +19,7 @@ import steamIcon from '../assets/icons/steam-white.svg'
 import syncIcon from '../assets/icons/sync.svg'
 import { currentSection, useNavigation } from '../app/navigation'
 import { Button } from '../components/Button'
+import { AppearanceSettings } from '../components/AppearanceSettings'
 import { ChoiceDialog } from '../components/Dialog'
 import { EmulatorsSettings } from '../components/EmulatorsSettings'
 import { BackLink } from '../components/BackLink'
@@ -34,7 +36,7 @@ import { FocusScope } from '../focus/FocusProvider'
 import { errorMessage, t } from '../strings'
 import './SettingsScreen.css'
 
-type Tab = 'connections' | 'emulators' | 'system' | 'storage' | 'about'
+type Tab = 'connections' | 'emulators' | 'system' | 'appearance' | 'storage' | 'about'
 type Overlay = { kind: 'steamId' } | { kind: 'secret'; secret: SecretKind; label: string }
 
 const HINTS: Hint[] = [
@@ -42,7 +44,7 @@ const HINTS: Hint[] = [
   { button: 'B', label: t.hints.back }
 ]
 
-/** Settings (mockup "settings ideas2"): Conexões, Emuladores, Sistema, Armazenamento and Sobre. Keys never come back from main. */
+/** Settings (mockup "settings ideas2"): Conexões, Emuladores, Sistema, Aparência, Armazenamento and Sobre. Keys never come back from main. */
 export function SettingsScreen(): React.JSX.Element {
   const navigation = useNavigation()
   const [tab, setTab] = useState<Tab>('connections')
@@ -89,6 +91,8 @@ export function SettingsScreen(): React.JSX.Element {
     content = <EmulatorsSettings />
   } else if (tab === 'system') {
     content = <SystemSettings info={info} onChanged={setInfo} />
+  } else if (tab === 'appearance') {
+    content = <AppearanceSettings info={info} onChanged={setInfo} />
   } else if (tab === 'storage') {
     content = <StorageSettings />
   } else {
@@ -139,6 +143,13 @@ export function SettingsScreen(): React.JSX.Element {
                 icon={settingsIcon}
                 label={t.settings.tabs.system}
                 selected={tab === 'system'}
+                onSelect={setTab}
+              />
+              <SettingsTab
+                id="appearance"
+                icon={appearanceIcon}
+                label={t.settings.tabs.appearance}
+                selected={tab === 'appearance'}
                 onSelect={setTab}
               />
               <SettingsTab

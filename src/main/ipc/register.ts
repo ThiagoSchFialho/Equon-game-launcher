@@ -39,6 +39,7 @@ import {
   driveListSchema,
   settingsInfoSchema,
   settingsSetEnabledArgs,
+  settingsSetHomeArtArgs,
   settingsSetSecretArgs,
   settingsSetSteamIdArgs,
   settingsTestConnectionArgs,
@@ -219,6 +220,12 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
     IpcChannel.settingsSetOpenAtLogin,
     createValidatedHandler(settingsSetEnabledArgs, settingsResult, trusted, (enabled) =>
       deps.settings.setOpenAtLogin(enabled)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.settingsSetHomeArt,
+    createValidatedHandler(settingsSetHomeArtArgs, settingsResult, trusted, (changes) =>
+      deps.settings.setHomeArt(changes)
     )
   )
   ipcMain.handle(

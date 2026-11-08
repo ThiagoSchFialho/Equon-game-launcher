@@ -35,6 +35,17 @@ export function createUserRepository(db: SqliteDatabase): UserRepository {
     'SELECT ui_sounds FROM users WHERE id = 1'
   )
   const updateUiSounds = db.prepare<[number]>('UPDATE users SET ui_sounds = ? WHERE id = 1')
+  const selectHomeArt = db.prepare<
+    [],
+    { home_art_background: number; home_art_blur: number; home_art_dim: number }
+  >('SELECT home_art_background, home_art_blur, home_art_dim FROM users WHERE id = 1')
+  // COALESCE: a value not given keeps the stored one.
+  const updateHomeArt = db.prepare<Record<string, number | null>>(`
+    UPDATE users SET
+      home_art_background = COALESCE(@enabled, home_art_background),
+      home_art_blur = COALESCE(@blur, home_art_blur),
+      home_art_dim = COALESCE(@dim, home_art_dim)
+    WHERE id = 1`)
 
   // One fixed statement per secret column; column names never come from input.
   const secrets: Record<
@@ -90,6 +101,22 @@ export function createUserRepository(db: SqliteDatabase): UserRepository {
     getUiSounds: () => (selectUiSounds.get()?.ui_sounds ?? 1) === 1,
     setUiSounds: (enabled) => {
       updateUiSounds.run(enabled ? 1 : 0)
+    },
+    // No row yet (first start): the columns' defaults.
+    getHomeArt: () => {
+      const row = selectHomeArt.get()
+      return {
+        enabled: row?.home_art_background === 1,
+        blur: row?.home_art_blur ?? 4,
+        dim: row?.home_art_dim ?? 60
+      }
+    },
+    setHomeArt: (changes) => {
+      updateHomeArt.run({
+        enabled: changes.enabled === undefined ? null : changes.enabled ? 1 : 0,
+        blur: changes.blur ?? null,
+        dim: changes.dim ?? null
+      })
     },
     getTrophyCounters: () => selectCounters.get() as TrophyCounters,
     recomputeTrophyCounters: () => recompute.get() as TrophyCounters

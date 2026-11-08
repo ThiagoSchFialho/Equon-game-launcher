@@ -18,6 +18,7 @@ export const IpcChannel = {
   settingsSetStartFullscreen: 'settings:set-start-fullscreen',
   settingsSetOpenAtLogin: 'settings:set-open-at-login',
   settingsSetUiSounds: 'settings:set-ui-sounds',
+  settingsSetHomeArt: 'settings:set-home-art',
   settingsTestConnection: 'settings:test-connection',
   libraryDuplicates: 'library:duplicates',
   libraryDismissDuplicate: 'library:dismiss-duplicate',
@@ -236,6 +237,18 @@ export interface ConnectionTest {
 }
 
 /** Settings › Conexões and Sistema. Secrets are never sent: only whether they are set. */
+/** "Mostrar arte do jogo como background" and how it looks (D-25). */
+export interface HomeArtSettings {
+  enabled: boolean
+  /** Level 0 to HOME_ART_BLUR_MAX. */
+  blur: number
+  /** Percent, 0 to HOME_ART_DIM_MAX in steps of HOME_ART_DIM_STEP. */
+  dim: number
+}
+export const HOME_ART_BLUR_MAX = 10
+export const HOME_ART_DIM_MAX = 90
+export const HOME_ART_DIM_STEP = 10
+
 export interface SettingsInfo {
   steamId: string | null
   steamApiKey: boolean
@@ -252,6 +265,8 @@ export interface SettingsInfo {
   startFullscreen: boolean
   /** "Sons da interface": feedback sounds on navigation and actions. */
   uiSounds: boolean
+  /** Configurações › Aparência: the focused game's art behind the Home screen (D-25). */
+  homeArt: HomeArtSettings
   /** As Windows reports it, so turning it off in the Task Manager shows here. */
   openAtLogin: boolean
   /** False when unpackaged: it would register the bare Electron binary. */
@@ -592,6 +607,8 @@ export interface EquonApi {
     setStartFullscreen(enabled: boolean): Promise<Result<SettingsInfo>>
     setOpenAtLogin(enabled: boolean): Promise<Result<SettingsInfo>>
     setUiSounds(enabled: boolean): Promise<Result<SettingsInfo>>
+    /** Only what changed; the rest stays. */
+    setHomeArt(changes: Partial<HomeArtSettings>): Promise<Result<SettingsInfo>>
     /** One live request with the stored credentials. */
     testConnection(kind: 'steam' | 'steamgriddb' | 'igdb'): Promise<Result<ConnectionTest>>
   }

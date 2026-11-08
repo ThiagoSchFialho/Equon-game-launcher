@@ -2,6 +2,9 @@ import { z } from 'zod'
 import {
   ARTWORK_EDIT_KINDS,
   ARTWORK_KINDS,
+  HOME_ART_BLUR_MAX,
+  HOME_ART_DIM_MAX,
+  HOME_ART_DIM_STEP,
   STEAM_GALLERY_KINDS,
   type AchievementsOverview,
   type AchievementSyncStatus,
@@ -13,6 +16,7 @@ import {
   type GameAchievements,
   type GameDetails,
   type GameSummary,
+  type HomeArtSettings,
   type BackgroundActivity,
   type LibraryRefreshInfo,
   type ManualGameForm,
@@ -258,6 +262,23 @@ export const artworkKindListSchema = z.array(z.enum(ARTWORK_KINDS))
 
 export const settingsTestConnectionArgs = z.tuple([z.enum(['steam', 'steamgriddb', 'igdb'])])
 
+const homeArtBlur = z.number().int().min(0).max(HOME_ART_BLUR_MAX)
+const homeArtDim = z
+  .number()
+  .int()
+  .min(0)
+  .max(HOME_ART_DIM_MAX)
+  .refine((dim) => dim % HOME_ART_DIM_STEP === 0)
+const homeArtSchema = z.strictObject({
+  enabled: z.boolean(),
+  blur: homeArtBlur,
+  dim: homeArtDim
+}) satisfies z.ZodType<HomeArtSettings>
+/** Only what changed, and at least one thing. */
+export const settingsSetHomeArtArgs = z.tuple([
+  homeArtSchema.partial().refine((changes) => Object.keys(changes).length > 0)
+])
+
 export const settingsInfoSchema = z.strictObject({
   steamId: z.string().nullable(),
   steamApiKey: z.boolean(),
@@ -271,6 +292,7 @@ export const settingsInfoSchema = z.strictObject({
   lastSync: steamSyncInfoSchema.nullable(),
   startFullscreen: z.boolean(),
   uiSounds: z.boolean(),
+  homeArt: homeArtSchema,
   openAtLogin: z.boolean(),
   openAtLoginAvailable: z.boolean()
 }) satisfies z.ZodType<SettingsInfo>
