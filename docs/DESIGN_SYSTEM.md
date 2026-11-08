@@ -161,7 +161,10 @@ usam paradas suavizadas e um ruído fino, quase invisível, por cima.
     barra do espaço usado e "X GB livres de Y GB", lidos ao abrir a aba. A
     barra usa `color.install` e fica em `color.danger` com menos de 10% livre.
 -   Sobre: versão do Equon, sistema, pasta da Steam detectada, pasta de
-    dados, versão do banco e versões de Electron, Chromium e Node.js.
+    dados, versão do banco e versões de Electron, Chromium e Node.js. Por
+    último, o crédito dos sons ("Cosy User Interface SFX", de Jacob,
+    SampleKingdom; detalhes em `design/sounds/CREDITS.md`), em texto, sem
+    link.
 
 ## 3. Tokens visuais iniciais
 

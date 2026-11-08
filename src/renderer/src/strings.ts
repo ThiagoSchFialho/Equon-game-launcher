@@ -495,7 +495,9 @@ export const t = {
       steamPath: 'Pasta da Steam',
       steamNotFound: 'Não encontrada',
       dataPath: 'Pasta de dados',
-      schema: 'Versão do banco de dados'
+      schema: 'Versão do banco de dados',
+      sounds: 'Sons',
+      soundsCredit: 'Cosy User Interface SFX, por Jacob (SampleKingdom) · sample-kingdom.itch.io'
     },
     loading: 'Carregando…',
     error: 'Não foi possível carregar as configurações.'

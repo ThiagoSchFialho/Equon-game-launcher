@@ -266,6 +266,9 @@ describe('settings', () => {
     expect(await screen.findByText('Windows 11 Pro (10.0.26300)')).toBeTruthy()
     expect(screen.getByText('C:\\Program Files (x86)\\Steam')).toBeTruthy()
     expect(screen.getByText('44.10.1')).toBeTruthy()
+    // Credit of the sound pack.
+    expect(screen.getByText('Sons')).toBeTruthy()
+    expect(screen.getByText(/Cosy User Interface SFX, por Jacob \(SampleKingdom\)/)).toBeTruthy()
     press('Escape')
     expect(await screen.findByText('12h 22m')).toBeTruthy()
   })

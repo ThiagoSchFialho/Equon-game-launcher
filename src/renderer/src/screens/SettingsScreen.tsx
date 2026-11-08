@@ -635,7 +635,9 @@ function About({ steamPath }: { steamPath: string | null }): React.JSX.Element {
     [t.settings.about.schema, String(system.schemaVersion)],
     [t.settings.about.electron, system.electron],
     [t.settings.about.chrome, system.chrome],
-    [t.settings.about.node, system.node]
+    [t.settings.about.node, system.node],
+    // Credit for the sound pack (design/sounds/CREDITS.md).
+    [t.settings.about.sounds, t.settings.about.soundsCredit]
   ]
   return (
     <dl className="settings__about">
