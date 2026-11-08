@@ -4,6 +4,7 @@ import {
   SAME_PRESS_MS,
   UI_SOUND_URLS,
   createUiSoundPlayer,
+  licensedOr,
   type UiSound
 } from '../../../src/renderer/src/sound/ui-sounds'
 
@@ -25,9 +26,24 @@ function fakeVoices(): {
 describe('interface sound player', () => {
   it('has a file for every sound', () => {
     expect(Object.keys(UI_SOUND_URLS).sort()).toEqual(
-      ['back', 'confirm', 'modal-open', 'navigate', 'play', 'system-menu'].sort()
+      ['back', 'confirm', 'modal-open', 'navigate', 'play', 'section', 'system-menu'].sort()
     )
     for (const url of Object.values(UI_SOUND_URLS)) expect(url).toMatch(/\.wav/)
+  })
+
+  it('takes a licensed sound when the build has it, and the committed one otherwise', () => {
+    const found = { '../assets/sounds/licensed/section.wav': '/assets/section-abc.wav' }
+    expect(licensedOr(found, 'section', '/assets/navigate.wav')).toBe('/assets/section-abc.wav')
+    // A clone of the public repo has no licensed files.
+    expect(licensedOr({}, 'section', '/assets/navigate.wav')).toBe('/assets/navigate.wav')
+    // Another name never stands in for it.
+    expect(
+      licensedOr(
+        { '../assets/sounds/licensed/other-section.wav': '/x.wav' },
+        'section',
+        '/assets/navigate.wav'
+      )
+    ).toBe('/assets/navigate.wav')
   })
 
   it('plays one sound per press: the stronger one wins and the other stops', () => {

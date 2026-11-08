@@ -163,8 +163,8 @@ usam paradas suavizadas e um ruído fino, quase invisível, por cima.
 -   Sobre: versão do Equon, sistema, pasta da Steam detectada, pasta de
     dados, versão do banco e versões de Electron, Chromium e Node.js. Por
     último, o crédito dos sons ("Cosy User Interface SFX", de Jacob,
-    SampleKingdom; detalhes em `design/sounds/CREDITS.md`), em texto, sem
-    link.
+    SampleKingdom, e "Swipe", de JDSherbert, cuja licença exige o crédito;
+    detalhes em `design/sounds/CREDITS.md`), em texto, sem link.
 
 ## 3. Tokens visuais iniciais
 

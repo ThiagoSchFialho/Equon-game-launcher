@@ -500,7 +500,8 @@ export const t = {
       dataPath: 'Pasta de dados',
       schema: 'Versão do banco de dados',
       sounds: 'Sons',
-      soundsCredit: 'Cosy User Interface SFX, por Jacob (SampleKingdom) · sample-kingdom.itch.io'
+      soundsCredit:
+        'Cosy User Interface SFX, por Jacob (SampleKingdom) · sample-kingdom.itch.io · Swipe, por JDSherbert · jdsherbert.itch.io'
     },
     loading: 'Carregando…',
     error: 'Não foi possível carregar as configurações.'

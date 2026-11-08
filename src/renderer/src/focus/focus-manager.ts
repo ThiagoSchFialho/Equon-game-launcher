@@ -24,7 +24,7 @@ export interface FocusableOptions {
 }
 
 /** What the focus manager reports for the interface sounds (sound/ui-sounds.ts). */
-export type FocusCue = 'navigate' | 'confirm' | 'back' | 'play'
+export type FocusCue = 'navigate' | 'section' | 'confirm' | 'back' | 'play'
 
 interface Entry extends FocusableOptions {
   id: string
@@ -241,8 +241,8 @@ export class FocusManager {
       const handler = handlers[action]
       if (handler) {
         if (action === 'back') this.onCue?.('back')
-        // LB/RB move between sections, like a move of the focus.
-        else if (action === 'previousSection' || action === 'nextSection') this.onCue?.('navigate')
+        // LB/RB move between sections, with a sound of their own (owner decision).
+        else if (action === 'previousSection' || action === 'nextSection') this.onCue?.('section')
         handler()
         return true
       }

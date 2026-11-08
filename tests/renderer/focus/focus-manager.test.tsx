@@ -60,7 +60,7 @@ describe('sound cues', () => {
     act(() => void manager.handle('confirm'))
     act(() => void manager.handle('back'))
     act(() => void manager.handle('nextSection'))
-    expect(cues).toEqual(['navigate', 'play', 'navigate', 'confirm', 'back', 'navigate'])
+    expect(cues).toEqual(['navigate', 'play', 'navigate', 'confirm', 'back', 'section'])
 
     // Nothing to confirm, or nowhere to go: silent.
     act(() => void manager.handle('left'))

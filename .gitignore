@@ -45,3 +45,9 @@ desktop.ini
 
 # Tool caches
 .eslintcache
+
+# Licensed assets that must not be redistributed (the repo is public): kept locally only.
+# The app falls back to a committed sound when one is missing (design/sounds/CREDITS.md).
+design/sounds/JDSherbert_*
+design/sounds/LICENSE.pdf
+src/renderer/src/assets/sounds/licensed/

@@ -269,6 +269,8 @@ describe('settings', () => {
     // Credit of the sound pack.
     expect(screen.getByText('Sons')).toBeTruthy()
     expect(screen.getByText(/Cosy User Interface SFX, por Jacob \(SampleKingdom\)/)).toBeTruthy()
+    // The swipe's license requires its credit.
+    expect(screen.getByText(/Swipe, por JDSherbert/)).toBeTruthy()
     press('Escape')
     expect(await screen.findByText('12h 22m')).toBeTruthy()
   })

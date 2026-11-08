@@ -9,10 +9,29 @@ import systemMenuUrl from '../assets/sounds/system-menu.wav'
  * Interface sounds (owner decision): which sound plays for what. The files come from the
  * "Cosy User Interface SFX" pack (design/sounds/CREDITS.md).
  */
-export type UiSound = 'navigate' | 'confirm' | 'back' | 'play' | 'modal-open' | 'system-menu'
+export type UiSound =
+  'navigate' | 'section' | 'confirm' | 'back' | 'play' | 'modal-open' | 'system-menu'
+
+/**
+ * Licensed sounds that may not be redistributed are kept out of the public repo
+ * (.gitignore): found here when the build has them, absent otherwise.
+ */
+const LICENSED = import.meta.glob<string>('../assets/sounds/licensed/*.wav', {
+  eager: true,
+  query: '?url',
+  import: 'default'
+})
+
+/** A licensed sound the build has, or the committed one it replaces. */
+export function licensedOr(found: Record<string, string>, name: string, fallback: string): string {
+  const key = Object.keys(found).find((path) => path.endsWith(`/${name}.wav`))
+  return key ? found[key] : fallback
+}
 
 export const UI_SOUND_URLS: Record<UiSound, string> = {
   navigate: navigateUrl,
+  // JDSherbert's swipe when present (design/sounds/CREDITS.md); the move sound otherwise.
+  section: licensedOr(LICENSED, 'section', navigateUrl),
   confirm: confirmUrl,
   back: backUrl,
   play: playUrl,
@@ -31,6 +50,7 @@ export const SAME_PRESS_MS = 80
 
 const PRIORITY: Record<UiSound, number> = {
   navigate: 0,
+  section: 0,
   confirm: 1,
   back: 1,
   play: 2,
