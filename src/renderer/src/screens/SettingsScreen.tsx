@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
   DuplicateInfo,
   LibraryRefreshInfo,
@@ -29,6 +29,7 @@ import { StorageSettings } from '../components/StorageSettings'
 import { SystemSettings } from '../components/SystemSettings'
 import { useGames } from '../data/games'
 import { useFocusable, useScreenActions } from '../focus/focus-context'
+import { prefersReducedMotion } from '../focus/focus-manager'
 import { FocusScope } from '../focus/FocusProvider'
 import { errorMessage, t } from '../strings'
 import './SettingsScreen.css'
@@ -254,6 +255,17 @@ function Connections({
       else onError(secret, errorMessage(result.error.code))
     })
   }
+  /**
+   * The first thing of the tab brings the whole top into view, title included: "nearest"
+   * would stop at the panel and leave the title cut (owner's report).
+   */
+  const library = useRef<HTMLDivElement>(null)
+  const revealTop = (): void => {
+    library.current?.closest('.settings__content')?.scrollTo?.({
+      top: 0,
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth'
+    })
+  }
   const refresh = (): void => {
     setRefreshing(true)
     void window.equon.library
@@ -272,6 +284,47 @@ function Connections({
           {t.settings.secretsUnavailable}
         </p>
       )}
+
+      {/* First: the action of this tab people use most (owner decision). */}
+      <div className="settings__library" ref={library}>
+        <div>
+          <p className="settings__library-title">{t.settings.library}</p>
+          <p className="settings__library-status" aria-live="polite">
+            {refreshText(lastRefresh)}
+          </p>
+          {lastRefresh?.ownedError && (
+            <p className="settings__library-status" role="alert">
+              {ownedErrorText(lastRefresh.ownedError)}
+            </p>
+          )}
+          {duplicates.length > 0 && (
+            <p className="settings__library-duplicates">{t.duplicates.notice(duplicates.length)}</p>
+          )}
+        </div>
+        {duplicates.length > 0 && (
+          <Button
+            id="settings:duplicates"
+            label={t.duplicates.review}
+            scroll="none"
+            onFocus={revealTop}
+            onConfirm={() => setReviewing(true)}
+          >
+            {t.duplicates.review}
+          </Button>
+        )}
+        <Button
+          id="settings:refresh"
+          variant="primary"
+          label={t.settings.refresh}
+          unavailable={refreshing}
+          scroll="none"
+          onFocus={revealTop}
+          onConfirm={refresh}
+        >
+          <img src={syncIcon} alt="" />
+          {refreshing ? t.settings.refreshing : t.settings.refresh}
+        </Button>
+      </div>
 
       <h2 className="settings__group">
         <img src={steamIcon} alt="" />
@@ -350,41 +403,6 @@ function Connections({
         ready={info.igdbClientId && info.igdbClientSecret}
       />
 
-      <div className="settings__library">
-        <div>
-          <p className="settings__library-title">{t.settings.library}</p>
-          <p className="settings__library-status" aria-live="polite">
-            {refreshText(lastRefresh)}
-          </p>
-          {lastRefresh?.ownedError && (
-            <p className="settings__library-status" role="alert">
-              {ownedErrorText(lastRefresh.ownedError)}
-            </p>
-          )}
-          {duplicates.length > 0 && (
-            <p className="settings__library-duplicates">{t.duplicates.notice(duplicates.length)}</p>
-          )}
-        </div>
-        {duplicates.length > 0 && (
-          <Button
-            id="settings:duplicates"
-            label={t.duplicates.review}
-            onConfirm={() => setReviewing(true)}
-          >
-            {t.duplicates.review}
-          </Button>
-        )}
-        <Button
-          id="settings:refresh"
-          variant="primary"
-          label={t.settings.refresh}
-          unavailable={refreshing}
-          onConfirm={refresh}
-        >
-          <img src={syncIcon} alt="" />
-          {refreshing ? t.settings.refreshing : t.settings.refresh}
-        </Button>
-      </div>
       {reviewing && duplicates.length > 0 && (
         <DuplicateReview
           duplicate={duplicates[0]}

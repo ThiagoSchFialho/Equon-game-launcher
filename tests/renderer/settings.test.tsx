@@ -178,6 +178,29 @@ describe('settings', () => {
     ).toBeTruthy()
   })
 
+  it('starts Conexões with the library, and focusing it shows the top, title included', async () => {
+    const scrollTo = vi.fn()
+    HTMLElement.prototype.scrollTo = scrollTo
+    try {
+      installFakeApi([summary(1, 'Tidebound')])
+      await openSettings()
+      const rows = [...document.querySelectorAll('.settings__sections > *')]
+      expect(rows[0]?.className).toBe('settings__library')
+
+      // jsdom has no layout for the directions: a click focuses it the same way.
+      await click('Atualizar biblioteca')
+      await waitFor(() =>
+        expect(document.querySelector('[data-focused="true"]')?.getAttribute('aria-label')).toBe(
+          'Atualizar biblioteca'
+        )
+      )
+      expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }))
+      expect(scrollTo.mock.contexts.at(-1)).toBe(document.querySelector('.settings__content'))
+    } finally {
+      delete (HTMLElement.prototype as Partial<HTMLElement>).scrollTo
+    }
+  })
+
   it('refreshes the library and shows the result; connection tests are not available yet', async () => {
     const refresh = vi.fn<EquonApi['library']['refresh']>(async () => ({
       status: 'partial',
