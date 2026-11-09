@@ -871,6 +871,16 @@ describe('emulators in Settings', () => {
 
     await click('Pasta das ROMs (Yuzu)')
     await clickText('Roms')
+    // Inside a folder, "..." is the first entry and goes up one folder; no "Pasta acima" button.
+    const parent = await screen.findByLabelText('Pasta acima')
+    expect(parent.textContent).toBe('...')
+    expect(parent.getAttribute('data-focused')).toBe('true')
+    expect(parent.closest('.file-browser__list')).toBeTruthy()
+    expect(screen.getByText('Usar esta pasta').closest('button')?.dataset.primary).toBe('true')
+    act(() => parent.click())
+    await screen.findByText('Locais')
+    expect(screen.queryByLabelText('Pasta acima')).toBeNull()
+    await clickText('Roms')
     await clickText('Usar esta pasta')
     await waitFor(() => expect(setRomDirectory).toHaveBeenCalledWith('yuzu', 'D:\\Roms'))
     expect(await screen.findByText('D:\\Roms')).toBeTruthy()

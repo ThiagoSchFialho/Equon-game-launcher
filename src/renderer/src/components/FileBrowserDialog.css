@@ -31,6 +31,17 @@
   padding: 0 var(--space-5);
 }
 
+/* "Usar esta pasta": the main action, in Equon's accent color. */
+.file-browser__actions .file-row[data-primary='true'] {
+  background: var(--color-accent);
+  color: var(--color-background);
+}
+
+/* Pushes "Usar janela do Windows" to the right. */
+.file-browser__spacer {
+  flex: 1;
+}
+
 .file-browser__list {
   flex: 1;
   min-height: 0;

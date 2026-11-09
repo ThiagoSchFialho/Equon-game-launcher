@@ -258,6 +258,8 @@ export const t = {
     } as Record<string, string>,
     start: 'Locais',
     up: 'Pasta acima',
+    /** The first entry of a folder, which goes up one folder. */
+    parent: '...',
     useThisFolder: 'Usar esta pasta',
     native: 'Usar janela do Windows',
     loading: 'Carregando…',

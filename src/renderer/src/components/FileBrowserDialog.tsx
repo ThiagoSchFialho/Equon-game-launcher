@@ -11,13 +11,20 @@ type Loaded =
 function Row({
   id,
   label,
+  ariaLabel,
   kind,
+  primary,
   autoFocus,
   onConfirm
 }: {
   id: string
   label: string
-  kind: 'directory' | 'file' | 'action'
+  /** When the visible label is not a name (the "..." row). */
+  ariaLabel?: string
+  /** `parent`: the "..." entry that goes up one folder. */
+  kind: 'directory' | 'file' | 'parent' | 'action'
+  /** The main action, in the accent color. */
+  primary?: boolean
   autoFocus?: boolean
   onConfirm: () => void
 }): React.JSX.Element {
@@ -30,12 +37,17 @@ function Row({
       ref={setElement}
       className={`file-row file-row--${kind}`}
       data-focused={focused}
+      data-primary={primary}
+      aria-label={ariaLabel}
       tabIndex={-1}
       {...mouse}
     >
-      <span className="file-row__icon" aria-hidden>
-        {kind === 'directory' ? '▸' : kind === 'file' ? '•' : ''}
-      </span>
+      {/* Buttons start with their text; list entries keep the icon column aligned. */}
+      {kind !== 'action' && (
+        <span className="file-row__icon" aria-hidden>
+          {kind === 'directory' ? '▸' : kind === 'file' ? '•' : ''}
+        </span>
+      )}
       <span className="file-row__label">{label}</span>
     </button>
   )
@@ -44,7 +56,8 @@ function Row({
 /**
  * Controller-friendly file browser (ARCHITECTURE.md §3.13). Main lists only
  * folders and files allowed for `kind`; the chosen path is validated again
- * when saving. Back goes to the parent folder, then closes.
+ * when saving. Back, or the "..." entry at the top of a folder, goes to the parent folder;
+ * back on the start list closes.
  */
 export function FileBrowserDialog({
   kind,
@@ -89,16 +102,20 @@ export function FileBrowserDialog({
   }
 
   const entries = loaded.status === 'ready' ? loaded.listing.entries : []
-  const focusIndex = Math.max(
-    0,
-    entries.findIndex((e) => e.path === cameFrom)
-  )
-  const focusTarget = entries[focusIndex]?.path
+  // Inside a folder the list starts with "..." (owner decision), so that is the first item.
+  const hasParent = path !== null && loaded.status !== 'loading'
+  const cameFromIndex = entries.findIndex((e) => e.path === cameFrom)
+  const focusTarget =
+    cameFromIndex >= 0
+      ? `files:entry:${entries[cameFromIndex].path}`
+      : hasParent
+        ? 'files:parent'
+        : entries[0] && `files:entry:${entries[0].path}`
 
   // The list arrives after the action buttons, so focus it explicitly once loaded.
   const focus = useFocusManager()
   useEffect(() => {
-    if (focusTarget) focus.focus(`files:entry:${focusTarget}`)
+    if (focusTarget) focus.focus(focusTarget)
   }, [focus, focusTarget])
 
   return (
@@ -114,21 +131,33 @@ export function FileBrowserDialog({
       <div className="dialog__panel file-browser">
         <p className="file-browser__path">{path ?? t.files.start}</p>
         <div className="file-browser__actions">
-          {path !== null && <Row id="files:up" label={t.files.up} kind="action" onConfirm={up} />}
           {kind === 'directory' && path !== null && (
             <Row
               id="files:this"
               label={t.files.useThisFolder}
               kind="action"
+              primary
               onConfirm={() => onPick(path)}
             />
           )}
+          {/* On the right, apart from the choice made in Equon (owner decision). */}
+          <span className="file-browser__spacer" />
           <Row id="files:native" label={t.files.native} kind="action" onConfirm={native} />
         </div>
         <div className="file-browser__list">
           {loaded.status === 'loading' && <p className="file-browser__note">{t.files.loading}</p>}
           {loaded.status === 'error' && (
             <p className="file-browser__note file-browser__note--error">{t.files.error}</p>
+          )}
+          {hasParent && (
+            <Row
+              id="files:parent"
+              label={t.files.parent}
+              ariaLabel={t.files.up}
+              kind="parent"
+              autoFocus={cameFromIndex < 0}
+              onConfirm={up}
+            />
           )}
           {loaded.status === 'ready' && entries.length === 0 && (
             <p className="file-browser__note">{t.files.empty}</p>
@@ -139,7 +168,7 @@ export function FileBrowserDialog({
               id={`files:entry:${entry.path}`}
               label={entry.name}
               kind={entry.type}
-              autoFocus={i === focusIndex}
+              autoFocus={cameFromIndex >= 0 ? i === cameFromIndex : !hasParent && i === 0}
               onConfirm={() => (entry.type === 'directory' ? open(entry.path) : onPick(entry.path))}
             />
           ))}
