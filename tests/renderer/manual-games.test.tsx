@@ -827,6 +827,11 @@ describe('emulators in Settings', () => {
     expect(remove).toHaveBeenCalledWith('yuzu')
     expect(await screen.findByText('Não configurado — escolha o yuzu.exe')).toBeTruthy()
 
+    // B in the page goes back to its tab first; B on the tab leaves Settings.
+    press('Escape')
+    await waitFor(() =>
+      expect(document.querySelector('[data-focused="true"]')?.textContent).toContain('Emuladores')
+    )
     press('Escape')
     expect(await screen.findByText('1 jogo')).toBeTruthy()
   })

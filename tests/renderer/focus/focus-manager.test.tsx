@@ -229,6 +229,45 @@ describe('focus manager', () => {
     expect(focusedText()).toBe('c')
   })
 
+  it('a move filter keeps directions inside their side, but not focus()', async () => {
+    const manager = new FocusManager()
+    render(
+      <FocusProvider manager={manager}>
+        <FocusScope id="screen">
+          <div data-side="tabs">
+            <Item id="tab-1" x={0} />
+            <Item id="tab-2" x={0} y={1} />
+          </div>
+          <div data-side="page">
+            <Item id="page-1" x={1} />
+            <Item id="page-2" x={2} />
+          </div>
+        </FocusScope>
+      </FocusProvider>
+    )
+    await flush()
+    const side = (el: HTMLElement): string | undefined =>
+      el.closest<HTMLElement>('[data-side]')?.dataset.side
+    const remove = manager.setMoveFilter('screen', (from, to) => side(from) === side(to))
+
+    expect(focusedText()).toBe('tab-1')
+    expect(manager.handle('right')).toBe(false)
+    expect(focusedText()).toBe('tab-1')
+    act(() => void manager.handle('down'))
+    expect(focusedText()).toBe('tab-2')
+
+    act(() => manager.focus('page-1'))
+    act(() => void manager.handle('right'))
+    expect(focusedText()).toBe('page-2')
+    act(() => void manager.handle('left'))
+    expect(manager.handle('left')).toBe(false)
+    expect(focusedText()).toBe('page-1')
+
+    remove()
+    act(() => void manager.handle('left'))
+    expect(focusedText()).toBe('tab-1')
+  })
+
   it('honours autoFocus', async () => {
     const manager = new FocusManager()
     render(

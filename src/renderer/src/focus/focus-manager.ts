@@ -68,6 +68,8 @@ export class FocusManager {
   private listeners = new Set<() => void>()
   private ensureQueued = false
   private follower = createScrollFollower()
+  /** Per scope: which direction moves are allowed (Settings keeps its tabs and page apart). */
+  private moveFilters = new Map<string, (from: HTMLElement, to: HTMLElement) => boolean>()
   focusedId: string | null = null
   /**
    * Hears what the user did: a move, a confirm, a back. Only user actions, never focus that
@@ -185,6 +187,30 @@ export class FocusManager {
     this.remembered.clear()
   }
 
+  /**
+   * Focuses the first element, in document order, of the active scope inside `container`
+   * (Settings: A on a tab enters its page). False when there is none yet.
+   */
+  focusFirstWithin(container: HTMLElement): boolean {
+    const scope = this.activeScope
+    if (scope === null) return false
+    const inside = this.scopeEntries(scope).filter((e) => !e.manualOnly && container.contains(e.el))
+    if (inside.length === 0) return false
+    this.focus(this.firstInDocumentOrder(inside))
+    return true
+  }
+
+  /**
+   * Restricts direction moves inside `scope` to the pairs `allow` accepts; the mouse and
+   * `focus()` are not affected. Returns the function that removes it.
+   */
+  setMoveFilter(scope: string, allow: (from: HTMLElement, to: HTMLElement) => boolean): () => void {
+    this.moveFilters.set(scope, allow)
+    return () => {
+      if (this.moveFilters.get(scope) === allow) this.moveFilters.delete(scope)
+    }
+  }
+
   /** Mouse click: focus and confirm. */
   activate(id: string): void {
     this.focus(id)
@@ -216,8 +242,9 @@ export class FocusManager {
           return true
         }
       }
+      const allow = this.moveFilters.get(current.scope)
       const candidates = this.scopeEntries(current.scope)
-        .filter((e) => e.id !== current.id)
+        .filter((e) => e.id !== current.id && (!allow || allow(current.el, e.el)))
         .map((e) => ({ id: e.id, rect: rectOf(e.el) }))
       const next = findNext(rectOf(current.el), candidates, action)
       if (next) {

@@ -43,6 +43,58 @@ describe('settings', () => {
     expect(screen.queryByRole('heading', { name: 'Conexões' })).toBeNull()
   })
 
+  it('opens each tab as the focus moves through the list, with no need to press A', async () => {
+    installFakeApi([summary(1, 'Tidebound')])
+    await openSettings()
+    const focusedText = (): string | null | undefined =>
+      document.querySelector('[data-focused="true"]')?.textContent
+    expect(focusedText()).toContain('Conexões')
+
+    press('ArrowDown')
+    expect(await screen.findByRole('heading', { name: 'Emuladores' })).toBeTruthy()
+    expect(focusedText()).toContain('Emuladores')
+    press('ArrowDown')
+    press('ArrowDown')
+    expect(await screen.findByRole('heading', { name: 'Aparência' })).toBeTruthy()
+    press('ArrowUp')
+    expect(await screen.findByRole('heading', { name: 'Sistema' })).toBeTruthy()
+
+    // Down past the last tab finds nothing below it, so Sobre keeps its page.
+    press('ArrowDown')
+    press('ArrowDown')
+    press('ArrowDown')
+    expect(await screen.findByRole('heading', { name: 'Sobre' })).toBeTruthy()
+    press('ArrowDown')
+    expect(screen.getByRole('heading', { name: 'Sobre' })).toBeTruthy()
+  })
+
+  it('A on a tab enters its first item; B goes back to the tab, and B on a tab leaves', async () => {
+    installFakeApi([summary(1, 'Tidebound')])
+    await openSettings()
+    const focused = (): Element | null => document.querySelector('[data-focused="true"]')
+
+    press('Enter')
+    await waitFor(() => expect(focused()?.getAttribute('aria-label')).toBe('Atualizar biblioteca'))
+    press('Escape')
+    await waitFor(() => expect(focused()?.textContent).toContain('Conexões'))
+    expect(screen.getByRole('heading', { name: 'Conexões' })).toBeTruthy()
+
+    // A page that loads its items gets the focus when they appear.
+    press('ArrowDown')
+    press('ArrowDown')
+    await screen.findByRole('heading', { name: 'Sistema' })
+    press('Enter')
+    await waitFor(() =>
+      expect(document.querySelector('.settings__content')?.contains(focused())).toBe(true)
+    )
+    press('Escape')
+    await waitFor(() => expect(focused()?.textContent).toContain('Sistema'))
+
+    press('Escape')
+    await waitFor(() => expect(document.querySelector('.top-bar')).toBeTruthy())
+    expect(screen.queryByRole('heading', { name: 'Sistema' })).toBeNull()
+  })
+
   it('has no navigation bar: B is the way back, and background work shows in the footer', async () => {
     installFakeApi([summary(1, 'Tidebound')], {
       activity: {

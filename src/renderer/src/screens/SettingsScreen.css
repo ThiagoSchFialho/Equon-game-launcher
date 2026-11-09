@@ -65,6 +65,8 @@
   scrollbar-width: none;
   /* Room for the focus ring inside the scroll area. */
   padding: var(--space-2);
+  /* Room below the last option (owner decision). */
+  padding-bottom: var(--space-10);
   margin: calc(var(--space-2) * -1);
   scroll-padding: var(--space-4);
 }

@@ -150,12 +150,21 @@ depois que o foco para por 150 ms.
 -   Sempre indicar como voltar e onde o foco está.
 -   Acesso pelo menu do sistema (botão Xbox ou ícone no rodapé).
 -   Sem barra superior de navegação (decisão do dono do projeto, depois da
-    Fase 8): sai-se com Voltar (B) ou pelo link "← <tela anterior>" acima das
-    abas, igual ao da página do jogo e alcançado com o direcional para cima;
-    o trabalho em segundo plano aparece no rodapé.
+    Fase 8): sai-se com Voltar (B), com o foco nas abas, ou pelo link
+    "← <tela anterior>" acima delas, igual ao da página do jogo e alcançado
+    com o direcional para cima; o trabalho em segundo plano aparece no
+    rodapé.
 -   Layout (mockup `settings ideas2`): barra lateral com as abas
     "Conexões", "Emuladores", "Sistema", "Aparência", "Armazenamento" e
-    "Sobre"; conteúdo à direita.
+    "Sobre"; conteúdo à direita. Mover o foco para cima ou para baixo na
+    lista já abre a aba (decisão do dono do projeto), sem precisar de A.
+    A numa aba leva o foco ao primeiro item da página (numa página que ainda
+    carrega, quando os itens aparecem); B dentro da página devolve o foco à
+    aba, e B numa aba volta à tela anterior. O mouse abre a aba com o clique,
+    que também leva o foco à página. Os direcionais nunca passam entre as
+    abas e a página (decisão do dono do projeto): só A entra e só B volta. A
+    página tem um respiro maior embaixo (`--space-10`) depois da última
+    opção.
 -   Aparência: checkbox "Mostrar arte do jogo como background" e dois
     níveis, "Desfoque" e "Escurecimento", indisponíveis enquanto ela está
     desmarcada. Um nível é uma linha focável com o nome à esquerda e, à

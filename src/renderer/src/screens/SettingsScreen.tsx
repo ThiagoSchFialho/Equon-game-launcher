@@ -32,13 +32,23 @@ import { StateMessage } from '../components/StateMessage'
 import { StorageSettings } from '../components/StorageSettings'
 import { SystemSettings } from '../components/SystemSettings'
 import { useGames } from '../data/games'
-import { useFocusable, useScreenActions } from '../focus/focus-context'
+import { useFocusable, useFocusManager, useScreenActions } from '../focus/focus-context'
 import { prefersReducedMotion } from '../focus/focus-manager'
 import { FocusScope } from '../focus/FocusProvider'
+import type { Direction } from '../input/actions'
 import { errorMessage, t } from '../strings'
 import './SettingsScreen.css'
 
 type Tab = 'connections' | 'emulators' | 'system' | 'appearance' | 'storage' | 'about'
+/** In the order of the side list. */
+const TABS: readonly Tab[] = [
+  'connections',
+  'emulators',
+  'system',
+  'appearance',
+  'storage',
+  'about'
+]
 type Overlay = { kind: 'steamId' } | { kind: 'secret'; secret: SecretKind; label: string }
 
 const HINTS: Hint[] = [
@@ -49,7 +59,21 @@ const HINTS: Hint[] = [
 /** Settings (mockup "settings ideas2"): Conexões, Emuladores, Sistema, Aparência, Armazenamento and Sobre. Keys never come back from main. */
 export function SettingsScreen(): React.JSX.Element {
   const navigation = useNavigation()
+  const manager = useFocusManager()
   const [tab, setTab] = useState<Tab>('connections')
+  /**
+   * Up and down inside the side list open the next tab at once (owner decision): no need to
+   * press A. Past either end, the focus moves on as usual (the way back above the list).
+   */
+  const stepTab = (from: Tab, direction: Direction): boolean => {
+    const index = TABS.indexOf(from)
+    const next =
+      direction === 'up' ? TABS[index - 1] : direction === 'down' ? TABS[index + 1] : undefined
+    if (!next) return false
+    setTab(next)
+    manager.focus(`settings:tab:${next}`)
+    return true
+  }
   const [info, setInfo] = useState<SettingsInfo | null>(null)
   const [loadFailed, setLoadFailed] = useState(false)
   const [overlay, setOverlay] = useState<Overlay | null>(null)
@@ -66,7 +90,59 @@ export function SettingsScreen(): React.JSX.Element {
   }, [])
   useEffect(load, [load])
 
-  useScreenActions({ back: () => navigation.back() })
+  /**
+   * A on a tab opens it and enters its page, on the first item (owner decision). A page that
+   * is still loading gets its first item when it appears, unless the user moved on meanwhile.
+   */
+  const contentRef = useRef<HTMLElement>(null)
+  const [entering, setEntering] = useState<Tab | null>(null)
+  const enterTab = (id: Tab): void => {
+    setTab(id)
+    setEntering(id)
+  }
+  useEffect(() => {
+    if (entering === null) return
+    let frame = 0
+    let tries = 0
+    const attempt = (): void => {
+      const content = contentRef.current
+      if (manager.focusedId !== `settings:tab:${entering}`) return setEntering(null)
+      if (content && manager.focusFirstWithin(content)) return setEntering(null)
+      // About one second for a page that loads its items (Emuladores, Armazenamento).
+      if (++tries < 60) frame = requestAnimationFrame(attempt)
+      else setEntering(null)
+    }
+    attempt()
+    return () => cancelAnimationFrame(frame)
+  }, [entering, manager])
+
+  /**
+   * The directions never cross between the tabs and the page (owner decision): A enters the
+   * page and B comes back, so left and right cannot jump from one to the other.
+   */
+  useEffect(
+    () =>
+      manager.setMoveFilter('screen:settings', (from, to) => {
+        const content = contentRef.current
+        if (!content) return true
+        return content.contains(from) === content.contains(to)
+      }),
+    [manager]
+  )
+
+  /**
+   * B inside a page goes back to its tab; on a tab (or the way back) it leaves Settings
+   * (owner decision).
+   */
+  useScreenActions({
+    back: () => {
+      const focused = manager.focusedId
+      const inPage =
+        focused !== null && focused !== 'settings:back' && !focused.startsWith('settings:tab:')
+      if (inPage) manager.focus(`settings:tab:${tab}`)
+      else navigation.back()
+    }
+  })
 
   let content: React.JSX.Element
   if (loadFailed) {
@@ -131,46 +207,52 @@ export function SettingsScreen(): React.JSX.Element {
                 icon={steamIcon}
                 label={t.settings.tabs.connections}
                 selected={tab === 'connections'}
-                onSelect={setTab}
+                onSelect={enterTab}
+                onStep={stepTab}
               />
               <SettingsTab
                 id="emulators"
                 icon={gamepadIcon}
                 label={t.settings.tabs.emulators}
                 selected={tab === 'emulators'}
-                onSelect={setTab}
+                onSelect={enterTab}
+                onStep={stepTab}
               />
               <SettingsTab
                 id="system"
                 icon={settingsIcon}
                 label={t.settings.tabs.system}
                 selected={tab === 'system'}
-                onSelect={setTab}
+                onSelect={enterTab}
+                onStep={stepTab}
               />
               <SettingsTab
                 id="appearance"
                 icon={appearanceIcon}
                 label={t.settings.tabs.appearance}
                 selected={tab === 'appearance'}
-                onSelect={setTab}
+                onSelect={enterTab}
+                onStep={stepTab}
               />
               <SettingsTab
                 id="storage"
                 icon={storageIcon}
                 label={t.settings.tabs.storage}
                 selected={tab === 'storage'}
-                onSelect={setTab}
+                onSelect={enterTab}
+                onStep={stepTab}
               />
               <SettingsTab
                 id="about"
                 icon={infoIcon}
                 label={t.settings.tabs.about}
                 selected={tab === 'about'}
-                onSelect={setTab}
+                onSelect={enterTab}
+                onStep={stepTab}
               />
             </nav>
           </div>
-          <section className="settings__content">
+          <section className="settings__content" ref={contentRef}>
             <h1 className="settings__title">{t.settings.tabs[tab]}</h1>
             {content}
           </section>
@@ -212,16 +294,20 @@ function SettingsTab({
   icon,
   label,
   selected,
-  onSelect
+  onSelect,
+  onStep
 }: {
   id: Tab
   icon: string
   label: string
   selected: boolean
   onSelect: (tab: Tab) => void
+  /** Up/down to the next tab, which opens at once; false past the ends. */
+  onStep: (from: Tab, direction: Direction) => boolean
 }): React.JSX.Element {
   const { setElement, focused, mouse } = useFocusable<HTMLButtonElement>(`settings:tab:${id}`, {
     onConfirm: () => onSelect(id),
+    onDirection: (direction) => onStep(id, direction),
     autoFocus: id === 'connections'
   })
   return (
