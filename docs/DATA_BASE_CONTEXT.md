@@ -85,6 +85,7 @@ Regras:
 - `steam_playtime_baseline`, `steam_synced_at` e `playtime_offset` são internos: a interface mostra só `playtime` e `time_last_played`.
 - Possíveis duplicidades entre um jogo manual e um jogo Steam **não** são mescladas automaticamente: vão para revisão do usuário.
 - `metadata_fetched_at IS NULL` significa que os metadados ainda não foram obtidos (ou a tentativa falhou) e podem ser tentados de novo. Um jogo sem descrição de verdade, mas com `metadata_fetched_at` preenchido, **não** é buscado outra vez.
+- A loja responder que o jogo **não tem página** (`success: false`, como uma beta encerrada ou um jogo retirado da loja) é uma resposta, não uma falha (decisão do dono do projeto, 2026-11-08): `metadata_fetched_at` é preenchido e nada mais é gravado, para o jogo não ser consultado de novo a cada abertura. Falhas de rede, limite de requisições e respostas inválidas continuam deixando `NULL`.
 - Em jogos Steam, o usuário pode editar só `description`, `developer`, `release_date` e `required_age` (decisão do dono do projeto, 2026-11-07). `title`, `steam_id`, `origin`, o tempo de jogo e a configuração de execução continuam vindo só da Steam. Por isso os metadados da loja (`appdetails`) **só preenchem esses campos quando estão vazios** e nunca trocam um valor já salvo; uma edição feita antes de os metadados chegarem não se perde.
 
 ### 3.2 Estado de instalação de jogos Steam (D-06, D-12)

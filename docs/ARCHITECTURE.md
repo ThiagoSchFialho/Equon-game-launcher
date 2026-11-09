@@ -843,6 +843,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-08 | 0.57 | D-24: interface sounds, with "Sons da interface" in Configurações › Sistema (`USERS.ui_sounds`, migration 0016) and `media-src 'self'` in the CSP (§3.23). |
 | 2026-11-08 | 0.58 | D-24: LB/RB play JDSherbert's swipe, kept out of the public repo by its license, with the move sound as the fallback (§3.23). |
 | 2026-11-08 | 0.59 | D-25: game art behind the Home screen, set in a new Settings tab, "Aparência" (`USERS.home_art_*`, migration 0017; §3.24). |
+| 2026-11-08 | 0.60 | D-16: the store answering that a game has no page (`appdetails` `success: false`) counts as an answer: `metadata_fetched_at` is set and nothing stored, so a closed beta or a delisted game is not asked again on every start (`DATA_BASE_CONTEXT.md` §3.1). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

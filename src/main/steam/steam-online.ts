@@ -5,6 +5,7 @@ import {
   type GameRepository,
   type GenreRepository,
   type OwnedSyncOutcome,
+  type SteamMetadata,
   type UnitOfWork
 } from '../../core/application'
 import { toUtcIso } from '../../core/domain'
@@ -20,6 +21,15 @@ import { UNAVAILABLE_LIMIT, UNAVAILABLE_WAIT_MS } from '../queue-pacing'
 
 /** appdetails is limited to about 200 requests per 5 minutes: one every 1.5 s. */
 export const METADATA_INTERVAL_MS = 1500
+
+/** What a game with no store page gets: nothing, only the mark that it was asked. */
+const NO_STORE_PAGE: SteamMetadata = {
+  description: null,
+  developer: null,
+  requiredAge: null,
+  genres: [],
+  releaseDate: null
+}
 
 export interface SteamOnlineDeps {
   games: GameRepository
@@ -103,11 +113,15 @@ export function createSteamOnline(deps: SteamOnlineDeps): SteamOnline {
           continue
         }
         unavailable = 0
-        // Failures keep metadata_fetched_at NULL, so the next scan retries.
         if (result.ok) {
           applySteamMetadata(deps, game, result.data, now())
           changed = true
+        } else if (result.error === 'not-found') {
+          // The store has no page for it (a closed beta, a delisted game): an answer, not a
+          // failure, so it is not asked again on every start (owner decision). Nothing is stored.
+          applySteamMetadata(deps, game, NO_STORE_PAGE, now())
         }
+        // Real failures keep metadata_fetched_at NULL, so the next scan retries.
       } catch (error) {
         deps.onError?.(error)
       }

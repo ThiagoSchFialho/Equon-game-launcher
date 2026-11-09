@@ -59,7 +59,7 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 - All tables are `STRICT`; booleans and enums always have `CHECK`s.
 - Related writes (session + playtime, achievements + counters) happen in **one transaction**. Repeated syncs with the same data change nothing.
 - `tier` and platinum are pure domain functions; trophy counters are recomputed from `ACHIEVEMENTS`, never incremented blindly. Unknown `global_percent` is `NULL`, never `0`.
-- Metadata (`appdetails`) is fetched **only on discovery/add**, `metadata_fetched_at` is set only after a valid response, and failures are retried on later refreshes.
+- Metadata (`appdetails`) is fetched **only on discovery/add**, `metadata_fetched_at` is set only after a valid response or the store's definite "no page" (`success: false`, which stores nothing), and failures are retried on later refreshes.
 
 ## Steam rules
 

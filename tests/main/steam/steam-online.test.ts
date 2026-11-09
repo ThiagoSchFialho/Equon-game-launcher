@@ -205,6 +205,25 @@ describe('steam online: metadata', () => {
     expect(metadataProgress).toEqual([{ done: 0, total: 2 }, { done: 1, total: 2 }, null])
   })
 
+  it('takes "no store page" as an answer: marked as asked, nothing stored, not asked again', async () => {
+    const beta = games().upsertSteamGame({ steamAppId: 4783780, title: 'Some Beta' }).id
+    db.prepare("UPDATE games SET description = 'Typed by hand' WHERE id = ?").run(beta)
+    answer('appids=', 200, { 4783780: { success: false } })
+    await online.fetchMissingMetadata()
+    expect(games().getById(beta)).toMatchObject({
+      metadataFetchedAt: '2026-11-04T02:00:00Z',
+      description: 'Typed by hand',
+      requiredAge: null
+    })
+    expect(createGenreRepository(db).listForGame(beta)).toEqual([])
+
+    urls = []
+    metadataProgress = []
+    await online.fetchMissingMetadata()
+    expect(urls).toEqual([])
+    expect(metadataProgress).toEqual([])
+  })
+
   it('stops at the first network failure, and the next start tries again', async () => {
     const first = games().upsertSteamGame({ steamAppId: 620, title: 'Portal 2' }).id
     games().upsertSteamGame({ steamAppId: 730, title: 'Counter-Strike 2' })
