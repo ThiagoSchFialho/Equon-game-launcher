@@ -69,25 +69,34 @@ export function EmulatorsSettings(): React.JSX.Element {
       <p className="settings__subtitle">{t.emulators.subtitle}</p>
       {emulators.map((emulator) => (
         <Fragment key={emulator.key}>
-          <FormRow
-            id={`emulator-${emulator.key}`}
-            label={emulator.name}
-            value={emulator.executablePath}
-            placeholder={t.emulators.notConfigured(`${emulator.key}.exe`)}
-            icon="browse"
-            error={errors[emulator.key] || undefined}
-            onConfirm={() =>
-              setOverlay({ kind: emulator.executablePath ? 'actions' : 'pick', emulator })
-            }
-          />
-          {/* The folder belongs to a configured emulator: its games open with it. */}
-          {emulator.executablePath && (
+          <h2 className="settings__group">{emulator.name}</h2>
+          {/* One panel per emulator (owner's sketch): the executable, then the ROM folder. */}
+          <div className="settings__emulator">
+            <FormRow
+              id={`emulator-${emulator.key}`}
+              label={t.emulators.executableLabel}
+              ariaLabel={t.emulators.executable(emulator.name)}
+              value={emulator.executablePath}
+              placeholder={t.emulators.notConfigured(`${emulator.key}.exe`)}
+              icon="browse"
+              error={errors[emulator.key] || undefined}
+              onConfirm={() =>
+                setOverlay({ kind: emulator.executablePath ? 'actions' : 'pick', emulator })
+              }
+            />
+            {/* The folder belongs to a configured emulator: its games open with it. */}
             <FormRow
               id={`emulator-${emulator.key}-roms`}
-              label={t.emulators.romDirectory(emulator.name)}
-              value={emulator.romDirectory}
-              placeholder={t.emulators.romDirectoryEmpty}
+              label={t.emulators.romDirectoryLabel}
+              ariaLabel={t.emulators.romDirectory(emulator.name)}
+              value={emulator.executablePath ? emulator.romDirectory : null}
+              placeholder={
+                emulator.executablePath
+                  ? t.emulators.romDirectoryEmpty
+                  : t.emulators.romDirectoryNeedsExecutable
+              }
               icon="browse"
+              unavailable={!emulator.executablePath}
               error={errors[folderKey(emulator)] || undefined}
               onConfirm={() =>
                 setOverlay({
@@ -96,7 +105,7 @@ export function EmulatorsSettings(): React.JSX.Element {
                 })
               }
             />
-          )}
+          </div>
         </Fragment>
       ))}
       {emulators.some((emulator) => emulator.executablePath) && (

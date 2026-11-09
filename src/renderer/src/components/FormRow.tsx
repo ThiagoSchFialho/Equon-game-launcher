@@ -15,6 +15,10 @@ interface Props {
   multiline?: boolean
   error?: string | null
   autoFocus?: boolean
+  /** Name for assistive tech when the visible label needs its context (e.g. "Executável (Yuzu)"). */
+  ariaLabel?: string
+  /** Shown dimmed and does nothing, still focusable so the reason can be read. */
+  unavailable?: boolean
   onConfirm: () => void
 }
 
@@ -29,10 +33,12 @@ export function FormRow({
   multiline,
   error,
   autoFocus,
+  ariaLabel,
+  unavailable = false,
   onConfirm
 }: Props): React.JSX.Element {
   const { setElement, focused, mouse } = useFocusable<HTMLButtonElement>(`form:${id}`, {
-    onConfirm,
+    onConfirm: unavailable ? undefined : onConfirm,
     autoFocus
   })
   const empty = value === null || value === ''
@@ -44,8 +50,9 @@ export function FormRow({
         data-focused={focused}
         data-invalid={Boolean(error)}
         data-multiline={multiline}
-        aria-label={label}
+        aria-label={ariaLabel ?? label}
         aria-invalid={Boolean(error)}
+        aria-disabled={unavailable || undefined}
         tabIndex={-1}
         {...mouse}
       >

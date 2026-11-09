@@ -284,6 +284,11 @@ export const t = {
     close: 'Fechar',
     changeNote: 'A troca vale para todos os jogos deste emulador.',
     romDirectory: (emulator: string) => `Pasta das ROMs (${emulator})`,
+    /** The rows of each emulator's panel, under its name. */
+    executableLabel: 'Executável',
+    romDirectoryLabel: 'Pasta das ROMs',
+    executable: (emulator: string) => `Executável (${emulator})`,
+    romDirectoryNeedsExecutable: 'Escolha o executável primeiro',
     romDirectoryEmpty: 'Opcional — escolha a pasta das suas ROMs',
     romDirectoryNote:
       'Os arquivos .nsp e .xci soltos na pasta das ROMs viram jogos ao escolher a pasta, ao abrir o launcher e em "Atualizar biblioteca". Com o IGDB configurado, dados e artes são preenchidos quando o nome bater.',

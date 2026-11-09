@@ -182,8 +182,12 @@ depois que o foco para por 150 ms.
     conexão"), SteamGridDB (chave; "Testar conexão") e IGDB (Client ID e
     Client Secret; "Testar conexão"). Chaves aparecem só como "Configurada" / "Não
     configurada", nunca o valor.
--   Emuladores: uma linha por emulador suportado, com o executável
-    configurado; trocar vale para todos os jogos do emulador.
+-   Emuladores: para cada emulador suportado, o nome dele como título e,
+    embaixo, um painel (como o de Sistema) com duas linhas de nome à
+    esquerda e campo à direita: "Executável" e "Pasta das ROMs" (decisão
+    do dono do projeto). Trocar o executável vale para todos os jogos do
+    emulador. Sem executável, a linha da pasta fica indisponível, com
+    "Escolha o executável primeiro".
 -   Sistema: checkboxes "Iniciar em tela cheia", "Iniciar com o sistema" e
     "Sons da interface", salvos assim que mudam. "Iniciar com o sistema"
     fica indisponível, com o motivo, fora da versão instalada.

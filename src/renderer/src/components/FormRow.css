@@ -21,6 +21,11 @@
   outline-color: var(--color-focus);
 }
 
+.form-row[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .form-row[data-invalid='true'] {
   border-color: var(--color-danger);
 }
