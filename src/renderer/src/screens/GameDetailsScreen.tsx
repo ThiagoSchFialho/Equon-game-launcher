@@ -16,7 +16,7 @@ import ratingPending from '../assets/ratings/pendente.png'
 import { useNavigation, type Section } from '../app/navigation'
 import { Artwork } from '../components/Artwork'
 import { Button } from '../components/Button'
-import { ConfirmDialog } from '../components/Dialog'
+import { RemoveGameDialog } from '../components/RemoveGameDialog'
 import { BackLink } from '../components/BackLink'
 import { Footer, type Hint } from '../components/Footer'
 import { OptionsMenu } from '../components/OptionsMenu'
@@ -297,18 +297,6 @@ export function GameDetailsScreen({ id, from }: { id: number; from: Section }): 
     }, failed)
   }
 
-  const remove = (): void => {
-    void window.equon.games.remove(id).then((result) => {
-      if (!result.ok) {
-        setRemoveError(t.remove.failed)
-        setOverlay(null)
-        return
-      }
-      reloadGames()
-      navigation.back()
-    })
-  }
-
   let content: React.JSX.Element
   if (details.status === 'loading') {
     content = <StateMessage message={t.game.loading} />
@@ -378,20 +366,21 @@ export function GameDetailsScreen({ id, from }: { id: number; from: Section }): 
           onAchievements={() => navigation.openGameAchievements(id)}
           onEdit={details.data.editable ? () => navigation.openGameForm(id) : undefined}
           onEditArtwork={() => navigation.openGameArtwork(id)}
-          onRemove={
-            details.data.origin !== 'steam' && !running ? () => setOverlay('remove') : undefined
-          }
+          onRemove={!running ? () => setOverlay('remove') : undefined}
         />
       )}
       {overlay === 'remove' && details.status === 'ready' && details.data && (
-        <ConfirmDialog
-          title={t.remove.title(details.data.title)}
-          message={t.remove.message}
-          confirmLabel={t.remove.confirm}
-          cancelLabel={t.remove.cancel}
-          destructive
+        <RemoveGameDialog
+          game={details.data}
           onCancel={() => setOverlay(null)}
-          onConfirm={remove}
+          onRemoved={() => {
+            reloadGames()
+            navigation.back()
+          }}
+          onFailed={() => {
+            setRemoveError(t.remove.failed)
+            setOverlay(null)
+          }}
         />
       )}
     </FocusScope>

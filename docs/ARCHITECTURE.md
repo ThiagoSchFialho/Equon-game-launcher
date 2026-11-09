@@ -74,6 +74,7 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-22 | Image over the screen while a game opens | Accepted | Own topmost window; the game starts once covered; leaves 2 s after a new process takes the foreground; see §3.21 |
 | D-23 | Installing and uninstalling Steam games | Accepted | Steam's own windows, through `steam://install` and `steam://uninstall`, built in main; see §3.22 |
 | D-25 | Game art behind the Home screen | Accepted | Settings › Aparência: the focused game's launch image, blurred and darkened by the user's levels; `USERS.home_art_*`; see §3.24 |
+| D-26 | Removing Steam games, with exceptions | Accepted | "Remover jogo" for Steam games, from Equon only; "Remover e criar exceção" keeps it out of every sync (`STEAM_IGNORED`); see §3.25 |
 | D-24 | Interface sounds | Accepted | Sounds on moving, confirming, going back and opening modals; on by default, `USERS.ui_sounds`; silent while a game runs; see §3.23 |
 | D-16 | Refresh frequency for `appdetails` metadata | Accepted | Fetched only when a game is discovered/added; failed fetches are retried (§3.14) |
 | D-17 | Steam launch mechanism | Accepted | `steam://rungameid/<appid>`, built in the main process (§3.12) |
@@ -462,6 +463,14 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 
 **The image.** `components/HomeArtBackdrop.tsx`, portalled onto the whole Home screen (the carousel's container query makes it a containing block, so it could not cover the top bar from inside). Blur is level × 0.25rem through a CSS `filter`, which is set, never animated; the image is scaled 1.1 so the blurred edges stay outside the screen. Darkening is a black layer at the chosen opacity. A new game's image fades in over the previous one (opacity only, `--motion-screen`; none with reduced motion), and the old one leaves when the fade ends. It changes only once the focus stops for 150 ms, so a held direction does not swap a large blurred image every 110 ms; the first image, when the screen opens or comes back, shows at once.
 
+### 3.25 D-26 — Removing Steam games, with exceptions (Accepted, after Phase 8)
+
+**Owner decisions (2026-11-08):** Steam games get "Remover jogo" in their options (game page, Library and Home), installed or not, unavailable while the game runs. The confirmation has three choices: "Cancelar" (initial focus), "Remover" and "Remover e criar exceção" (red). Its text says the game, the playtime recorded in Equon, the achievements and the art are erased from Equon, that nothing changes on the Steam account, that "Remover" brings it back only when the user next presses "Atualizar biblioteca" in Settings, while it is still owned or installed (owner decision: not on the next start, nor through the 10 s check), and that with the exception it **will not be added to Equon again**. The exceptions are listed in Configurações › Conexões, in the Biblioteca panel ("Jogos ignorados", shown only when there are any), where each one can be taken off after a confirmation; it then becomes a plain removal and comes back the same way.
+
+**Where it lives.** A new table, `STEAM_IGNORED` (App ID, title for the list, `permanent`, date; migration 0018, `DATA_BASE_CONTEXT.md` §3.13). It is not tied to `GAMES`, since the game row is gone. Both kinds of removal are stored, so a plain one survives a restart: `permanent = 1` is an exception, `permanent = 0` a plain removal, which the user's "Atualizar biblioteca" forgets before scanning (the startup refresh does not). The three Steam sync paths go through the core (`steam-library.ts`): the full refresh and the 10 s check drop ignored App IDs from the scan result before planning, and the owned-games import skips them, so the rule sits in one place. A failed or partial scan keeps its usual rules; an ignored game is simply not there.
+
+**Removing.** `removeSteamGame` (core) runs in one transaction: it refuses anything but a Steam game (NotFoundError), adds the exception when asked, deletes the game (sessions, achievements, genres, launch config and art rows cascade) and recomputes the trophy counters from `ACHIEVEMENTS`. Main then deletes the game's art folder, as for manual games. Its own IPC channel (`games:remove-steam`, App ID never taken from the renderer: only the game id and a boolean), plus `library:ignored` and `library:unignore`. Nothing is sent to Steam; uninstalling stays D-23.
+
 ## 4. Inconsistencies found across the project docs
 
 Items 1–6 have accepted decisions (D-02, D-04 to D-08) and are now reflected in `DATA_BASE_CONTEXT.md` v0.2 and `PRODUCT.md` v0.2. Item 7 follows the Epic/GOG decision. Items 8–9 are housekeeping; item 9 (documentation language) is still open.
@@ -844,6 +853,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-08 | 0.58 | D-24: LB/RB play JDSherbert's swipe, kept out of the public repo by its license, with the move sound as the fallback (§3.23). |
 | 2026-11-08 | 0.59 | D-25: game art behind the Home screen, set in a new Settings tab, "Aparência" (`USERS.home_art_*`, migration 0017; §3.24). |
 | 2026-11-08 | 0.60 | D-16: the store answering that a game has no page (`appdetails` `success: false`) counts as an answer: `metadata_fetched_at` is set and nothing stored, so a closed beta or a delisted game is not asked again on every start (`DATA_BASE_CONTEXT.md` §3.1). |
+| 2026-11-08 | 0.61 | D-26: "Remover jogo" for Steam games, with "Remover e criar exceção" kept out of every sync (`STEAM_IGNORED`, migration 0018) and a "Jogos ignorados" list in Configurações › Conexões; a plain "Remover" comes back only on the user's next "Atualizar biblioteca" (§3.25). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

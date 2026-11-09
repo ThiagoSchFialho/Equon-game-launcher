@@ -132,3 +132,12 @@
     opacity: 0;
   }
 }
+
+/* A message in several paragraphs (the Steam removal, D-26). */
+.dialog__message p {
+  margin: 0;
+}
+
+.dialog__message p + p {
+  margin-top: var(--space-2);
+}

@@ -22,6 +22,8 @@ export const IpcChannel = {
   settingsTestConnection: 'settings:test-connection',
   libraryDuplicates: 'library:duplicates',
   libraryDismissDuplicate: 'library:dismiss-duplicate',
+  libraryIgnored: 'library:ignored',
+  libraryUnignore: 'library:unignore',
   activityCurrent: 'activity:current',
   achievementsOverview: 'achievements:overview',
   achievementsGame: 'achievements:game',
@@ -48,6 +50,7 @@ export const IpcChannel = {
   gamesUpdate: 'games:update',
   gamesUpdateSteam: 'games:update-steam',
   gamesRemove: 'games:remove',
+  gamesRemoveSteam: 'games:remove-steam',
   gamesLaunch: 'games:launch',
   gamesInstallSteam: 'games:install-steam',
   gamesUninstallSteam: 'games:uninstall-steam',
@@ -219,6 +222,14 @@ export interface DuplicateInfo {
   manualGameId: number
   manualTitle: string
   steamTitle: string
+}
+
+/** A Steam game the user removed with an exception (D-26). */
+export interface IgnoredSteamGameInfo {
+  steamAppId: number
+  title: string
+  /** ISO-8601 UTC */
+  ignoredAt: string
 }
 
 /** A SteamGridDB game offered in the manual-game artwork search. */
@@ -549,6 +560,10 @@ export interface EquonApi {
     duplicates(): Promise<DuplicateInfo[]>
     /** "Manter os dois": removes the candidate from the review list. */
     dismissDuplicate(manualGameId: number): Promise<void>
+    /** Steam games removed with an exception (D-26), by title. */
+    ignored(): Promise<IgnoredSteamGameInfo[]>
+    /** Takes the game off the exceptions; it comes back on the user's next refresh. */
+    unignore(steamAppId: number): Promise<Result<null>>
     /** Subscribes to library changes from scans; returns the unsubscribe function. */
     onChanged(listener: () => void): () => void
   }
@@ -620,6 +635,11 @@ export interface EquonApi {
     update(id: number, form: ManualGameForm): Promise<Result<{ id: number }>>
     updateSteam(id: number, form: SteamGameForm): Promise<Result<{ id: number }>>
     remove(id: number): Promise<Result<null>>
+    /**
+     * Removes a Steam game from Equon, never from the account (D-26). With `ignore` it becomes
+     * an exception and is not added again.
+     */
+    removeSteam(id: number, ignore: boolean): Promise<Result<null>>
     launch(id: number): Promise<Result<null>>
     /** Opens Steam's own window; the user answers there. */
     installSteam(id: number): Promise<Result<null>>

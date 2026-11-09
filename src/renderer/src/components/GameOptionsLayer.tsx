@@ -4,13 +4,13 @@ import { useNavigation } from '../app/navigation'
 import { useGames } from '../data/games'
 import { useRunning } from '../data/running'
 import { t } from '../strings'
-import { ConfirmDialog } from './Dialog'
 import { OptionsMenu } from './OptionsMenu'
+import { RemoveGameDialog } from './RemoveGameDialog'
 
 /**
  * Options menu for a game card (Home, Library): zerado/oculto and edit for every game (a Steam
- * game edits only its details); remove for non-Steam games, with a confirmation; uninstall for
- * installed Steam games, where Steam asks for the confirmation.
+ * game edits only its details); remove, with a confirmation (a Steam game may become an exception,
+ * D-26); uninstall for installed Steam games, where Steam asks for the confirmation.
  */
 export function GameOptionsLayer({
   game,
@@ -37,18 +37,16 @@ export function GameOptionsLayer({
 
   if (confirming) {
     return (
-      <ConfirmDialog
-        title={t.remove.title(game.title)}
-        message={t.remove.message}
-        confirmLabel={t.remove.confirm}
-        cancelLabel={t.remove.cancel}
-        destructive
+      <RemoveGameDialog
+        game={game}
         onCancel={() => setConfirming(false)}
-        onConfirm={() => {
-          void window.equon.games.remove(game.id).then(() => {
-            reload()
-            onClose()
-          })
+        onRemoved={() => {
+          reload()
+          onClose()
+        }}
+        onFailed={() => {
+          setMessage(t.remove.failed)
+          setConfirming(false)
         }}
       />
     )
@@ -69,7 +67,7 @@ export function GameOptionsLayer({
       onAchievements={() => navigation.openGameAchievements(game.id)}
       onEdit={() => navigation.openGameForm(game.id)}
       onEditArtwork={() => navigation.openGameArtwork(game.id)}
-      onRemove={!steam && !running ? () => setConfirming(true) : undefined}
+      onRemove={!running ? () => setConfirming(true) : undefined}
       onUninstall={steam && game.installed === true && !running ? uninstall : undefined}
       message={message}
     />

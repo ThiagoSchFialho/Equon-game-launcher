@@ -6,6 +6,7 @@ import {
   type GenreRepository,
   type OwnedSyncOutcome,
   type SteamMetadata,
+  type SteamIgnoreList,
   type UnitOfWork
 } from '../../core/application'
 import { toUtcIso } from '../../core/domain'
@@ -35,6 +36,8 @@ export interface SteamOnlineDeps {
   games: GameRepository
   genres: GenreRepository
   uow: UnitOfWork
+  /** Removed Steam games (D-26): the owned-games import skips them. */
+  ignored?: SteamIgnoreList
   get: HttpGet
   /** Decrypted only here, in main; never logged or sent to the renderer. */
   credentials(): { steamId: string | null; steamKey: string | null; gridKey: string | null }

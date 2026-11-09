@@ -355,8 +355,18 @@ limitações, condições de teste e método de inicialização suportado.
     O primeiro botão usado pede para confirmar o jogo no IGDB; os outros
     usam o mesmo jogo enquanto o formulário estiver aberto. Se o IGDB não
     tiver aquela informação, um aviso aparece embaixo do campo. Os gêneros
-    continuam vindo da Steam, e as artes ficam com "Editar artes". Jogos da
-    Steam continuam sem "Remover jogo".
+    continuam vindo da Steam, e as artes ficam com "Editar artes".
+-   Jogos da Steam, instalados ou não, têm "Remover jogo" nas opções
+    (D-26), indisponível enquanto o jogo roda. A confirmação tem
+    "Cancelar" (foco inicial), "Remover" e "Remover e criar exceção" e
+    explica que o jogo, o tempo registrado no Equon, as conquistas e as artes
+    são apagados do Equon, sem mudar nada na conta Steam. Só "Remover": o
+    jogo volta só quando o usuário usar "Atualizar biblioteca" nas
+    Configurações (nem na próxima abertura, nem pela verificação de 10 s),
+    se ainda estiver na conta ou instalado. Com a exceção, ele não será mais
+    adicionado ao Equon. As exceções ficam em Configurações › Conexões ›
+    "Jogos ignorados", onde cada uma pode ser desfeita depois de confirmar;
+    o jogo volta do mesmo jeito, no próximo "Atualizar biblioteca".
 -   O menu de opções de qualquer jogo tem "Editar artes", com a capa
     vertical, a capa quadrada, o logotipo e a imagem de fundo. Cada arte pode
     vir do IGDB (menos a capa quadrada), de uma galeria do SteamGridDB (menos

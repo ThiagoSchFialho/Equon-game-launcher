@@ -26,6 +26,7 @@ const api: EquonApi = {
     update: (id, form) => ipcRenderer.invoke(IpcChannel.gamesUpdate, id, form),
     updateSteam: (id, form) => ipcRenderer.invoke(IpcChannel.gamesUpdateSteam, id, form),
     remove: (id) => ipcRenderer.invoke(IpcChannel.gamesRemove, id),
+    removeSteam: (id, ignore) => ipcRenderer.invoke(IpcChannel.gamesRemoveSteam, id, ignore),
     launch: (id) => ipcRenderer.invoke(IpcChannel.gamesLaunch, id),
     installSteam: (id) => ipcRenderer.invoke(IpcChannel.gamesInstallSteam, id),
     uninstallSteam: (id) => ipcRenderer.invoke(IpcChannel.gamesUninstallSteam, id),
@@ -73,6 +74,8 @@ const api: EquonApi = {
     duplicates: () => ipcRenderer.invoke(IpcChannel.libraryDuplicates),
     dismissDuplicate: (manualGameId) =>
       ipcRenderer.invoke(IpcChannel.libraryDismissDuplicate, manualGameId),
+    ignored: () => ipcRenderer.invoke(IpcChannel.libraryIgnored),
+    unignore: (steamAppId) => ipcRenderer.invoke(IpcChannel.libraryUnignore, steamAppId),
     onChanged: (listener) => {
       const handler = (): void => listener()
       ipcRenderer.on(IpcEvent.libraryChanged, handler)

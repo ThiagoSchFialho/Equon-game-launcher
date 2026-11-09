@@ -4,6 +4,7 @@ import type { SteamAdapter } from '../../../src/integrations/steam/steam-adapter
 import {
   createGameRepository,
   createSessionRepository,
+  createSteamIgnoredRepository,
   createUnitOfWork
 } from '../../../src/infrastructure/persistence'
 import type { OwnedSyncOutcome } from '../../../src/core/application'
@@ -274,5 +275,72 @@ describe('steam service: local check', () => {
     service.stop()
     await tick()
     expect(discovered).toBe(0)
+  })
+})
+
+describe('steam service: removed games (D-26)', () => {
+  it('brings back a plain removal only on the user refresh; an exception stays out', async () => {
+    const db = createTestDb()
+    const games = createGameRepository(db)
+    const uow = createUnitOfWork(db)
+    const ignored = createSteamIgnoredRepository(db)
+    const result: DiscoveryResult = {
+      status: 'complete',
+      games: [
+        { externalId: '620', title: 'Portal 2', installed: true },
+        { externalId: '730', title: 'Counter-Strike 2', installed: true }
+      ]
+    }
+    const at = '2026-11-08T12:00:00Z'
+    ignored.add({ steamAppId: 620, title: 'Portal 2', ignoredAt: at }, { permanent: false })
+    ignored.add({ steamAppId: 730, title: 'Counter-Strike 2', ignoredAt: at }, { permanent: true })
+    const service = createSteamService({
+      games,
+      uow,
+      ignored,
+      adapter: {
+        source: 'steam',
+        capabilities: {
+          installState: true,
+          launch: true,
+          playtime: true,
+          achievements: true,
+          metadata: true
+        },
+        discover: async () => result,
+        steamPath: () => null,
+        libraries: () => [],
+        liveState: () => null,
+        readGame: async () => null
+      },
+      sessions: createSteamSessions({
+        games,
+        sessions: createSessionRepository(db),
+        uow,
+        clock: { now: () => new Date() },
+        repeat: () => () => {},
+        after: () => () => {},
+        heartbeatMs: 30_000,
+        onChange: () => {}
+      }),
+      readRunningAppId: async () => null,
+      clock: { now: () => new Date(at) },
+      onLibraryChanged: () => {},
+      isGameRunning: () => false,
+      syncOwned: async () => ({ added: 0, duplicates: [], error: null })
+    })
+    const ids = (): (number | null)[] => games.list().map((g) => g.steamAppId)
+
+    // The startup refresh and the local check keep both out.
+    await service.refresh()
+    expect(ids()).toEqual([])
+    await service.rescan()
+    expect(ids()).toEqual([])
+
+    // "Atualizar biblioteca": the plain removal comes back, the exception does not.
+    await service.refresh()
+    expect(ids()).toEqual([620])
+    expect([...ignored.appIds()]).toEqual([730])
+    service.stop()
   })
 })

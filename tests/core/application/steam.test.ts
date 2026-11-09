@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   createSteamSessions,
+  importOwnedSteamGames,
   refreshSteamLibrary,
+  rescanSteamLibrary,
   type DiscoveryResult,
   type IntegrationAdapter,
   type SteamSessions
@@ -9,6 +11,7 @@ import {
 import {
   createGameRepository,
   createSessionRepository,
+  createSteamIgnoredRepository,
   createUnitOfWork,
   type SqliteDatabase
 } from '../../../src/infrastructure/persistence'
@@ -93,6 +96,61 @@ describe('refreshSteamLibrary', () => {
     })
     expect(summary.duplicates).toHaveLength(1)
     expect(games().list()).toHaveLength(2)
+  })
+})
+
+describe('Steam exceptions (D-26)', () => {
+  const scan: DiscoveryResult = {
+    status: 'complete',
+    games: [
+      { externalId: '620', title: 'Portal 2', installed: true },
+      { externalId: '730', title: 'Counter-Strike 2', installed: true }
+    ]
+  }
+  const deps = (): Parameters<typeof refreshSteamLibrary>[0] => {
+    const ignored = createSteamIgnoredRepository(db)
+    ignored.add(
+      { steamAppId: 730, title: 'Counter-Strike 2', ignoredAt: '2026-11-08T12:00:00Z' },
+      { permanent: true }
+    )
+    return { games: games(), uow: createUnitOfWork(db), ignored }
+  }
+  const ids = (): (number | null)[] =>
+    games()
+      .list()
+      .map((g) => g.steamAppId)
+
+  it('the full refresh and the local check never add an ignored game', async () => {
+    expect(await refreshSteamLibrary(deps(), adapter(scan))).toMatchObject({ added: 1 })
+    expect(ids()).toEqual([620])
+    expect(await rescanSteamLibrary(deps(), adapter(scan))).toMatchObject({ changed: false })
+    expect(ids()).toEqual([620])
+  })
+
+  it('the owned-games import never adds an ignored game', () => {
+    const owned = [
+      { steamAppId: 620, title: 'Portal 2', playtimeMinutes: 10, lastPlayed: null },
+      { steamAppId: 730, title: 'Counter-Strike 2', playtimeMinutes: 20, lastPlayed: null }
+    ]
+    const summary = importOwnedSteamGames(deps(), owned, {
+      scanComplete: true,
+      overwritePlaytime: true,
+      syncedAt: '2026-11-08T12:00:00Z'
+    })
+    expect(summary).toMatchObject({ added: 1 })
+    expect(ids()).toEqual([620])
+  })
+
+  it('a game taken off the exceptions comes back once the plain removals are forgotten', async () => {
+    const d = deps()
+    await refreshSteamLibrary(d, adapter(scan))
+    const ignored = createSteamIgnoredRepository(db)
+    expect(ignored.release(730)).toBe(true)
+    await refreshSteamLibrary(d, adapter(scan))
+    expect(ids()).toEqual([620])
+    expect(ignored.clearRemoved()).toBe(1)
+    await refreshSteamLibrary(d, adapter(scan))
+    expect(ids()).toEqual([730, 620])
   })
 })
 

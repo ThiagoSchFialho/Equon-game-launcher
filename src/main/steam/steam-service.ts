@@ -4,6 +4,8 @@ import {
   type GameRepository,
   type OwnedSyncOutcome,
   type SteamSessions,
+  type SteamIgnoreList,
+  type SteamIgnoredRepository,
   type UnitOfWork
 } from '../../core/application'
 import { toUtcIso } from '../../core/domain'
@@ -18,6 +20,11 @@ export const RESCAN_MS = 10_000
 export interface SteamServiceDeps {
   games: GameRepository
   uow: UnitOfWork
+  /**
+   * Removed Steam games (D-26): scans skip them. The user's "Atualizar biblioteca" forgets the
+   * plain removals first, so those come back; exceptions stay.
+   */
+  ignored?: SteamIgnoreList & Pick<SteamIgnoredRepository, 'clearRemoved'>
   adapter: SteamAdapter
   sessions: SteamSessions
   /** Reads HKCU\Software\Valve\Steam\RunningAppID; null when unavailable. */
@@ -94,6 +101,8 @@ export function createSteamService(deps: SteamServiceDeps): SteamService {
     const startup = !scanned
     // A check in progress read the disk earlier: it must not write after this scan.
     await rescanning
+    // Only the user's request brings back the games removed without an exception (owner decision).
+    if (!startup) deps.ignored?.clearRemoved()
     const summary = await refreshSteamLibrary(deps, deps.adapter)
     const owned = await syncOwned(summary.status === 'complete')
     for (const candidate of [...summary.duplicates, ...owned.duplicates]) {

@@ -132,7 +132,18 @@ export const t = {
       'O jogo sai da biblioteca junto com o tempo registrado e as imagens. Os arquivos do jogo no disco não são apagados.',
     confirm: 'Remover',
     cancel: 'Cancelar',
-    failed: 'Não foi possível remover o jogo.'
+    failed: 'Não foi possível remover o jogo.',
+    /** Steam games (D-26): removed from Equon only, optionally as an exception. */
+    steam: {
+      message:
+        'O jogo, o tempo de jogo registrado no Equon, as conquistas e as artes serão apagados do Equon. Nada muda na sua conta Steam.',
+      removeLabel: 'Remover',
+      removeHint:
+        'ele volta quando você usar "Atualizar biblioteca" nas Configurações, se ainda estiver na sua conta ou instalado.',
+      ignoreLabel: 'Remover e criar exceção',
+      ignoreHint: 'o jogo entra nas exceções e',
+      ignoreHintStrong: 'não será mais adicionado ao Equon.'
+    }
   },
   form: {
     addTitle: 'Adicionar jogo',
@@ -378,6 +389,22 @@ export const t = {
     hide: 'Ocultar o jogo manual',
     remove: 'Remover o jogo manual',
     close: 'Fechar'
+  },
+  /** Steam games removed with an exception (D-26), in Configurações › Conexões. */
+  ignored: {
+    notice: (n: number) =>
+      n === 1 ? '1 jogo Steam nas exceções.' : `${n} jogos Steam nas exceções.`,
+    open: 'Jogos ignorados',
+    title: 'Jogos ignorados',
+    message:
+      'Estes jogos da Steam não são adicionados ao Equon. Escolha um para tirá-lo das exceções.',
+    close: 'Fechar',
+    confirmTitle: (game: string) => `Tirar "${game}" das exceções?`,
+    confirmMessage:
+      'O jogo volta ao Equon quando você usar "Atualizar biblioteca", se ainda estiver na sua conta ou instalado.',
+    confirm: 'Tirar das exceções',
+    cancel: 'Cancelar',
+    failed: 'Não foi possível tirar o jogo das exceções.'
   },
   systemMenu: {
     title: 'Menu do sistema',

@@ -17,6 +17,7 @@ import {
   type GameDetails,
   type GameSummary,
   type HomeArtSettings,
+  type IgnoredSteamGameInfo,
   type BackgroundActivity,
   type LibraryRefreshInfo,
   type ManualGameForm,
@@ -63,6 +64,7 @@ export const steamGameFormSchema = manualGameFormSchema.pick({
 }) satisfies z.ZodType<SteamGameForm>
 export const gamesUpdateSteamArgs = z.tuple([id, steamGameFormSchema])
 export const gameIdArgs = z.tuple([id])
+export const gamesRemoveSteamArgs = z.tuple([id, z.boolean()])
 export const gamesSetFlagsArgs = z.tuple([
   id,
   z
@@ -230,6 +232,11 @@ export const achievementSyncStatusSchema = z.strictObject({
 export const duplicateListSchema = z.array(
   z.strictObject({ manualGameId: id, manualTitle: z.string(), steamTitle: z.string() })
 )
+export const ignoredSteamListSchema = z.array(
+  z.strictObject({ steamAppId: id, title: z.string(), ignoredAt: z.string() })
+) satisfies z.ZodType<IgnoredSteamGameInfo[]>
+/** A Steam App ID. */
+export const steamAppIdArgs = z.tuple([id])
 export const steamGridDbGameListSchema = z.array(
   z.strictObject({
     id: z.number().int().positive(),

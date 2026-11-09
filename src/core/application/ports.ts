@@ -273,6 +273,37 @@ export interface TrophyCounters {
 export type SecretKind =
   'steam-api-key' | 'steamgriddb-api-key' | 'igdb-client-id' | 'igdb-client-secret'
 
+/** A Steam game the user removed (D-26). */
+export interface IgnoredSteamGame {
+  steamAppId: number
+  title: string
+  /** ISO-8601 UTC */
+  ignoredAt: string
+}
+
+/** What the Steam scans and the owned-games import need: the App IDs to skip. */
+export interface SteamIgnoreList {
+  appIds(): ReadonlySet<number>
+}
+
+/**
+ * Every removed Steam game is skipped by the syncs. An exception (`permanent`) stays until the
+ * user takes it off the list; a plain removal lasts until the user's next "Atualizar biblioteca".
+ */
+export interface SteamIgnoredRepository extends SteamIgnoreList {
+  /** The exceptions only, by title. */
+  list(): IgnoredSteamGame[]
+  /** Adding one already there keeps the first date; an exception wins over a plain removal. */
+  add(game: IgnoredSteamGame, options: { permanent: boolean }): void
+  /**
+   * Takes an exception off the list: it becomes a plain removal, so the game comes back on the
+   * user's next "Atualizar biblioteca". False when it was not an exception.
+   */
+  release(steamAppId: number): boolean
+  /** Forgets the plain removals, so the next scan adds those games back; returns how many. */
+  clearRemoved(): number
+}
+
 /** The Home background preference (D-25). */
 export interface HomeArtPreference {
   enabled: boolean

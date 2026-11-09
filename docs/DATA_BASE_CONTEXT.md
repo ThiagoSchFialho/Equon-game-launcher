@@ -355,6 +355,26 @@ Regras:
 - **Yuzu:** ROMs `.nsp`, `.xci`, `.nca`, `.nro` e `.nso`. O jogo abre com `yuzu.exe -f -g "<rom>"` (`-f` tela cheia, `-g` jogo), montado no processo principal como lista de argumentos, sem shell.
 - Estado de instalação de um jogo do Yuzu: existência da ROM (mesmas regras de 3.2). Sem o emulador configurado (ou com o executável ausente), o jogo não pode ser iniciado e a interface explica o motivo.
 
+### 3.13 `STEAM_IGNORED` (D-26)
+
+Jogos da Steam que o usuário removeu do Equon, com "Remover" ou com "Remover e criar exceção" (decisão do dono do projeto, 2026-11-08). Migração `0018`.
+
+| Coluna | Tipo | Regras |
+| --- | --- | --- |
+| `steam_id` | `INTEGER PRIMARY KEY` | App ID da Steam; `CHECK (steam_id > 0)` |
+| `title` | `TEXT NOT NULL` | Nome do jogo quando foi removido, só para a lista em Configurações |
+| `permanent` | `INTEGER NOT NULL` | `1` = exceção ("Remover e criar exceção"); `0` = só "Remover"; `CHECK (IN (0, 1))` |
+| `ignored_at` | `TEXT NOT NULL` | Quando virou exceção, ISO-8601 UTC |
+
+Regras:
+
+- Sem chave estrangeira para `GAMES`: a linha do jogo já foi apagada.
+- A varredura completa, a verificação de 10 s e a importação de `GetOwnedGames` (3.11) **nunca** criam um jogo com um App ID desta tabela, com qualquer valor de `permanent`. Uma varredura parcial ou que falhou segue as regras de sempre (3.2).
+- Remover um jogo Steam (com ou sem exceção) apaga, em **uma transação**, o jogo e o que vem em cascata (sessões, conquistas, gêneros, artes), adiciona a exceção quando pedida e recalcula os contadores de `USERS` a partir de `ACHIEVEMENTS`. Os arquivos de arte são apagados depois, pela aplicação. Nada muda na conta Steam.
+- Sem exceção (`permanent = 0`), o jogo volta **só quando o usuário usar "Atualizar biblioteca"** nas Configurações (decisão do dono do projeto): esse pedido apaga as linhas com `permanent = 0` antes de varrer. A leitura da abertura não apaga. O jogo volta, se ainda estiver na conta ou instalado, como um jogo novo (tempo da Steam, metadados e artes buscados de novo).
+- A lista "Jogos ignorados" (Configurações › Conexões) mostra só as exceções. Tirar um jogo da lista muda `permanent` para `0`: ele volta do mesmo jeito, no próximo "Atualizar biblioteca".
+- Adicionar uma linha que já existe mantém a primeira data; uma exceção vale mais que uma remoção simples.
+
 ---
 
 ## 4. Fontes de dados
@@ -425,7 +445,7 @@ API REST v2 com chave pessoal gratuita. Fornece capa quadrada e logo (e, para jo
 
 ## 6. Integridade, exclusão e migrações
 
-- Excluir um jogo remove, em cascata, conquistas, ligações de gênero, configuração de lançamento, sessões e artes. Os arquivos de arte no cache devem ser removidos pela aplicação.
+- Excluir um jogo remove, em cascata, conquistas, ligações de gênero, configuração de lançamento, sessões e artes. Os arquivos de arte no cache devem ser removidos pela aplicação. Jogos Steam também podem ser removidos, opcionalmente como exceção (3.13).
 - Gêneros órfãos podem permanecer; limpeza é opcional e nunca urgente.
 - Toda mudança de schema exige migração versionada. Alterações que o SQLite não faz no lugar usam o padrão criar-copiar-renomear, com chaves estrangeiras desligadas fora da transação.
 - Fazer cópia do arquivo do banco antes de aplicar migrações: quando há migração pendente em um banco existente, o launcher grava `equon.sqlite.v<versão>.bak` com `VACUUM INTO`; se essa cópia falhar, nenhuma migração roda.
@@ -462,6 +482,7 @@ API REST v2 com chave pessoal gratuita. Fornece capa quadrada e logo (e, para jo
 | Lançamento na Steam | `steam://rungameid/<appid>` | D-17 |
 | Artes | SteamGridDB + `appdetails` + arquivo local; tabela `GAME_ARTWORK` | D-15 |
 | Preferências do usuário | Colunas em `USERS`, sem tabela de configurações. O caminho da Steam não é preferência: é sempre detectado (Fase 6) | D-20 |
+| Remover jogos Steam | Só do Equon; tabela `STEAM_IGNORED`: uma exceção nenhuma sincronização adiciona de volta, uma remoção simples volta só no "Atualizar biblioteca" do usuário | D-26, 3.13 |
 
 ### 7.2 Ainda em aberto
 

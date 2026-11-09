@@ -19,6 +19,7 @@ import {
   createLaunchConfigRepository,
   createOriginRepository,
   createSessionRepository,
+  createSteamIgnoredRepository,
   createUnitOfWork,
   createUserRepository,
   type SqliteDatabase
@@ -84,6 +85,7 @@ export function createServices(
   const artwork = createArtworkRepository(db)
   const emulators = createEmulatorRepository(db)
   const achievements = createAchievementRepository(db)
+  const ignored = createSteamIgnoredRepository(db)
   const uow = createUnitOfWork(db)
   const inspector = createFileInspector()
 
@@ -181,6 +183,7 @@ export function createServices(
     games,
     genres,
     uow,
+    ignored,
     get: fetchGet,
     credentials: () => ({
       steamId: users.getSteamId(),
@@ -282,6 +285,7 @@ export function createServices(
   const steam = createSteamService({
     games,
     uow,
+    ignored,
     adapter,
     sessions: steamSessions,
     readRunningAppId: () => readSteamRegistryValue('RunningAppID'),
@@ -328,6 +332,9 @@ export function createServices(
       inspector,
       runner,
       artworkCacheDir,
+      users,
+      ignored,
+      clock,
       readShortcut: readShortcutUrl
     }),
     runner,

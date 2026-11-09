@@ -937,13 +937,47 @@ describe('remove game', () => {
     await waitFor(() => expect(remove).toHaveBeenCalledWith(1))
   })
 
-  it('offers edit but no remove for Steam games', async () => {
-    installFakeApi([summary(1, 'Portal 2', { origin: 'steam', originName: 'Steam' })])
+  it.each([
+    ['Remover', false],
+    ['Remover e criar exceção', true]
+  ])('removes a Steam game with "%s" (D-26)', async (label, ignore) => {
+    const removeSteam = vi.fn<EquonApi['games']['removeSteam']>(async () => ({
+      ok: true,
+      data: null
+    }))
+    const remove = vi.fn<EquonApi['games']['remove']>()
+    installFakeApi([summary(1, 'Portal 2', { origin: 'steam', originName: 'Steam' })], {
+      games: { remove, removeSteam }
+    })
     render(<App />)
     await screen.findByText('12h 22m')
     press('m')
     await screen.findByRole('dialog', { name: 'Portal 2' })
     expect(screen.getByText('Editar jogo')).toBeTruthy()
-    expect(screen.queryByText('Remover jogo')).toBeNull()
+    await clickText('Remover jogo')
+    const dialog = await screen.findByRole('dialog', { name: 'Remover "Portal 2"?' })
+    expect(dialog.textContent).toContain('não será mais adicionado ao Equon')
+    expect(screen.getByText('Cancelar', { selector: '.choice__label' })).toBeTruthy()
+    const button = screen.getByText(label, { selector: '.choice__label' }).closest('button')!
+    act(() => button.click())
+    await waitFor(() => expect(removeSteam).toHaveBeenCalledWith(1, ignore))
+    expect(remove).not.toHaveBeenCalled()
+  })
+
+  it('keeps the Steam game when the removal is cancelled', async () => {
+    const removeSteam = vi.fn<EquonApi['games']['removeSteam']>()
+    installFakeApi([summary(1, 'Portal 2', { origin: 'steam', originName: 'Steam' })], {
+      games: { removeSteam }
+    })
+    render(<App />)
+    await screen.findByText('12h 22m')
+    press('m')
+    await clickText('Remover jogo')
+    await screen.findByRole('dialog', { name: 'Remover "Portal 2"?' })
+    await clickText('Cancelar')
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Remover "Portal 2"?' })).toBeNull()
+    )
+    expect(removeSteam).not.toHaveBeenCalled()
   })
 })

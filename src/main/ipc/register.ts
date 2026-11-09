@@ -23,6 +23,9 @@ import {
   gamesGetArgs,
   gamesListArgs,
   gamesSetFlagsArgs,
+  gamesRemoveSteamArgs,
+  steamAppIdArgs,
+  ignoredSteamListSchema,
   gameSummaryListSchema,
   gamesUpdateArgs,
   gamesUpdateSteamArgs,
@@ -298,6 +301,18 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
     })
   )
   ipcMain.handle(
+    IpcChannel.libraryIgnored,
+    createValidatedHandler(noArgs, ignoredSteamListSchema, trusted, () =>
+      service.listIgnoredSteam()
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.libraryUnignore,
+    createValidatedHandler(steamAppIdArgs, nullResult, trusted, (appId) =>
+      service.unignoreSteam(appId)
+    )
+  )
+  ipcMain.handle(
     IpcChannel.igdbSearch,
     createValidatedHandler(igdbSearchArgs, resultSchema(igdbSearchResultSchema), trusted, (term) =>
       igdbResult(searchIgdbGames(deps.igdb, term))
@@ -450,6 +465,12 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
   ipcMain.handle(
     IpcChannel.gamesRemove,
     createValidatedHandler(gameIdArgs, nullResult, trusted, (id) => service.remove(id))
+  )
+  ipcMain.handle(
+    IpcChannel.gamesRemoveSteam,
+    createValidatedHandler(gamesRemoveSteamArgs, nullResult, trusted, (id, ignore) =>
+      service.removeSteam(id, ignore)
+    )
   )
   ipcMain.handle(
     IpcChannel.gamesLaunch,

@@ -15,6 +15,7 @@ import emulatorRomDirectory from './0014_emulator_rom_directory.sql?raw'
 import refetchUnratedSteam from './0015_refetch_unrated_steam.sql?raw'
 import uiSounds from './0016_ui_sounds.sql?raw'
 import homeArt from './0017_home_art.sql?raw'
+import steamIgnored from './0018_steam_ignored.sql?raw'
 
 export interface Migration {
   version: number
@@ -40,5 +41,6 @@ export const migrations: readonly Migration[] = [
   { version: 14, name: '0014_emulator_rom_directory', sql: emulatorRomDirectory },
   { version: 15, name: '0015_refetch_unrated_steam', sql: refetchUnratedSteam },
   { version: 16, name: '0016_ui_sounds', sql: uiSounds },
-  { version: 17, name: '0017_home_art', sql: homeArt }
+  { version: 17, name: '0017_home_art', sql: homeArt },
+  { version: 18, name: '0018_steam_ignored', sql: steamIgnored }
 ]

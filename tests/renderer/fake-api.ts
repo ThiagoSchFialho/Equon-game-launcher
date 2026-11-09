@@ -148,6 +148,8 @@ export function installFakeApi(
       }),
       duplicates: async () => [],
       dismissDuplicate: async () => {},
+      ignored: async () => [],
+      unignore: async () => ({ ok: true, data: null }),
       onChanged: () => () => {},
       ...overrides.library
     },
@@ -206,6 +208,7 @@ export function installFakeApi(
       update: async (id) => ({ ok: true, data: { id } }),
       updateSteam: async (id) => ({ ok: true, data: { id } }),
       remove: async () => ({ ok: true, data: null }),
+      removeSteam: async () => ({ ok: true, data: null }),
       launch: async () => ({ ok: true, data: null }),
       installSteam: async () => ({ ok: true, data: null }),
       uninstallSteam: async () => ({ ok: true, data: null }),

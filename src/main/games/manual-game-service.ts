@@ -6,6 +6,7 @@ import {
   ManualGameValidationError,
   NotFoundError,
   OriginInUseError,
+  removeSteamGame,
   saveManualGame,
   validateGameDetails,
   validateManualGame,
@@ -17,12 +18,15 @@ import {
   type GameRunner,
   type LaunchConfigRepository,
   type OriginRepository,
+  type SteamIgnoredRepository,
   type UnitOfWork,
+  type UserRepository,
   type GenreRepository
 } from '../../core/application'
 import {
   BuiltinOrigin,
   EMULATOR_KEYS,
+  toUtcIso,
   EMULATORS,
   type EmulatorConfig,
   type EmulatorKey,
@@ -33,6 +37,7 @@ import { matchesPickKind } from '../../infrastructure/filesystem/file-browser'
 import type {
   AppError,
   EmulatorInfo,
+  IgnoredSteamGameInfo,
   ManualGameForm,
   OriginInfo,
   Result,
@@ -49,7 +54,11 @@ export interface ManualGameServiceDeps {
   inspector: FileInspector
   runner: GameRunner
   artworkCacheDir: string
-  /** Full image decode returning the real size (Electron nativeImage in main). */
+  /** Trophy counters are recomputed when a Steam game leaves (D-26). */
+  users: Pick<UserRepository, 'recomputeTrophyCounters'>
+  /** Steam games removed with an exception (D-26). */
+  ignored: SteamIgnoredRepository
+  clock: { now(): Date }
   /** URL= target of a .url shortcut, or null. */
   readShortcut: (path: string) => string | null
 }
@@ -88,6 +97,15 @@ export interface ManualGameService {
   /** Only the details of a Steam game; title, launch and playtime stay Steam's. */
   updateSteam(id: number, form: SteamGameForm): Promise<Result<{ id: number }>>
   remove(id: number): Promise<Result<null>>
+  /**
+   * Removes a Steam game from the launcher, never from the account (D-26); with `ignore` it
+   * becomes an exception that no sync adds back.
+   */
+  removeSteam(id: number, ignore: boolean): Promise<Result<null>>
+  /** The exceptions, by title. */
+  listIgnoredSteam(): IgnoredSteamGameInfo[]
+  /** The game comes back on the user's next "Atualizar biblioteca". */
+  unignoreSteam(steamAppId: number): Promise<Result<null>>
   launch(id: number): Promise<Result<null>>
   setFlags(id: number, flags: GameFlags): Promise<Result<null>>
   createOrigin(name: string): Promise<Result<OriginInfo>>
@@ -157,6 +175,22 @@ export function createManualGameService(deps: ManualGameServiceDeps): ManualGame
         if (deps.runner.runningGameIds().includes(id)) throw new LaunchError('already-running')
         deps.games.delete(id)
         removeGameArtwork(deps.artworkCacheDir, id)
+        return null
+      }),
+
+    removeSteam: (id: number, ignore: boolean): Promise<Result<null>> =>
+      asResult(() => {
+        if (deps.runner.runningGameIds().includes(id)) throw new LaunchError('already-running')
+        removeSteamGame(deps, id, { ignore, at: toUtcIso(deps.clock.now()) })
+        removeGameArtwork(deps.artworkCacheDir, id)
+        return null
+      }),
+
+    listIgnoredSteam: () => deps.ignored.list().map((game) => ({ ...game })),
+
+    unignoreSteam: (steamAppId: number): Promise<Result<null>> =>
+      asResult(() => {
+        if (!deps.ignored.release(steamAppId)) throw new NotFoundError('Game', steamAppId)
         return null
       }),
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
   DuplicateInfo,
+  IgnoredSteamGameInfo,
   LibraryRefreshInfo,
   SecretKind,
   SettingsInfo,
@@ -25,6 +26,7 @@ import { EmulatorsSettings } from '../components/EmulatorsSettings'
 import { BackLink } from '../components/BackLink'
 import { Footer, type Hint } from '../components/Footer'
 import { FormRow } from '../components/FormRow'
+import { IgnoredSteamGamesDialog } from '../components/IgnoredSteamGames'
 import { OnScreenKeyboard } from '../components/OnScreenKeyboard'
 import { StateMessage } from '../components/StateMessage'
 import { StorageSettings } from '../components/StorageSettings'
@@ -259,6 +261,18 @@ function Connections({
     void window.equon.library.duplicates().then(setDuplicates, () => {})
   }, [])
   useEffect(loadDuplicates, [loadDuplicates])
+  const [ignored, setIgnored] = useState<IgnoredSteamGameInfo[]>([])
+  const [showIgnored, setShowIgnored] = useState(false)
+  const loadIgnored = useCallback(() => {
+    void window.equon.library.ignored().then(
+      (games) => {
+        setIgnored(games)
+        if (games.length === 0) setShowIgnored(false)
+      },
+      () => {}
+    )
+  }, [])
+  useEffect(loadIgnored, [loadIgnored])
 
   const remove = (secret: SecretKind): void => {
     void window.equon.settings.setSecret(secret, null).then((result) => {
@@ -311,7 +325,21 @@ function Connections({
           {duplicates.length > 0 && (
             <p className="settings__library-duplicates">{t.duplicates.notice(duplicates.length)}</p>
           )}
+          {ignored.length > 0 && (
+            <p className="settings__library-status">{t.ignored.notice(ignored.length)}</p>
+          )}
         </div>
+        {ignored.length > 0 && (
+          <Button
+            id="settings:ignored"
+            label={t.ignored.open}
+            scroll="none"
+            onFocus={revealTop}
+            onConfirm={() => setShowIgnored(true)}
+          >
+            {t.ignored.open}
+          </Button>
+        )}
         {duplicates.length > 0 && (
           <Button
             id="settings:duplicates"
@@ -414,6 +442,13 @@ function Connections({
         ready={info.igdbClientId && info.igdbClientSecret}
       />
 
+      {showIgnored && ignored.length > 0 && (
+        <IgnoredSteamGamesDialog
+          games={ignored}
+          onChanged={loadIgnored}
+          onClose={() => setShowIgnored(false)}
+        />
+      )}
       {reviewing && duplicates.length > 0 && (
         <DuplicateReview
           duplicate={duplicates[0]}

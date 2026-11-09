@@ -6,12 +6,15 @@ import { LaunchError, type GameRunner } from '../../../src/core/application'
 import { createFileInspector } from '../../../src/infrastructure/filesystem/file-inspector'
 import { readShortcutUrl } from '../../../src/infrastructure/filesystem/shortcut-reader'
 import {
+  createAchievementRepository,
   createEmulatorRepository,
   createGameRepository,
   createGenreRepository,
   createLaunchConfigRepository,
   createOriginRepository,
+  createSteamIgnoredRepository,
   createUnitOfWork,
+  createUserRepository,
   type SqliteDatabase
 } from '../../../src/infrastructure/persistence'
 import {
@@ -62,6 +65,9 @@ beforeEach(() => {
     inspector: createFileInspector(),
     runner,
     artworkCacheDir: join(dir, 'cache'),
+    users: createUserRepository(db),
+    ignored: createSteamIgnoredRepository(db),
+    clock: { now: () => new Date('2026-11-08T12:00:00Z') },
     readShortcut: readShortcutUrl
   })
 })
@@ -165,6 +171,66 @@ describe('manual game service', () => {
 
     const steam = createGameRepository(db).upsertSteamGame({ steamAppId: 620, title: 'Portal 2' })
     expect(await service.remove(steam.id)).toEqual({ ok: false, error: { code: 'not-found' } })
+  })
+
+  it('removes a Steam game with its achievements and art, never while it runs', async () => {
+    const games = createGameRepository(db)
+    const users = createUserRepository(db)
+    const steam = games.upsertSteamGame({ steamAppId: 620, title: 'Portal 2' })
+    createAchievementRepository(db).upsertForGame(steam.id, [
+      {
+        apiName: 'A',
+        displayName: 'A',
+        description: null,
+        icon: null,
+        unlocked: true,
+        unlockedAt: '2026-01-01T00:00:00Z',
+        globalPercent: 3,
+        tier: 'gold'
+      }
+    ])
+    users.recomputeTrophyCounters()
+    expect(users.getTrophyCounters().gold).toBe(1)
+    mkdirSync(join(dir, 'cache', String(steam.id)), { recursive: true })
+
+    running = [steam.id]
+    expect(await service.removeSteam(steam.id, false)).toEqual({
+      ok: false,
+      error: { code: 'already-running' }
+    })
+    running = []
+    expect(await service.removeSteam(steam.id, false)).toEqual({ ok: true, data: null })
+    expect(count(db, 'games')).toBe(0)
+    expect(count(db, 'achievements')).toBe(0)
+    expect(users.getTrophyCounters().gold).toBe(0)
+    expect(existsSync(join(dir, 'cache', String(steam.id)))).toBe(false)
+    // Not an exception: it is not listed, and the user's next refresh forgets it.
+    const ignored = createSteamIgnoredRepository(db)
+    expect(service.listIgnoredSteam()).toEqual([])
+    expect([...ignored.appIds()]).toEqual([620])
+    expect(ignored.clearRemoved()).toBe(1)
+  })
+
+  it('makes an exception of a removed Steam game, and takes it back', async () => {
+    const games = createGameRepository(db)
+    const steam = games.upsertSteamGame({ steamAppId: 620, title: 'Portal 2' })
+    expect(await service.removeSteam(steam.id, true)).toEqual({ ok: true, data: null })
+    // A refresh forgets plain removals only.
+    expect(createSteamIgnoredRepository(db).clearRemoved()).toBe(0)
+    expect(service.listIgnoredSteam()).toEqual([
+      { steamAppId: 620, title: 'Portal 2', ignoredAt: '2026-11-08T12:00:00Z' }
+    ])
+    expect(await service.unignoreSteam(620)).toEqual({ ok: true, data: null })
+    expect(service.listIgnoredSteam()).toEqual([])
+    expect(await service.unignoreSteam(620)).toEqual({ ok: false, error: { code: 'not-found' } })
+  })
+
+  it('never removes a manual game as a Steam one', async () => {
+    const created = await service.create(form())
+    const id = created.ok ? created.data.id : 0
+    expect(await service.removeSteam(id, true)).toEqual({ ok: false, error: { code: 'not-found' } })
+    expect(count(db, 'games')).toBe(1)
+    expect(count(db, 'steam_ignored')).toBe(0)
   })
 
   it('sets hidden and beated for any origin, keeping the other flag', async () => {

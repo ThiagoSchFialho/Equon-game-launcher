@@ -121,6 +121,10 @@ depois que o foco para por 150 ms.
     "Instalar", em azul (`color.install`), fica no lugar de "Jogar". Com estado desconhecido, continua "Jogar",
     indisponível. Jogos da Steam instalados têm "Desinstalar" nas opções, em
     vermelho. Os dois abrem a janela da própria Steam, que é quem confirma.
+-   "Remover jogo", em vermelho no fim das opções, vale para qualquer jogo.
+    Em um jogo da Steam (D-26) a confirmação tem três escolhas, nesta ordem:
+    "Cancelar" (foco inicial), "Remover" e "Remover e criar exceção", esta em
+    vermelho. O texto explica cada uma, com o nome das duas em negrito.
 -   Ao apertar "Jogar", o botão mostra "Abrindo…" e fica indisponível por
     10 s, em qualquer caso, inclusive ao sair e voltar à página: jogos abertos
     por atalho `.url` não dão outro sinal de que algo aconteceu. "Em execução"
@@ -161,7 +165,10 @@ depois que o foco para por 150 ms.
 -   Conexões: no topo, o painel "Biblioteca" com "Atualizar biblioteca" e o
     resultado da última leitura, sempre com o horário e o que mudou
     ("nenhuma novidade" quando nada mudou); se os jogos não instalados não
-    puderem ser lidos, o motivo aparece logo abaixo. Depois, Steam (ID
+    puderem ser lidos, o motivo aparece logo abaixo. Com jogos Steam nas
+    exceções (D-26), o painel diz quantos são e ganha "Jogos ignorados", que
+    abre a lista; escolher um pede confirmação para tirá-lo das exceções.
+    Depois, Steam (ID
     Steam; chave da Steam API com Alterar/Remover ou Configurar; "Testar
     conexão"), SteamGridDB (chave; "Testar conexão") e IGDB (Client ID e
     Client Secret; "Testar conexão"). Chaves aparecem só como "Configurada" / "Não

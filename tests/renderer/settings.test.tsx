@@ -201,6 +201,42 @@ describe('settings', () => {
     }
   })
 
+  it('lists the Steam exceptions and takes one off after asking (D-26)', async () => {
+    let list = [
+      { steamAppId: 730, title: 'Counter-Strike 2', ignoredAt: '2026-11-08T12:00:00Z' },
+      { steamAppId: 620, title: 'Portal 2', ignoredAt: '2026-11-08T12:00:00Z' }
+    ]
+    const unignore = vi.fn<EquonApi['library']['unignore']>(async (appId) => {
+      list = list.filter((game) => game.steamAppId !== appId)
+      return { ok: true, data: null }
+    })
+    installFakeApi([summary(1, 'Tidebound')], {
+      library: { ignored: async () => list, unignore }
+    })
+    await openSettings()
+    expect(await screen.findByText('2 jogos Steam nas exceções.')).toBeTruthy()
+    await click('Jogos ignorados')
+    await screen.findByRole('dialog', { name: 'Jogos ignorados' })
+    await clickText('Portal 2')
+    await screen.findByRole('dialog', { name: 'Tirar "Portal 2" das exceções?' })
+    // One dialog at a time, so the titles never overlap (owner's report).
+    expect(screen.queryByRole('dialog', { name: 'Jogos ignorados' })).toBeNull()
+    await clickText('Cancelar')
+    await screen.findByRole('dialog', { name: 'Jogos ignorados' })
+    await clickText('Portal 2')
+    await screen.findByRole('dialog', { name: 'Tirar "Portal 2" das exceções?' })
+    await clickText('Tirar das exceções')
+    await waitFor(() => expect(unignore).toHaveBeenCalledWith(620))
+    expect(await screen.findByText('1 jogo Steam nas exceções.')).toBeTruthy()
+  })
+
+  it('shows no exceptions entry when there are none', async () => {
+    installFakeApi([summary(1, 'Tidebound')])
+    await openSettings()
+    await screen.findByLabelText('Atualizar biblioteca')
+    expect(screen.queryByLabelText('Jogos ignorados')).toBeNull()
+  })
+
   it('refreshes the library and shows the result; connection tests are not available yet', async () => {
     const refresh = vi.fn<EquonApi['library']['refresh']>(async () => ({
       status: 'partial',

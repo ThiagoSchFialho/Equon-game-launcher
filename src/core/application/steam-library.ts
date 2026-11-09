@@ -3,10 +3,26 @@ import {
   findDuplicates,
   planDiscovery,
   runDiscovery,
+  type DiscoveryResult,
   type DuplicateCandidate,
   type IntegrationAdapter
 } from './discovery'
-import type { GameRepository, SteamPlayStats, UnitOfWork } from './ports'
+import { NotFoundError } from './errors'
+import type {
+  GameRepository,
+  SteamIgnoredRepository,
+  SteamIgnoreList,
+  SteamPlayStats,
+  UnitOfWork,
+  UserRepository
+} from './ports'
+
+/** What the Steam sync paths need; `ignored` holds the user's exceptions (D-26). */
+export interface SteamLibraryDeps {
+  games: GameRepository
+  uow: UnitOfWork
+  ignored?: SteamIgnoreList
+}
 
 export interface LibraryRefreshSummary {
   status: 'complete' | 'partial' | 'failed'
@@ -24,6 +40,17 @@ export interface LibraryRefreshSummary {
 const appIdOf = (game: Game): string | null =>
   game.steamAppId === null ? null : String(game.steamAppId)
 
+/** Drops the games the user made exceptions of, so a scan never adds them back (D-26). */
+async function discoverSteam(
+  deps: SteamLibraryDeps,
+  adapter: IntegrationAdapter
+): Promise<DiscoveryResult> {
+  const result = await runDiscovery(adapter)
+  const ignored = deps.ignored?.appIds()
+  if (result.status === 'failed' || !ignored || ignored.size === 0) return result
+  return { ...result, games: result.games.filter((g) => !ignored.has(Number(g.externalId))) }
+}
+
 /**
  * Scans Steam and applies the plan in one transaction (DATA_BASE_CONTEXT.md
  * §3.2): found games are upserted (never touching hidden, beated, playtime
@@ -31,10 +58,10 @@ const appIdOf = (game: Game): string | null =>
  * a failed scan changes nothing.
  */
 export async function refreshSteamLibrary(
-  deps: { games: GameRepository; uow: UnitOfWork },
+  deps: SteamLibraryDeps,
   adapter: IntegrationAdapter
 ): Promise<LibraryRefreshSummary> {
-  const result = await runDiscovery(adapter)
+  const result = await discoverSteam(deps, adapter)
   const existing = deps.games.list()
   const plan = planDiscovery(BuiltinOrigin.steam, result, existing, appIdOf)
   const known = new Set(existing.map(appIdOf).filter((id) => id !== null))
@@ -75,10 +102,10 @@ export interface LibraryRescanSummary {
  * the rules of a scan hold: a failed read changes nothing, a partial one means unknown.
  */
 export async function rescanSteamLibrary(
-  deps: { games: GameRepository; uow: UnitOfWork },
+  deps: SteamLibraryDeps,
   adapter: IntegrationAdapter
 ): Promise<LibraryRescanSummary> {
-  const result = await runDiscovery(adapter)
+  const result = await discoverSteam(deps, adapter)
   const existing = deps.games.list()
   const plan = planDiscovery(BuiltinOrigin.steam, result, existing, appIdOf)
   const known = new Map(
@@ -136,15 +163,16 @@ export interface OwnedSyncOutcome {
  * (`overwritePlaytime`); otherwise only games never synced receive them.
  */
 export function importOwnedSteamGames(
-  deps: { games: GameRepository; uow: UnitOfWork },
+  deps: SteamLibraryDeps,
   owned: readonly OwnedSteamGame[],
   options: { scanComplete: boolean; overwritePlaytime: boolean; syncedAt: string }
 ): OwnedImportSummary {
   const installed: InstallState = options.scanComplete ? false : null
   const existing = deps.games.list()
   const known = new Set(existing.map(appIdOf).filter((id) => id !== null))
+  const ignored = deps.ignored?.appIds() ?? new Set<number>()
   const fresh = owned.flatMap((game) =>
-    game.title !== null && !known.has(String(game.steamAppId))
+    game.title !== null && !known.has(String(game.steamAppId)) && !ignored.has(game.steamAppId)
       ? [{ externalId: String(game.steamAppId), title: game.title, installed, game }]
       : []
   )
@@ -168,4 +196,36 @@ export function importOwnedSteamGames(
     updated,
     duplicates: findDuplicates(BuiltinOrigin.steam, fresh, existing, appIdOf)
   }
+}
+
+/**
+ * Removes a Steam game from the launcher (D-26) in one transaction: the game and everything that
+ * cascades from it (sessions, achievements, genres, art rows), with the trophy counters
+ * recomputed. The syncs skip it from then on: with `ignore` it is an exception until the user
+ * takes it off the list, otherwise until the user's next "Atualizar biblioteca". Nothing changes
+ * on the Steam account. NotFoundError for anything but a Steam game.
+ */
+export function removeSteamGame(
+  deps: {
+    games: GameRepository
+    users: Pick<UserRepository, 'recomputeTrophyCounters'>
+    ignored: SteamIgnoredRepository
+    uow: UnitOfWork
+  },
+  gameId: number,
+  options: { ignore: boolean; at: string }
+): Game {
+  return deps.uow.transaction(() => {
+    const game = deps.games.getById(gameId)
+    if (!game || game.origin !== BuiltinOrigin.steam || game.steamAppId === null) {
+      throw new NotFoundError('Game', gameId)
+    }
+    deps.ignored.add(
+      { steamAppId: game.steamAppId, title: game.title, ignoredAt: options.at },
+      { permanent: options.ignore }
+    )
+    deps.games.delete(gameId)
+    deps.users.recomputeTrophyCounters()
+    return game
+  })
 }
