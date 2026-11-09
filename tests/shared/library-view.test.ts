@@ -5,7 +5,6 @@ import {
   activeFilterCount,
   applyLibraryView,
   homeGames,
-  includesHidden,
   isFiltered,
   searchKey,
   type LibraryView
@@ -77,29 +76,17 @@ describe('applyLibraryView', () => {
     expect(ids({ sort: 'install' })).toEqual([5, 6, 1, 3, 2])
   })
 
-  it('sorts beaten games first, then by title', () => {
-    const list = [
-      game(1, 'C'),
-      game(2, 'B', { beated: true }),
-      game(3, 'A'),
-      game(4, 'D', { beated: true })
-    ]
-    const view = { ...DEFAULT_LIBRARY_VIEW, sort: 'beaten' as const }
-    expect(applyLibraryView(list, view).map((g) => g.id)).toEqual([2, 4, 3, 1])
+  it('shows hidden games only through the filter, whatever the sort (owner decision)', () => {
+    expect(ids({ sort: 'install' })).not.toContain(4)
+    expect(ids({ sort: 'install', showHidden: true })).toContain(4)
+    // A sort is not a filter: "Limpar filtros" has nothing to clear because of it.
+    expect(isFiltered({ ...DEFAULT_LIBRARY_VIEW, sort: 'install' })).toBe(false)
   })
 
-  it('brings hidden games in only while sorting by them, first', () => {
-    expect(ids({ sort: 'hidden' })).toEqual([4, 3, 5, 6, 2, 1])
-    expect(ids({ sort: 'title' })).not.toContain(4)
-    expect(ids({ sort: 'beaten' })).not.toContain(4)
-    expect(includesHidden({ ...DEFAULT_LIBRARY_VIEW, sort: 'hidden' })).toBe(true)
-    expect(includesHidden(DEFAULT_LIBRARY_VIEW)).toBe(false)
-    // It is a sort: "Limpar filtros" has nothing to clear because of it.
-    expect(isFiltered({ ...DEFAULT_LIBRARY_VIEW, sort: 'hidden' })).toBe(false)
-  })
-
-  it('combines the new sorts with the filters', () => {
-    expect(ids({ sort: 'hidden', origin: 'manual', install: 'installed' })).toEqual([4])
+  it('combines the sorts with the filters', () => {
+    expect(
+      ids({ sort: 'install', showHidden: true, origin: 'manual', install: 'installed' })
+    ).toEqual([4])
     expect(ids({ sort: 'install', origin: 'steam' })).toEqual([5, 6])
   })
 
@@ -152,7 +139,7 @@ describe('isFiltered and searchKey', () => {
 
   it('counts the options of the filters dialog, not the search or the sort', () => {
     expect(activeFilterCount(DEFAULT_LIBRARY_VIEW)).toBe(0)
-    expect(activeFilterCount({ ...DEFAULT_LIBRARY_VIEW, query: 'a', sort: 'hidden' })).toBe(0)
+    expect(activeFilterCount({ ...DEFAULT_LIBRARY_VIEW, query: 'a', sort: 'install' })).toBe(0)
     expect(
       activeFilterCount({
         ...DEFAULT_LIBRARY_VIEW,

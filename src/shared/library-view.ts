@@ -6,8 +6,8 @@ import type { GameSummary } from './ipc/contract'
  * its value while navigating and resets when the app restarts.
  */
 
-export type LibrarySort =
-  'title' | 'recent' | 'playtime' | 'achievements' | 'origin' | 'install' | 'hidden' | 'beaten'
+/** "Ocultos" and "Zerados" are filters only, not sorts (owner decision). */
+export type LibrarySort = 'title' | 'recent' | 'playtime' | 'achievements' | 'origin' | 'install'
 /** "Unknown" install states only appear under `all`: they are not reliable. */
 export type InstallFilter = 'all' | 'installed' | 'missing'
 
@@ -47,11 +47,6 @@ export function activeFilterCount(view: LibraryView): number {
   return [view.origin !== null, view.install !== 'all', view.showHidden, view.beatenOnly].filter(
     Boolean
   ).length
-}
-
-/** Sorting by "Ocultos" would change nothing without them, so that sort brings them in. */
-export function includesHidden(view: LibraryView): boolean {
-  return view.showHidden || view.sort === 'hidden'
 }
 
 /** Case-, accent- and punctuation-insensitive form used by the search. */
@@ -95,16 +90,14 @@ const SORTS: Record<LibrarySort, (a: GameSummary, b: GameSummary) => number> = {
   playtime: (a, b) => b.playtime - a.playtime || byTitle(a, b),
   achievements: byAchievements,
   origin: (a, b) => collator.compare(a.originName, b.originName) || byTitle(a, b),
-  install: (a, b) => installRank(a) - installRank(b) || byTitle(a, b),
-  hidden: (a, b) => Number(b.hidden) - Number(a.hidden) || byTitle(a, b),
-  beaten: (a, b) => Number(b.beated) - Number(a.beated) || byTitle(a, b)
+  install: (a, b) => installRank(a) - installRank(b) || byTitle(a, b)
 }
 
 export function applyLibraryView(games: readonly GameSummary[], view: LibraryView): GameSummary[] {
   const words = searchKey(view.query).split(' ').filter(Boolean)
   return games
     .filter((game) => {
-      if (game.hidden && !includesHidden(view)) return false
+      if (game.hidden && !view.showHidden) return false
       if (view.origin !== null && game.origin !== view.origin) return false
       if (view.install === 'installed' && game.installed !== true) return false
       if (view.install === 'missing' && game.installed !== false) return false

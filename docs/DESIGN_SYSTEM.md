@@ -95,8 +95,8 @@ depois que o foco para por 150 ms.
     virtual) não tem atalho: abre pelo campo na barra. "Limpar filtros"
     fica ao lado de "Ordenar" e no diálogo; mantém a ordenação. Jogos ocultos, quando mostrados, aparecem esmaecidos com o
     selo de oculto.
--   "Ordenar": Título, Recentes, Tempo de jogo, % de conquistas, Origem,
-    Instalação, Ocultos e Zerados. Ordenando por tempo de jogo ou por % de
+-   "Ordenar": Título, Recentes, Tempo de jogo, % de conquistas, Origem e
+    Instalação (ocultos e zerados ficam só nos filtros). Ordenando por tempo de jogo ou por % de
     conquistas, o card mostra esse valor no canto inferior direito; jogos
     sem conquistas conhecidas não mostram percentual. A grade não separa os grupos; os selos mostram o estado.
 -   Selos do card da Biblioteca, sempre visíveis, no canto inferior esquerdo,

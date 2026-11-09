@@ -40,9 +40,7 @@ export const t = {
       playtime: 'Tempo de jogo',
       achievements: '% de conquistas',
       origin: 'Origem',
-      install: 'Instalação',
-      hidden: 'Ocultos',
-      beaten: 'Zerados'
+      install: 'Instalação'
     } as Record<string, string>,
     filters: 'Filtros',
     filter: 'Filtrar',

@@ -54,16 +54,7 @@ describe('Library sorts and badges', () => {
     await screen.findByRole('dialog', { name: 'Ordenar' })
     expect(
       [...document.querySelectorAll('.choice__label')].map((label) => label.textContent)
-    ).toEqual([
-      'Título',
-      'Recentes',
-      'Tempo de jogo',
-      '% de conquistas',
-      'Origem',
-      'Instalação',
-      'Ocultos',
-      'Zerados'
-    ])
+    ).toEqual(['Título', 'Recentes', 'Tempo de jogo', '% de conquistas', 'Origem', 'Instalação'])
   })
 
   it('sorts by achievements and follows a sync that changes the percentage', async () => {
@@ -132,21 +123,6 @@ describe('Library sorts and badges', () => {
     expect(document.querySelector('.game-card__stat')).toBeNull()
   })
 
-  it('shows hidden games while sorting by them, and hides them again after', async () => {
-    installFakeApi(LIBRARY)
-    await openLibrary()
-    expect(cards()).toEqual(['Alfa', 'Beta', 'Delta'])
-    expect(screen.getByText('3 jogos')).toBeTruthy()
-
-    await sortBy('Ocultos')
-    expect(cards()).toEqual(['Gama', 'Alfa', 'Beta', 'Delta'])
-    expect(screen.getByText('4 jogos')).toBeTruthy()
-
-    await sortBy('Zerados')
-    expect(cards()).toEqual(['Beta', 'Alfa', 'Delta'])
-    expect(screen.getByText('3 jogos')).toBeTruthy()
-  })
-
   it('sorts by install state', async () => {
     installFakeApi(LIBRARY)
     await openLibrary()
@@ -157,7 +133,10 @@ describe('Library sorts and badges', () => {
   it('marks installed and beaten games, not unknown or missing ones', async () => {
     installFakeApi(LIBRARY)
     await openLibrary()
-    await sortBy('Ocultos')
+    press('y')
+    await clickText('Jogos ocultos')
+    await waitFor(() => expect(cards()).toContain('Gama'))
+    press('Escape')
     expect(badges('Alfa')).toEqual([])
     expect(badges('Delta')).toEqual([])
     expect(badges('Beta')).toEqual(['Instalado', 'Zerado'])
@@ -177,10 +156,11 @@ describe('Library sorts and badges', () => {
   it('keeps the sort when the filters are cleared', async () => {
     installFakeApi(LIBRARY)
     await openLibrary()
-    await sortBy('Ocultos')
+    await sortBy('Instalação')
     press('y')
     await clickText('Jogos zerados')
+    await waitFor(() => expect(cards()).toEqual(['Beta']))
     await clickText('Limpar filtros')
-    await waitFor(() => expect(cards()).toEqual(['Gama', 'Alfa', 'Beta', 'Delta']))
+    await waitFor(() => expect(cards()).toEqual(['Beta', 'Delta', 'Alfa']))
   })
 })

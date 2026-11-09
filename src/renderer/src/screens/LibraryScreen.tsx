@@ -4,7 +4,6 @@ import {
   DEFAULT_LIBRARY_VIEW,
   activeFilterCount,
   applyLibraryView,
-  includesHidden,
   isFiltered,
   type InstallFilter,
   type LibrarySort
@@ -39,16 +38,7 @@ const MENU_HINTS: Hint[] = [
   { button: 'B', label: t.hints.back }
 ]
 
-const SORTS: LibrarySort[] = [
-  'title',
-  'recent',
-  'playtime',
-  'achievements',
-  'origin',
-  'install',
-  'hidden',
-  'beaten'
-]
+const SORTS: LibrarySort[] = ['title', 'recent', 'playtime', 'achievements', 'origin', 'install']
 const INSTALLS: InstallFilter[] = ['all', 'installed', 'missing']
 
 /** The number behind the current order, on the card; null when there is none to show. */
@@ -169,7 +159,7 @@ export function LibraryScreen(): React.JSX.Element {
     )
   }
 
-  const total = includesHidden(view) ? all.length : all.filter((g) => !g.hidden).length
+  const total = view.showHidden ? all.length : all.filter((g) => !g.hidden).length
 
   return (
     <FocusScope id="screen:library">

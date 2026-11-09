@@ -160,11 +160,10 @@ limitações, condições de teste e método de inicialização suportado.
     "Todos").
 -   Ordenação alfabética, por atividade recente, por tempo de jogo, por
     % de conquistas (maior percentual primeiro; jogos sem conquistas
-    conhecidas por último, depois dos que têm 0%), por origem (nome da origem), por instalação (instalados, desconhecidos,
-    não instalados), por ocultos e por zerados (primeiro os marcados). Em
-    cada grupo, ordem alfabética. Ordenar por ocultos também os mostra;
-    trocar de ordenação volta a escondê-los, salvo se o filtro estiver
-    ativo.
+    conhecidas por último, depois dos que têm 0%), por origem (nome da origem) e por instalação (instalados, desconhecidos,
+    não instalados). Em cada grupo, ordem alfabética. Ocultos e zerados
+    não são ordenações, só filtros (decisão do dono do projeto,
+    2026-11-09).
 -   Padrão da Biblioteca: ordem alfabética, todos os jogos exceto os
     ocultos. Filtros permitem mostrar os ocultos e listar só os jogos
     zerados; "Limpar filtros" fica ao lado da ordenação.
