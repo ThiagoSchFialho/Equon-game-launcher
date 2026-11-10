@@ -10,6 +10,7 @@ import type {
 } from '../../../shared/ipc/contract'
 import appearanceIcon from '../assets/icons/appearance.svg'
 import checkIcon from '../assets/icons/check-circle.svg'
+import connectionsIcon from '../assets/icons/connections.svg'
 import deleteIcon from '../assets/icons/delete.svg'
 import editIcon from '../assets/icons/edit.svg'
 import gamepadIcon from '../assets/icons/gamepad.svg'
@@ -204,7 +205,7 @@ export function SettingsScreen(): React.JSX.Element {
             <nav className="settings__tabs" aria-label={t.settings.title}>
               <SettingsTab
                 id="connections"
-                icon={steamIcon}
+                icon={connectionsIcon}
                 label={t.settings.tabs.connections}
                 selected={tab === 'connections'}
                 onSelect={enterTab}
