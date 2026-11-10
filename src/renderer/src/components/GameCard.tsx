@@ -13,10 +13,21 @@ interface Props extends FocusableOptions {
   variant: 'square' | 'portrait'
   /** The value the Library is sorted by, shown at the bottom right. */
   stat?: string | null
+  /** "Instalado" and "Zerado" badges: the Library's; off on Home, which lists installed games. */
+  statusBadges?: boolean
 }
 
-/** Focusable game card: square cover in the Library, portrait cover on Home. */
-export function GameCard({ game, variant, stat, ...focusOptions }: Props): React.JSX.Element {
+/**
+ * Focusable game card: square cover in the Library, portrait cover on Home (square there with
+ * "Capas da home" › Embaixo, D-27).
+ */
+export function GameCard({
+  game,
+  variant,
+  stat,
+  statusBadges = variant === 'square',
+  ...focusOptions
+}: Props): React.JSX.Element {
   const { setElement, focused, mouse } = useFocusable<HTMLButtonElement>(
     `game-card:${variant}:${game.id}`,
     focusOptions
@@ -24,9 +35,9 @@ export function GameCard({ game, variant, stat, ...focusOptions }: Props): React
   // Home only lists installed games, so these two say something only in the Library.
   const badges = [
     game.hidden && { label: t.library.hiddenBadge, icon: hiddenIcon },
-    variant === 'square' &&
+    statusBadges &&
       game.installed === true && { label: t.library.installedBadge, icon: installedIcon },
-    variant === 'square' && game.beated && { label: t.library.beatenBadge, icon: beatenIcon }
+    statusBadges && game.beated && { label: t.library.beatenBadge, icon: beatenIcon }
   ].filter((badge) => badge !== false)
   return (
     <button

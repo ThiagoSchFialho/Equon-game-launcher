@@ -313,6 +313,13 @@ export interface HomeArtPreference {
   dim: number
 }
 
+/** "Capas da home" (D-27): levels 1 to 100 and where the row sits. */
+export interface HomeCoverPreference {
+  size: number
+  gap: number
+  position: 'center' | 'bottom'
+}
+
 export interface UserRepository {
   /** SteamID64 (17 digits) or null. */
   getSteamId(): string | null
@@ -329,6 +336,10 @@ export interface UserRepository {
   getHomeArt(): HomeArtPreference
   /** Values already validated by the caller; the table's CHECKs guard them too. */
   setHomeArt(changes: Partial<HomeArtPreference>): void
+  /** Settings › Aparência › "Capas da home" (D-27). */
+  getHomeCovers(): HomeCoverPreference
+  /** Values already validated by the caller; the table's CHECKs guard them too. */
+  setHomeCovers(changes: Partial<HomeCoverPreference>): void
   getTrophyCounters(): TrophyCounters
   /** Recomputes counters from ACHIEVEMENTS; never increments blindly. */
   recomputeTrophyCounters(): TrophyCounters

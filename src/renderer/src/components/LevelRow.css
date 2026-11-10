@@ -74,3 +74,36 @@
   font-size: var(--font-size-body);
   text-align: right;
 }
+
+/* Many steps (D-27): one bar, filled up to the value, as wide as ten ticks. */
+.level-row__track {
+  position: relative;
+  width: 13.25rem;
+  height: 0.75rem;
+  overflow: hidden;
+  background: var(--color-surface-raised);
+  border-radius: var(--space-1);
+}
+
+.level-row__fill {
+  position: absolute;
+  inset: 0;
+  background: var(--color-accent);
+  transform-origin: left center;
+}
+
+/* OptionRow: the options side by side, the chosen one in the accent color. */
+.level-row__option {
+  min-width: 7rem;
+  height: 2.5rem;
+  padding: 0 var(--space-4);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-body);
+  background: var(--color-surface-raised);
+  border-radius: var(--radius-button);
+}
+
+.level-row__option[data-selected='true'] {
+  color: var(--color-background);
+  background: var(--color-accent);
+}

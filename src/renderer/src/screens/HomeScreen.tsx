@@ -12,6 +12,7 @@ import { TopBar } from '../components/TopBar'
 import { formatPlaytime } from '../data/format'
 import { useGames } from '../data/games'
 import { homeArtUrl, useHomeArt } from '../data/home-art'
+import { homeCoverStyle, useHomeCovers } from '../data/home-covers'
 import { useFocusManager, useScreenActions } from '../focus/focus-context'
 import { prefersReducedMotion } from '../focus/focus-manager'
 import { FocusScope } from '../focus/FocusProvider'
@@ -49,6 +50,7 @@ function Carousel({
   backdropTarget: HTMLElement | null
 }): React.JSX.Element {
   const homeArt = useHomeArt().settings
+  const covers = useHomeCovers().settings
   const navigation = useNavigation()
   const manager = useFocusManager()
   // Coming back: starts on the restored game, so the track does not travel to it on screen.
@@ -127,7 +129,14 @@ function Carousel({
   return (
     <div
       className="home__carousel"
-      style={{ '--index': index, '--count': games.length } as React.CSSProperties}
+      data-position={covers.position}
+      style={
+        {
+          '--index': index,
+          '--count': games.length,
+          ...homeCoverStyle(covers)
+        } as React.CSSProperties
+      }
     >
       {backdrop}
       {/* The focused card goes to the middle; the track moves with transform (HomeScreen.css). */}
@@ -136,7 +145,9 @@ function Carousel({
           <div key={game.id} className="home__slot">
             <GameCard
               game={game}
-              variant="portrait"
+              // "Embaixo" uses the square cover (owner decision, D-27).
+              variant={covers.position === 'bottom' ? 'square' : 'portrait'}
+              statusBadges={false}
               scroll="none"
               autoFocus={i === 0}
               onFocus={() => focusCard(i)}
@@ -153,7 +164,8 @@ function Carousel({
           style={{ '--index': infoIndex } as React.CSSProperties}
         >
           <p className="home__title">{focusedGame.title}</p>
-          {focusedGame.playtime > 0 && (
+          {/* "Embaixo" shows only the name (owner decision, D-27). */}
+          {covers.position !== 'bottom' && focusedGame.playtime > 0 && (
             <p className="home__playtime">
               <img src={homeClockIcon} alt="" />
               {formatPlaytime(focusedGame.playtime)}

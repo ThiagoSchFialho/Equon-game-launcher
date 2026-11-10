@@ -65,6 +65,7 @@ describe('settings service', () => {
       startFullscreen: false,
       uiSounds: true,
       homeArt: { enabled: false, blur: 4, dim: 60 },
+      homeCovers: { size: 74, gap: 35, position: 'center' },
       openAtLogin: false,
       openAtLoginAvailable: true
     })
@@ -93,6 +94,30 @@ describe('settings service', () => {
       'home_art_dim = 95',
       'home_art_dim = 35',
       'home_art_background = 2'
+    ]) {
+      expect(() => db.prepare(`UPDATE users SET ${bad}`).run()).toThrow()
+    }
+  })
+
+  it('stores the Home covers (D-27): the old layout by default, each value on its own', () => {
+    expect(settings.setHomeCovers({ size: 100 })).toMatchObject({
+      ok: true,
+      data: { homeCovers: { size: 100, gap: 35, position: 'center' } }
+    })
+    expect(
+      settings.setHomeCovers({ gap: 1, position: 'bottom' }).ok && settings.get().homeCovers
+    ).toEqual({
+      size: 100,
+      gap: 1,
+      position: 'bottom'
+    })
+    // The table refuses what the IPC schema already refuses.
+    for (const bad of [
+      'home_cover_size = 0',
+      'home_cover_size = 101',
+      'home_cover_gap = 0',
+      'home_cover_gap = 101',
+      "home_cover_position = 'top'"
     ]) {
       expect(() => db.prepare(`UPDATE users SET ${bad}`).run()).toThrow()
     }

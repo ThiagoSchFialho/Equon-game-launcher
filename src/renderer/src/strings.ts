@@ -446,7 +446,13 @@ export const t = {
       homeArtHint:
         'No Início, a imagem de abertura do jogo em foco fica atrás de tudo, desfocada e escurecida.',
       blur: 'Desfoque',
-      dim: 'Escurecimento'
+      dim: 'Escurecimento',
+      /** "Capas da home" (D-27). */
+      covers: 'Capas da home',
+      coverSize: 'Tamanho',
+      coverGap: 'Espaçamento',
+      coverPosition: 'Posição',
+      coverPositions: { center: 'Centro', bottom: 'Embaixo' }
     },
     system: {
       startFullscreen: 'Iniciar em tela cheia',

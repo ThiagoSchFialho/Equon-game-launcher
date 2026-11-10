@@ -2,6 +2,9 @@ import { useFocusable } from '../focus/focus-context'
 import { useUiSounds } from '../sound/sound-context'
 import './LevelRow.css'
 
+/** More steps than this get a continuous bar instead of ticks. */
+const MAX_TICKS = 20
+
 interface Props {
   id: string
   label: string
@@ -75,11 +78,21 @@ export function LevelRow({
         >
           −
         </button>
-        <span className="level-row__bar" aria-hidden>
-          {Array.from({ length: steps }, (_, i) => (
-            <span key={i} className="level-row__tick" data-on={i < filled} />
-          ))}
-        </span>
+        {/* One tick per step reads well up to a few dozen; past that, a continuous bar (D-27). */}
+        {steps > MAX_TICKS ? (
+          <span className="level-row__track" aria-hidden>
+            <span
+              className="level-row__fill"
+              style={{ transform: `scaleX(${steps === 0 ? 0 : filled / steps})` }}
+            />
+          </span>
+        ) : (
+          <span className="level-row__bar" aria-hidden>
+            {Array.from({ length: steps }, (_, i) => (
+              <span key={i} className="level-row__tick" data-on={i < filled} />
+            ))}
+          </span>
+        )}
         <button
           className="level-row__step"
           tabIndex={-1}

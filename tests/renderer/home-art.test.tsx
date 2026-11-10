@@ -162,3 +162,81 @@ describe('Configurações › Aparência', () => {
     expect(setHomeArt).toHaveBeenLastCalledWith({ dim: 80 })
   })
 })
+
+describe('Home covers (D-27)', () => {
+  // waitFor retries while it is not there yet.
+  const carousel = (): HTMLElement => document.querySelector('.home__carousel') as HTMLElement
+
+  it('sizes, spaces and places the covers as set; the defaults keep the old layout', async () => {
+    installFakeApi([summary(1, 'Tidebound')])
+    render(<App />)
+    await screen.findByText('12h 22m')
+    await waitFor(() => expect(carousel().style.getPropertyValue('--card-width')).toBe('25.5rem'))
+    expect(carousel().querySelector('.game-card--portrait')).toBeTruthy()
+    expect(carousel().style.getPropertyValue('--card-gap')).toBe('3.5rem')
+    expect(carousel().dataset.position).toBe('center')
+    cleanup()
+
+    installFakeApi([summary(1, 'Tidebound')], {
+      settings: {
+        get: async () => settingsInfo({ homeCovers: { size: 100, gap: 1, position: 'bottom' } })
+      }
+    })
+    render(<App />)
+    await waitFor(() => expect(carousel().dataset.position).toBe('bottom'))
+    // "Embaixo" shows only the name of the focused game, no playtime (owner decision).
+    expect(await screen.findByText('Tidebound', { selector: '.home__title' })).toBeTruthy()
+    expect(screen.queryByText('12h 22m')).toBeNull()
+    // 100 is the largest size that still looks right: the old 88 (owner decision).
+    expect(carousel().style.getPropertyValue('--card-width')).toBe('32rem')
+    expect(carousel().style.getPropertyValue('--card-gap')).toBe('0.1rem')
+    // "Embaixo" shows the square cover, without the Library's status badges.
+    expect(carousel().querySelector('.game-card--square .artwork--cover_square')).toBeTruthy()
+    expect(carousel().querySelector('.game-card--portrait')).toBeNull()
+    expect(carousel().querySelector('.game-card__badge')).toBeNull()
+  })
+
+  it('sets them in Aparência, saved at once and followed by the Home screen', async () => {
+    const setHomeCovers = vi.fn<EquonApi['settings']['setHomeCovers']>(async (changes) => ({
+      ok: true,
+      data: settingsInfo({ homeCovers: { size: 74, gap: 35, position: 'center', ...changes } })
+    }))
+    installFakeApi([summary(1, 'Tidebound')], { settings: { setHomeCovers } })
+    render(<App />)
+    await screen.findByText('12h 22m')
+    press('Home')
+    act(() => screen.getByText('Configurações').closest('button')?.click())
+    act(() => screen.getByText('Aparência').closest('button')?.click())
+    await screen.findByRole('heading', { name: 'Capas da home' })
+
+    const size = screen.getByRole('slider', { name: 'Tamanho' })
+    expect(size.getAttribute('aria-valuenow')).toBe('74')
+    // A hundred steps: one continuous bar instead of a hundred ticks.
+    expect(size.querySelector('.level-row__track')).toBeTruthy()
+    expect(size.querySelector('.level-row__tick')).toBeNull()
+    act(() => size.click())
+    press('ArrowRight')
+    expect(setHomeCovers).toHaveBeenLastCalledWith({ size: 75 })
+
+    act(() => screen.getByRole('slider', { name: 'Espaçamento' }).click())
+    press('ArrowLeft')
+    expect(setHomeCovers).toHaveBeenLastCalledWith({ gap: 34 })
+
+    const position = screen.getByRole('radiogroup', { name: 'Posição' })
+    expect(screen.getByRole('radio', { name: 'Centro' }).getAttribute('aria-checked')).toBe('true')
+    act(() => position.click())
+    press('ArrowRight')
+    expect(setHomeCovers).toHaveBeenLastCalledWith({ position: 'bottom' })
+    // At the last option the direction is not used: nothing more is saved.
+    const calls = setHomeCovers.mock.calls.length
+    press('ArrowRight')
+    expect(setHomeCovers.mock.calls.length).toBe(calls)
+
+    // B to the tab, B to the Home screen, which already follows.
+    press('Escape')
+    press('Escape')
+    await waitFor(() => expect(carousel().dataset.position).toBe('bottom'))
+    expect(carousel().style.getPropertyValue('--card-width')).toBe('25.75rem')
+    expect(carousel().style.getPropertyValue('--card-gap')).toBe('3.4rem')
+  })
+})

@@ -5,6 +5,9 @@ import {
   HOME_ART_BLUR_MAX,
   HOME_ART_DIM_MAX,
   HOME_ART_DIM_STEP,
+  HOME_COVER_MAX,
+  HOME_COVER_MIN,
+  HOME_COVER_POSITIONS,
   STEAM_GALLERY_KINDS,
   type AchievementsOverview,
   type AchievementSyncStatus,
@@ -17,6 +20,7 @@ import {
   type GameDetails,
   type GameSummary,
   type HomeArtSettings,
+  type HomeCoverSettings,
   type IgnoredSteamGameInfo,
   type BackgroundActivity,
   type LibraryRefreshInfo,
@@ -286,6 +290,17 @@ export const settingsSetHomeArtArgs = z.tuple([
   homeArtSchema.partial().refine((changes) => Object.keys(changes).length > 0)
 ])
 
+const homeCoverLevel = z.number().int().min(HOME_COVER_MIN).max(HOME_COVER_MAX)
+const homeCoversSchema = z.strictObject({
+  size: homeCoverLevel,
+  gap: homeCoverLevel,
+  position: z.enum(HOME_COVER_POSITIONS)
+}) satisfies z.ZodType<HomeCoverSettings>
+/** Only what changed, and at least one thing. */
+export const settingsSetHomeCoversArgs = z.tuple([
+  homeCoversSchema.partial().refine((changes) => Object.keys(changes).length > 0)
+])
+
 export const settingsInfoSchema = z.strictObject({
   steamId: z.string().nullable(),
   steamApiKey: z.boolean(),
@@ -300,6 +315,7 @@ export const settingsInfoSchema = z.strictObject({
   startFullscreen: z.boolean(),
   uiSounds: z.boolean(),
   homeArt: homeArtSchema,
+  homeCovers: homeCoversSchema,
   openAtLogin: z.boolean(),
   openAtLoginAvailable: z.boolean()
 }) satisfies z.ZodType<SettingsInfo>

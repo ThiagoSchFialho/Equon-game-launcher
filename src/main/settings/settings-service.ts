@@ -2,6 +2,7 @@ import type { SecretKind, UserRepository } from '../../core/application'
 import { isSteamId64 } from '../../core/domain'
 import type {
   HomeArtSettings,
+  HomeCoverSettings,
   Result,
   SettingsInfo,
   SteamSyncInfo
@@ -42,6 +43,8 @@ export interface SettingsService {
   setUiSounds(enabled: boolean): Result<SettingsInfo>
   /** Values validated by the IPC schema (ranges and steps) before they get here. */
   setHomeArt(changes: Partial<HomeArtSettings>): Result<SettingsInfo>
+  /** Validated by the IPC schema (ranges and the two positions) before they get here. */
+  setHomeCovers(changes: Partial<HomeCoverSettings>): Result<SettingsInfo>
 }
 
 /**
@@ -64,6 +67,7 @@ export function createSettingsService(deps: SettingsServiceDeps): SettingsServic
     startFullscreen: deps.users.getStartFullscreen(),
     uiSounds: deps.users.getUiSounds(),
     homeArt: deps.users.getHomeArt(),
+    homeCovers: deps.users.getHomeCovers(),
     openAtLogin: deps.loginItem.available() && deps.loginItem.enabled(),
     openAtLoginAvailable: deps.loginItem.available()
   })
@@ -110,6 +114,11 @@ export function createSettingsService(deps: SettingsServiceDeps): SettingsServic
 
     setHomeArt(changes) {
       deps.users.setHomeArt(changes)
+      return { ok: true, data: get() }
+    },
+
+    setHomeCovers(changes) {
+      deps.users.setHomeCovers(changes)
       return { ok: true, data: get() }
     },
 

@@ -43,6 +43,7 @@ import {
   settingsInfoSchema,
   settingsSetEnabledArgs,
   settingsSetHomeArtArgs,
+  settingsSetHomeCoversArgs,
   settingsSetSecretArgs,
   settingsSetSteamIdArgs,
   settingsTestConnectionArgs,
@@ -229,6 +230,12 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
     IpcChannel.settingsSetHomeArt,
     createValidatedHandler(settingsSetHomeArtArgs, settingsResult, trusted, (changes) =>
       deps.settings.setHomeArt(changes)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.settingsSetHomeCovers,
+    createValidatedHandler(settingsSetHomeCoversArgs, settingsResult, trusted, (changes) =>
+      deps.settings.setHomeCovers(changes)
     )
   )
   ipcMain.handle(

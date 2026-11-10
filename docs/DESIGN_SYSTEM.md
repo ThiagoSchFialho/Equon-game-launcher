@@ -173,7 +173,23 @@ depois que o foco para por 150 ms.
     desmarcada. Um nível é uma linha focável com o nome à esquerda e, à
     direita, "−", uma barra de passos em `--color-accent`, "+" e o valor;
     esquerda e direita mudam o valor e, no fim da faixa, movem o foco
-    normalmente. Cada passo toca o som de mover o foco.
+    normalmente. Cada passo toca o som de mover o foco. Com mais de 20
+    passos, a barra vira uma faixa contínua, preenchida até o valor.
+-   Aparência › "Capas da home" (D-27): título e, embaixo, um painel com
+    "Tamanho" e "Espaçamento" (níveis de 1 a 100) e "Posição", com
+    "Centro" e "Embaixo" lado a lado; a escolhida fica em
+    `--color-accent`. Esquerda e direita escolhem (no fim, movem o foco),
+    A passa para a próxima e o mouse clica. Só a capa muda de tamanho; o
+    nome e o tempo de jogo mantêm o deles. A posição considera o conjunto
+    capa + nome + tempo de jogo (decisão do dono do projeto): "Centro" o
+    centraliza entre a barra superior e o rodapé, com a capa vertical; e
+    "Embaixo" o deixa perto do rodapé, com a capa quadrada, só o nome do
+    jogo (sem tempo de jogo), em cima da capa em foco e mais perto dela, e
+    a capa em foco sempre no lugar da primeira: é a fileira que anda, em
+    vez de a capa ir para o centro como em "Centro" (decisões do dono do
+    projeto). Nas duas posições o nome aparece inteiro, numa linha, mesmo
+    passando da largura da capa. O tamanho 100 é o maior que ainda fica bom. Os padrões são
+    o tamanho e o espaço de antes.
 -   Conexões: no topo, o painel "Biblioteca" com "Atualizar biblioteca" e o
     resultado da última leitura, sempre com o horário e o que mudou
     ("nenhuma novidade" quando nada mudou); se os jogos não instalados não

@@ -4,7 +4,8 @@ import { createValidatedHandler, IpcRejectedError } from '../../../src/main/ipc/
 import {
   gamesSetFlagsArgs,
   gamesUpdateSteamArgs,
-  settingsSetHomeArtArgs
+  settingsSetHomeArtArgs,
+  settingsSetHomeCoversArgs
 } from '../../../src/shared/ipc/schemas'
 
 const trusted = { senderFrame: { url: 'app://trusted' } }
@@ -83,6 +84,21 @@ describe('settings:set-home-art arguments', () => {
     expect(ok({ dim: 100 })).toBe(false)
     expect(ok({ enabled: 1 })).toBe(false)
     expect(ok({ blur: 4, url: 'x' })).toBe(false)
+  })
+})
+
+describe('settings:set-home-covers arguments', () => {
+  it('takes what changed, within 1 to 100 and the two positions, and nothing else', () => {
+    const ok = (changes: unknown): boolean => settingsSetHomeCoversArgs.safeParse([changes]).success
+    expect(ok({ size: 1 })).toBe(true)
+    expect(ok({ size: 100, gap: 100, position: 'bottom' })).toBe(true)
+    expect(ok({ position: 'center' })).toBe(true)
+    expect(ok({})).toBe(false)
+    expect(ok({ size: 0 })).toBe(false)
+    expect(ok({ gap: 101 })).toBe(false)
+    expect(ok({ size: 50.5 })).toBe(false)
+    expect(ok({ position: 'top' })).toBe(false)
+    expect(ok({ size: 50, css: 'x' })).toBe(false)
   })
 })
 

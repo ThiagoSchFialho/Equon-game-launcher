@@ -19,6 +19,7 @@ export const IpcChannel = {
   settingsSetOpenAtLogin: 'settings:set-open-at-login',
   settingsSetUiSounds: 'settings:set-ui-sounds',
   settingsSetHomeArt: 'settings:set-home-art',
+  settingsSetHomeCovers: 'settings:set-home-covers',
   settingsTestConnection: 'settings:test-connection',
   libraryDuplicates: 'library:duplicates',
   libraryDismissDuplicate: 'library:dismiss-duplicate',
@@ -260,6 +261,19 @@ export const HOME_ART_BLUR_MAX = 10
 export const HOME_ART_DIM_MAX = 90
 export const HOME_ART_DIM_STEP = 10
 
+/** "Capas da home" (D-27): size and spacing are levels, the position one of two. */
+export interface HomeCoverSettings {
+  /** HOME_COVER_MIN to HOME_COVER_MAX. */
+  size: number
+  /** HOME_COVER_MIN to HOME_COVER_MAX. */
+  gap: number
+  position: HomeCoverPosition
+}
+export const HOME_COVER_POSITIONS = ['center', 'bottom'] as const
+export type HomeCoverPosition = (typeof HOME_COVER_POSITIONS)[number]
+export const HOME_COVER_MIN = 1
+export const HOME_COVER_MAX = 100
+
 export interface SettingsInfo {
   steamId: string | null
   steamApiKey: boolean
@@ -278,6 +292,8 @@ export interface SettingsInfo {
   uiSounds: boolean
   /** Configurações › Aparência: the focused game's art behind the Home screen (D-25). */
   homeArt: HomeArtSettings
+  /** Configurações › Aparência › "Capas da home" (D-27). */
+  homeCovers: HomeCoverSettings
   /** As Windows reports it, so turning it off in the Task Manager shows here. */
   openAtLogin: boolean
   /** False when unpackaged: it would register the bare Electron binary. */
@@ -624,6 +640,8 @@ export interface EquonApi {
     setUiSounds(enabled: boolean): Promise<Result<SettingsInfo>>
     /** Only what changed; the rest stays. */
     setHomeArt(changes: Partial<HomeArtSettings>): Promise<Result<SettingsInfo>>
+    /** Only what changed, like setHomeArt. */
+    setHomeCovers(changes: Partial<HomeCoverSettings>): Promise<Result<SettingsInfo>>
     /** One live request with the stored credentials. */
     testConnection(kind: 'steam' | 'steamgriddb' | 'igdb'): Promise<Result<ConnectionTest>>
   }
