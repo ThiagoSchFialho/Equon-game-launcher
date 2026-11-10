@@ -5,8 +5,8 @@ import {
   activeFilterCount,
   applyLibraryView,
   isFiltered,
-  type InstallFilter,
-  type LibrarySort
+  type LibrarySort,
+  type LibraryView
 } from '../../../shared/library-view'
 import { useNavigation } from '../app/navigation'
 import { Button } from '../components/Button'
@@ -33,13 +33,20 @@ const HINTS: Hint[] = [
   { button: 'X', label: t.hints.sort },
   { button: 'Y', label: t.hints.filter }
 ]
+/** The on/off filters of the dialog, after Origem, in this order (owner decision). */
+const FILTERS = [
+  ['hiddenOnly', 'hiddenFilter'],
+  ['beatenOnly', 'beatenFilter'],
+  ['installedOnly', 'installedFilter'],
+  ['notInstalledOnly', 'notInstalledFilter']
+] as const satisfies readonly (readonly [keyof LibraryView, keyof typeof t.library])[]
+
 const MENU_HINTS: Hint[] = [
   { button: 'A', label: t.hints.select },
   { button: 'B', label: t.hints.back }
 ]
 
 const SORTS: LibrarySort[] = ['title', 'recent', 'playtime', 'achievements', 'origin', 'install']
-const INSTALLS: InstallFilter[] = ['all', 'installed', 'missing']
 
 /** The number behind the current order, on the card; null when there is none to show. */
 function cardStat(game: GameSummary, sort: LibrarySort): string | null {
@@ -56,7 +63,6 @@ type Overlay =
   | { kind: 'origin' }
   | { kind: 'sort' }
   | { kind: 'filters' }
-  | { kind: 'install' }
 
 export function LibraryScreen(): React.JSX.Element {
   const navigation = useNavigation()
@@ -135,8 +141,8 @@ export function LibraryScreen(): React.JSX.Element {
         hint={t.library.allHiddenHint}
         action={{
           id: 'library:show-hidden',
-          label: `${t.library.showHidden} ${t.library.hiddenGames.toLowerCase()}`,
-          onConfirm: () => setView((v) => ({ ...v, showHidden: true }))
+          label: t.library.showHidden,
+          onConfirm: () => setView((v) => ({ ...v, hiddenOnly: true }))
         }}
       />
     )
@@ -159,7 +165,7 @@ export function LibraryScreen(): React.JSX.Element {
     )
   }
 
-  const total = view.showHidden ? all.length : all.filter((g) => !g.hidden).length
+  const total = view.hiddenOnly ? all.length : all.filter((g) => !g.hidden).length
 
   return (
     <FocusScope id="screen:library">
@@ -282,53 +288,13 @@ export function LibraryScreen(): React.JSX.Element {
               detail: originName,
               onConfirm: () => setOverlay({ kind: 'origin' })
             },
-            {
-              id: 'install',
-              label: t.library.install,
-              detail: t.library.installs[view.install],
-              onConfirm: () => setOverlay({ kind: 'install' })
-            },
-            {
-              id: 'hidden',
-              label: t.library.hiddenGames,
-              detail: view.showHidden ? t.library.showHidden : t.library.hideHidden,
-              onConfirm: () => setView((v) => ({ ...v, showHidden: !v.showHidden }))
-            },
-            {
-              id: 'beaten',
-              label: t.library.beatenGames,
-              detail: view.beatenOnly ? t.library.beatenOnly : t.library.beatenAll,
-              onConfirm: () => setView((v) => ({ ...v, beatenOnly: !v.beatenOnly }))
-            },
-            {
-              id: 'clear',
-              label: t.library.clearFilters,
-              separated: true,
-              onConfirm: filtered
-                ? () => {
-                    clearFilters()
-                    close()
-                  }
-                : undefined
-            },
-            { id: 'close', label: t.library.close, onConfirm: close }
+            ...FILTERS.map<ChoiceItem>(([key, label]) => ({
+              id: key,
+              label: t.library[label],
+              detail: view[key] ? t.library.filterOn : undefined,
+              onConfirm: () => setView((v) => ({ ...v, [key]: !v[key] }))
+            }))
           ]}
-        />
-      )}
-      {overlay?.kind === 'install' && (
-        <ChoiceDialog
-          id="library-install"
-          title={t.library.install}
-          onClose={() => setOverlay({ kind: 'filters' })}
-          items={INSTALLS.map<ChoiceItem>((install) => ({
-            id: install,
-            label: t.library.installs[install],
-            selected: install === view.install,
-            onConfirm: () => {
-              setView((v) => ({ ...v, install }))
-              setOverlay({ kind: 'filters' })
-            }
-          }))}
         />
       )}
     </FocusScope>

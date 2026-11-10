@@ -190,20 +190,31 @@ describe('library organization', () => {
     await waitFor(() => expect(focused()).toBe('Pokémon Red'))
   })
 
-  it('filters by install state and shows hidden games on request', async () => {
+  it('adds the filters up, each one on or off in the open dialog (owner decision)', async () => {
     installFakeApi(games)
     await openLibrary()
     await pressPad(Y)
     await screen.findByRole('dialog', { name: 'Filtros' })
-    await clickText('Instalação')
-    await clickText('Não encontrados')
+    await clickText('Não instalados')
     await waitFor(() => expect(cards()).toEqual(['Pokémon Red']))
+    // The dialog stays open and says which ones are on.
+    expect(screen.getByRole('dialog', { name: 'Filtros' })).toBeTruthy()
+    expect(screen.getAllByText('Ativo')).toHaveLength(1)
 
-    await clickText('Instalação')
-    await clickText('Todos')
-    await clickText('Jogos ocultos')
-    await waitFor(() => expect(cards()).toEqual(['Celeste', 'Doom', 'Pokémon Red', 'Zelda']))
+    // Both install filters: nothing is both.
+    await clickText('Instalados')
+    await waitFor(() => expect(cards()).toEqual([]))
+    expect(screen.getByText('Nenhum jogo corresponde à busca e aos filtros.')).toBeTruthy()
+
+    await clickText('Não instalados')
+    await waitFor(() => expect(cards()).toEqual(['Celeste', 'Zelda']))
+
+    // "Ocultos" shows only the hidden games.
+    await clickText('Ocultos')
+    await waitFor(() => expect(cards()).toEqual(['Doom']))
     expect(screen.getByTitle('Oculto')).toBeTruthy()
+    press('Escape')
+    await waitFor(() => expect(screen.getByLabelText('Filtrar: 2 ativos')).toBeTruthy())
   })
 
   it('explains an empty result and clears the filters, keeping the sort', async () => {
@@ -250,7 +261,8 @@ describe('library organization', () => {
     await click('Filtrar: Nenhum')
     await screen.findByRole('dialog', { name: 'Filtros' })
     const labels = [...document.querySelectorAll('.choice__label')].map((l) => l.textContent)
-    expect(labels.slice(0, 4)).toEqual(['Origem', 'Instalação', 'Jogos ocultos', 'Jogos zerados'])
+    // No "Limpar filtros" or "Fechar" in the dialog: B closes it (owner decision).
+    expect(labels).toEqual(['Origem', 'Ocultos', 'Zerados', 'Instalados', 'Não instalados'])
 
     // B on the origin list goes back to the filters without changing anything.
     await clickText('Origem')
@@ -264,7 +276,7 @@ describe('library organization', () => {
     await screen.findByRole('dialog', { name: 'Filtros' })
     // The dialog says which one is selected, and the filters clear it too.
     expect(await screen.findByText('Yuzu')).toBeTruthy()
-    await clickText('Jogos zerados')
+    await clickText('Zerados')
     press('Escape')
     await waitFor(() => expect(screen.getByLabelText('Filtrar: 2 ativos')).toBeTruthy())
     // Nothing matches both, so the empty message offers it too; either one clears.
@@ -279,8 +291,8 @@ describe('library organization', () => {
     expect(screen.getByLabelText('Limpar filtros').getAttribute('aria-disabled')).toBe('true')
     press('y')
     expect(await screen.findByRole('dialog', { name: 'Filtros' })).toBeTruthy()
-    await clickText('Jogos zerados')
-    expect(await screen.findByText('Só zerados')).toBeTruthy()
+    await clickText('Zerados')
+    expect(await screen.findByText('Ativo')).toBeTruthy()
     press('Escape')
     await waitFor(() => expect(cards()).toEqual(['Hades']))
 
@@ -294,7 +306,7 @@ describe('library organization', () => {
     installFakeApi([summary(1, 'Doom', { hidden: true })])
     await openLibrary()
     expect(await screen.findByText('Todos os jogos estão ocultos.')).toBeTruthy()
-    await clickText('Mostrar jogos ocultos')
+    await clickText('Mostrar ocultos')
     await waitFor(() => expect(cards()).toEqual(['Doom']))
   })
 })
@@ -321,7 +333,7 @@ describe('manual flags from the options menu', () => {
     const setFlags = vi.fn<EquonApi['games']['setFlags']>(async () => ({ ok: true, data: null }))
     installFakeApi([summary(1, 'Doom', { hidden: true })], { games: { setFlags } })
     await openLibrary()
-    await clickText('Mostrar jogos ocultos')
+    await clickText('Mostrar ocultos')
     await waitFor(() => expect(cards()).toEqual(['Doom']))
     openMenu()
     await clickText('Mostrar jogo')

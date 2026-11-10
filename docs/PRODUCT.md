@@ -155,9 +155,13 @@ limitações, condições de teste e método de inicialização suportado.
 -   Busca por título (teclado virtual; ignora maiúsculas, acentos e
     pontuação).
 -   Filtro por origem, incluindo as origens criadas pelo usuário.
--   Filtro por estado de instalação quando confiável (Todos /
-    Instalados / Não encontrados; o estado desconhecido só aparece em
-    "Todos").
+-   Filtros "Instalados" (só os instalados) e "Não instalados" (só os
+    confirmados como não instalados); o estado desconhecido só aparece com
+    os dois desligados.
+-   Os filtros se somam (decisão do dono do projeto, 2026-11-09): cada um
+    ligado restringe mais a lista. "Ocultos" mostra só os jogos ocultos;
+    "Zerados", só os zerados; "Instalados" com "Não instalados" não mostra
+    nenhum jogo.
 -   Ordenação alfabética, por atividade recente, por tempo de jogo, por
     % de conquistas (maior percentual primeiro; jogos sem conquistas
     conhecidas por último, depois dos que têm 0%), por origem (nome da origem) e por instalação (instalados, desconhecidos,
@@ -165,8 +169,8 @@ limitações, condições de teste e método de inicialização suportado.
     não são ordenações, só filtros (decisão do dono do projeto,
     2026-11-09).
 -   Padrão da Biblioteca: ordem alfabética, todos os jogos exceto os
-    ocultos. Filtros permitem mostrar os ocultos e listar só os jogos
-    zerados; "Limpar filtros" fica ao lado da ordenação.
+    ocultos, que só aparecem com o filtro "Ocultos"; "Limpar filtros" fica
+    ao lado da ordenação.
 -   Busca, filtros e ordenação são mantidos ao navegar entre telas e
     voltam ao padrão quando o aplicativo é reiniciado.
 -   Início (regra fixa, não configurável): todos os jogos instalados e

@@ -90,11 +90,14 @@ depois que o foco para por 150 ms.
 -   Barra: campo de busca, "Filtrar" e "Ordenar" à esquerda;
     "Adicionar jogo" à direita. "Ordenar" ou X (controle ou teclado) abrem
     as opções de ordenação. "Filtrar", que mostra quantos filtros estão
-    ativos, ou Y (controle ou teclado) abrem o diálogo de filtros (origem,
-    instalação, jogos ocultos e só jogos zerados). A busca (teclado
-    virtual) não tem atalho: abre pelo campo na barra. "Limpar filtros"
-    fica ao lado de "Ordenar" e no diálogo; mantém a ordenação. Jogos ocultos, quando mostrados, aparecem esmaecidos com o
-    selo de oculto.
+    ativos, ou Y (controle ou teclado) abrem o diálogo de filtros: Origem
+    (abre a lista de origens), Ocultos, Zerados, Instalados e Não
+    instalados. Estes quatro ligam e desligam com A, com o diálogo aberto,
+    e mostram "Ativo" quando ligados; o diálogo não tem "Limpar filtros"
+    nem "Fechar" e fecha com B (decisão do dono do projeto). A busca
+    (teclado virtual) não tem atalho: abre pelo campo na barra. "Limpar
+    filtros" fica ao lado de "Ordenar"; mantém a ordenação. Jogos ocultos,
+    quando mostrados, aparecem esmaecidos com o selo de oculto.
 -   "Ordenar": Título, Recentes, Tempo de jogo, % de conquistas, Origem e
     Instalação (ocultos e zerados ficam só nos filtros). Ordenando por tempo de jogo ou por % de
     conquistas, o card mostra esse valor no canto inferior direito; jogos

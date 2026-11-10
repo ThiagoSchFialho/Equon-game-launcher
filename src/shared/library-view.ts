@@ -8,45 +8,52 @@ import type { GameSummary } from './ipc/contract'
 
 /** "Ocultos" and "Zerados" are filters only, not sorts (owner decision). */
 export type LibrarySort = 'title' | 'recent' | 'playtime' | 'achievements' | 'origin' | 'install'
-/** "Unknown" install states only appear under `all`: they are not reliable. */
-export type InstallFilter = 'all' | 'installed' | 'missing'
-
+/**
+ * The filters add up (owner decision): each one that is on narrows the list further, so
+ * "Instalados" with "Não instalados" shows nothing.
+ */
 export interface LibraryView {
   query: string
   /** Origin key; null = every origin. */
   origin: string | null
-  install: InstallFilter
-  showHidden: boolean
-  /** Only games marked as beaten ("zerados"). */
+  /** "Ocultos": only hidden games. Off, hidden games stay out of the list. */
+  hiddenOnly: boolean
+  /** "Zerados": only games marked as beaten. */
   beatenOnly: boolean
+  /** "Instalados": only games known to be installed. */
+  installedOnly: boolean
+  /**
+   * "Não instalados": only games confirmed not installed. Unknown install states only appear
+   * with neither install filter on: they are not reliable.
+   */
+  notInstalledOnly: boolean
   sort: LibrarySort
 }
 
 export const DEFAULT_LIBRARY_VIEW: LibraryView = {
   query: '',
   origin: null,
-  install: 'all',
-  showHidden: false,
+  hiddenOnly: false,
   beatenOnly: false,
+  installedOnly: false,
+  notInstalledOnly: false,
   sort: 'title'
 }
 
 /** True when anything narrows the list (sorting does not). */
 export function isFiltered(view: LibraryView): boolean {
-  return (
-    view.query.trim() !== '' ||
-    view.origin !== null ||
-    view.install !== 'all' ||
-    view.showHidden ||
-    view.beatenOnly
-  )
+  return view.query.trim() !== '' || activeFilterCount(view) > 0
 }
 
 /** How many options of the filters dialog are on; the search has its own field. */
 export function activeFilterCount(view: LibraryView): number {
-  return [view.origin !== null, view.install !== 'all', view.showHidden, view.beatenOnly].filter(
-    Boolean
-  ).length
+  return [
+    view.origin !== null,
+    view.hiddenOnly,
+    view.beatenOnly,
+    view.installedOnly,
+    view.notInstalledOnly
+  ].filter(Boolean).length
 }
 
 /** Case-, accent- and punctuation-insensitive form used by the search. */
@@ -97,11 +104,11 @@ export function applyLibraryView(games: readonly GameSummary[], view: LibraryVie
   const words = searchKey(view.query).split(' ').filter(Boolean)
   return games
     .filter((game) => {
-      if (game.hidden && !view.showHidden) return false
+      if (game.hidden !== view.hiddenOnly) return false
       if (view.origin !== null && game.origin !== view.origin) return false
-      if (view.install === 'installed' && game.installed !== true) return false
-      if (view.install === 'missing' && game.installed !== false) return false
       if (view.beatenOnly && !game.beated) return false
+      if (view.installedOnly && game.installed !== true) return false
+      if (view.notInstalledOnly && game.installed !== false) return false
       if (words.length === 0) return true
       const title = searchKey(game.title)
       return words.every((word) => title.includes(word))

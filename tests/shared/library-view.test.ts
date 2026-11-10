@@ -76,17 +76,15 @@ describe('applyLibraryView', () => {
     expect(ids({ sort: 'install' })).toEqual([5, 6, 1, 3, 2])
   })
 
-  it('shows hidden games only through the filter, whatever the sort (owner decision)', () => {
+  it('shows hidden games only through their filter, whatever the sort', () => {
     expect(ids({ sort: 'install' })).not.toContain(4)
-    expect(ids({ sort: 'install', showHidden: true })).toContain(4)
+    expect(ids({ sort: 'install', hiddenOnly: true })).toEqual([4])
     // A sort is not a filter: "Limpar filtros" has nothing to clear because of it.
     expect(isFiltered({ ...DEFAULT_LIBRARY_VIEW, sort: 'install' })).toBe(false)
   })
 
   it('combines the sorts with the filters', () => {
-    expect(
-      ids({ sort: 'install', showHidden: true, origin: 'manual', install: 'installed' })
-    ).toEqual([4])
+    expect(ids({ sort: 'playtime', installedOnly: true })).toEqual([1, 5, 6])
     expect(ids({ sort: 'install', origin: 'steam' })).toEqual([5, 6])
   })
 
@@ -100,8 +98,9 @@ describe('applyLibraryView', () => {
 
   it('filters by origin and by known install state only', () => {
     expect(ids({ origin: 'steam' })).toEqual([5, 6])
-    expect(ids({ install: 'installed' })).toEqual([5, 6, 1])
-    expect(ids({ install: 'missing' })).toEqual([2])
+    expect(ids({ installedOnly: true })).toEqual([5, 6, 1])
+    // Unknown (3) shows only with neither install filter on.
+    expect(ids({ notInstalledOnly: true })).toEqual([2])
   })
 
   it('lists only beaten games on request', () => {
@@ -112,14 +111,16 @@ describe('applyLibraryView', () => {
     ]
     const view = { ...DEFAULT_LIBRARY_VIEW, beatenOnly: true }
     expect(applyLibraryView(list, view).map((g) => g.id)).toEqual([1])
-    expect(applyLibraryView(list, { ...view, showHidden: true }).map((g) => g.id)).toEqual([1, 3])
+    expect(applyLibraryView(list, { ...view, hiddenOnly: true }).map((g) => g.id)).toEqual([3])
     expect(isFiltered(view)).toBe(true)
   })
 
-  it('shows hidden games only on request, combined with the other filters', () => {
-    expect(ids({ showHidden: true })).toContain(4)
-    expect(ids({ showHidden: true, sort: 'playtime', install: 'installed' })).toEqual([4, 1, 5, 6])
-    expect(ids({ showHidden: true, query: 'doom', origin: 'yuzu' })).toEqual([])
+  it('adds the filters up: each one that is on narrows the list (owner decision)', () => {
+    expect(ids({ hiddenOnly: true })).toEqual([4])
+    expect(ids({ hiddenOnly: true, installedOnly: true })).toEqual([4])
+    expect(ids({ hiddenOnly: true, notInstalledOnly: true })).toEqual([])
+    expect(ids({ installedOnly: true, notInstalledOnly: true })).toEqual([])
+    expect(ids({ hiddenOnly: true, query: 'doom', origin: 'yuzu' })).toEqual([])
   })
 
   it('does not mutate the input', () => {
@@ -133,7 +134,7 @@ describe('isFiltered and searchKey', () => {
   it('ignores sorting when telling whether the list is narrowed', () => {
     expect(isFiltered(DEFAULT_LIBRARY_VIEW)).toBe(false)
     expect(isFiltered({ ...DEFAULT_LIBRARY_VIEW, sort: 'recent' })).toBe(false)
-    expect(isFiltered({ ...DEFAULT_LIBRARY_VIEW, showHidden: true })).toBe(true)
+    expect(isFiltered({ ...DEFAULT_LIBRARY_VIEW, hiddenOnly: true })).toBe(true)
     expect(isFiltered({ ...DEFAULT_LIBRARY_VIEW, query: 'a' })).toBe(true)
   })
 
@@ -144,11 +145,12 @@ describe('isFiltered and searchKey', () => {
       activeFilterCount({
         ...DEFAULT_LIBRARY_VIEW,
         origin: 'steam',
-        install: 'missing',
-        showHidden: true,
-        beatenOnly: true
+        hiddenOnly: true,
+        beatenOnly: true,
+        installedOnly: true,
+        notInstalledOnly: true
       })
-    ).toBe(4)
+    ).toBe(5)
   })
 
   it('folds accents, trademarks and punctuation', () => {

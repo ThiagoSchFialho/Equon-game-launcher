@@ -133,17 +133,18 @@ describe('Library sorts and badges', () => {
   it('marks installed and beaten games, not unknown or missing ones', async () => {
     installFakeApi(LIBRARY)
     await openLibrary()
-    press('y')
-    await clickText('Jogos ocultos')
-    await waitFor(() => expect(cards()).toContain('Gama'))
-    press('Escape')
     expect(badges('Alfa')).toEqual([])
     expect(badges('Delta')).toEqual([])
     expect(badges('Beta')).toEqual(['Instalado', 'Zerado'])
-    expect(badges('Gama')).toEqual(['Oculto', 'Instalado'])
     // Icons have no text: the state still reaches screen readers.
     expect(screen.getByLabelText('Beta').getAttribute('aria-description')).toBe('Instalado, Zerado')
     expect(screen.getByLabelText('Alfa').getAttribute('aria-description')).toBeNull()
+
+    press('y')
+    await clickText('Ocultos')
+    await waitFor(() => expect(cards()).toEqual(['Gama']))
+    press('Escape')
+    expect(badges('Gama')).toEqual(['Oculto', 'Instalado'])
   })
 
   it('keeps the new badges out of Home, which lists only installed games', async () => {
@@ -158,8 +159,11 @@ describe('Library sorts and badges', () => {
     await openLibrary()
     await sortBy('Instalação')
     press('y')
-    await clickText('Jogos zerados')
+    await clickText('Zerados')
     await waitFor(() => expect(cards()).toEqual(['Beta']))
+    // The dialog has no "Limpar filtros" any more: B closes it, the toolbar keeps the button.
+    press('Escape')
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
     await clickText('Limpar filtros')
     await waitFor(() => expect(cards()).toEqual(['Beta', 'Delta', 'Alfa']))
   })
