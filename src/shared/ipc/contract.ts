@@ -18,6 +18,7 @@ export const IpcChannel = {
   settingsSetStartFullscreen: 'settings:set-start-fullscreen',
   settingsSetOpenAtLogin: 'settings:set-open-at-login',
   settingsSetUiSounds: 'settings:set-ui-sounds',
+  settingsSetHomeDirectLaunch: 'settings:set-home-direct-launch',
   settingsSetHomeArt: 'settings:set-home-art',
   settingsSetHomeCovers: 'settings:set-home-covers',
   settingsTestConnection: 'settings:test-connection',
@@ -291,6 +292,8 @@ export interface SettingsInfo {
   startFullscreen: boolean
   /** "Sons da interface": feedback sounds on navigation and actions. */
   uiSounds: boolean
+  /** "Ignorar tela do jogo na home": A on a Home cover starts the game (D-28). */
+  homeDirectLaunch: boolean
   /** Configurações › Aparência: the focused game's art behind the Home screen (D-25). */
   homeArt: HomeArtSettings
   /** Configurações › Aparência › "Capas da home" (D-27). */
@@ -639,6 +642,7 @@ export interface EquonApi {
     setStartFullscreen(enabled: boolean): Promise<Result<SettingsInfo>>
     setOpenAtLogin(enabled: boolean): Promise<Result<SettingsInfo>>
     setUiSounds(enabled: boolean): Promise<Result<SettingsInfo>>
+    setHomeDirectLaunch(enabled: boolean): Promise<Result<SettingsInfo>>
     /** Only what changed; the rest stays. */
     setHomeArt(changes: Partial<HomeArtSettings>): Promise<Result<SettingsInfo>>
     /** Only what changed, like setHomeArt. */

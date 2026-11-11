@@ -35,6 +35,12 @@ export function createUserRepository(db: SqliteDatabase): UserRepository {
     'SELECT ui_sounds FROM users WHERE id = 1'
   )
   const updateUiSounds = db.prepare<[number]>('UPDATE users SET ui_sounds = ? WHERE id = 1')
+  const selectHomeDirectLaunch = db.prepare<[], { home_direct_launch: number }>(
+    'SELECT home_direct_launch FROM users WHERE id = 1'
+  )
+  const updateHomeDirectLaunch = db.prepare<[number]>(
+    'UPDATE users SET home_direct_launch = ? WHERE id = 1'
+  )
   const selectHomeArt = db.prepare<
     [],
     { home_art_background: number; home_art_blur: number; home_art_dim: number }
@@ -112,6 +118,11 @@ export function createUserRepository(db: SqliteDatabase): UserRepository {
     getUiSounds: () => (selectUiSounds.get()?.ui_sounds ?? 1) === 1,
     setUiSounds: (enabled) => {
       updateUiSounds.run(enabled ? 1 : 0)
+    },
+    // No row yet (first start): the column's default.
+    getHomeDirectLaunch: () => selectHomeDirectLaunch.get()?.home_direct_launch === 1,
+    setHomeDirectLaunch: (enabled) => {
+      updateHomeDirectLaunch.run(enabled ? 1 : 0)
     },
     // No row yet (first start): the columns' defaults.
     getHomeArt: () => {

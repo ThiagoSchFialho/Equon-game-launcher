@@ -10,7 +10,7 @@ Controller-first game launcher for Windows (Electron + React + TypeScript, embed
 
 ## Source of truth (read before coding)
 
-1. `docs/ARCHITECTURE.md` — decision log (D-01…D-27), process model, layers, security. **Start here.**
+1. `docs/ARCHITECTURE.md` — decision log (D-01…D-28), process model, layers, security. **Start here.**
 2. `docs/DATA_BASE_CONTEXT.md` — schema, integrity rules, sync rules.
 3. `docs/PRODUCT.md` — MVP scope and acceptance criteria.
 4. `docs/DESIGN_SYSTEM.md` and `design/` — visual tokens and mockups.

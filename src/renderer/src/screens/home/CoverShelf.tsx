@@ -1,5 +1,4 @@
 import type { GameSummary } from '../../../../shared/ipc/contract'
-import { useNavigation } from '../../app/navigation'
 import { GameCard } from '../../components/GameCard'
 import {
   coverWidthRem,
@@ -20,18 +19,23 @@ import './CoverShelf.css'
 export function CoverShelf({
   side,
   games,
+  onOpen,
+  opensToPlay,
   onMenu,
   backdropTarget
 }: {
   /** "Embaixo" by the footer, or "Em cima" by the top bar: the same shelf, mirrored. */
   side: 'top' | 'bottom'
   games: GameSummary[]
+  /** A on a cover: its page, or the game itself with "Ignorar tela do jogo na home" (D-28). */
+  onOpen: (game: GameSummary) => void
+  /** A plays the Play sound instead of the confirm one. */
+  opensToPlay: boolean
   onMenu: (game: GameSummary) => void
   /** Where the background art goes: the whole Home screen, not just this shelf. */
   backdropTarget: HTMLElement | null
 }): React.JSX.Element {
   const covers = useHomeCovers().settings
-  const navigation = useNavigation()
   const focus = useCoverFocus(games, 'square', backdropTarget)
   const focusedGame = games[focus.infoIndex]
   return (
@@ -61,7 +65,8 @@ export function CoverShelf({
               scroll="none"
               autoFocus={i === 0}
               onFocus={() => focus.focusCard(i)}
-              onConfirm={() => navigation.openGame(game.id)}
+              confirmSound={opensToPlay ? 'play' : undefined}
+              onConfirm={() => onOpen(game)}
               onMenu={() => onMenu(game)}
             />
           </div>

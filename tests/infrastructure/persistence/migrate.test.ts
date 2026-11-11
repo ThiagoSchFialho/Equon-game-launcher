@@ -89,7 +89,8 @@ describe('migrate', () => {
     ).run(key, key, key, key)
     const before = db.prepare('SELECT * FROM users').get()
 
-    migrate(db, migrations)
+    // Up to 0020 only: later migrations may add columns of their own.
+    migrate(db, migrations.slice(0, 20))
 
     expect(db.prepare('SELECT * FROM users').get()).toEqual(before)
     db.prepare("UPDATE users SET home_cover_position = 'top'").run()

@@ -245,6 +245,12 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
     )
   )
   ipcMain.handle(
+    IpcChannel.settingsSetHomeDirectLaunch,
+    createValidatedHandler(settingsSetEnabledArgs, settingsResult, trusted, (enabled) =>
+      deps.settings.setHomeDirectLaunch(enabled)
+    )
+  )
+  ipcMain.handle(
     IpcChannel.settingsSetSecret,
     createValidatedHandler(settingsSetSecretArgs, settingsResult, trusted, (kind, value) => {
       const result = deps.settings.setSecret(kind, value)

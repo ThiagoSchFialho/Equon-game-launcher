@@ -332,6 +332,9 @@ export interface UserRepository {
   /** Settings › Sistema › "Sons da interface"; on by default. */
   getUiSounds(): boolean
   setUiSounds(enabled: boolean): void
+  /** Settings › Sistema › "Ignorar tela do jogo na home" (D-28); off by default. */
+  getHomeDirectLaunch(): boolean
+  setHomeDirectLaunch(enabled: boolean): void
   /** Settings › Aparência: the focused game's art behind the Home screen (D-25). */
   getHomeArt(): HomeArtPreference
   /** Values already validated by the caller; the table's CHECKs guard them too. */

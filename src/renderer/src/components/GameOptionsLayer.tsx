@@ -14,9 +14,12 @@ import { RemoveGameDialog } from './RemoveGameDialog'
  */
 export function GameOptionsLayer({
   game,
+  onOpenPage,
   onClose
 }: {
   game: GameSummary
+  /** "Ver página do jogo": on Home when A starts the game instead (D-28). */
+  onOpenPage?: () => void
   onClose: () => void
 }): React.JSX.Element {
   const navigation = useNavigation()
@@ -64,6 +67,7 @@ export function GameOptionsLayer({
         })
       }}
       onClose={onClose}
+      onOpenPage={onOpenPage}
       onAchievements={() => navigation.openGameAchievements(game.id)}
       onEdit={() => navigation.openGameForm(game.id)}
       onEditArtwork={() => navigation.openGameArtwork(game.id)}

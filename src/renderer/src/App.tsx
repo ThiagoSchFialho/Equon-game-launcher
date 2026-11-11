@@ -22,6 +22,7 @@ import { BackgroundActivityContext, useBackgroundActivityLoader } from './data/b
 import { GamesContext, useGamesLoader } from './data/games'
 import { DEFAULT_HOME_ART, HomeArtContext, type HomeArtState } from './data/home-art'
 import { DEFAULT_HOME_COVERS, HomeCoversContext, type HomeCoversState } from './data/home-covers'
+import { HomeLaunchContext, type HomeLaunchState } from './data/home-launch'
 import type { HomeArtSettings, HomeCoverSettings } from '../../shared/ipc/contract'
 import { LibraryViewContext, type LibraryViewState } from './data/library-view'
 import { OpeningContext, useOpeningLoader } from './data/opening'
@@ -125,12 +126,19 @@ function App(): React.JSX.Element {
     () => ({ settings: homeCoverSettings, set: setHomeCoverSettings }),
     [homeCoverSettings]
   )
+  // "Ignorar tela do jogo na home" (D-28): read once, then Settings › Sistema keeps it up to date.
+  const [directLaunch, setDirectLaunch] = useState(false)
+  const homeLaunch = useMemo<HomeLaunchState>(
+    () => ({ directLaunch, set: setDirectLaunch }),
+    [directLaunch]
+  )
   useEffect(() => {
     void window.equon.settings.get().then(
       (info) => {
         sounds.setEnabled(info.uiSounds)
         setHomeArtSettings(info.homeArt)
         setHomeCoverSettings(info.homeCovers)
+        setDirectLaunch(info.homeDirectLaunch)
       },
       () => {}
     )
@@ -196,28 +204,30 @@ function App(): React.JSX.Element {
       <UiSoundsContext.Provider value={sounds}>
         <HomeArtContext.Provider value={homeArt}>
           <HomeCoversContext.Provider value={homeCovers}>
-            <NavigationContext.Provider value={navigation}>
-              <GamesContext.Provider value={games}>
-                <RunningContext.Provider value={running}>
-                  <LibraryViewContext.Provider value={libraryViewState}>
-                    <AchievementSortContext.Provider value={achievementSortState}>
-                      <BackgroundActivityContext.Provider value={activity}>
-                        <OpeningContext.Provider value={opening}>
-                          <SystemMenuContext.Provider value={systemMenu}>
-                            <ScreenErrorBoundary key={JSON.stringify(route)}>
-                              <CurrentScreen route={route} />
-                            </ScreenErrorBoundary>
-                            {systemMenuOpen && (
-                              <SystemMenu onClose={() => setSystemMenuOpen(false)} />
-                            )}
-                          </SystemMenuContext.Provider>
-                        </OpeningContext.Provider>
-                      </BackgroundActivityContext.Provider>
-                    </AchievementSortContext.Provider>
-                  </LibraryViewContext.Provider>
-                </RunningContext.Provider>
-              </GamesContext.Provider>
-            </NavigationContext.Provider>
+            <HomeLaunchContext.Provider value={homeLaunch}>
+              <NavigationContext.Provider value={navigation}>
+                <GamesContext.Provider value={games}>
+                  <RunningContext.Provider value={running}>
+                    <LibraryViewContext.Provider value={libraryViewState}>
+                      <AchievementSortContext.Provider value={achievementSortState}>
+                        <BackgroundActivityContext.Provider value={activity}>
+                          <OpeningContext.Provider value={opening}>
+                            <SystemMenuContext.Provider value={systemMenu}>
+                              <ScreenErrorBoundary key={JSON.stringify(route)}>
+                                <CurrentScreen route={route} />
+                              </ScreenErrorBoundary>
+                              {systemMenuOpen && (
+                                <SystemMenu onClose={() => setSystemMenuOpen(false)} />
+                              )}
+                            </SystemMenuContext.Provider>
+                          </OpeningContext.Provider>
+                        </BackgroundActivityContext.Provider>
+                      </AchievementSortContext.Provider>
+                    </LibraryViewContext.Provider>
+                  </RunningContext.Provider>
+                </GamesContext.Provider>
+              </NavigationContext.Provider>
+            </HomeLaunchContext.Provider>
           </HomeCoversContext.Provider>
         </HomeArtContext.Provider>
       </UiSoundsContext.Provider>

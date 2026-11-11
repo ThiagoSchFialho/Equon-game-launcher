@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import type { Result, SettingsInfo } from '../../../shared/ipc/contract'
+import { useHomeLaunch } from '../data/home-launch'
 import { useUiSounds } from '../sound/sound-context'
 import { errorMessage, t } from '../strings'
 import { Checkbox } from './Checkbox'
 
-type Option = 'startFullscreen' | 'openAtLogin' | 'uiSounds'
+type Option = 'startFullscreen' | 'openAtLogin' | 'uiSounds' | 'homeDirectLaunch'
 
 /** Settings › Sistema (D-20): each checkbox is saved as soon as it changes. */
 export function SystemSettings({
@@ -16,6 +17,7 @@ export function SystemSettings({
 }): React.JSX.Element {
   const [errors, setErrors] = useState<Partial<Record<Option, string>>>({})
   const sounds = useUiSounds()
+  const homeLaunch = useHomeLaunch()
 
   const apply = (
     option: Option,
@@ -87,6 +89,22 @@ export function SystemSettings({
         {errors.uiSounds && (
           <p className="form-row__error" role="alert">
             {errors.uiSounds}
+          </p>
+        )}
+        <Checkbox
+          id="settings:home-direct-launch"
+          label={t.settings.system.homeDirectLaunch}
+          description={t.settings.system.homeDirectLaunchHint}
+          checked={info.homeDirectLaunch}
+          onChange={(checked) =>
+            apply('homeDirectLaunch', window.equon.settings.setHomeDirectLaunch(checked), (saved) =>
+              homeLaunch.set(saved.homeDirectLaunch)
+            )
+          }
+        />
+        {errors.homeDirectLaunch && (
+          <p className="form-row__error" role="alert">
+            {errors.homeDirectLaunch}
           </p>
         )}
       </div>

@@ -314,6 +314,7 @@ export const settingsInfoSchema = z.strictObject({
   lastSync: steamSyncInfoSchema.nullable(),
   startFullscreen: z.boolean(),
   uiSounds: z.boolean(),
+  homeDirectLaunch: z.boolean(),
   homeArt: homeArtSchema,
   homeCovers: homeCoversSchema,
   openAtLogin: z.boolean(),

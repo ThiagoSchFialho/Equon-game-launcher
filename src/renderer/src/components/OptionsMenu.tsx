@@ -12,6 +12,7 @@ export function OptionsMenu({
   hidden,
   onFlags,
   onClose,
+  onOpenPage,
   onAchievements,
   onEdit,
   onEditArtwork,
@@ -25,6 +26,8 @@ export function OptionsMenu({
   /** Saves a manual flag (every origin). */
   onFlags: (flags: GameFlagsInput) => void
   onClose: () => void
+  /** First, when given: the game's page (Home with "Ignorar tela do jogo na home", D-28). */
+  onOpenPage?: () => void
   onAchievements: () => void
   onEdit?: () => void
   onEditArtwork?: () => void
@@ -34,6 +37,7 @@ export function OptionsMenu({
   message?: string | null
 }): React.JSX.Element {
   const items: ChoiceItem[] = [
+    ...(onOpenPage ? [{ id: 'open-page', label: t.menu.openGamePage, onConfirm: onOpenPage }] : []),
     { id: 'achievements', label: t.menu.achievements, onConfirm: onAchievements },
     {
       id: 'beaten',

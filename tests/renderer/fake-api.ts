@@ -77,6 +77,7 @@ export const settingsInfo = (extra: Partial<SettingsInfo> = {}): SettingsInfo =>
   startFullscreen: false,
   // Off in the fake app, so tests that are not about sound never touch audio (jsdom has none).
   uiSounds: false,
+  homeDirectLaunch: false,
   homeArt: { enabled: false, blur: 4, dim: 60 },
   homeCovers: { size: 74, gap: 35, position: 'center' },
   openAtLogin: false,
@@ -181,6 +182,10 @@ export function installFakeApi(
       }),
       setOpenAtLogin: async (openAtLogin) => ({ ok: true, data: settingsInfo({ openAtLogin }) }),
       setUiSounds: async (uiSounds) => ({ ok: true, data: settingsInfo({ uiSounds }) }),
+      setHomeDirectLaunch: async (homeDirectLaunch) => ({
+        ok: true,
+        data: settingsInfo({ homeDirectLaunch })
+      }),
       setHomeArt: async (changes) => ({
         ok: true,
         data: settingsInfo({ homeArt: { enabled: false, blur: 4, dim: 60, ...changes } })

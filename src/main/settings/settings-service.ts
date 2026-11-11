@@ -41,6 +41,7 @@ export interface SettingsService {
   setStartFullscreen(enabled: boolean): Result<SettingsInfo>
   setOpenAtLogin(enabled: boolean): Result<SettingsInfo>
   setUiSounds(enabled: boolean): Result<SettingsInfo>
+  setHomeDirectLaunch(enabled: boolean): Result<SettingsInfo>
   /** Values validated by the IPC schema (ranges and steps) before they get here. */
   setHomeArt(changes: Partial<HomeArtSettings>): Result<SettingsInfo>
   /** Validated by the IPC schema (ranges and the two positions) before they get here. */
@@ -66,6 +67,7 @@ export function createSettingsService(deps: SettingsServiceDeps): SettingsServic
     lastSync: deps.lastSync(),
     startFullscreen: deps.users.getStartFullscreen(),
     uiSounds: deps.users.getUiSounds(),
+    homeDirectLaunch: deps.users.getHomeDirectLaunch(),
     homeArt: deps.users.getHomeArt(),
     homeCovers: deps.users.getHomeCovers(),
     openAtLogin: deps.loginItem.available() && deps.loginItem.enabled(),
@@ -109,6 +111,11 @@ export function createSettingsService(deps: SettingsServiceDeps): SettingsServic
 
     setUiSounds(enabled) {
       deps.users.setUiSounds(enabled)
+      return { ok: true, data: get() }
+    },
+
+    setHomeDirectLaunch(enabled) {
+      deps.users.setHomeDirectLaunch(enabled)
       return { ok: true, data: get() }
     },
 

@@ -64,6 +64,7 @@ describe('settings service', () => {
       lastSync: null,
       startFullscreen: false,
       uiSounds: true,
+      homeDirectLaunch: false,
       homeArt: { enabled: false, blur: 4, dim: 60 },
       homeCovers: { size: 74, gap: 35, position: 'center' },
       openAtLogin: false,
@@ -97,6 +98,16 @@ describe('settings service', () => {
     ]) {
       expect(() => db.prepare(`UPDATE users SET ${bad}`).run()).toThrow()
     }
+  })
+
+  it('stores "Ignorar tela do jogo na home" (D-28): off by default', () => {
+    expect(settings.get().homeDirectLaunch).toBe(false)
+    expect(settings.setHomeDirectLaunch(true)).toMatchObject({
+      ok: true,
+      data: { homeDirectLaunch: true }
+    })
+    expect(settings.setHomeDirectLaunch(false).ok && settings.get().homeDirectLaunch).toBe(false)
+    expect(() => db.prepare('UPDATE users SET home_direct_launch = 2').run()).toThrow()
   })
 
   it('stores the Home covers (D-27): the old layout by default, each value on its own', () => {

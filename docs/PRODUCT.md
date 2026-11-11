@@ -175,6 +175,10 @@ limitações, condições de teste e método de inicialização suportado.
     voltam ao padrão quando o aplicativo é reiniciado.
 -   Início (regra fixa, não configurável): todos os jogos instalados e
     não ocultos, sem limite de quantidade, pela última sessão, do mais recente para o mais antigo.
+-   Com "Ignorar tela do jogo na home" (Configurações › Sistema, D-28), o
+    A numa capa do Início inicia o jogo em vez de abrir a página dele; se
+    o jogo não abrir, a página abre e explica o motivo. O menu de opções
+    da capa oferece "Ver página do jogo". A Biblioteca não muda.
 -   Marcar como zerado e ocultar/mostrar ficam no menu de opções do
     jogo, para qualquer origem.
 -   Arquitetura preparada para filtros adicionais sem reconstruir a

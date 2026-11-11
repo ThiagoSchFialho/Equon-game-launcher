@@ -13,6 +13,7 @@ export const t = {
     navigate: 'Navegar',
     options: 'Opções',
     open: 'Abrir',
+    play: 'Jogar',
     select: 'Selecionar',
     back: 'Voltar',
     sort: 'Ordenar',
@@ -113,6 +114,8 @@ export const t = {
     unhide: 'Mostrar jogo',
     flagFailed: 'Não foi possível salvar a alteração.',
     edit: 'Editar jogo',
+    /** Home, with "Ignorar tela do jogo na home" on (D-28). */
+    openGamePage: 'Ver página do jogo',
     editArtwork: 'Editar artes',
     uninstall: 'Desinstalar',
     remove: 'Remover jogo',
@@ -466,6 +469,9 @@ export const t = {
       uiSounds: 'Sons da interface',
       uiSoundsHint:
         'Sons ao navegar, confirmar e voltar. Ficam em silêncio enquanto um jogo está aberto.',
+      homeDirectLaunch: 'Ignorar tela do jogo na home',
+      homeDirectLaunchHint:
+        'No Início, o A inicia o jogo direto. Se ele não abrir, a página do jogo mostra o motivo. A Biblioteca continua abrindo a página do jogo.',
       saveFailed: 'Não foi possível salvar esta opção. Tente de novo.'
     },
     steam: 'Steam',

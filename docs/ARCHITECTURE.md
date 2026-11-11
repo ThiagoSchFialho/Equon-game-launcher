@@ -76,6 +76,7 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-25 | Game art behind the Home screen | Accepted | Settings › Aparência: the focused game's launch image, blurred and darkened by the user's levels; `USERS.home_art_*`; see §3.24 |
 | D-26 | Removing Steam games, with exceptions | Accepted | "Remover jogo" for Steam games, from Equon only; "Remover e criar exceção" keeps it out of every sync (`STEAM_IGNORED`); see §3.25 |
 | D-27 | Home covers: size, spacing and position | Accepted | Settings › Aparência › "Capas da home": two levels 1–100 and Em cima / Centro / Embaixo (portrait covers in Centro, a square-cover shelf on either edge); `USERS.home_cover_*`; see §3.26 |
+| D-28 | A on a Home cover can start the game | Accepted | Settings › Sistema › "Ignorar tela do jogo na home", off by default; Home only; a failed launch opens the game page; `USERS.home_direct_launch`; see §3.27 |
 | D-24 | Interface sounds | Accepted | Sounds on moving, confirming, going back and opening modals; on by default, `USERS.ui_sounds`; silent while a game runs; see §3.23 |
 | D-16 | Refresh frequency for `appdetails` metadata | Accepted | Fetched only when a game is discovered/added; failed fetches are retried (§3.14) |
 | D-17 | Steam launch mechanism | Accepted | `steam://rungameid/<appid>`, built in the main process (§3.12) |
@@ -482,6 +483,16 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 
 **Where it lives.** Three `USERS` columns (`home_cover_size`, `home_cover_gap`, `home_cover_position`, migration 0019), each with a `CHECK`; the IPC schema takes only what changed, within range. The renderer reads them once at start (`data/home-covers.ts`) and Settings updates them as they change, shown at once and undone if saving fails, like D-25. The two levels use `LevelRow`, which draws a continuous bar instead of ticks past 20 steps; the position uses `OptionRow`, both options side by side: left and right pick one (at either end they move the focus on, so it is never trapped), A moves to the next, and the mouse clicks one.
 
+### 3.27 D-28 — A on a Home cover can start the game (Accepted, after Phase 8)
+
+**Owner decisions (2026-11-10):** a "Ignorar tela do jogo na home" checkbox in Configurações › Sistema, off by default. When on, A on a Home cover starts the game, in any of the three cover positions (D-27), instead of opening its page; the Library and every other screen still open the page. The footer hint for A says "Jogar" instead of "Abrir", and A plays the Play sound (D-24).
+
+**Starting.** It is the same `games:launch` as the page's Jogar, so everything Jogar does holds: the launch image (D-22), the running check and the session. One launch at a time: another A while one is on its way does nothing. If the game cannot start (a missing executable, an emulator not configured, the game already running), the Home screen has nowhere to say why, so the game's page opens, and it explains the reason as it always does.
+
+**The page.** With the option on, the Home options menu (menu button) starts with "Ver página do jogo", the only way to the page from Home; with it off, the item is not there.
+
+**Where it lives.** One `USERS` column, `home_direct_launch` (`INTEGER` 0/1 with a `CHECK`, default 0, migration 0021), read once at start (`data/home-launch.ts`) and updated by Settings when it changes. `HomeScreen` decides what A does and hands it to both cover layouts.
+
 ## 4. Inconsistencies found across the project docs
 
 Items 1–6 have accepted decisions (D-02, D-04 to D-08) and are now reflected in `DATA_BASE_CONTEXT.md` v0.2 and `PRODUCT.md` v0.2. Item 7 follows the Epic/GOG decision. Items 8–9 are housekeeping; item 9 (documentation language) is still open.
@@ -867,6 +878,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-08 | 0.61 | D-26: "Remover jogo" for Steam games, with "Remover e criar exceção" kept out of every sync (`STEAM_IGNORED`, migration 0018) and a "Jogos ignorados" list in Configurações › Conexões; a plain "Remover" comes back only on the user's next "Atualizar biblioteca" (§3.25). |
 | 2026-11-09 | 0.62 | D-27: "Capas da home" in Configurações › Aparência: size and spacing of the Home covers (1–100) and their position, Centro or Embaixo (`USERS.home_cover_*`, migration 0019; §3.26). |
 | 2026-11-10 | 0.63 | D-27: "Capas da home" › Posição gains "Em cima", the "Embaixo" shelf mirrored; migration 0020 rebuilds `USERS` to widen the CHECK (§3.26). |
+| 2026-11-10 | 0.64 | D-28: "Ignorar tela do jogo na home" in Configurações › Sistema: A on a Home cover starts the game; a failed launch opens its page; "Ver página do jogo" in the Home options menu (`USERS.home_direct_launch`, migration 0021; §3.27). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

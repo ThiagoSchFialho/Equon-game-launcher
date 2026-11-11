@@ -223,9 +223,13 @@ depois que o foco para por 150 ms.
     do dono do projeto). Trocar o executável vale para todos os jogos do
     emulador. Sem executável, a linha da pasta fica indisponível, com
     "Escolha o executável primeiro".
--   Sistema: checkboxes "Iniciar em tela cheia", "Iniciar com o sistema" e
-    "Sons da interface", salvos assim que mudam. "Iniciar com o sistema"
-    fica indisponível, com o motivo, fora da versão instalada.
+-   Sistema: checkboxes "Iniciar em tela cheia", "Iniciar com o sistema",
+    "Sons da interface" e "Ignorar tela do jogo na home", salvos assim que
+    mudam. "Iniciar com o sistema" fica indisponível, com o motivo, fora da
+    versão instalada. Com "Ignorar tela do jogo na home" ligado (D-28), o A
+    numa capa do Início inicia o jogo, a dica do A no rodapé diz "Jogar" e
+    o menu de opções da capa começa com "Ver página do jogo"; se o jogo não
+    abrir, a página dele abre e mostra o motivo.
 -   Armazenamento: um cartão por disco local ou removível, com nome e letra,
     barra do espaço usado e "X GB livres de Y GB", lidos ao abrir a aba. A
     barra usa `color.install` e fica em `color.danger` com menos de 10% livre.
