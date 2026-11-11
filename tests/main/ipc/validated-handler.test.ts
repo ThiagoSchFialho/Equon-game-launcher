@@ -88,16 +88,17 @@ describe('settings:set-home-art arguments', () => {
 })
 
 describe('settings:set-home-covers arguments', () => {
-  it('takes what changed, within 1 to 100 and the two positions, and nothing else', () => {
+  it('takes what changed, within 1 to 100 and the three positions, and nothing else', () => {
     const ok = (changes: unknown): boolean => settingsSetHomeCoversArgs.safeParse([changes]).success
     expect(ok({ size: 1 })).toBe(true)
     expect(ok({ size: 100, gap: 100, position: 'bottom' })).toBe(true)
     expect(ok({ position: 'center' })).toBe(true)
+    expect(ok({ position: 'top' })).toBe(true)
     expect(ok({})).toBe(false)
     expect(ok({ size: 0 })).toBe(false)
     expect(ok({ gap: 101 })).toBe(false)
     expect(ok({ size: 50.5 })).toBe(false)
-    expect(ok({ position: 'top' })).toBe(false)
+    expect(ok({ position: 'left' })).toBe(false)
     expect(ok({ size: 50, css: 'x' })).toBe(false)
   })
 })

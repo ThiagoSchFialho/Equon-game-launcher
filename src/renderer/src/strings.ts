@@ -452,7 +452,7 @@ export const t = {
       coverSize: 'Tamanho',
       coverGap: 'Espaçamento',
       coverPosition: 'Posição',
-      coverPositions: { center: 'Centro', bottom: 'Embaixo' },
+      coverPositions: { top: 'Em cima', center: 'Centro', bottom: 'Embaixo' },
       /** After each level: the value recommended for the chosen position (owner decision). */
       recommended: (value: string) => `(padrão ${value})`
     },

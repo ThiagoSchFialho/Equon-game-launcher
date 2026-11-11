@@ -261,7 +261,7 @@ export const HOME_ART_BLUR_MAX = 10
 export const HOME_ART_DIM_MAX = 90
 export const HOME_ART_DIM_STEP = 10
 
-/** "Capas da home" (D-27): size and spacing are levels, the position one of two. */
+/** "Capas da home" (D-27): size and spacing are levels, the position one of three. */
 export interface HomeCoverSettings {
   /** HOME_COVER_MIN to HOME_COVER_MAX. */
   size: number
@@ -269,7 +269,8 @@ export interface HomeCoverSettings {
   gap: number
   position: HomeCoverPosition
 }
-export const HOME_COVER_POSITIONS = ['center', 'bottom'] as const
+/** In the order they are offered, the order of the screen: top, middle, bottom. */
+export const HOME_COVER_POSITIONS = ['top', 'center', 'bottom'] as const
 export type HomeCoverPosition = (typeof HOME_COVER_POSITIONS)[number]
 export const HOME_COVER_MIN = 1
 export const HOME_COVER_MAX = 100

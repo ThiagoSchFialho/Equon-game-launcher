@@ -317,7 +317,7 @@ export interface HomeArtPreference {
 export interface HomeCoverPreference {
   size: number
   gap: number
-  position: 'center' | 'bottom'
+  position: 'top' | 'center' | 'bottom'
 }
 
 export interface UserRepository {

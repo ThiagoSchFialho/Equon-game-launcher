@@ -31,8 +31,9 @@ export function HomeScreen(): React.JSX.Element {
   const { games, reload } = useGames()
   const [menuGame, setMenuGame] = useState<GameSummary | null>(null)
   const [homeElement, setHomeElement] = useState<HTMLDivElement | null>(null)
-  // "Capas da home" › Posição (D-27): each position is its own layout.
-  const Covers = useHomeCovers().settings.position === 'bottom' ? CoverShelf : CenteredCovers
+  // "Capas da home" › Posição (D-27): "Centro" is its own layout; "Em cima" and "Embaixo" are
+  // the same shelf, mirrored.
+  const position = useHomeCovers().settings.position
 
   useScreenActions({
     previousSection: () => navigation.stepSection(-1),
@@ -63,9 +64,21 @@ export function HomeScreen(): React.JSX.Element {
       />
     )
   } else {
-    content = (
-      <Covers games={homeGames(games.data)} onMenu={setMenuGame} backdropTarget={homeElement} />
-    )
+    content =
+      position === 'center' ? (
+        <CenteredCovers
+          games={homeGames(games.data)}
+          onMenu={setMenuGame}
+          backdropTarget={homeElement}
+        />
+      ) : (
+        <CoverShelf
+          side={position}
+          games={homeGames(games.data)}
+          onMenu={setMenuGame}
+          backdropTarget={homeElement}
+        />
+      )
   }
 
   return (

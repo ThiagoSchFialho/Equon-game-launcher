@@ -1,9 +1,11 @@
 .top-bar {
   position: relative;
+  /* Above what a screen draws behind it, as the Home shelf's shade (CoverShelf.css). */
+  z-index: 1;
   display: flex;
   justify-content: center;
   padding-top: var(--space-5);
-  height: 6.75rem;
+  height: var(--top-bar-height);
   flex-shrink: 0;
 }
 

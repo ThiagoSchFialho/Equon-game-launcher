@@ -75,6 +75,31 @@ describe('migrate', () => {
     expect(db.prepare('SELECT count(*) AS n FROM game_artwork').get()).toEqual({ n: 0 })
   })
 
+  it('0020 keeps every user setting and key, and accepts the "Em cima" position', () => {
+    const db = openDatabase(':memory:')
+    migrate(db, migrations.slice(0, 19))
+    const key = Buffer.from([1, 2, 3, 250])
+    db.prepare(
+      `UPDATE users SET steam_id = '76561190000000000', steam_api_key_encrypted = ?,
+         steamgriddb_api_key_encrypted = ?, igdb_client_id_encrypted = ?,
+         igdb_client_secret_encrypted = ?, platine = 1, gold = 2, silver = 3, bronze = 4,
+         start_fullscreen = 1, ui_sounds = 0, home_art_background = 1, home_art_blur = 6,
+         home_art_dim = 80, home_cover_size = 30, home_cover_gap = 5,
+         home_cover_position = 'bottom'`
+    ).run(key, key, key, key)
+    const before = db.prepare('SELECT * FROM users').get()
+
+    migrate(db, migrations)
+
+    expect(db.prepare('SELECT * FROM users').get()).toEqual(before)
+    db.prepare("UPDATE users SET home_cover_position = 'top'").run()
+    expect(db.prepare('SELECT home_cover_position AS p FROM users').get()).toEqual({ p: 'top' })
+    // Still one row, still the same rules.
+    expect(() => db.prepare("UPDATE users SET home_cover_position = 'left'").run()).toThrow(/CHECK/)
+    expect(() => db.prepare('INSERT INTO users (id) VALUES (2)').run()).toThrow(/CHECK/)
+    expect(() => db.prepare('UPDATE users SET home_cover_size = 101').run()).toThrow(/CHECK/)
+  })
+
   it('is a no-op when the database is up to date', () => {
     const db = openDatabase(':memory:')
     migrate(db, migrations)

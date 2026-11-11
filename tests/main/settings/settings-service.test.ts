@@ -117,7 +117,7 @@ describe('settings service', () => {
       'home_cover_size = 101',
       'home_cover_gap = 0',
       'home_cover_gap = 101',
-      "home_cover_position = 'top'"
+      "home_cover_position = 'left'"
     ]) {
       expect(() => db.prepare(`UPDATE users SET ${bad}`).run()).toThrow()
     }

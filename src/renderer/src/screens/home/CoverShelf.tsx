@@ -11,17 +11,20 @@ import { useCoverFocus } from './useCoverFocus'
 import './CoverShelf.css'
 
 /**
- * "Capas da home" › Embaixo (D-27): a shelf close to the footer, after the PS5 home (owner
- * decision). The focused square cover is the large one and stays where the first cover is; the
+ * "Capas da home" › Embaixo and Em cima (D-27): a shelf close to the footer, or mirrored close
+ * to the top bar, after the PS5 home (owner decisions); described here for "Embaixo". The focused square cover is the large one and stays where the first cover is; the
  * others are smaller by the name's height plus 10px, level with its bottom, and the name sits
  * next to it, above them. Each cover is placed and sized with a transform from its distance to
  * the focus, so changing the focus only animates transforms (CoverShelf.css).
  */
 export function CoverShelf({
+  side,
   games,
   onMenu,
   backdropTarget
 }: {
+  /** "Embaixo" by the footer, or "Em cima" by the top bar: the same shelf, mirrored. */
+  side: 'top' | 'bottom'
   games: GameSummary[]
   onMenu: (game: GameSummary) => void
   /** Where the background art goes: the whole Home screen, not just this shelf. */
@@ -34,6 +37,7 @@ export function CoverShelf({
   return (
     <div
       className="home-shelf"
+      data-side={side}
       style={
         {
           ...homeCoverStyle(covers),

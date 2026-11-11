@@ -5,6 +5,10 @@
  * the focused one, and the name next to it, in that room above the small ones: its top level
  * with the focused cover's top.
  *
+ * "Em cima" is the same shelf, mirrored top to bottom (owner decision): by the top bar, the
+ * small covers level with the focused cover's top, the name under them, the shade from the top.
+ * Only what depends on the side changes, under [data-side='top'] at the end of this file.
+ *
  * Every slot is laid out at the full size, in the same spot, and moved and shrunk by a
  * transform worked out from `--rel`, its distance to the focused cover (negative before it).
  * So a change of focus animates transforms only, and the row never reflows.
@@ -21,11 +25,13 @@
   --small-step: calc(var(--small) + var(--card-gap));
   /* Where the focused cover stays: the first cover's place. */
   --edge: 13.625rem;
-  /* Close to the footer, with room for the focus ring. */
-  --row-bottom: calc(var(--space-4) + var(--space-2));
+  /* From the near edge (the footer, or the top bar with "Em cima"), with room for the ring. */
+  --row-edge: calc(var(--space-4) + var(--space-2));
   position: relative;
   height: 100%;
-  overflow: hidden;
+  /* Covers off screen are cut sideways only: with "Em cima" the shade goes up behind the top bar. */
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 /*
@@ -36,10 +42,12 @@
 .home-shelf::before {
   content: '';
   position: absolute;
+  /* Over the background art (z-index -1), under the covers and the top bar. */
+  z-index: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  height: calc(var(--row-bottom) + var(--card-width) + var(--space-16) * 3);
+  height: calc(var(--row-edge) + var(--card-width) + var(--space-16) * 3);
   pointer-events: none;
   background: linear-gradient(
     to top,
@@ -60,7 +68,7 @@
 .home-shelf__slot {
   position: absolute;
   left: 0;
-  bottom: var(--row-bottom);
+  bottom: var(--row-edge);
   width: var(--card-width);
   /*
    * Before the focus: one small step per cover to the left. After it: past the large cover,
@@ -91,7 +99,7 @@
   /* Where the first small cover after the focus starts: past the doubled gap. */
   left: calc(var(--edge) + var(--card-width) + var(--card-gap) * 2);
   /* 10px above the small covers (0.625rem: rem follows the window). */
-  bottom: calc(var(--row-bottom) + var(--small) + 0.625rem);
+  bottom: calc(var(--row-edge) + var(--small) + 0.625rem);
   margin: 0;
   font-size: var(--font-size-shelf-title);
   line-height: var(--name-line);
@@ -108,4 +116,34 @@
 
 .home-shelf__name[data-hidden='true'] {
   opacity: 0;
+}
+
+/* "Em cima": the mirror of everything above that depends on the side. */
+.home-shelf[data-side='top']::before {
+  /* Up to the top of the screen, behind the top bar (owner decision). */
+  top: calc(var(--top-bar-height) * -1);
+  bottom: auto;
+  height: calc(var(--top-bar-height) + var(--row-edge) + var(--card-width) + var(--space-16) * 3);
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--color-background) 85%, transparent) 0%,
+    color-mix(in srgb, var(--color-background) 75%, transparent) 25%,
+    color-mix(in srgb, var(--color-background) 55%, transparent) 50%,
+    color-mix(in srgb, var(--color-background) 30%, transparent) 70%,
+    color-mix(in srgb, var(--color-background) 10%, transparent) 88%,
+    transparent 100%
+  );
+}
+
+.home-shelf[data-side='top'] .home-shelf__slot {
+  top: var(--row-edge);
+  bottom: auto;
+  /* Shrunk from the top left corner: every cover level with the large one's top. */
+  transform-origin: left top;
+}
+
+/* 10px under the small covers: its bottom level with the focused cover's bottom. */
+.home-shelf[data-side='top'] .home-shelf__name {
+  top: calc(var(--row-edge) + var(--small) + 0.625rem);
+  bottom: auto;
 }

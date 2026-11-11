@@ -135,7 +135,10 @@ export function createUserRepository(db: SqliteDatabase): UserRepository {
       return {
         size: row?.home_cover_size ?? 74,
         gap: row?.home_cover_gap ?? 35,
-        position: row?.home_cover_position === 'bottom' ? 'bottom' : 'center'
+        position:
+          row?.home_cover_position === 'top' || row?.home_cover_position === 'bottom'
+            ? row.home_cover_position
+            : 'center'
       }
     },
     setHomeCovers: (changes) => {

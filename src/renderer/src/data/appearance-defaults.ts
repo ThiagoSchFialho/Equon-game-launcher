@@ -9,6 +9,8 @@ export const RECOMMENDED_APPEARANCE: Record<
   HomeCoverPosition,
   { blur: number; dim: number; size: number; gap: number }
 > = {
+  // "Em cima" mirrors "Embaixo", with the same values (owner decision).
+  top: { blur: 0, dim: 10, size: 30, gap: 5 },
   center: { blur: 6, dim: 80, size: 72, gap: 35 },
   bottom: { blur: 0, dim: 10, size: 30, gap: 5 }
 }

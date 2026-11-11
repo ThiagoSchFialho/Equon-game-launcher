@@ -1,4 +1,4 @@
-import { useFocusable } from '../focus/focus-context'
+import { useFocusable, useFocusManager } from '../focus/focus-context'
 import { useUiSounds } from '../sound/sound-context'
 import './LevelRow.css'
 
@@ -27,6 +27,7 @@ export function OptionRow<T extends string>({
   onChange: (value: T) => void
 }): React.JSX.Element {
   const sounds = useUiSounds()
+  const manager = useFocusManager()
   const index = options.findIndex((option) => option.value === value)
   const pick = (next: number): boolean => {
     const option = options[next]
@@ -63,7 +64,13 @@ export function OptionRow<T extends string>({
             role="radio"
             aria-checked={i === index}
             data-selected={i === index}
-            onClick={() => pick(i)}
+            onClick={(event) => {
+              // Picks this option only: the row's own click would also count as A and move on
+              // to the next one. The row takes the focus, as with any click.
+              event.stopPropagation()
+              manager.focus(id)
+              pick(i)
+            }}
           >
             {option.label}
           </button>

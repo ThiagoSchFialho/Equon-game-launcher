@@ -236,6 +236,31 @@ describe('Home covers (D-27)', () => {
     ).toBeTruthy()
   })
 
+  it('"Em cima" is the same shelf, mirrored by the top bar', async () => {
+    installFakeApi([summary(1, 'Alpha'), summary(2, 'Beta')], {
+      settings: {
+        get: async () => settingsInfo({ homeCovers: { size: 30, gap: 5, position: 'top' } })
+      }
+    })
+    render(<App />)
+    await waitFor(() => expect(shelf().dataset.side).toBe('top'))
+    expect(document.querySelector('.home__carousel')).toBeNull()
+    expect(slots().map((slot) => slot.rel)).toEqual(['0', '1'])
+    expect(shelf().querySelector('.game-card--square')).toBeTruthy()
+    expect(document.querySelector('.home-shelf__name')).toBeTruthy()
+    expect(screen.queryByText('12h 22m')).toBeNull()
+    cleanup()
+
+    // The other side is the same component, with the other data-side.
+    installFakeApi([summary(1, 'Alpha')], {
+      settings: {
+        get: async () => settingsInfo({ homeCovers: { size: 30, gap: 5, position: 'bottom' } })
+      }
+    })
+    render(<App />)
+    await waitFor(() => expect(shelf().dataset.side).toBe('bottom'))
+  })
+
   it('sets them in Aparência, saved at once and followed by the Home screen', async () => {
     const setHomeCovers = vi.fn<EquonApi['settings']['setHomeCovers']>(async (changes) => ({
       ok: true,
@@ -268,16 +293,36 @@ describe('Home covers (D-27)', () => {
     press('ArrowLeft')
     expect(setHomeCovers).toHaveBeenLastCalledWith({ gap: 34 })
 
-    const position = screen.getByRole('radiogroup', { name: 'Posição' })
+    expect(screen.getByRole('radiogroup', { name: 'Posição' })).toBeTruthy()
     expect(screen.getByRole('radio', { name: 'Centro' }).getAttribute('aria-checked')).toBe('true')
-    act(() => position.click())
+    // Clicking the chosen option focuses the row and changes nothing.
+    act(() => screen.getByRole('radio', { name: 'Centro' }).click())
+    expect(setHomeCovers).toHaveBeenLastCalledWith({ gap: 34 })
     press('ArrowRight')
     expect(setHomeCovers).toHaveBeenLastCalledWith({ position: 'bottom' })
     expect(hints()).toEqual(['(padrão 0)', '(padrão 10%)', '(padrão 30)', '(padrão 5)'])
+    // Three positions in the order of the screen: Em cima, Centro, Embaixo.
+    expect(screen.getAllByRole('radio').map((radio) => radio.textContent)).toEqual([
+      'Em cima',
+      'Centro',
+      'Embaixo'
+    ])
     // At the last option the direction is not used: nothing more is saved.
     const calls = setHomeCovers.mock.calls.length
     press('ArrowRight')
     expect(setHomeCovers.mock.calls.length).toBe(calls)
+
+    // Left twice: back through Centro to "Em cima", with the same recommended values. The
+    // focus moved on above, so it goes back to the row first.
+    act(() => screen.getByRole('radio', { name: 'Embaixo' }).click())
+    press('ArrowLeft')
+    press('ArrowLeft')
+    expect(setHomeCovers).toHaveBeenLastCalledWith({ position: 'top' })
+    expect(hints()).toEqual(['(padrão 0)', '(padrão 10%)', '(padrão 30)', '(padrão 5)'])
+    // The mouse picks an option directly, without moving on to the next one.
+    act(() => screen.getByRole('radio', { name: 'Embaixo' }).click())
+    expect(setHomeCovers).toHaveBeenLastCalledWith({ position: 'bottom' })
+    expect(screen.getByRole('radio', { name: 'Embaixo' }).getAttribute('aria-checked')).toBe('true')
 
     // B to the tab, B to the Home screen, which already follows.
     press('Escape')
