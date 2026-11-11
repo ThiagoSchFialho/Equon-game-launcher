@@ -1,6 +1,10 @@
 /*
  * Behind everything on the Home screen (.home isolates it): the focused game's art, blurred and
  * darkened (D-25). Blur is level × 0.25rem, so 2.5rem at the top level.
+ *
+ * The whole image shows, edges included (owner decision): it is not enlarged. Blurring the
+ * image itself would fade its edges into pale, ragged ones, so the blur is done by the dim
+ * layer above it, as a backdrop filter, which repeats the image at the edges instead.
  */
 .home-art {
   position: absolute;
@@ -16,9 +20,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: blur(calc(var(--home-art-blur) * 0.25rem));
-  /* Blur leaves pale, ragged edges: the image is a little larger than the screen. */
-  transform: scale(1.1);
 }
 
 .home-art__image[data-entering='true'] {
@@ -44,4 +45,6 @@
   position: absolute;
   inset: 0;
   background: rgb(0 0 0 / var(--home-art-dim));
+  /* Set, never animated: one blur over both images while one fades into the other. */
+  backdrop-filter: blur(calc(var(--home-art-blur) * 0.25rem));
 }

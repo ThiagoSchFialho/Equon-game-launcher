@@ -175,6 +175,11 @@ depois que o foco para por 150 ms.
     esquerda e direita mudam o valor e, no fim da faixa, movem o foco
     normalmente. Cada passo toca o som de mover o foco. Com mais de 20
     passos, a barra vira uma faixa contínua, preenchida até o valor.
+    Depois do nome de "Desfoque", "Escurecimento", "Tamanho" e
+    "Espaçamento" aparece, em cinza, "(padrão x)": o valor recomendado
+    para a posição escolhida (decisão do dono do projeto). Centro: 6, 80%,
+    72 e 35. Embaixo: 0, 10%, 30 e 5. É só uma referência: nada muda
+    sozinho ao trocar a posição.
 -   Aparência › "Capas da home" (D-27): título e, embaixo, um painel com
     "Tamanho" e "Espaçamento" (níveis de 1 a 100) e "Posição", com
     "Centro" e "Embaixo" lado a lado; a escolhida fica em
@@ -188,8 +193,11 @@ depois que o foco para por 150 ms.
     no tamanho escolhido, sempre no lugar da primeira (é a fileira que
     anda); as outras menores que ela pela altura do nome mais 10 px,
     alinhadas pela base da capa em foco; e só o nome do jogo (sem tempo de
-    jogo), em `--font-size-shelf-title`, ao lado da capa em foco, 10 px
-    acima das capas pequenas. Ao mudar o foco, a capa nova cresce e a anterior
+    jogo), em `--font-size-shelf-title` com a altura de linha 10 px maior, com sombra para ler sobre a arte,
+    ao lado da capa em foco, 10 px acima das capas pequenas. A capa em foco
+    tem o dobro do espaçamento dos dois lados. Por trás das capas, um
+    degradê escuro na cor de fundo sobe do rodapé até 12rem acima da
+    capa em foco e se dissolve na arte, para a prateleira se destacar. Ao mudar o foco, a capa nova cresce e a anterior
     encolhe (só `transform`). Nas duas posições o nome aparece inteiro, numa linha, mesmo
     passando da largura da capa. O tamanho 100 é o maior que ainda fica bom. Os padrões são
     o tamanho e o espaço de antes.
@@ -282,6 +290,9 @@ de iluminação.
   -----------------------------------------------------------------------
 
 Os tokens de rodapé, fundos de estado e botões vêm de `design/colors.png` (Fase 3).
+
+O rodapé tem 60 px de altura em todas as telas (`--footer-height`, decisão do dono do
+projeto: 20 px a menos que os 80 px originais); o menu do sistema sobe a partir dele.
 
 Regras: - Não usar o acento em todos os elementos; reservar para
 seleção, ações importantes e detalhes. - Não depender apenas da cor para

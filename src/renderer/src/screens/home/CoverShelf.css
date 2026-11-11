@@ -1,8 +1,9 @@
 /*
  * "Capas da home" › Embaixo (D-27, after the PS5 home; owner decisions): the focused square
  * cover at full size where the first cover is, the others smaller by the name's height plus
- * 10px (--small-scale, data/home-covers.ts), level with its bottom, and the name next to the focused
- * cover, in that room above the small ones: its top level with the focused cover's top.
+ * 10px (--small-scale, data/home-covers.ts), level with its bottom, with twice the gap around
+ * the focused one, and the name next to it, in that room above the small ones: its top level
+ * with the focused cover's top.
  *
  * Every slot is laid out at the full size, in the same spot, and moved and shrunk by a
  * transform worked out from `--rel`, its distance to the focused cover (negative before it).
@@ -14,8 +15,9 @@
   --card-gap: var(--space-14);
   --small-scale: 0.6;
   --small: calc(var(--card-width) * var(--small-scale));
-  /* Mirrored by SHELF_NAME_ROOM_REM in data/home-covers.ts. */
-  --name-line: 1.25;
+  /* The name's line: the font × 1.25, plus 10px (owner decision). Mirrored by
+   * SHELF_NAME_LINE_REM in data/home-covers.ts. */
+  --name-line: calc(var(--font-size-shelf-title) * 1.25 + 0.625rem);
   --small-step: calc(var(--small) + var(--card-gap));
   /* Where the focused cover stays: the first cover's place. */
   --edge: 13.625rem;
@@ -24,6 +26,30 @@
   position: relative;
   height: 100%;
   overflow: hidden;
+}
+
+/*
+ * A shade behind the covers that fades up into the background art (owner decision), so the
+ * shelf stands out from it. It reaches a little above the focused cover. Eased stops instead of
+ * a straight line: a slow change of a dark color shows as bands on an 8-bit screen.
+ */
+.home-shelf::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--row-bottom) + var(--card-width) + var(--space-16) * 3);
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--color-background) 85%, transparent) 0%,
+    color-mix(in srgb, var(--color-background) 75%, transparent) 25%,
+    color-mix(in srgb, var(--color-background) 55%, transparent) 50%,
+    color-mix(in srgb, var(--color-background) 30%, transparent) 70%,
+    color-mix(in srgb, var(--color-background) 10%, transparent) 88%,
+    transparent 100%
+  );
 }
 
 .home-shelf__row {
@@ -38,11 +64,13 @@
   width: var(--card-width);
   /*
    * Before the focus: one small step per cover to the left. After it: past the large cover,
-   * then one small step per cover; clamp() gives 1 only after the focus.
+   * then one small step per cover; clamp(0, rel, 1) is 1 only after the focus. The focused
+   * cover has twice the gap on each side (owner decision): clamp(-1, rel, 1) adds one more gap
+   * to every cover before it (to the left) and after it (to the right).
    */
   --x: calc(
     var(--edge) + var(--rel) * var(--small-step) + clamp(0, var(--rel), 1) *
-      (var(--card-width) - var(--small))
+      (var(--card-width) - var(--small)) + clamp(-1, var(--rel), 1) * var(--card-gap)
   );
   /* Shrunk from the bottom left corner, so every cover stays level with the large one. */
   transform-origin: left bottom;
@@ -60,7 +88,8 @@
  */
 .home-shelf__name {
   position: absolute;
-  left: calc(var(--edge) + var(--card-width) + var(--card-gap));
+  /* Where the first small cover after the focus starts: past the doubled gap. */
+  left: calc(var(--edge) + var(--card-width) + var(--card-gap) * 2);
   /* 10px above the small covers (0.625rem: rem follows the window). */
   bottom: calc(var(--row-bottom) + var(--small) + 0.625rem);
   margin: 0;
@@ -68,6 +97,11 @@
   line-height: var(--name-line);
   font-weight: var(--font-weight-medium);
   white-space: nowrap;
+  /* Readable over any background art (owner decision), like the launch cover's text. */
+  text-shadow:
+    0 0 0.125rem rgb(0 0 0 / 0.9),
+    0 0 0.375rem rgb(0 0 0 / 0.8),
+    0 0.125rem 1rem rgb(0 0 0 / 0.7);
   transition: opacity var(--info-fade) var(--motion-easing);
   --info-fade: calc(var(--motion-focus) / 2);
 }

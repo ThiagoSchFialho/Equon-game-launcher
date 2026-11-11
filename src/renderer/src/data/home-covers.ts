@@ -24,11 +24,13 @@ export function coverWidthRem(covers: HomeCoverSettings): number {
 
 /**
  * On the Home shelf ("Embaixo"), how much smaller than the focused cover the others are, in rem
- * (owner decision): the height of the name (--font-size-shelf-title 1.5rem × line height 1.25,
- * screens/home/CoverShelf.css) plus 10px (0.625rem at 1920×1080; rem follows the window). The
+ * (owner decision): the height of the name's line plus 10px. The line is the font
+ * (--font-size-shelf-title, 1.5rem) × 1.25, plus 10px (owner decision), as in
+ * screens/home/CoverShelf.css; 10px is 0.625rem at 1920×1080, and rem follows the window. The
  * name fits in that room, above them.
  */
-export const SHELF_NAME_ROOM_REM = 1.5 * 1.25 + 0.625
+export const SHELF_NAME_LINE_REM = 1.5 * 1.25 + 0.625
+export const SHELF_NAME_ROOM_REM = SHELF_NAME_LINE_REM + 0.625
 
 /** The small covers' scale on the shelf: a transform needs a number, so it is worked out here. */
 export function shelfSmallScale(widthRem: number): number {

@@ -212,9 +212,9 @@ describe('Home covers (D-27)', () => {
     render(<App />)
     await waitFor(() => expect(slots()).toHaveLength(2))
     const [first, second] = slots()
-    // The small covers: smaller by the name's height (24px × 1.25) plus 10px, in rem.
+    // The small covers: smaller by the name's line (24px × 1.25 + 10px) plus 10px, in rem.
     expect(Number(shelf().style.getPropertyValue('--small-scale'))).toBeCloseTo(
-      (25.5 - (1.5 * 1.25 + 0.625)) / 25.5
+      (25.5 - (1.5 * 1.25 + 0.625 + 0.625)) / 25.5
     )
     expect(first).toMatchObject({ current: 'true', rel: '0' })
     expect(second).toMatchObject({ current: 'false', rel: '1' })
@@ -251,6 +251,12 @@ describe('Home covers (D-27)', () => {
 
     const size = screen.getByRole('slider', { name: 'Tamanho' })
     expect(size.getAttribute('aria-valuenow')).toBe('74')
+    // Next to each level, the value recommended for the chosen position (owner decision).
+    const hints = (): string[] =>
+      Array.from(document.querySelectorAll('.level-row__hint')).map(
+        (h) => h.textContent?.trim() ?? ''
+      )
+    expect(hints()).toEqual(['(padrão 6)', '(padrão 80%)', '(padrão 72)', '(padrão 35)'])
     // A hundred steps: one continuous bar instead of a hundred ticks.
     expect(size.querySelector('.level-row__track')).toBeTruthy()
     expect(size.querySelector('.level-row__tick')).toBeNull()
@@ -267,6 +273,7 @@ describe('Home covers (D-27)', () => {
     act(() => position.click())
     press('ArrowRight')
     expect(setHomeCovers).toHaveBeenLastCalledWith({ position: 'bottom' })
+    expect(hints()).toEqual(['(padrão 0)', '(padrão 10%)', '(padrão 30)', '(padrão 5)'])
     // At the last option the direction is not used: nothing more is saved.
     const calls = setHomeCovers.mock.calls.length
     press('ArrowRight')

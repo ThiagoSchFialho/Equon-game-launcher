@@ -5,7 +5,7 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  height: 5rem;
+  height: var(--footer-height);
   padding: 0 var(--space-12);
   background: var(--color-footer);
   flex-shrink: 0;

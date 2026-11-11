@@ -8,6 +8,8 @@ const MAX_TICKS = 20
 interface Props {
   id: string
   label: string
+  /** Secondary text after the label, e.g. "(padrão 6)". */
+  hint?: string
   /** As shown next to the label, e.g. "60%". */
   valueText: string
   value: number
@@ -28,6 +30,7 @@ export function LevelRow({
   id,
   label,
   valueText,
+  hint,
   value,
   min,
   max,
@@ -67,7 +70,10 @@ export function LevelRow({
       aria-disabled={unavailable}
       {...mouse}
     >
-      <span className="level-row__label">{label}</span>
+      <span className="level-row__label">
+        {label}
+        {hint && <span className="level-row__hint"> {hint}</span>}
+      </span>
       <span className="level-row__control">
         <button
           className="level-row__step"

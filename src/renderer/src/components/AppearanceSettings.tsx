@@ -10,6 +10,7 @@ import {
   type HomeCoverSettings,
   type SettingsInfo
 } from '../../../shared/ipc/contract'
+import { RECOMMENDED_APPEARANCE } from '../data/appearance-defaults'
 import { useHomeArt } from '../data/home-art'
 import { useHomeCovers } from '../data/home-covers'
 import { errorMessage, t } from '../strings'
@@ -35,6 +36,9 @@ export function AppearanceSettings({
   const [coversError, setCoversError] = useState<string | null>(null)
   const art = info.homeArt
   const covers = info.homeCovers
+  // The recommended values follow the chosen position: each layout looks best with its own.
+  const recommended = RECOMMENDED_APPEARANCE[covers.position]
+  const hint = t.settings.appearance.recommended
 
   // Shown at once, so a held direction steps from the value on screen; undone if not saved.
   const save = (changes: Partial<HomeArtSettings>): void => {
@@ -89,6 +93,7 @@ export function AppearanceSettings({
         <LevelRow
           id="settings:home-art-blur"
           label={t.settings.appearance.blur}
+          hint={hint(String(recommended.blur))}
           valueText={String(art.blur)}
           value={art.blur}
           min={0}
@@ -99,6 +104,7 @@ export function AppearanceSettings({
         <LevelRow
           id="settings:home-art-dim"
           label={t.settings.appearance.dim}
+          hint={hint(`${recommended.dim}%`)}
           valueText={`${art.dim}%`}
           value={art.dim}
           min={0}
@@ -119,6 +125,7 @@ export function AppearanceSettings({
         <LevelRow
           id="settings:home-cover-size"
           label={t.settings.appearance.coverSize}
+          hint={hint(String(recommended.size))}
           valueText={String(covers.size)}
           value={covers.size}
           min={HOME_COVER_MIN}
@@ -128,6 +135,7 @@ export function AppearanceSettings({
         <LevelRow
           id="settings:home-cover-gap"
           label={t.settings.appearance.coverGap}
+          hint={hint(String(recommended.gap))}
           valueText={String(covers.gap)}
           value={covers.gap}
           min={HOME_COVER_MIN}

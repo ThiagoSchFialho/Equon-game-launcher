@@ -31,6 +31,13 @@
   font-weight: var(--font-weight-medium);
 }
 
+/* "(padrão x)" after the name: a reference, quieter than the name itself. */
+.level-row__hint {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+}
+
 .level-row__control {
   display: flex;
   align-items: center;

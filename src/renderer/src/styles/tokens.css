@@ -59,6 +59,9 @@
   --radius-panel: 0.875rem; /* 14px */
   --radius-button: 0.625rem;
 
+  /* Footer: the hints bar of every screen; the system menu rises from it (owner: 20px less). */
+  --footer-height: 3.75rem; /* 60px */
+
   /* Focus ring */
   --focus-ring-width: 0.125rem; /* 2px */
   --focus-ring-gap: 0.25rem;
