@@ -164,8 +164,15 @@ describe('Configurações › Aparência', () => {
 })
 
 describe('Home covers (D-27)', () => {
-  // waitFor retries while it is not there yet.
+  // waitFor retries while they are not there yet.
   const carousel = (): HTMLElement => document.querySelector('.home__carousel') as HTMLElement
+  const shelf = (): HTMLElement => document.querySelector('.home-shelf') as HTMLElement
+  const slots = (): { title: string | null; current: string | null; rel: string }[] =>
+    Array.from(document.querySelectorAll<HTMLElement>('.home-shelf__slot')).map((slot) => ({
+      title: slot.querySelector('.game-card')?.getAttribute('aria-label') ?? null,
+      current: slot.dataset.current ?? null,
+      rel: slot.style.getPropertyValue('--rel')
+    }))
 
   it('sizes, spaces and places the covers as set; the defaults keep the old layout', async () => {
     installFakeApi([summary(1, 'Tidebound')])
@@ -174,7 +181,7 @@ describe('Home covers (D-27)', () => {
     await waitFor(() => expect(carousel().style.getPropertyValue('--card-width')).toBe('25.5rem'))
     expect(carousel().querySelector('.game-card--portrait')).toBeTruthy()
     expect(carousel().style.getPropertyValue('--card-gap')).toBe('3.5rem')
-    expect(carousel().dataset.position).toBe('center')
+    expect(document.querySelector('.home-shelf')).toBeNull()
     cleanup()
 
     installFakeApi([summary(1, 'Tidebound')], {
@@ -183,17 +190,50 @@ describe('Home covers (D-27)', () => {
       }
     })
     render(<App />)
-    await waitFor(() => expect(carousel().dataset.position).toBe('bottom'))
-    // "Embaixo" shows only the name of the focused game, no playtime (owner decision).
-    expect(await screen.findByText('Tidebound', { selector: '.home__title' })).toBeTruthy()
-    expect(screen.queryByText('12h 22m')).toBeNull()
+    // "Embaixo" is its own layout, the shelf (D-27).
+    await waitFor(() => expect(shelf().style.getPropertyValue('--card-width')).toBe('32rem'))
+    expect(document.querySelector('.home__carousel')).toBeNull()
     // 100 is the largest size that still looks right: the old 88 (owner decision).
-    expect(carousel().style.getPropertyValue('--card-width')).toBe('32rem')
-    expect(carousel().style.getPropertyValue('--card-gap')).toBe('0.1rem')
-    // "Embaixo" shows the square cover, without the Library's status badges.
-    expect(carousel().querySelector('.game-card--square .artwork--cover_square')).toBeTruthy()
-    expect(carousel().querySelector('.game-card--portrait')).toBeNull()
-    expect(carousel().querySelector('.game-card__badge')).toBeNull()
+    expect(shelf().style.getPropertyValue('--card-gap')).toBe('0.1rem')
+    // Square covers, without the Library's status badges; only the name, no playtime.
+    expect(shelf().querySelector('.game-card--square .artwork--cover_square')).toBeTruthy()
+    expect(shelf().querySelector('.game-card--portrait')).toBeNull()
+    expect(shelf().querySelector('.game-card__badge')).toBeNull()
+    expect(await screen.findByText('Tidebound', { selector: '.home-shelf__name' })).toBeTruthy()
+    expect(screen.queryByText('12h 22m')).toBeNull()
+  })
+
+  it('"Embaixo": the focused cover is the large one, the others are placed from it', async () => {
+    installFakeApi([summary(1, 'Alpha'), summary(2, 'Beta')], {
+      settings: {
+        get: async () => settingsInfo({ homeCovers: { size: 74, gap: 35, position: 'bottom' } })
+      }
+    })
+    render(<App />)
+    await waitFor(() => expect(slots()).toHaveLength(2))
+    const [first, second] = slots()
+    // The small covers: smaller by the name's height (24px × 1.25) plus 10px, in rem.
+    expect(Number(shelf().style.getPropertyValue('--small-scale'))).toBeCloseTo(
+      (25.5 - (1.5 * 1.25 + 0.625)) / 25.5
+    )
+    expect(first).toMatchObject({ current: 'true', rel: '0' })
+    expect(second).toMatchObject({ current: 'false', rel: '1' })
+    expect(
+      await screen.findByText(first.title ?? '', { selector: '.home-shelf__name' })
+    ).toBeTruthy()
+
+    // jsdom has no layout: with two cards, a direction can only go to the other one.
+    press('ArrowRight')
+    await waitFor(() =>
+      expect(slots()).toEqual([
+        { ...first, current: 'false', rel: '-1' },
+        { ...second, current: 'true', rel: '0' }
+      ])
+    )
+    // The name fades out, changes and fades in next to the large cover.
+    expect(
+      await screen.findByText(second.title ?? '', { selector: '.home-shelf__name' })
+    ).toBeTruthy()
   })
 
   it('sets them in Aparência, saved at once and followed by the Home screen', async () => {
@@ -235,8 +275,7 @@ describe('Home covers (D-27)', () => {
     // B to the tab, B to the Home screen, which already follows.
     press('Escape')
     press('Escape')
-    await waitFor(() => expect(carousel().dataset.position).toBe('bottom'))
-    expect(carousel().style.getPropertyValue('--card-width')).toBe('25.75rem')
-    expect(carousel().style.getPropertyValue('--card-gap')).toBe('3.4rem')
+    await waitFor(() => expect(shelf().style.getPropertyValue('--card-width')).toBe('25.75rem'))
+    expect(shelf().style.getPropertyValue('--card-gap')).toBe('3.4rem')
   })
 })

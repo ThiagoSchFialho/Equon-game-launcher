@@ -31,6 +31,8 @@
   --font-family: 'Montserrat', 'Segoe UI', sans-serif;
   --font-size-display: 2.5rem; /* 40px */
   --font-size-screen-title: 2rem; /* 32px */
+  /* The name on the Home shelf (D-27): a little larger than a card title (owner decision). */
+  --font-size-shelf-title: 1.5rem; /* 24px */
   --font-size-card-title: 1.25rem; /* 20px */
   --font-size-body: 1.0625rem; /* 17px */
   --font-size-meta: 0.875rem; /* 14px */

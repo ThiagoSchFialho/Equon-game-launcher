@@ -183,11 +183,14 @@ depois que o foco para por 150 ms.
     nome e o tempo de jogo mantêm o deles. A posição considera o conjunto
     capa + nome + tempo de jogo (decisão do dono do projeto): "Centro" o
     centraliza entre a barra superior e o rodapé, com a capa vertical; e
-    "Embaixo" o deixa perto do rodapé, com a capa quadrada, só o nome do
-    jogo (sem tempo de jogo), em cima da capa em foco e mais perto dela, e
-    a capa em foco sempre no lugar da primeira: é a fileira que anda, em
-    vez de a capa ir para o centro como em "Centro" (decisões do dono do
-    projeto). Nas duas posições o nome aparece inteiro, numa linha, mesmo
+    "Embaixo" é uma prateleira perto do rodapé, inspirada na tela inicial
+    do PS5 (decisões do dono do projeto): capas quadradas; a capa em foco
+    no tamanho escolhido, sempre no lugar da primeira (é a fileira que
+    anda); as outras menores que ela pela altura do nome mais 10 px,
+    alinhadas pela base da capa em foco; e só o nome do jogo (sem tempo de
+    jogo), em `--font-size-shelf-title`, ao lado da capa em foco, 10 px
+    acima das capas pequenas. Ao mudar o foco, a capa nova cresce e a anterior
+    encolhe (só `transform`). Nas duas posições o nome aparece inteiro, numa linha, mesmo
     passando da largura da capa. O tamanho 100 é o maior que ainda fica bom. Os padrões são
     o tamanho e o espaço de antes.
 -   Conexões: no topo, o painel "Biblioteca" com "Atualizar biblioteca" e o
@@ -294,7 +297,9 @@ partir de `design/fonts/montserrat` (com `OFL.txt`). Alternativa segura:
 `Segoe UI`, `sans-serif`. Usar apenas os pesos necessários.
 
 Escala inicial para 1920×1080: - Título de destaque: 36--48 px. - Título
-de tela: 28--36 px. - Título de card: 18--22 px. - Corpo: 16--18 px. -
+de tela: 28--36 px. - Nome na prateleira da Home ("Capas da home" ›
+Embaixo, D-27): 24 px (`--font-size-shelf-title`, decisão do dono do
+projeto). - Título de card: 18--22 px. - Corpo: 16--18 px. -
 Metadados: 13--15 px. - Texto auxiliar nunca deve ser tão pequeno que
 fique ilegível à distância.
 

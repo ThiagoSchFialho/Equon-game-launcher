@@ -1,0 +1,77 @@
+/*
+ * "Capas da home" › Embaixo (D-27, after the PS5 home; owner decisions): the focused square
+ * cover at full size where the first cover is, the others smaller by the name's height plus
+ * 10px (--small-scale, data/home-covers.ts), level with its bottom, and the name next to the focused
+ * cover, in that room above the small ones: its top level with the focused cover's top.
+ *
+ * Every slot is laid out at the full size, in the same spot, and moved and shrunk by a
+ * transform worked out from `--rel`, its distance to the focused cover (negative before it).
+ * So a change of focus animates transforms only, and the row never reflows.
+ */
+.home-shelf {
+  /* Overridden by "Capas da home" (data/home-covers.ts); these are its defaults. */
+  --card-width: 25.5rem;
+  --card-gap: var(--space-14);
+  --small-scale: 0.6;
+  --small: calc(var(--card-width) * var(--small-scale));
+  /* Mirrored by SHELF_NAME_ROOM_REM in data/home-covers.ts. */
+  --name-line: 1.25;
+  --small-step: calc(var(--small) + var(--card-gap));
+  /* Where the focused cover stays: the first cover's place. */
+  --edge: 13.625rem;
+  /* Close to the footer, with room for the focus ring. */
+  --row-bottom: calc(var(--space-4) + var(--space-2));
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+
+.home-shelf__row {
+  position: absolute;
+  inset: 0;
+}
+
+.home-shelf__slot {
+  position: absolute;
+  left: 0;
+  bottom: var(--row-bottom);
+  width: var(--card-width);
+  /*
+   * Before the focus: one small step per cover to the left. After it: past the large cover,
+   * then one small step per cover; clamp() gives 1 only after the focus.
+   */
+  --x: calc(
+    var(--edge) + var(--rel) * var(--small-step) + clamp(0, var(--rel), 1) *
+      (var(--card-width) - var(--small))
+  );
+  /* Shrunk from the bottom left corner, so every cover stays level with the large one. */
+  transform-origin: left bottom;
+  transform: translateX(var(--x)) scale(var(--small-scale));
+  transition: transform var(--motion-screen) var(--motion-easing);
+}
+
+.home-shelf__slot[data-current='true'] {
+  transform: translateX(var(--x)) scale(1);
+}
+
+/*
+ * Next to the focused cover, just above the small ones. It stays in place and only changes
+ * game: a quick fade out and in (useCoverFocus.tsx). The whole name, on one line.
+ */
+.home-shelf__name {
+  position: absolute;
+  left: calc(var(--edge) + var(--card-width) + var(--card-gap));
+  /* 10px above the small covers (0.625rem: rem follows the window). */
+  bottom: calc(var(--row-bottom) + var(--small) + 0.625rem);
+  margin: 0;
+  font-size: var(--font-size-shelf-title);
+  line-height: var(--name-line);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  transition: opacity var(--info-fade) var(--motion-easing);
+  --info-fade: calc(var(--motion-focus) / 2);
+}
+
+.home-shelf__name[data-hidden='true'] {
+  opacity: 0;
+}
