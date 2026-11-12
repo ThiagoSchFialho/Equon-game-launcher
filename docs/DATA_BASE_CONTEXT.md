@@ -135,6 +135,7 @@ Uma única linha, com a configuração do usuário local.
 | `home_cover_gap` | `INTEGER NOT NULL DEFAULT 35` | "Capas da home" › Espaçamento (D-27); `CHECK (BETWEEN 1 AND 100)`. O padrão é o espaço de antes. Migração `0019` |
 | `home_cover_position` | `TEXT NOT NULL DEFAULT 'center'` | "Capas da home" › Posição (D-27); `CHECK (IN ('top', 'center', 'bottom'))`. Migração `0019`; `'top'` ("Em cima") na `0020`, que recria `USERS` (o SQLite não muda um `CHECK` no lugar) copiando todas as colunas, chaves criptografadas incluídas |
 | `home_direct_launch` | `INTEGER NOT NULL DEFAULT 0` | "Ignorar tela do jogo na home" (D-28): no Início, o A inicia o jogo; desligado por padrão; `CHECK (IN (0, 1))`. Migração `0021` |
+| `home_limit_games` | `INTEGER NOT NULL DEFAULT 0` | "Limitar quantidade de jogos na home" (D-31): o Início mostra só os 12 jogados mais recentemente; desligado por padrão; `CHECK (IN (0, 1))`. Migração `0023` |
 
 Regras:
 

@@ -269,7 +269,11 @@ export interface HomeCoverSettings {
   /** HOME_COVER_MIN to HOME_COVER_MAX. */
   gap: number
   position: HomeCoverPosition
+  /** "Limitar quantidade de jogos na home" (D-31): at most HOME_GAMES_LIMIT games. */
+  limited: boolean
 }
+/** How many games the Home shows with "Limitar quantidade de jogos na home" (owner decision). */
+export const HOME_GAMES_LIMIT = 12
 /** In the order they are offered, the order of the screen: top, middle, bottom. */
 export const HOME_COVER_POSITIONS = ['top', 'center', 'bottom'] as const
 export type HomeCoverPosition = (typeof HOME_COVER_POSITIONS)[number]

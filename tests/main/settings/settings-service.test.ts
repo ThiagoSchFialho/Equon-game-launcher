@@ -66,7 +66,7 @@ describe('settings service', () => {
       uiSounds: true,
       homeDirectLaunch: false,
       homeArt: { enabled: false, blur: 4, dim: 60 },
-      homeCovers: { size: 74, gap: 35, position: 'center' },
+      homeCovers: { size: 74, gap: 35, position: 'center', limited: false },
       openAtLogin: false,
       openAtLoginAvailable: true
     })
@@ -100,6 +100,15 @@ describe('settings service', () => {
     }
   })
 
+  it('stores "Limitar quantidade de jogos na home" (D-31): off by default', () => {
+    expect(settings.get().homeCovers.limited).toBe(false)
+    expect(settings.setHomeCovers({ limited: true })).toMatchObject({
+      ok: true,
+      data: { homeCovers: { size: 74, gap: 35, position: 'center', limited: true } }
+    })
+    expect(() => db.prepare('UPDATE users SET home_limit_games = 2').run()).toThrow()
+  })
+
   it('stores "Ignorar tela do jogo na home" (D-28): off by default', () => {
     expect(settings.get().homeDirectLaunch).toBe(false)
     expect(settings.setHomeDirectLaunch(true)).toMatchObject({
@@ -113,14 +122,15 @@ describe('settings service', () => {
   it('stores the Home covers (D-27): the old layout by default, each value on its own', () => {
     expect(settings.setHomeCovers({ size: 100 })).toMatchObject({
       ok: true,
-      data: { homeCovers: { size: 100, gap: 35, position: 'center' } }
+      data: { homeCovers: { size: 100, gap: 35, position: 'center', limited: false } }
     })
     expect(
       settings.setHomeCovers({ gap: 1, position: 'bottom' }).ok && settings.get().homeCovers
     ).toEqual({
       size: 100,
       gap: 1,
-      position: 'bottom'
+      position: 'bottom',
+      limited: false
     })
     // The table refuses what the IPC schema already refuses.
     for (const bad of [

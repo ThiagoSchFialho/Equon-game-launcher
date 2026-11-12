@@ -464,6 +464,9 @@ export const t = {
       coverSize: 'Tamanho',
       coverGap: 'Espaçamento',
       coverPosition: 'Posição',
+      limitGames: 'Limitar quantidade de jogos na home',
+      limitGamesHint:
+        'O Início mostra só os 12 jogos jogados mais recentemente. A Biblioteca continua com todos.',
       coverPositions: { top: 'Em cima', center: 'Centro', bottom: 'Embaixo' },
       /** After each level: the value recommended for the chosen position (owner decision). */
       recommended: (value: string) => `(padrão ${value})`,

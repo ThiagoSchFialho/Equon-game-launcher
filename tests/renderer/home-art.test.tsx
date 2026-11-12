@@ -198,7 +198,8 @@ describe('Home covers (D-27)', () => {
 
     installFakeApi([summary(1, 'Tidebound')], {
       settings: {
-        get: async () => settingsInfo({ homeCovers: { size: 100, gap: 1, position: 'bottom' } })
+        get: async () =>
+          settingsInfo({ homeCovers: { size: 100, gap: 1, position: 'bottom', limited: false } })
       }
     })
     render(<App />)
@@ -218,7 +219,8 @@ describe('Home covers (D-27)', () => {
   it('"Embaixo": the focused cover is the large one, the others are placed from it', async () => {
     installFakeApi([summary(1, 'Alpha'), summary(2, 'Beta')], {
       settings: {
-        get: async () => settingsInfo({ homeCovers: { size: 74, gap: 35, position: 'bottom' } })
+        get: async () =>
+          settingsInfo({ homeCovers: { size: 74, gap: 35, position: 'bottom', limited: false } })
       }
     })
     render(<App />)
@@ -256,20 +258,23 @@ describe('Home covers (D-27)', () => {
       ],
       {
         settings: {
-          get: async () => settingsInfo({ homeCovers: { size: 30, gap: 5, position: 'top' } })
+          get: async () =>
+            settingsInfo({ homeCovers: { size: 30, gap: 5, position: 'top', limited: false } })
         }
       }
     )
     render(<App />)
     await waitFor(() => expect(shelf().dataset.side).toBe('top'))
     expect(document.querySelector('.home__carousel')).toBeNull()
-    expect(slots().map((slot) => slot.rel)).toEqual(['0', '1'])
+    // The Settings shortcut comes first (D-32); the focus is on the first game.
+    expect(slots().map((slot) => slot.rel)).toEqual(['-1', '0', '1'])
+    expect(slots()[0].title).toBe('Configurações')
     expect(shelf().querySelector('.game-card--square')).toBeTruthy()
     expect(document.querySelector('.home-shelf__name')).toBeTruthy()
     // Only "Em cima" has the focused game's panel under the shelf (D-29): the logo and the
     // play stats are there, not next to the name.
     expect(screen.getByText('12h 22m').closest('.home-spotlight')).toBeTruthy()
-    const focusedId = slots()[0].title === 'Alpha' ? 1 : 2
+    const focusedId = slots()[1].title === 'Alpha' ? 1 : 2
     expect(document.querySelector('.home-spotlight__logo img')?.getAttribute('src')).toBe(
       `equon-art://game/${focusedId}/logo?v=v1`
     )
@@ -278,7 +283,8 @@ describe('Home covers (D-27)', () => {
     // The other side is the same component, with the other data-side, and no logo.
     installFakeApi([summary(1, 'Alpha', { artwork: ['logo'] })], {
       settings: {
-        get: async () => settingsInfo({ homeCovers: { size: 30, gap: 5, position: 'bottom' } })
+        get: async () =>
+          settingsInfo({ homeCovers: { size: 30, gap: 5, position: 'bottom', limited: false } })
       }
     })
     render(<App />)
@@ -289,7 +295,9 @@ describe('Home covers (D-27)', () => {
   it('sets them in Aparência, saved at once and followed by the Home screen', async () => {
     const setHomeCovers = vi.fn<EquonApi['settings']['setHomeCovers']>(async (changes) => ({
       ok: true,
-      data: settingsInfo({ homeCovers: { size: 74, gap: 35, position: 'center', ...changes } })
+      data: settingsInfo({
+        homeCovers: { size: 74, gap: 35, position: 'center', limited: false, ...changes }
+      })
     }))
     installFakeApi([summary(1, 'Tidebound')], { settings: { setHomeCovers } })
     render(<App />)
@@ -352,9 +360,9 @@ describe('Home covers (D-27)', () => {
     ])
     const fixedSize = screen.getByRole('slider', { name: 'Tamanho' })
     expect(fixedSize.getAttribute('aria-disabled')).toBe('true')
-    expect(fixedSize.getAttribute('aria-valuenow')).toBe('18')
+    expect(fixedSize.getAttribute('aria-valuenow')).toBe('13')
     expect(screen.getByRole('slider', { name: 'Espaçamento' }).getAttribute('aria-valuenow')).toBe(
-      '4'
+      '5'
     )
     // The mouse picks an option directly, without moving on to the next one.
     act(() => screen.getByRole('radio', { name: 'Embaixo' }).click())
@@ -366,5 +374,61 @@ describe('Home covers (D-27)', () => {
     press('Escape')
     await waitFor(() => expect(shelf().style.getPropertyValue('--card-width')).toBe('25.75rem'))
     expect(shelf().style.getPropertyValue('--card-gap')).toBe('3.4rem')
+  })
+})
+
+describe('"Limitar quantidade de jogos na home" (D-31)', () => {
+  const many = Array.from({ length: 14 }, (_, i) =>
+    summary(i + 1, `Jogo ${String(i + 1).padStart(2, '0')}`, {
+      timeLastPlayed: `2026-11-${String(i + 1).padStart(2, '0')}T20:00:00Z`
+    })
+  )
+  const cards = (): string[] =>
+    Array.from(document.querySelectorAll('.home__track .game-card')).map(
+      (card) => card.getAttribute('aria-label') ?? ''
+    )
+
+  it('off: every installed game; on: the 12 most recently played', async () => {
+    installFakeApi(many)
+    render(<App />)
+    await waitFor(() => expect(cards()).toHaveLength(14))
+    cleanup()
+
+    installFakeApi(many, {
+      settings: {
+        get: async () =>
+          settingsInfo({ homeCovers: { size: 74, gap: 35, position: 'center', limited: true } })
+      }
+    })
+    render(<App />)
+    await waitFor(() => expect(cards()).toHaveLength(12))
+    // Newest first: the two played longest ago are the ones left out.
+    expect(cards()[0]).toBe('Jogo 14')
+    expect(cards()).not.toContain('Jogo 01')
+    expect(cards()).not.toContain('Jogo 02')
+  })
+
+  it('is set in Aparência › Capas da home and the Home follows', async () => {
+    const setHomeCovers = vi.fn<EquonApi['settings']['setHomeCovers']>(async (changes) => ({
+      ok: true,
+      data: settingsInfo({
+        homeCovers: { size: 74, gap: 35, position: 'center', limited: false, ...changes }
+      })
+    }))
+    installFakeApi(many, { settings: { setHomeCovers } })
+    render(<App />)
+    await waitFor(() => expect(cards()).toHaveLength(14))
+    press('Home')
+    act(() => screen.getByText('Configurações').closest('button')?.click())
+    act(() => screen.getByText('Aparência').closest('button')?.click())
+    const option = await screen.findByRole('checkbox', {
+      name: 'Limitar quantidade de jogos na home'
+    })
+    expect(option.getAttribute('aria-checked')).toBe('false')
+    act(() => option.click())
+    await waitFor(() => expect(setHomeCovers).toHaveBeenCalledWith({ limited: true }))
+    press('Escape')
+    press('Escape')
+    await waitFor(() => expect(cards()).toHaveLength(12))
   })
 })

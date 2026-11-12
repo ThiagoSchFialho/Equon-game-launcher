@@ -294,7 +294,8 @@ const homeCoverLevel = z.number().int().min(HOME_COVER_MIN).max(HOME_COVER_MAX)
 const homeCoversSchema = z.strictObject({
   size: homeCoverLevel,
   gap: homeCoverLevel,
-  position: z.enum(HOME_COVER_POSITIONS)
+  position: z.enum(HOME_COVER_POSITIONS),
+  limited: z.boolean()
 }) satisfies z.ZodType<HomeCoverSettings>
 /** Only what changed, and at least one thing. */
 export const settingsSetHomeCoversArgs = z.tuple([

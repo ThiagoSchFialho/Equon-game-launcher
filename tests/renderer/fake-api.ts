@@ -79,7 +79,7 @@ export const settingsInfo = (extra: Partial<SettingsInfo> = {}): SettingsInfo =>
   uiSounds: false,
   homeDirectLaunch: false,
   homeArt: { enabled: false, blur: 4, dim: 60 },
-  homeCovers: { size: 74, gap: 35, position: 'center' },
+  homeCovers: { size: 74, gap: 35, position: 'center', limited: false },
   openAtLogin: false,
   openAtLoginAvailable: true,
   ...extra
@@ -192,7 +192,9 @@ export function installFakeApi(
       }),
       setHomeCovers: async (changes) => ({
         ok: true,
-        data: settingsInfo({ homeCovers: { size: 74, gap: 35, position: 'center', ...changes } })
+        data: settingsInfo({
+          homeCovers: { size: 74, gap: 35, position: 'center', limited: false, ...changes }
+        })
       }),
       setSecret: async (kind, value) => ({
         ok: true,

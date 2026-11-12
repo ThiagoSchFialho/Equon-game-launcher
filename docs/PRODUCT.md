@@ -173,8 +173,10 @@ limitações, condições de teste e método de inicialização suportado.
     ao lado da ordenação.
 -   Busca, filtros e ordenação são mantidos ao navegar entre telas e
     voltam ao padrão quando o aplicativo é reiniciado.
--   Início (regra fixa, não configurável): todos os jogos instalados e
-    não ocultos, sem limite de quantidade, pela última sessão, do mais recente para o mais antigo.
+-   Início: todos os jogos instalados e não ocultos, pela última sessão,
+    do mais recente para o mais antigo. Com "Limitar quantidade de jogos
+    na home" (Configurações › Aparência, D-31), só os 12 mais recentes;
+    sem a opção, não há limite.
 -   Com "Ignorar tela do jogo na home" (Configurações › Sistema, D-28), o
     A numa capa do Início inicia o jogo em vez de abrir a página dele; se
     o jogo não abrir, a página abre e explica o motivo. O menu de opções
@@ -182,7 +184,9 @@ limitações, condições de teste e método de inicialização suportado.
 -   Na posição "Em cima" das capas (D-29), um painel abaixo delas mostra
     o jogo em foco: logo, tempo de jogo e as 4
     últimas conquistas obtidas, navegáveis com o
-    controle; A abre a página de conquistas do jogo.
+    controle; A abre a página de conquistas do jogo. A fileira começa com
+    um atalho para as Configurações, com cara de capa (D-32); o foco
+    continua começando no primeiro jogo.
 -   Marcar como zerado e ocultar/mostrar ficam no menu de opções do
     jogo, para qualquer origem.
 -   Arquitetura preparada para filtros adicionais sem reconstruir a

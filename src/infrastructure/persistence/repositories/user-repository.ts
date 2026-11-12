@@ -55,13 +55,21 @@ export function createUserRepository(db: SqliteDatabase): UserRepository {
 
   const selectHomeCovers = db.prepare<
     [],
-    { home_cover_size: number; home_cover_gap: number; home_cover_position: string }
-  >('SELECT home_cover_size, home_cover_gap, home_cover_position FROM users WHERE id = 1')
+    {
+      home_cover_size: number
+      home_cover_gap: number
+      home_cover_position: string
+      home_limit_games: number
+    }
+  >(
+    'SELECT home_cover_size, home_cover_gap, home_cover_position, home_limit_games FROM users WHERE id = 1'
+  )
   const updateHomeCovers = db.prepare<Record<string, number | string | null>>(`
     UPDATE users SET
       home_cover_size = COALESCE(@size, home_cover_size),
       home_cover_gap = COALESCE(@gap, home_cover_gap),
-      home_cover_position = COALESCE(@position, home_cover_position)
+      home_cover_position = COALESCE(@position, home_cover_position),
+      home_limit_games = COALESCE(@limited, home_limit_games)
     WHERE id = 1`)
 
   // One fixed statement per secret column; column names never come from input.
@@ -149,14 +157,16 @@ export function createUserRepository(db: SqliteDatabase): UserRepository {
         position:
           row?.home_cover_position === 'top' || row?.home_cover_position === 'bottom'
             ? row.home_cover_position
-            : 'center'
+            : 'center',
+        limited: row?.home_limit_games === 1
       }
     },
     setHomeCovers: (changes) => {
       updateHomeCovers.run({
         size: changes.size ?? null,
         gap: changes.gap ?? null,
-        position: changes.position ?? null
+        position: changes.position ?? null,
+        limited: changes.limited === undefined ? null : changes.limited ? 1 : 0
       })
     },
     getTrophyCounters: () => selectCounters.get() as TrophyCounters,

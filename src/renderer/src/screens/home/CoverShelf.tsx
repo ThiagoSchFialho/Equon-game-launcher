@@ -1,5 +1,6 @@
 import type { GameSummary } from '../../../../shared/ipc/contract'
 import { GameCard } from '../../components/GameCard'
+import { useFocusable } from '../../focus/focus-context'
 import {
   coverWidthRem,
   homeCoverStyle,
@@ -25,7 +26,8 @@ export function CoverShelf({
   onMenu,
   backdropTarget,
   below,
-  onCardDown
+  onCardDown,
+  leading
 }: {
   /** "Embaixo" by the footer, or "Em cima" by the top bar: the same shelf, mirrored. */
   side: 'top' | 'bottom'
@@ -46,8 +48,13 @@ export function CoverShelf({
     hidden: boolean
     cardId: string | null
   }) => React.ReactNode
-  /** Down on the focused cover; true when it moved the focus (into the panel). */
+  /** Down on the focused cover; true when it used the direction ("Em cima": always). */
   onCardDown?: (game: GameSummary) => boolean
+  /**
+   * A shortcut drawn as a cover before the first game ("Em cima"'s Configurações, D-32). It sits
+   * at index -1: the focus still starts on the first game.
+   */
+  leading?: { id: string; label: string; icon: string; onConfirm: () => void }
 }): React.JSX.Element {
   const covers = shownCovers(useHomeCovers().settings)
   const focus = useCoverFocus(games, 'square', backdropTarget)
@@ -65,6 +72,15 @@ export function CoverShelf({
     >
       {focus.backdrop}
       <div className="home-shelf__row">
+        {leading && (
+          <div
+            className="home-shelf__slot"
+            data-current={focus.index === -1}
+            style={{ '--rel': -1 - focus.index } as React.CSSProperties}
+          >
+            <ShelfShortcut {...leading} onFocus={() => focus.focusCard(-1)} />
+          </div>
+        )}
         {games.map((game, i) => (
           <div
             key={game.id}
@@ -89,9 +105,9 @@ export function CoverShelf({
           </div>
         ))}
       </div>
-      {focusedGame && (
+      {(focusedGame || (leading && focus.infoIndex === -1)) && (
         <p className="home-shelf__name" data-hidden={focus.infoHidden}>
-          {focusedGame.title}
+          {focusedGame ? focusedGame.title : leading?.label}
         </p>
       )}
       {below?.({
@@ -100,5 +116,38 @@ export function CoverShelf({
         cardId: focusedGame ? `game-card:square:${focusedGame.id}` : null
       })}
     </div>
+  )
+}
+
+/** A cover-shaped shortcut: a see-through dark square with an icon, focused like a cover. */
+function ShelfShortcut({
+  id,
+  label,
+  icon,
+  onConfirm,
+  onFocus
+}: {
+  id: string
+  label: string
+  icon: string
+  onConfirm: () => void
+  onFocus: () => void
+}): React.JSX.Element {
+  const { setElement, focused, mouse } = useFocusable<HTMLButtonElement>(id, {
+    onConfirm,
+    onFocus,
+    scroll: 'none'
+  })
+  return (
+    <button
+      ref={setElement}
+      className="game-card home-shelf__shortcut"
+      data-focused={focused}
+      aria-label={label}
+      tabIndex={-1}
+      {...mouse}
+    >
+      <img src={icon} alt="" />
+    </button>
   )
 }

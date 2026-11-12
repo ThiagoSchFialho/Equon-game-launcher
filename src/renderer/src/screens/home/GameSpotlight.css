@@ -8,7 +8,7 @@
   position: absolute;
   left: var(--edge);
   right: var(--space-12);
-  top: calc(var(--row-edge) + var(--card-width) + var(--space-16) + var(--space-8));
+  top: calc(var(--row-edge) + var(--big) + var(--space-16) + var(--space-8));
   bottom: var(--space-4);
   transition: opacity var(--info-fade) var(--motion-easing);
   --info-fade: calc(var(--motion-focus) / 2);

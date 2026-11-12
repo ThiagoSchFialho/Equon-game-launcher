@@ -2,7 +2,12 @@ import { createContext, useContext } from 'react'
 import type { HomeCoverSettings } from '../../../shared/ipc/contract'
 
 /** The columns' defaults: the Home layout before "Capas da home" existed (D-27). */
-export const DEFAULT_HOME_COVERS: HomeCoverSettings = { size: 74, gap: 35, position: 'center' }
+export const DEFAULT_HOME_COVERS: HomeCoverSettings = {
+  size: 74,
+  gap: 35,
+  position: 'center',
+  limited: false
+}
 
 /**
  * The levels as lengths (owner-approved mapping): the cover is 7rem + size × 0.25rem wide, so
@@ -21,7 +26,7 @@ export function homeCoverStyle(covers: HomeCoverSettings): Record<string, string
  * "Em cima" fixes its own size and spacing (owner decision, D-29): the panel under its shelf needs
  * the room. The stored levels stay as they are, for the other positions.
  */
-export const TOP_SHELF_LEVELS = { size: 18, gap: 4 } as const
+export const TOP_SHELF_LEVELS = { size: 13, gap: 5 } as const
 
 /** The levels the Home screen uses: the stored ones, or the fixed ones of "Em cima". */
 export function shownCovers(covers: HomeCoverSettings): HomeCoverSettings {

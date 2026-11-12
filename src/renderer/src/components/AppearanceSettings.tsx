@@ -127,6 +127,13 @@ export function AppearanceSettings({
 
       <h2 className="settings__group">{t.settings.appearance.covers}</h2>
       <div className="settings__system">
+        <Checkbox
+          id="settings:home-limit-games"
+          label={t.settings.appearance.limitGames}
+          description={t.settings.appearance.limitGamesHint}
+          checked={covers.limited}
+          onChange={(limited) => saveCovers({ limited })}
+        />
         <LevelRow
           id="settings:home-cover-size"
           label={t.settings.appearance.coverSize}

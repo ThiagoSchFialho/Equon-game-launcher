@@ -54,7 +54,8 @@ const openTopHome = async (
 ): Promise<void> => {
   installFakeApi([game], {
     settings: {
-      get: async () => settingsInfo({ homeCovers: { size: 74, gap: 35, position: 'top' } })
+      get: async () =>
+        settingsInfo({ homeCovers: { size: 74, gap: 35, position: 'top', limited: false } })
     },
     achievements: { game: async () => data, ...overrides }
   })
@@ -133,21 +134,40 @@ describe('"Em cima" panel (D-29)', () => {
     }
   })
 
-  it('fixes the size and spacing of "Em cima" at 18 and 4, whatever is stored', async () => {
+  it('fixes the size and spacing of "Em cima" at 13 and 5, whatever is stored', async () => {
     await openTopHome(achievements())
     const shelf = document.querySelector<HTMLElement>('.home-shelf')
-    expect(shelf?.style.getPropertyValue('--card-width')).toBe('11.5rem')
-    expect(shelf?.style.getPropertyValue('--card-gap')).toBe('0.4rem')
+    expect(shelf?.style.getPropertyValue('--card-width')).toBe('10.25rem')
+    expect(shelf?.style.getPropertyValue('--card-gap')).toBe('0.5rem')
+  })
+
+  it('has a Settings shortcut before the first game; the focus starts on the game (D-32)', async () => {
+    await openTopHome(achievements())
+    const slots = Array.from(document.querySelectorAll('.home-shelf__slot'))
+    const first = slots[0].querySelector('.home-shelf__shortcut')
+    expect(first?.getAttribute('aria-label')).toBe('Configurações')
+    // The first game is the second item, and the focus starts there.
+    expect(slots[1].querySelector('.game-card')?.getAttribute('aria-label')).toBe('Tidebound')
+    expect(focused()).toBe('Tidebound')
+    expect(
+      (first?.closest('.home-shelf__slot') as HTMLElement).style.getPropertyValue('--rel')
+    ).toBe('-1')
+
+    // A (here a click) opens Settings.
+    act(() => (first as HTMLElement).click())
+    expect(await screen.findByRole('heading', { name: 'Conexões' })).toBeTruthy()
   })
 
   it('stays off the other positions', async () => {
     installFakeApi([summary(1, 'Tidebound')], {
       settings: {
-        get: async () => settingsInfo({ homeCovers: { size: 30, gap: 5, position: 'bottom' } })
+        get: async () =>
+          settingsInfo({ homeCovers: { size: 30, gap: 5, position: 'bottom', limited: false } })
       }
     })
     render(<App />)
     await waitFor(() => expect(document.querySelector('.home-shelf')).toBeTruthy())
     expect(document.querySelector('.home-spotlight')).toBeNull()
+    expect(document.querySelector('.home-shelf__shortcut')).toBeNull()
   })
 })

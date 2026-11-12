@@ -50,7 +50,8 @@ apenas um banner.
 Regiões possíveis: - Navegação principal. - Continuar jogando. - Lista
 de jogos recentes. - Atalho claro para a biblioteca completa.
 
-Mostra todos os jogos instalados e não ocultos (sem limite), pela última sessão (mais
+Mostra todos os jogos instalados e não ocultos (sem limite, salvo com "Limitar quantidade de
+jogos na home", D-31: só os 12 mais recentes), pela última sessão (mais
 recente primeiro). A regra é fixa; o usuário não altera a ordem nem os
 filtros do Início.
 
@@ -179,10 +180,11 @@ depois que o foco para por 150 ms.
     Depois do nome de "Desfoque", "Escurecimento", "Tamanho" e
     "Espaçamento" aparece, em cinza, "(padrão x)": o valor recomendado
     para a posição escolhida (decisão do dono do projeto). Centro: 6, 80%,
-    72 e 35. Embaixo: 0, 10%, 30 e 5. Em cima: 0 e 10% (Tamanho 18 e Espaçamento 4 são fixos). É só uma referência: nada muda
+    72 e 35. Embaixo: 0, 10%, 30 e 5. Em cima: 0 e 10% (Tamanho 13 e Espaçamento 5 são fixos). É só uma referência: nada muda
     sozinho ao trocar a posição.
--   Aparência › "Capas da home" (D-27): título e, embaixo, um painel com
-    "Tamanho" e "Espaçamento" (níveis de 1 a 100) e "Posição", com
+-   Aparência › "Capas da home" (D-27): título e, embaixo, um painel com o
+    checkbox "Limitar quantidade de jogos na home" (D-31; só os 12 jogados
+    mais recentemente, desmarcado por padrão), "Tamanho" e "Espaçamento" (níveis de 1 a 100) e "Posição", com
     "Em cima", "Centro" e "Embaixo" lado a lado; a escolhida fica em
     `--color-accent`. Esquerda e direita escolhem (no fim, movem o foco),
     A passa para a próxima e o mouse clica. Só a capa muda de tamanho; o
@@ -205,7 +207,12 @@ depois que o foco para por 150 ms.
     delas e sem o degradê de cima (decisão do dono do projeto),
     mas com uma vinheta, do topo da tela por trás da barra superior, que escurece as bordas em volta de uma área
     clara à direita, onde costuma ficar o personagem da arte (como no
-    PS5); mesmos comportamentos do "Embaixo". Só no "Em cima" (D-29),
+    PS5); mesmos comportamentos do "Embaixo". No "Em cima", a capa em foco é 15% maior (as
+    pequenas não mudam) e o nome fica em 28 px com peso normal (decisões
+    do dono do projeto). A fileira começa com um
+    atalho para as Configurações (D-32), desenhado como uma capa: um
+    quadrado escuro meio transparente com a engrenagem no meio; o foco
+    continua começando no primeiro jogo. Só no "Em cima" (D-29),
     abaixo da prateleira e alinhado com a capa em foco, um painel do jogo
     em foco: o logo, inteiro e centralizado sempre no mesmo ponto, com
     sombra (sem o brilho escuro por trás, decisão do dono do projeto)
@@ -222,7 +229,7 @@ depois que o foco para por 150 ms.
     raridade e data). Sem nenhuma conquista obtida, o bloco de conquistas
     inteiro some (decisão do dono do projeto); ficam o logo e o tempo de
     jogo. O painel troca junto com o nome. No "Em cima",
-    Tamanho e Espaçamento ficam fixos em 18 e 4 e aparecem indisponíveis
+    Tamanho e Espaçamento ficam fixos em 13 e 5 e aparecem indisponíveis
     em Aparência, com "(fixo no Em cima)". Nas duas posições o nome aparece inteiro, numa linha, mesmo
     passando da largura da capa. O tamanho 100 é o maior que ainda fica bom. Os padrões são
     o tamanho e o espaço de antes.
@@ -339,7 +346,8 @@ partir de `design/fonts/montserrat` (com `OFL.txt`). Alternativa segura:
 Escala inicial para 1920×1080: - Título de destaque: 36--48 px. - Título
 de tela: 28--36 px. - Nome na prateleira da Home ("Capas da home" ›
 Embaixo, D-27): 24 px (`--font-size-shelf-title`, decisão do dono do
-projeto). - Título de card: 18--22 px. - Corpo: 16--18 px. -
+projeto); no "Em cima", 28 px (`--font-size-shelf-title-large`) e peso
+normal. - Título de card: 18--22 px. - Corpo: 16--18 px. -
 Metadados: 13--15 px. - Texto auxiliar nunca deve ser tão pequeno que
 fique ilegível à distância.
 

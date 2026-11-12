@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import type { GameSummary } from '../../../shared/ipc/contract'
+import { HOME_GAMES_LIMIT, type GameSummary } from '../../../shared/ipc/contract'
 import { useNavigation } from '../app/navigation'
 import { Footer, type Hint } from '../components/Footer'
 import { GameOptionsLayer } from '../components/GameOptionsLayer'
@@ -35,7 +35,8 @@ export function HomeScreen(): React.JSX.Element {
   const [homeElement, setHomeElement] = useState<HTMLDivElement | null>(null)
   // "Capas da home" › Posição (D-27): "Centro" is its own layout; "Em cima" and "Embaixo" are
   // the same shelf, mirrored, and "Em cima" adds a panel under it (D-29).
-  const position = useHomeCovers().settings.position
+  const covers = useHomeCovers().settings
+  const position = covers.position
   const { directLaunch } = useHomeLaunch()
   // One launch at a time: a second A while the first is on its way does nothing.
   const launching = useRef(false)
@@ -66,6 +67,11 @@ export function HomeScreen(): React.JSX.Element {
     nextSection: () => navigation.stepSection(1)
   })
 
+  // "Limitar quantidade de jogos na home" (D-31): the most recently played first, so the limit
+  // keeps the latest ones.
+  const all = games.status === 'ready' ? homeGames(games.data) : []
+  const shown = covers.limited ? all.slice(0, HOME_GAMES_LIMIT) : all
+
   let content: React.JSX.Element
   if (games.status === 'loading') {
     content = <StateMessage message={t.library.loading} />
@@ -77,7 +83,7 @@ export function HomeScreen(): React.JSX.Element {
         action={{ id: 'home:retry', label: t.library.retry, onConfirm: reload }}
       />
     )
-  } else if (homeGames(games.data).length === 0) {
+  } else if (shown.length === 0) {
     content = (
       <StateMessage
         message={t.home.empty}
@@ -93,7 +99,7 @@ export function HomeScreen(): React.JSX.Element {
     content =
       position === 'center' ? (
         <CenteredCovers
-          games={homeGames(games.data)}
+          games={shown}
           onOpen={open}
           opensToPlay={directLaunch}
           onMenu={setMenuGame}
@@ -102,7 +108,7 @@ export function HomeScreen(): React.JSX.Element {
       ) : position === 'top' ? (
         // "Em cima" adds the focused game's panel under the shelf (D-29).
         <TopHome
-          games={homeGames(games.data)}
+          games={shown}
           onOpen={open}
           opensToPlay={directLaunch}
           onMenu={setMenuGame}
@@ -111,7 +117,7 @@ export function HomeScreen(): React.JSX.Element {
       ) : (
         <CoverShelf
           side={position}
-          games={homeGames(games.data)}
+          games={shown}
           onOpen={open}
           opensToPlay={directLaunch}
           onMenu={setMenuGame}

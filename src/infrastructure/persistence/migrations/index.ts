@@ -20,6 +20,7 @@ import homeCovers from './0019_home_covers.sql?raw'
 import homeCoversTop from './0020_home_covers_top.sql?raw'
 import homeDirectLaunch from './0021_home_direct_launch.sql?raw'
 import artworkHome from './0022_artwork_home.sql?raw'
+import homeLimitGames from './0023_home_limit_games.sql?raw'
 
 export interface Migration {
   version: number
@@ -50,5 +51,6 @@ export const migrations: readonly Migration[] = [
   { version: 19, name: '0019_home_covers', sql: homeCovers },
   { version: 20, name: '0020_home_covers_top', sql: homeCoversTop },
   { version: 21, name: '0021_home_direct_launch', sql: homeDirectLaunch },
-  { version: 22, name: '0022_artwork_home', sql: artworkHome }
+  { version: 22, name: '0022_artwork_home', sql: artworkHome },
+  { version: 23, name: '0023_home_limit_games', sql: homeLimitGames }
 ]

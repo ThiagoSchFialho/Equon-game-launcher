@@ -318,6 +318,8 @@ export interface HomeCoverPreference {
   size: number
   gap: number
   position: 'top' | 'center' | 'bottom'
+  /** "Limitar quantidade de jogos na home" (D-31): at most 12 games on Home. */
+  limited: boolean
 }
 
 export interface UserRepository {
