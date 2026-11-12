@@ -23,7 +23,7 @@
   opacity: 0;
 }
 
-/* The logo: whole, never stretched, with a soft dark glow behind it (owner decision). */
+/* The logo: whole, never stretched, with only its own drop shadow (owner decision). */
 .home-spotlight__logo {
   position: relative;
   /* Lower than the top of the panel, and 124px left of the cover's edge (owner decisions). */
@@ -32,22 +32,6 @@
   width: 33rem;
   height: 12rem;
   pointer-events: none;
-}
-
-/* Wider than the logo's box and fading out at the edges; eased stops, so no rings. */
-.home-spotlight__logo::before {
-  content: '';
-  position: absolute;
-  inset: calc(var(--space-16) * -1) calc(var(--space-16) * -2) calc(var(--space-16) * -1)
-    calc(var(--space-16) * -1.5);
-  background: radial-gradient(
-    ellipse closest-side at 50% 50%,
-    color-mix(in srgb, var(--color-background) 70%, transparent) 0%,
-    color-mix(in srgb, var(--color-background) 55%, transparent) 35%,
-    color-mix(in srgb, var(--color-background) 30%, transparent) 65%,
-    color-mix(in srgb, var(--color-background) 10%, transparent) 85%,
-    transparent 100%
-  );
 }
 
 .home-spotlight__logo img {

@@ -179,7 +179,7 @@ depois que o foco para por 150 ms.
     Depois do nome de "Desfoque", "Escurecimento", "Tamanho" e
     "Espaçamento" aparece, em cinza, "(padrão x)": o valor recomendado
     para a posição escolhida (decisão do dono do projeto). Centro: 6, 80%,
-    72 e 35. Embaixo: 0, 10%, 30 e 5. Em cima: 1, 40% (Tamanho 18 e Espaçamento 4 são fixos). É só uma referência: nada muda
+    72 e 35. Embaixo: 0, 10%, 30 e 5. Em cima: 0 e 10% (Tamanho 18 e Espaçamento 4 são fixos). É só uma referência: nada muda
     sozinho ao trocar a posição.
 -   Aparência › "Capas da home" (D-27): título e, embaixo, um painel com
     "Tamanho" e "Espaçamento" (níveis de 1 a 100) e "Posição", com
@@ -208,7 +208,7 @@ depois que o foco para por 150 ms.
     PS5); mesmos comportamentos do "Embaixo". Só no "Em cima" (D-29),
     abaixo da prateleira e alinhado com a capa em foco, um painel do jogo
     em foco: o logo, inteiro e centralizado sempre no mesmo ponto, com
-    sombra e um brilho escuro suave por trás
+    sombra (sem o brilho escuro por trás, decisão do dono do projeto)
     (jogo sem logo não mostra nada) no alto; no canto inferior esquerdo,
     perto do rodapé, "Últimas conquistas" com o progresso ("34 de 52
     conquistas · 65%") na mesma linha e, embaixo, as 4 mais recentes (ícone

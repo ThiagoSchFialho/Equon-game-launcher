@@ -345,8 +345,8 @@ describe('Home covers (D-27)', () => {
     expect(setHomeCovers).toHaveBeenLastCalledWith({ position: 'top' })
     // "Em cima" has its own recommended values, and fixes its size and spacing (D-29).
     expect(hints()).toEqual([
-      '(padrão 1)',
-      '(padrão 40%)',
+      '(padrão 0)',
+      '(padrão 10%)',
       '(fixo no Em cima)',
       '(fixo no Em cima)'
     ])

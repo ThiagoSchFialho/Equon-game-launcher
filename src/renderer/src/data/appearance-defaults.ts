@@ -11,7 +11,7 @@ export const RECOMMENDED_APPEARANCE: Record<
 > = {
   // "Em cima" has its own values since it shows the logo over the art (owner decision); its size
   // and spacing are fixed at these (TOP_SHELF_LEVELS, D-29).
-  top: { blur: 1, dim: 40, size: 18, gap: 4 },
+  top: { blur: 0, dim: 10, size: 18, gap: 4 },
   center: { blur: 6, dim: 80, size: 72, gap: 35 },
   bottom: { blur: 0, dim: 10, size: 30, gap: 5 }
 }
