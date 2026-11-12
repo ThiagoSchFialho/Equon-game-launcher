@@ -254,10 +254,11 @@ describe('Home covers (D-27)', () => {
     expect(slots().map((slot) => slot.rel)).toEqual(['0', '1'])
     expect(shelf().querySelector('.game-card--square')).toBeTruthy()
     expect(document.querySelector('.home-shelf__name')).toBeTruthy()
-    expect(screen.queryByText('12h 22m')).toBeNull()
-    // Only "Em cima" shows the focused game's logo, under the shelf (owner decision).
+    // Only "Em cima" has the focused game's panel under the shelf (D-29): the logo and the
+    // play stats are there, not next to the name.
+    expect(screen.getByText('12h 22m').closest('.home-spotlight')).toBeTruthy()
     const focusedId = slots()[0].title === 'Alpha' ? 1 : 2
-    expect(document.querySelector('.home-shelf__logo img')?.getAttribute('src')).toBe(
+    expect(document.querySelector('.home-spotlight__logo img')?.getAttribute('src')).toBe(
       `equon-art://game/${focusedId}/logo?v=v1`
     )
     cleanup()
@@ -270,7 +271,7 @@ describe('Home covers (D-27)', () => {
     })
     render(<App />)
     await waitFor(() => expect(shelf().dataset.side).toBe('bottom'))
-    expect(document.querySelector('.home-shelf__logo')).toBeNull()
+    expect(document.querySelector('.home-spotlight')).toBeNull()
   })
 
   it('sets them in Aparência, saved at once and followed by the Home screen', async () => {
@@ -330,8 +331,19 @@ describe('Home covers (D-27)', () => {
     press('ArrowLeft')
     press('ArrowLeft')
     expect(setHomeCovers).toHaveBeenLastCalledWith({ position: 'top' })
-    // "Em cima" has its own recommended values (owner decision).
-    expect(hints()).toEqual(['(padrão 1)', '(padrão 40%)', '(padrão 18)', '(padrão 4)'])
+    // "Em cima" has its own recommended values, and fixes its size and spacing (D-29).
+    expect(hints()).toEqual([
+      '(padrão 1)',
+      '(padrão 40%)',
+      '(fixo no Em cima)',
+      '(fixo no Em cima)'
+    ])
+    const fixedSize = screen.getByRole('slider', { name: 'Tamanho' })
+    expect(fixedSize.getAttribute('aria-disabled')).toBe('true')
+    expect(fixedSize.getAttribute('aria-valuenow')).toBe('18')
+    expect(screen.getByRole('slider', { name: 'Espaçamento' }).getAttribute('aria-valuenow')).toBe(
+      '4'
+    )
     // The mouse picks an option directly, without moving on to the next one.
     act(() => screen.getByRole('radio', { name: 'Embaixo' }).click())
     expect(setHomeCovers).toHaveBeenLastCalledWith({ position: 'bottom' })

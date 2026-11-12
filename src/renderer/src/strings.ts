@@ -64,7 +64,15 @@ export const t = {
   home: {
     empty: 'Nenhum jogo instalado para mostrar.',
     emptyHint: 'Jogos instalados e não ocultos aparecem aqui, começando pelo último jogado.',
-    openLibrary: 'Abrir biblioteca'
+    openLibrary: 'Abrir biblioteca',
+    /** "Em cima"'s panel under the shelf (D-29). */
+    spotlight: {
+      progress: (unlocked: number, total: number, percent: string) =>
+        `${unlocked} de ${total} conquistas · ${percent}`,
+      recent: 'Últimas conquistas',
+      all: 'Ver todas',
+      allHint: 'Abre as conquistas deste jogo.'
+    }
   },
   game: {
     play: 'Jogar',
@@ -457,7 +465,9 @@ export const t = {
       coverPosition: 'Posição',
       coverPositions: { top: 'Em cima', center: 'Centro', bottom: 'Embaixo' },
       /** After each level: the value recommended for the chosen position (owner decision). */
-      recommended: (value: string) => `(padrão ${value})`
+      recommended: (value: string) => `(padrão ${value})`,
+      /** "Em cima" fixes its size and spacing (D-29). */
+      fixedForTop: '(fixo no Em cima)'
     },
     system: {
       startFullscreen: 'Iniciar em tela cheia',

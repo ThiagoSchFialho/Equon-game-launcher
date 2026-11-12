@@ -1,9 +1,10 @@
-import { artworkUrl, type GameSummary } from '../../../../shared/ipc/contract'
+import type { GameSummary } from '../../../../shared/ipc/contract'
 import { GameCard } from '../../components/GameCard'
 import {
   coverWidthRem,
   homeCoverStyle,
   shelfSmallScale,
+  shownCovers,
   useHomeCovers
 } from '../../data/home-covers'
 import { useCoverFocus } from './useCoverFocus'
@@ -11,8 +12,8 @@ import './CoverShelf.css'
 
 /**
  * "Capas da home" › Embaixo and Em cima (D-27): a shelf close to the footer, or mirrored close
- * to the top bar, after the PS5 home (owner decisions); described here for "Embaixo". The focused square cover is the large one and stays where the first cover is; the
- * others are smaller by the name's height plus 10px, level with its bottom, and the name sits
+ * to the top bar, after the PS5 home (owner decisions); described here for "Embaixo". The
+ * focused square cover is the large one and stays where the first cover is; the others are smaller by the name's height plus 10px, level with its bottom, and the name sits
  * next to it, above them. Each cover is placed and sized with a transform from its distance to
  * the focus, so changing the focus only animates transforms (CoverShelf.css).
  */
@@ -22,7 +23,9 @@ export function CoverShelf({
   onOpen,
   opensToPlay,
   onMenu,
-  backdropTarget
+  backdropTarget,
+  below,
+  onCardDown
 }: {
   /** "Embaixo" by the footer, or "Em cima" by the top bar: the same shelf, mirrored. */
   side: 'top' | 'bottom'
@@ -34,8 +37,19 @@ export function CoverShelf({
   onMenu: (game: GameSummary) => void
   /** Where the background art goes: the whole Home screen, not just this shelf. */
   backdropTarget: HTMLElement | null
+  /**
+   * Drawn inside the shelf, after the covers ("Em cima"'s panel, D-29): the focused game, hidden
+   * while the name fades, and the focus id of its cover, to come back to.
+   */
+  below?: (shelf: {
+    game: GameSummary | undefined
+    hidden: boolean
+    cardId: string | null
+  }) => React.ReactNode
+  /** Down on the focused cover; true when it moved the focus (into the panel). */
+  onCardDown?: (game: GameSummary) => boolean
 }): React.JSX.Element {
-  const covers = useHomeCovers().settings
+  const covers = shownCovers(useHomeCovers().settings)
   const focus = useCoverFocus(games, 'square', backdropTarget)
   const focusedGame = games[focus.infoIndex]
   return (
@@ -68,6 +82,9 @@ export function CoverShelf({
               confirmSound={opensToPlay ? 'play' : undefined}
               onConfirm={() => onOpen(game)}
               onMenu={() => onMenu(game)}
+              onDirection={
+                onCardDown ? (direction) => direction === 'down' && onCardDown(game) : undefined
+              }
             />
           </div>
         ))}
@@ -77,17 +94,11 @@ export function CoverShelf({
           {focusedGame.title}
         </p>
       )}
-      {/* "Em cima": the focused game's logo under the shelf (owner decision), with the name. */}
-      {side === 'top' && focusedGame?.artwork.includes('logo') && (
-        <div key={focusedGame.id} className="home-shelf__logo" data-hidden={focus.infoHidden}>
-          <img
-            src={artworkUrl(focusedGame.id, 'logo', focusedGame.artworkVersion)}
-            alt=""
-            // A file that fails to load shows nothing rather than a broken image.
-            onError={(event) => (event.currentTarget.style.visibility = 'hidden')}
-          />
-        </div>
-      )}
+      {below?.({
+        game: focusedGame,
+        hidden: focus.infoHidden,
+        cardId: focusedGame ? `game-card:square:${focusedGame.id}` : null
+      })}
     </div>
   )
 }

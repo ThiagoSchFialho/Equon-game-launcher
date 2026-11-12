@@ -179,6 +179,10 @@ limitações, condições de teste e método de inicialização suportado.
     A numa capa do Início inicia o jogo em vez de abrir a página dele; se
     o jogo não abrir, a página abre e explica o motivo. O menu de opções
     da capa oferece "Ver página do jogo". A Biblioteca não muda.
+-   Na posição "Em cima" das capas (D-29), um painel abaixo delas mostra
+    o jogo em foco: logo, tempo de jogo, progresso de conquistas e as 4
+    últimas conquistas obtidas, navegáveis com o
+    controle; A abre a página de conquistas do jogo.
 -   Marcar como zerado e ocultar/mostrar ficam no menu de opções do
     jogo, para qualquer origem.
 -   Arquitetura preparada para filtros adicionais sem reconstruir a

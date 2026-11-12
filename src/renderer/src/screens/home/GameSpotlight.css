@@ -1,0 +1,207 @@
+/*
+ * "Em cima"'s panel (D-29), drawn inside the shelf so it can use the shelf's sizes: the whole
+ * space between the covers and the footer, from the focused cover's left edge (owner's sketch):
+ * the logo at the top, the latest achievements at the bottom left, the playtime at the bottom
+ * right. It fades out and in with the name when the focused game changes.
+ */
+.home-spotlight {
+  position: absolute;
+  left: var(--edge);
+  right: var(--space-12);
+  top: calc(var(--row-edge) + var(--card-width) + var(--space-16) + var(--space-8));
+  bottom: var(--space-4);
+  transition: opacity var(--info-fade) var(--motion-easing);
+  --info-fade: calc(var(--motion-focus) / 2);
+  /* Readable over any background art, like the name's shadow. */
+  text-shadow:
+    0 0 0.125rem rgb(0 0 0 / 0.9),
+    0 0 0.375rem rgb(0 0 0 / 0.8),
+    0 0.125rem 1rem rgb(0 0 0 / 0.7);
+}
+
+.home-spotlight[data-hidden='true'] {
+  opacity: 0;
+}
+
+/* The logo: whole, never stretched, with a soft dark glow behind it (owner decision). */
+.home-spotlight__logo {
+  position: relative;
+  /* Lower than the top of the panel, and 124px left of the cover's edge (owner decisions). */
+  margin-top: var(--space-16);
+  margin-left: calc((var(--space-6) + var(--space-5) + 5rem) * -1);
+  width: 33rem;
+  height: 12rem;
+  pointer-events: none;
+}
+
+/* Wider than the logo's box and fading out at the edges; eased stops, so no rings. */
+.home-spotlight__logo::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--space-16) * -1) calc(var(--space-16) * -2) calc(var(--space-16) * -1)
+    calc(var(--space-16) * -1.5);
+  background: radial-gradient(
+    ellipse closest-side at 50% 50%,
+    color-mix(in srgb, var(--color-background) 70%, transparent) 0%,
+    color-mix(in srgb, var(--color-background) 55%, transparent) 35%,
+    color-mix(in srgb, var(--color-background) 30%, transparent) 65%,
+    color-mix(in srgb, var(--color-background) 10%, transparent) 85%,
+    transparent 100%
+  );
+}
+
+.home-spotlight__logo img {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  /* Every logo centred on the same point, wide or narrow (owner decision). */
+  object-position: center;
+  /* Set, never animated. */
+  filter: drop-shadow(0 0.125rem 0.75rem rgb(0 0 0 / 0.7));
+}
+
+/* Bottom left: the focused achievement's description, the heading and the row. */
+.home-spotlight__achievements {
+  position: absolute;
+  /*
+   * As far from the screen's left edge as the playtime is from its right one (owner decision):
+   * the panel starts at --edge and ends --space-12 before the right edge.
+   */
+  left: calc(var(--space-12) - var(--edge));
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.home-spotlight__heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.home-spotlight__progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-medium);
+}
+
+.home-spotlight__progress img {
+  height: 1.375rem;
+  width: auto;
+}
+
+/* Bottom right: only the playtime, on a dark see-through chip (owner decision). */
+.home-spotlight__playtime {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-button);
+  background: color-mix(in srgb, var(--color-background) 65%, transparent);
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+}
+
+.home-spotlight__playtime img {
+  height: 1.375rem;
+  width: auto;
+}
+
+.home-spotlight__title {
+  margin: 0;
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+}
+
+.home-spotlight__note {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body);
+}
+
+.home-spotlight__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* One achievement: its icon and name, on a surface that stands out from the art. */
+.home-spotlight__tile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 16rem;
+  height: 5rem;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+  text-align: left;
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-gap);
+  transition: outline-color var(--motion-focus) var(--motion-easing);
+}
+
+.home-spotlight__tile[data-focused='true'] {
+  outline-color: var(--color-focus);
+}
+
+/* "Ver todas": as wide as its content, with more room on the sides (owner decision). */
+.home-spotlight__tile--all {
+  width: auto;
+  padding-inline: var(--space-6);
+}
+
+.home-spotlight__icon {
+  flex: 0 0 auto;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: var(--space-1);
+}
+
+.home-spotlight__icon--empty {
+  background: var(--color-surface-raised);
+}
+
+.home-spotlight__tile--all .home-spotlight__icon {
+  width: 2rem;
+  height: 2rem;
+}
+
+.home-spotlight__tile-name {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  font-size: var(--font-size-body);
+  line-height: 1.25;
+}
+
+/* The focused achievement, described under the row. */
+.home-spotlight__detail {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 2rem;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body);
+}
+
+.home-spotlight__detail img {
+  height: 1.5rem;
+  width: auto;
+}
+
+.home-spotlight__detail-name {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}

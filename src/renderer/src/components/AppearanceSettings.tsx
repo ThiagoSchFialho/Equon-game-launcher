@@ -12,7 +12,7 @@ import {
 } from '../../../shared/ipc/contract'
 import { RECOMMENDED_APPEARANCE } from '../data/appearance-defaults'
 import { useHomeArt } from '../data/home-art'
-import { useHomeCovers } from '../data/home-covers'
+import { shownCovers, useHomeCovers } from '../data/home-covers'
 import { errorMessage, t } from '../strings'
 import { Checkbox } from './Checkbox'
 import { LevelRow } from './LevelRow'
@@ -39,6 +39,11 @@ export function AppearanceSettings({
   // The recommended values follow the chosen position: each layout looks best with its own.
   const recommended = RECOMMENDED_APPEARANCE[covers.position]
   const hint = t.settings.appearance.recommended
+  // "Em cima" fixes its size and spacing (D-29): shown, unavailable; the stored ones stay.
+  const fixed = covers.position === 'top'
+  const shown = shownCovers(covers)
+  const levelHint = (value: number): string =>
+    fixed ? t.settings.appearance.fixedForTop : hint(String(value))
 
   // Shown at once, so a held direction steps from the value on screen; undone if not saved.
   const save = (changes: Partial<HomeArtSettings>): void => {
@@ -125,21 +130,23 @@ export function AppearanceSettings({
         <LevelRow
           id="settings:home-cover-size"
           label={t.settings.appearance.coverSize}
-          hint={hint(String(recommended.size))}
-          valueText={String(covers.size)}
-          value={covers.size}
+          hint={levelHint(recommended.size)}
+          valueText={String(shown.size)}
+          value={shown.size}
           min={HOME_COVER_MIN}
           max={HOME_COVER_MAX}
+          unavailable={fixed}
           onChange={(size) => saveCovers({ size })}
         />
         <LevelRow
           id="settings:home-cover-gap"
           label={t.settings.appearance.coverGap}
-          hint={hint(String(recommended.gap))}
-          valueText={String(covers.gap)}
-          value={covers.gap}
+          hint={levelHint(recommended.gap)}
+          valueText={String(shown.gap)}
+          value={shown.gap}
           min={HOME_COVER_MIN}
           max={HOME_COVER_MAX}
+          unavailable={fixed}
           onChange={(gap) => saveCovers({ gap })}
         />
         <OptionRow

@@ -120,18 +120,23 @@
 
 /* "Em cima": the mirror of everything above that depends on the side. */
 .home-shelf[data-side='top']::before {
-  /* Up to the top of the screen, behind the top bar (owner decision). */
+  /*
+   * The whole screen behind the covers, from the top of the screen (behind the top bar) down to
+   * the footer: a vignette that darkens the edges around a clear area on the right, where the
+   * art's subject usually is, so the logo and the panel on the left stand out (owner decision,
+   * after the PS5 home). "Em cima" has no shade from the top (owner decision).
+   */
   top: calc(var(--top-bar-height) * -1);
-  bottom: auto;
-  height: calc(var(--top-bar-height) + var(--row-edge) + var(--card-width) + var(--space-16) * 3);
-  background: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--color-background) 85%, transparent) 0%,
-    color-mix(in srgb, var(--color-background) 75%, transparent) 25%,
-    color-mix(in srgb, var(--color-background) 55%, transparent) 50%,
-    color-mix(in srgb, var(--color-background) 30%, transparent) 70%,
-    color-mix(in srgb, var(--color-background) 10%, transparent) 88%,
-    transparent 100%
+  bottom: 0;
+  height: auto;
+  background: radial-gradient(
+    ellipse 45% 62% at 66% 44%,
+    transparent 0%,
+    transparent 55%,
+    color-mix(in srgb, var(--color-background) 12%, transparent) 68%,
+    color-mix(in srgb, var(--color-background) 30%, transparent) 80%,
+    color-mix(in srgb, var(--color-background) 50%, transparent) 92%,
+    color-mix(in srgb, var(--color-background) 65%, transparent) 100%
   );
 }
 
@@ -146,53 +151,4 @@
 .home-shelf[data-side='top'] .home-shelf__name {
   top: calc(var(--row-edge) + var(--small) + 0.625rem);
   bottom: auto;
-}
-
-/*
- * "Em cima" only: the focused game's logo in the free space under the shelf, left-aligned with
- * the focused cover (owner's sketch). It fits a box of its own, whole and never stretched, and
- * fades out and in with the name when the focus changes.
- */
-.home-shelf__logo {
-  position: absolute;
-  left: var(--edge);
-  top: calc(var(--row-edge) + var(--card-width) + var(--space-16) * 2 + var(--space-10));
-  width: 33rem;
-  height: 12rem;
-  pointer-events: none;
-  transition: opacity var(--info-fade) var(--motion-easing);
-  --info-fade: calc(var(--motion-focus) / 2);
-}
-
-/*
- * A soft dark glow behind the logo (owner decision), wider than its box and fading out at the
- * edges, so the logo stands out from the art. Eased stops, so it does not show as rings.
- */
-.home-shelf__logo::before {
-  content: '';
-  position: absolute;
-  inset: calc(var(--space-16) * -1) calc(var(--space-16) * -2) calc(var(--space-16) * -1)
-    calc(var(--space-16) * -1.5);
-  background: radial-gradient(
-    ellipse closest-side at 40% 50%,
-    color-mix(in srgb, var(--color-background) 70%, transparent) 0%,
-    color-mix(in srgb, var(--color-background) 55%, transparent) 35%,
-    color-mix(in srgb, var(--color-background) 30%, transparent) 65%,
-    color-mix(in srgb, var(--color-background) 10%, transparent) 85%,
-    transparent 100%
-  );
-}
-
-.home-shelf__logo img {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: left center;
-  /* Readable over any art, like the name's shadow. Set, never animated. */
-  filter: drop-shadow(0 0.125rem 0.75rem rgb(0 0 0 / 0.7));
-}
-
-.home-shelf__logo[data-hidden='true'] {
-  opacity: 0;
 }

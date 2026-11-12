@@ -421,7 +421,7 @@ Endpoints usados:
 - Definições: `ISteamUserStats/GetSchemaForGame/v2` (precisa da chave; `l=brazilian`). Jogo sem conquistas responde sem `availableGameStats.achievements`.
 - Estado pessoal: `ISteamUserStats/GetPlayerAchievements/v1` (precisa da chave e do SteamID64). Perfil privado responde com erro "Profile is not public".
 - Percentuais globais: `ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2` (sem chave; o percentual vem como texto, `"89.8"`).
-- Ícones: `icon` guarda a URL remota (`steamcdn-a.akamaihd.net`). O arquivo é baixado só quando o usuário abre as conquistas daquele jogo e fica em `<jogo>/achievements/<id>` no cache de artes. Conquistas bloqueadas usam o ícone próprio da Steam para esse estado (`icon_locked`, vindo de `icongray`), em `<jogo>/achievements/<id>-locked`; só a arte do estado atual é baixada.
+- Ícones: `icon` guarda a URL remota (`steamcdn-a.akamaihd.net`). O arquivo é baixado só quando o usuário abre as conquistas daquele jogo, ou desce até o painel dele no Início em "Em cima" (D-29, decisão do dono do projeto) e fica em `<jogo>/achievements/<id>` no cache de artes. Conquistas bloqueadas usam o ícone próprio da Steam para esse estado (`icon_locked`, vindo de `icongray`), em `<jogo>/achievements/<id>-locked`; só a arte do estado atual é baixada.
 
 Formatos validados em 2026-11-04 com uma conta real.
 

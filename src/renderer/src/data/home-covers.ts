@@ -17,6 +17,17 @@ export function homeCoverStyle(covers: HomeCoverSettings): Record<string, string
   }
 }
 
+/**
+ * "Em cima" fixes its own size and spacing (owner decision, D-29): the panel under its shelf needs
+ * the room. The stored levels stay as they are, for the other positions.
+ */
+export const TOP_SHELF_LEVELS = { size: 18, gap: 4 } as const
+
+/** The levels the Home screen uses: the stored ones, or the fixed ones of "Em cima". */
+export function shownCovers(covers: HomeCoverSettings): HomeCoverSettings {
+  return covers.position === 'top' ? { ...covers, ...TOP_SHELF_LEVELS } : covers
+}
+
 /** The cover width in rem for the "Tamanho" level. */
 export function coverWidthRem(covers: HomeCoverSettings): number {
   return 7 + covers.size * 0.25

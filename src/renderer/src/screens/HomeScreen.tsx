@@ -14,6 +14,7 @@ import { homeGames } from '../../../shared/library-view'
 import { t } from '../strings'
 import { CenteredCovers } from './home/CenteredCovers'
 import { CoverShelf } from './home/CoverShelf'
+import { TopHome } from './home/TopHome'
 import { HOME_SCOPE } from './home/useCoverFocus'
 import './HomeScreen.css'
 
@@ -33,7 +34,7 @@ export function HomeScreen(): React.JSX.Element {
   const [menuGame, setMenuGame] = useState<GameSummary | null>(null)
   const [homeElement, setHomeElement] = useState<HTMLDivElement | null>(null)
   // "Capas da home" › Posição (D-27): "Centro" is its own layout; "Em cima" and "Embaixo" are
-  // the same shelf, mirrored.
+  // the same shelf, mirrored, and "Em cima" adds a panel under it (D-29).
   const position = useHomeCovers().settings.position
   const { directLaunch } = useHomeLaunch()
   // One launch at a time: a second A while the first is on its way does nothing.
@@ -92,6 +93,15 @@ export function HomeScreen(): React.JSX.Element {
     content =
       position === 'center' ? (
         <CenteredCovers
+          games={homeGames(games.data)}
+          onOpen={open}
+          opensToPlay={directLaunch}
+          onMenu={setMenuGame}
+          backdropTarget={homeElement}
+        />
+      ) : position === 'top' ? (
+        // "Em cima" adds the focused game's panel under the shelf (D-29).
+        <TopHome
           games={homeGames(games.data)}
           onOpen={open}
           opensToPlay={directLaunch}
