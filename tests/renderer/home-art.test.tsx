@@ -237,11 +237,17 @@ describe('Home covers (D-27)', () => {
   })
 
   it('"Em cima" is the same shelf, mirrored by the top bar', async () => {
-    installFakeApi([summary(1, 'Alpha'), summary(2, 'Beta')], {
-      settings: {
-        get: async () => settingsInfo({ homeCovers: { size: 30, gap: 5, position: 'top' } })
+    installFakeApi(
+      [
+        summary(1, 'Alpha', { artwork: ['logo'], artworkVersion: 'v1' }),
+        summary(2, 'Beta', { artwork: ['logo'], artworkVersion: 'v1' })
+      ],
+      {
+        settings: {
+          get: async () => settingsInfo({ homeCovers: { size: 30, gap: 5, position: 'top' } })
+        }
       }
-    })
+    )
     render(<App />)
     await waitFor(() => expect(shelf().dataset.side).toBe('top'))
     expect(document.querySelector('.home__carousel')).toBeNull()
@@ -249,16 +255,22 @@ describe('Home covers (D-27)', () => {
     expect(shelf().querySelector('.game-card--square')).toBeTruthy()
     expect(document.querySelector('.home-shelf__name')).toBeTruthy()
     expect(screen.queryByText('12h 22m')).toBeNull()
+    // Only "Em cima" shows the focused game's logo, under the shelf (owner decision).
+    const focusedId = slots()[0].title === 'Alpha' ? 1 : 2
+    expect(document.querySelector('.home-shelf__logo img')?.getAttribute('src')).toBe(
+      `equon-art://game/${focusedId}/logo?v=v1`
+    )
     cleanup()
 
-    // The other side is the same component, with the other data-side.
-    installFakeApi([summary(1, 'Alpha')], {
+    // The other side is the same component, with the other data-side, and no logo.
+    installFakeApi([summary(1, 'Alpha', { artwork: ['logo'] })], {
       settings: {
         get: async () => settingsInfo({ homeCovers: { size: 30, gap: 5, position: 'bottom' } })
       }
     })
     render(<App />)
     await waitFor(() => expect(shelf().dataset.side).toBe('bottom'))
+    expect(document.querySelector('.home-shelf__logo')).toBeNull()
   })
 
   it('sets them in Aparência, saved at once and followed by the Home screen', async () => {
@@ -312,13 +324,14 @@ describe('Home covers (D-27)', () => {
     press('ArrowRight')
     expect(setHomeCovers.mock.calls.length).toBe(calls)
 
-    // Left twice: back through Centro to "Em cima", with the same recommended values. The
+    // Left twice: back through Centro to "Em cima". The
     // focus moved on above, so it goes back to the row first.
     act(() => screen.getByRole('radio', { name: 'Embaixo' }).click())
     press('ArrowLeft')
     press('ArrowLeft')
     expect(setHomeCovers).toHaveBeenLastCalledWith({ position: 'top' })
-    expect(hints()).toEqual(['(padrão 0)', '(padrão 10%)', '(padrão 30)', '(padrão 5)'])
+    // "Em cima" has its own recommended values (owner decision).
+    expect(hints()).toEqual(['(padrão 1)', '(padrão 40%)', '(padrão 18)', '(padrão 4)'])
     // The mouse picks an option directly, without moving on to the next one.
     act(() => screen.getByRole('radio', { name: 'Embaixo' }).click())
     expect(setHomeCovers).toHaveBeenLastCalledWith({ position: 'bottom' })

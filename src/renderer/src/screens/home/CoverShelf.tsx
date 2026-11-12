@@ -1,4 +1,4 @@
-import type { GameSummary } from '../../../../shared/ipc/contract'
+import { artworkUrl, type GameSummary } from '../../../../shared/ipc/contract'
 import { GameCard } from '../../components/GameCard'
 import {
   coverWidthRem,
@@ -76,6 +76,17 @@ export function CoverShelf({
         <p className="home-shelf__name" data-hidden={focus.infoHidden}>
           {focusedGame.title}
         </p>
+      )}
+      {/* "Em cima": the focused game's logo under the shelf (owner decision), with the name. */}
+      {side === 'top' && focusedGame?.artwork.includes('logo') && (
+        <div key={focusedGame.id} className="home-shelf__logo" data-hidden={focus.infoHidden}>
+          <img
+            src={artworkUrl(focusedGame.id, 'logo', focusedGame.artworkVersion)}
+            alt=""
+            // A file that fails to load shows nothing rather than a broken image.
+            onError={(event) => (event.currentTarget.style.visibility = 'hidden')}
+          />
+        </div>
       )}
     </div>
   )

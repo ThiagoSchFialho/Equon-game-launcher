@@ -178,7 +178,7 @@ depois que o foco para por 150 ms.
     Depois do nome de "Desfoque", "Escurecimento", "Tamanho" e
     "Espaçamento" aparece, em cinza, "(padrão x)": o valor recomendado
     para a posição escolhida (decisão do dono do projeto). Centro: 6, 80%,
-    72 e 35. Embaixo e Em cima: 0, 10%, 30 e 5. É só uma referência: nada muda
+    72 e 35. Embaixo: 0, 10%, 30 e 5. Em cima: 1, 40%, 18 e 4. É só uma referência: nada muda
     sozinho ao trocar a posição.
 -   Aparência › "Capas da home" (D-27): título e, embaixo, um painel com
     "Tamanho" e "Espaçamento" (níveis de 1 a 100) e "Posição", com
@@ -202,8 +202,11 @@ depois que o foco para por 150 ms.
     (decisão do dono do projeto): perto da barra superior, as capas
     pequenas alinhadas pelo topo da capa em foco, o nome 10 px abaixo
     delas e o degradê começando do topo da tela, por trás da barra
-    superior; mesmos comportamentos e valores
-    recomendados do "Embaixo". Nas duas posições o nome aparece inteiro, numa linha, mesmo
+    superior; mesmos comportamentos do "Embaixo". Só no "Em cima", o logo
+    do jogo em foco aparece no espaço livre abaixo da prateleira, alinhado
+    à esquerda com a capa em foco, inteiro, com sombra e um brilho escuro
+    suave por trás para destacá-lo da arte; troca junto com o
+    nome (decisão do dono do projeto). Jogo sem logo não mostra nada. Nas duas posições o nome aparece inteiro, numa linha, mesmo
     passando da largura da capa. O tamanho 100 é o maior que ainda fica bom. Os padrões são
     o tamanho e o espaço de antes.
 -   Conexões: no topo, o painel "Biblioteca" com "Atualizar biblioteca" e o
