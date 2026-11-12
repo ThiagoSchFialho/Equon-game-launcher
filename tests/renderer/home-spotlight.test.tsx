@@ -67,7 +67,9 @@ describe('"Em cima" panel (D-29)', () => {
   it('shows the play stats and the 4 latest achievements of the focused game', async () => {
     await openTopHome(achievements())
     expect(document.querySelector('.home-spotlight__playtime')?.textContent).toContain('12h 22m')
-    expect(await screen.findByText('6 de 10 conquistas · 60%')).toBeTruthy()
+    // Only the heading, no progress count (owner decision).
+    expect(await screen.findByText('Últimas conquistas')).toBeTruthy()
+    expect(screen.queryByText(/de 10 conquistas/)).toBeNull()
     const tiles = Array.from(document.querySelectorAll('.home-spotlight__tile')).map((tile) =>
       tile.getAttribute('aria-label')
     )
@@ -77,7 +79,7 @@ describe('"Em cima" panel (D-29)', () => {
   it('down enters the row, left and right walk it, up and B come back to the cover', async () => {
     const ensureIcons = vi.fn<EquonApi['achievements']['ensureIcons']>(async () => {})
     await openTopHome(achievements(), { ensureIcons })
-    await screen.findByText('6 de 10 conquistas · 60%')
+    await screen.findByText('Últimas conquistas')
 
     press('ArrowDown')
     expect(focused()).toBe('Conquista 6')
@@ -106,7 +108,7 @@ describe('"Em cima" panel (D-29)', () => {
 
   it('A on an achievement opens the game achievements page', async () => {
     await openTopHome(achievements())
-    await screen.findByText('6 de 10 conquistas · 60%')
+    await screen.findByText('Últimas conquistas')
     press('ArrowDown')
     press('Enter')
     expect(await screen.findByRole('heading', { name: 'Tidebound' })).toBeTruthy()

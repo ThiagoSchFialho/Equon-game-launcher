@@ -210,9 +210,11 @@ depois que o foco para por 150 ms.
     em foco: o logo, inteiro e centralizado sempre no mesmo ponto, com
     sombra (sem o brilho escuro por trás, decisão do dono do projeto)
     (jogo sem logo não mostra nada) no alto; no canto inferior esquerdo,
-    perto do rodapé, "Últimas conquistas" com o progresso ("34 de 52
-    conquistas · 65%") na mesma linha e, embaixo, as 4 mais recentes (ícone
-    e nome) e "Ver todas"; no canto inferior direito, só o tempo de jogo,
+    perto do rodapé, "Últimas conquistas" (sem a contagem de progresso,
+    decisão do dono do projeto) e, embaixo, as 4 mais recentes (ícone
+    e nome) e "Ver todas", em quadrinhos pequenos de vidro fosco
+    (`--color-surface-raised` a 45%, com desfoque do que fica atrás e
+    `--radius-panel`); no canto inferior direito, só o tempo de jogo,
     num fundo escuro meio transparente (desenho e decisão do dono do
     projeto). Para baixo na capa entra na fileira; esquerda e direita andam;
     para cima ou B volta à mesma capa; A abre as conquistas do jogo. A

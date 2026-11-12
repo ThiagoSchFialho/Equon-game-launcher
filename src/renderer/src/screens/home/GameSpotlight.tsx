@@ -9,7 +9,7 @@ import {
 import homeClockIcon from '../../assets/icons/home-clock.svg'
 import trophyIcon from '../../assets/icons/trophy.svg'
 import { TROPHY_IMAGES } from '../../components/trophy-images'
-import { formatPercent, formatPlaytime, formatUnlockDate } from '../../data/format'
+import { formatPlaytime, formatUnlockDate } from '../../data/format'
 import { useFocusable, useFocusManager, useScreenActions } from '../../focus/focus-context'
 import type { Direction } from '../../input/actions'
 import { t } from '../../strings'
@@ -141,19 +141,8 @@ export function GameSpotlight({
                 ? t.home.spotlight.allHint
                 : ''}
           </p>
-          <div className="home-spotlight__heading">
-            <h2 className="home-spotlight__title">{t.home.spotlight.recent}</h2>
-            {data.total > 0 && (
-              <span className="home-spotlight__progress">
-                <img src={trophyIcon} alt="" />
-                {t.home.spotlight.progress(
-                  data.unlockedCount,
-                  data.total,
-                  formatPercent(data.percent ?? 0)
-                )}
-              </span>
-            )}
-          </div>
+          {/* Only the heading: the progress count was dropped (owner decision). */}
+          <h2 className="home-spotlight__title">{t.home.spotlight.recent}</h2>
           <AchievementsRow
             recent={recent}
             step={step}

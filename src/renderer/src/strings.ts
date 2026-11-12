@@ -67,8 +67,6 @@ export const t = {
     openLibrary: 'Abrir biblioteca',
     /** "Em cima"'s panel under the shelf (D-29). */
     spotlight: {
-      progress: (unlocked: number, total: number, percent: string) =>
-        `${unlocked} de ${total} conquistas · ${percent}`,
       recent: 'Últimas conquistas',
       all: 'Ver todas',
       allHint: 'Abre as conquistas deste jogo.'
