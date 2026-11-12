@@ -14,6 +14,8 @@ const INFO_FADE_MS = 70
  * swap a large blurred image every 110 ms.
  */
 const ART_SETTLE_MS = 150
+/** The art layer of the item at index -1; game ids are always positive. */
+const LEADING_ART = -1
 
 export interface CoverFocus {
   /** The focused card: the layout moves to it at once. */
@@ -36,7 +38,9 @@ export interface CoverFocus {
 export function useCoverFocus(
   games: GameSummary[],
   variant: 'portrait' | 'square',
-  backdropTarget: HTMLElement | null
+  backdropTarget: HTMLElement | null,
+  /** The background art of the item at index -1 (D-32: the Settings shortcut), if any. */
+  leadingArt: string | null = null
 ): CoverFocus {
   const homeArt = useHomeArt().settings
   const manager = useFocusManager()
@@ -62,25 +66,35 @@ export function useCoverFocus(
     []
   )
 
-  const showArt = (game: GameSummary | undefined): void => {
-    if (!game) return
+  const byId = new Map(games.map((game) => [game.id, game]))
+  // A layer is a game id, or LEADING_ART for the item at index -1; both resolve to a URL.
+  const artUrl = (id: number): string | null | undefined => {
+    if (id === LEADING_ART) return leadingArt
+    const game = byId.get(id)
+    return game ? homeArtUrl(game) : undefined
+  }
+  const artIdAt = (i: number): number | undefined =>
+    i === -1 ? (leadingArt ? LEADING_ART : undefined) : games[i]?.id
+
+  const showArt = (id: number | undefined): void => {
+    if (id === undefined) return
     setArtLayers((layers) => {
-      if (layers.at(-1) === game.id) return layers
-      // No fade without motion, or onto a game with no art: straight to the new one.
-      if (prefersReducedMotion() || homeArtUrl(game) === null) return [game.id]
-      return [...layers.slice(-1), game.id]
+      if (layers.at(-1) === id) return layers
+      // No fade without motion, or onto an item with no art: straight to the new one.
+      if (prefersReducedMotion() || !artUrl(id)) return [id]
+      return [...layers.slice(-1), id]
     })
   }
 
   const focusCard = (i: number): void => {
     setIndex(i)
     // The first focus (the screen opening or coming back) shows its art at once, without a fade.
-    const opening = games[i]
-    if (opening) setArtLayers((layers) => (layers.length === 0 ? [opening.id] : layers))
+    const opening = artIdAt(i)
+    if (opening !== undefined) setArtLayers((layers) => (layers.length === 0 ? [opening] : layers))
     if (artTimer.current) clearTimeout(artTimer.current)
     artTimer.current = setTimeout(() => {
       artTimer.current = null
-      showArt(games[i])
+      showArt(artIdAt(i))
     }, ART_SETTLE_MS)
     // Already there, as when the screen opens or comes back: nothing to fade.
     if (i === infoIndex && !infoTimer.current) return
@@ -97,14 +111,13 @@ export function useCoverFocus(
     )
   }
 
-  const byId = new Map(games.map((game) => [game.id, game]))
   const backdrop =
     homeArt.enabled && backdropTarget
       ? createPortal(
           <HomeArtBackdrop
             layers={artLayers.flatMap((id) => {
-              const game = byId.get(id)
-              return game ? [{ gameId: id, url: homeArtUrl(game) }] : []
+              const url = artUrl(id)
+              return url === undefined ? [] : [{ gameId: id, url }]
             })}
             blur={homeArt.blur}
             dim={homeArt.dim}

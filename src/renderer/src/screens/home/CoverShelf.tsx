@@ -47,6 +47,8 @@ export function CoverShelf({
     game: GameSummary | undefined
     hidden: boolean
     cardId: string | null
+    /** The leading shortcut is the focused item (D-32), not a game. */
+    leadingFocused: boolean
   }) => React.ReactNode
   /** Down on the focused cover; true when it used the direction ("Em cima": always). */
   onCardDown?: (game: GameSummary) => boolean
@@ -54,10 +56,19 @@ export function CoverShelf({
    * A shortcut drawn as a cover before the first game ("Em cima"'s Configurações, D-32). It sits
    * at index -1: the focus still starts on the first game.
    */
-  leading?: { id: string; label: string; icon: string; onConfirm: () => void }
+  leading?: {
+    id: string
+    label: string
+    icon: string
+    /** The Home background while it is focused (D-32). */
+    art?: string
+    onConfirm: () => void
+    /** Down on it; true when it used the direction (D-33: into the quick settings). */
+    onDown?: () => boolean
+  }
 }): React.JSX.Element {
   const covers = shownCovers(useHomeCovers().settings)
-  const focus = useCoverFocus(games, 'square', backdropTarget)
+  const focus = useCoverFocus(games, 'square', backdropTarget, leading?.art ?? null)
   const focusedGame = games[focus.infoIndex]
   return (
     <div
@@ -78,7 +89,14 @@ export function CoverShelf({
             data-current={focus.index === -1}
             style={{ '--rel': -1 - focus.index } as React.CSSProperties}
           >
-            <ShelfShortcut {...leading} onFocus={() => focus.focusCard(-1)} />
+            <ShelfShortcut
+              id={leading.id}
+              label={leading.label}
+              icon={leading.icon}
+              onConfirm={leading.onConfirm}
+              onFocus={() => focus.focusCard(-1)}
+              onDown={leading.onDown}
+            />
           </div>
         )}
         {games.map((game, i) => (
@@ -113,7 +131,8 @@ export function CoverShelf({
       {below?.({
         game: focusedGame,
         hidden: focus.infoHidden,
-        cardId: focusedGame ? `game-card:square:${focusedGame.id}` : null
+        cardId: focusedGame ? `game-card:square:${focusedGame.id}` : null,
+        leadingFocused: Boolean(leading) && focus.infoIndex === -1
       })}
     </div>
   )
@@ -125,17 +144,20 @@ function ShelfShortcut({
   label,
   icon,
   onConfirm,
-  onFocus
+  onFocus,
+  onDown
 }: {
   id: string
   label: string
   icon: string
   onConfirm: () => void
   onFocus: () => void
+  onDown?: () => boolean
 }): React.JSX.Element {
   const { setElement, focused, mouse } = useFocusable<HTMLButtonElement>(id, {
     onConfirm,
     onFocus,
+    onDirection: onDown ? (direction) => direction === 'down' && onDown() : undefined,
     scroll: 'none'
   })
   return (

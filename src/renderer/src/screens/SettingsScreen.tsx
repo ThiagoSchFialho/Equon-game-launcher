@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
   DuplicateInfo,
   IgnoredSteamGameInfo,
-  LibraryRefreshInfo,
   SecretKind,
   SettingsInfo,
   SteamSyncInfo,
@@ -33,6 +32,7 @@ import { StateMessage } from '../components/StateMessage'
 import { StorageSettings } from '../components/StorageSettings'
 import { SystemSettings } from '../components/SystemSettings'
 import { useGames } from '../data/games'
+import { clockTime, refreshText } from '../data/library-refresh'
 import { useFocusable, useFocusManager, useScreenActions } from '../focus/focus-context'
 import { prefersReducedMotion } from '../focus/focus-manager'
 import { FocusScope } from '../focus/FocusProvider'
@@ -602,24 +602,12 @@ function DuplicateReview({
   )
 }
 
-function refreshText(info: LibraryRefreshInfo | null): string {
-  if (info === null) return t.settings.neverRefreshed
-  if (info.status === 'failed') {
-    return t.settings.refreshFailed[info.reason ?? ''] ?? t.settings.refreshFailedOther
-  }
-  if (info.status === 'partial') return t.settings.refreshPartial
-  return t.settings.refreshResult(clockTime(info.finishedAt), info.added, info.missing)
-}
-
 function ownedErrorText(error: string): string {
   if (error === 'not-configured') return t.settings.ownedNotConfigured
   return t.settings.ownedFailed(
     (t.settings.testErrors[error] ?? t.settings.testErrors['invalid-response']).toLowerCase()
   )
 }
-
-const clockTime = (iso: string): string =>
-  new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
 /** A stored key: only "configured or not" is shown, never the value (D-04). */
 function SecretRow({

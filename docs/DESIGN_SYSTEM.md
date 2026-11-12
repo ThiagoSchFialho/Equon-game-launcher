@@ -212,7 +212,15 @@ depois que o foco para por 150 ms.
     do dono do projeto). A fileira começa com um
     atalho para as Configurações (D-32), desenhado como uma capa: um
     quadrado escuro meio transparente com a engrenagem no meio; o foco
-    continua começando no primeiro jogo. Só no "Em cima" (D-29),
+    continua começando no primeiro jogo. Com ele em foco, o fundo da Home
+    mostra uma imagem própria (engrenagens azuladas, `settings-bg.png`),
+    com o mesmo desfoque e escurecimento da arte dos jogos. Embaixo dela,
+    no lugar do painel do jogo, aparecem as "Configurações rápidas" (D-33),
+    só com o título, sem texto de explicação: "Atualizar biblioteca" (com "Atualizada às 18:02", ou o motivo se a última falhou), "Tela
+    cheia", "Ignorar tela do jogo na home" e "Limitar jogos na home" (as
+    três com "Ligado" ou "Desligado"), em quadrinhos de vidro fosco como
+    os das conquistas. Para baixo no atalho entra na fileira, A muda a
+    opção na hora, para cima ou B volta ao atalho. Só no "Em cima" (D-29),
     abaixo da prateleira e alinhado com a capa em foco, um painel do jogo
     em foco: o logo, inteiro e centralizado sempre no mesmo ponto, com
     sombra (sem o brilho escuro por trás, decisão do dono do projeto)

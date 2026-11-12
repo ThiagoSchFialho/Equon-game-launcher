@@ -158,6 +158,111 @@ describe('"Em cima" panel (D-29)', () => {
     expect(await screen.findByRole('heading', { name: 'Conexões' })).toBeTruthy()
   })
 
+  it('shows the Settings image behind the Home while the shortcut is focused (D-32)', async () => {
+    installFakeApi([summary(1, 'Tidebound', { artwork: ['launch'], artworkVersion: 'v1' })], {
+      settings: {
+        get: async () =>
+          settingsInfo({
+            homeArt: { enabled: true, blur: 0, dim: 10 },
+            homeCovers: { size: 74, gap: 35, position: 'top', limited: false }
+          })
+      }
+    })
+    render(<App />)
+    const images = (): (string | null)[] =>
+      Array.from(document.querySelectorAll('.home-art__image')).map((img) =>
+        img.getAttribute('src')
+      )
+    await waitFor(() => expect(images()).toEqual(['equon-art://game/1/launch?v=v1']))
+    // jsdom has no layout: from the only game, left can only reach the shortcut.
+    press('ArrowLeft')
+    expect(focused()).toBe('Configurações')
+    await waitFor(() => expect(images().at(-1)).toMatch(/settings\.png$/))
+  })
+
+  it('shows the quick settings under the Settings shortcut, and changes them at once (D-33)', async () => {
+    const setHomeDirectLaunch = vi.fn<EquonApi['settings']['setHomeDirectLaunch']>(
+      async (homeDirectLaunch) => ({ ok: true, data: settingsInfo({ homeDirectLaunch }) })
+    )
+    const setHomeCovers = vi.fn<EquonApi['settings']['setHomeCovers']>(async (changes) => ({
+      ok: true,
+      data: settingsInfo({
+        homeCovers: { size: 74, gap: 35, position: 'top', limited: false, ...changes }
+      })
+    }))
+    const toggleFullscreen = vi.fn<EquonApi['app']['toggleFullscreen']>(async () => true)
+    const refresh = vi.fn<EquonApi['library']['refresh']>(async () => ({
+      status: 'complete',
+      reason: null,
+      added: 0,
+      missing: 0,
+      unknown: 0,
+      duplicates: 0,
+      ownedError: null,
+      finishedAt: '2026-11-12T21:02:00Z'
+    }))
+    installFakeApi([summary(1, 'Tidebound')], {
+      settings: {
+        get: async () =>
+          settingsInfo({ homeCovers: { size: 74, gap: 35, position: 'top', limited: false } }),
+        setHomeDirectLaunch,
+        setHomeCovers
+      },
+      app: { isFullscreen: async () => false, toggleFullscreen },
+      library: { refresh },
+      achievements: { game: async () => null }
+    })
+    render(<App />)
+    await waitFor(() => expect(focused()).toBe('Tidebound'))
+    // jsdom has no layout: from the only game, left can only reach the shortcut.
+    press('ArrowLeft')
+    expect(focused()).toBe('Configurações')
+    // Said plainly what they are (owner decision).
+    expect(await screen.findByRole('heading', { name: 'Configurações rápidas' })).toBeTruthy()
+    expect(document.querySelector('.home-spotlight')).toBeNull()
+    const items = Array.from(document.querySelectorAll('.home-quick__item')).map((item) =>
+      item.getAttribute('aria-label')
+    )
+    expect(items).toEqual([
+      'Atualizar biblioteca',
+      'Tela cheia',
+      'Ignorar tela do jogo na home',
+      'Limitar jogos na home'
+    ])
+
+    press('ArrowDown')
+    expect(focused()).toBe('Atualizar biblioteca')
+    press('Enter')
+    await waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+    // Short: only when it ran (owner decision).
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText('Atualizar biblioteca').getAttribute('aria-description')
+      ).toMatch(/^Atualizada às \d{2}:\d{2}$/)
+    )
+    press('ArrowRight')
+    press('Enter')
+    await waitFor(() => expect(toggleFullscreen).toHaveBeenCalledOnce())
+    press('ArrowRight')
+    press('Enter')
+    await waitFor(() => expect(setHomeDirectLaunch).toHaveBeenCalledWith(true))
+    press('ArrowRight')
+    press('Enter')
+    await waitFor(() => expect(setHomeCovers).toHaveBeenCalledWith({ limited: true }))
+    // The state follows what main saved.
+    await waitFor(() =>
+      expect(screen.getByLabelText('Limitar jogos na home').getAttribute('aria-description')).toBe(
+        'Ligado'
+      )
+    )
+
+    press('ArrowUp')
+    expect(focused()).toBe('Configurações')
+    press('ArrowDown')
+    press('Escape')
+    expect(focused()).toBe('Configurações')
+  })
+
   it('stays off the other positions', async () => {
     installFakeApi([summary(1, 'Tidebound')], {
       settings: {

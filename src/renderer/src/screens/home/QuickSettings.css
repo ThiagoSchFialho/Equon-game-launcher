@@ -1,0 +1,85 @@
+/*
+ * "Em cima"'s quick settings (D-33), drawn inside the shelf like the game panel (GameSpotlight):
+ * at the bottom left, 48px from the screen edge, as far as the panel's playtime is from the right.
+ */
+.home-quick {
+  position: absolute;
+  left: var(--space-12);
+  bottom: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  transition: opacity var(--info-fade) var(--motion-easing);
+  --info-fade: calc(var(--motion-focus) / 2);
+  text-shadow:
+    0 0 0.125rem rgb(0 0 0 / 0.9),
+    0 0 0.375rem rgb(0 0 0 / 0.8),
+    0 0.125rem 1rem rgb(0 0 0 / 0.7);
+}
+
+.home-quick[data-hidden='true'] {
+  opacity: 0;
+}
+
+.home-quick__title {
+  margin: 0;
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-semibold);
+}
+
+.home-quick__row {
+  display: flex;
+  gap: var(--space-3);
+}
+
+/* Like the achievement tiles: small, frosted glass, rounded. */
+.home-quick__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  /* A little wider, so the names fit (owner decision). */
+  width: 19rem;
+  height: 4.5rem;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--color-surface-raised) 45%, transparent);
+  backdrop-filter: blur(var(--space-3));
+  text-align: left;
+  outline: var(--focus-ring-width) solid transparent;
+  outline-offset: var(--focus-ring-gap);
+  transition: outline-color var(--motion-focus) var(--motion-easing);
+}
+
+.home-quick__item[data-focused='true'] {
+  outline-color: var(--color-focus);
+}
+
+.home-quick__icon {
+  flex: 0 0 auto;
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.home-quick__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.home-quick__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-medium);
+}
+
+.home-quick__state {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-meta);
+}

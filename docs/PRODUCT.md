@@ -186,7 +186,10 @@ limitações, condições de teste e método de inicialização suportado.
     últimas conquistas obtidas, navegáveis com o
     controle; A abre a página de conquistas do jogo. A fileira começa com
     um atalho para as Configurações, com cara de capa (D-32); o foco
-    continua começando no primeiro jogo.
+    continua começando no primeiro jogo. Com o foco nele, abaixo aparecem
+    as "Configurações rápidas" (D-33): atualizar a biblioteca, tela cheia,
+    ignorar a tela do jogo na home e limitar os jogos na home, alteradas
+    ali na hora.
 -   Marcar como zerado e ocultar/mostrar ficam no menu de opções do
     jogo, para qualquer origem.
 -   Arquitetura preparada para filtros adicionais sem reconstruir a

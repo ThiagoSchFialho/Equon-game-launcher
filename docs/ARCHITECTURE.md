@@ -81,6 +81,7 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-30 | "Imagem da home", a seventh art kind | Accepted | `home` 16:9, only chosen by the user in "Editar artes"; the Home background uses it, then the launch image, then the background; migration 0022; see §3.29 |
 | D-31 | Limit the Home to 12 games | Accepted | "Limitar quantidade de jogos na home" in Aparência › Capas da home, off by default: the 12 most recently played; `USERS.home_limit_games`; see §3.30 |
 | D-32 | Settings shortcut on the "Em cima" shelf | Accepted | A cover-shaped shortcut to Settings before the first game; the focus still starts on the first game; see §3.31 |
+| D-33 | Quick settings under the Settings shortcut | Accepted | "Configurações rápidas": Atualizar biblioteca, Tela cheia, Ignorar tela do jogo na home, Limitar jogos na home, changed at once from the "Em cima" Home; see §3.32 |
 | D-24 | Interface sounds | Accepted | Sounds on moving, confirming, going back and opening modals; on by default, `USERS.ui_sounds`; silent while a game runs; see §3.23 |
 | D-16 | Refresh frequency for `appdetails` metadata | Accepted | Fetched only when a game is discovered/added; failed fetches are retried (§3.14) |
 | D-17 | Steam launch mechanism | Accepted | `steam://rungameid/<appid>`, built in the main process (§3.12) |
@@ -523,9 +524,17 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 
 ### 3.31 D-32 — Settings shortcut on the "Em cima" shelf (Accepted, after Phase 8)
 
-**Owner decisions (2026-11-12):** in "Em cima" only, the shelf starts with a shortcut to Configurações, drawn as a cover: a dark, slightly see-through square (`--color-background` at 75%) with the gear icon of the Sistema tab in the middle, after the PS5 home. The focus still starts on the first game, which is now the second item. Focusing the shortcut makes it the large item, like a cover; the name says "Configurações" and the panel under the shelf (D-29) is hidden, as there is no game. A opens Settings.
+**Owner decisions (2026-11-12):** in "Em cima" only, the shelf starts with a shortcut to Configurações, drawn as a cover: a dark, slightly see-through square (`--color-background` at 75%) with the gear icon of the Sistema tab in the middle, after the PS5 home. The focus still starts on the first game, which is now the second item. Focusing the shortcut makes it the large item, like a cover; the name says "Configurações" and the panel under the shelf (D-29) is hidden, as there is no game. With the background art on (D-25), the Home then shows the owner's own image (`design/settings-bg.png`, made by the owner with ChatGPT, so it is the owner's to publish; copied to `assets/backgrounds/settings.png`) with the same blur, darkening and crossfade as a game's art (owner decision, 2026-11-12). A opens Settings.
 
-**Code.** `CoverShelf` takes a `leading` shortcut drawn at index -1, before the games, so the shelf's transforms place it like any cover (`--rel`); `useCoverFocus` accepts -1 as the focused index. In "Em cima", down on a cover without a panel row now does nothing, so the focus never wanders off to the shortcut or another cover.
+**Code.** `CoverShelf` takes a `leading` shortcut drawn at index -1, before the games, so the shelf's transforms place it like any cover (`--rel`); `useCoverFocus` accepts -1 as the focused index, and an art URL for it, kept as its own background layer. In "Em cima", down on a cover without a panel row now does nothing, so the focus never wanders off to the shortcut or another cover.
+
+### 3.32 D-33 — Quick settings under the Settings shortcut (Accepted, after Phase 8)
+
+**Owner decisions (2026-11-12):** with the "Em cima" Settings shortcut focused (D-32), the empty space under the shelf shows "Configurações rápidas", a heading that says plainly what they are (an explanatory line under it was tried and dropped, owner decision). Four items, in this order: "Atualizar biblioteca" (with "Atualizada às 18:02" after a complete run, or why the last one failed; Configurações › Conexões keeps saying what changed), "Tela cheia" (enters or leaves fullscreen now, like F11), "Ignorar tela do jogo na home" (D-28) and "Limitar jogos na home" (D-31), the last three with "Ligado" or "Desligado". The other options stay only in Configurações.
+
+**Navigation.** Like the game panel (D-29): down on the shortcut enters the row on its first item, left and right walk it, up or B go back to the shortcut, A changes the option at once without leaving Home; A on the shortcut itself still opens Configurações.
+
+**Code.** `home/QuickSettings.tsx`, drawn by `TopHome` in the shelf's `below` slot when the shortcut is the focused item (`leadingFocused`); the shortcut takes an `onDown`. Each item uses the existing IPC (`library:refresh`, `app:toggle-fullscreen`, `settings:set-home-direct-launch`, `settings:set-home-covers`) and updates the same renderer state Settings updates, so the Home follows at once. No new setting and no new column. The tiles share the achievement tiles' frosted look, with four new white icons (`quick-*.svg`). The text of the last refresh moved to `data/library-refresh.ts`, shared with Configurações.
 
 ## 4. Inconsistencies found across the project docs
 
@@ -917,6 +926,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-11 | 0.66 | D-30: "Imagem da home", art kind `home` (migration 0022), edited in "Editar artes"; the Home background uses it, then the launch image, then the background (§3.29). |
 | 2026-11-12 | 0.67 | D-31: "Limitar quantidade de jogos na home", the 12 most recently played (`USERS.home_limit_games`, migration 0023; §3.30). |
 | 2026-11-12 | 0.68 | D-32: a cover-shaped Settings shortcut before the first game on the "Em cima" shelf (§3.31). |
+| 2026-11-12 | 0.69 | D-32: the Settings image behind the Home while the shortcut is focused. D-33: "Configurações rápidas" under the shortcut (§3.31, §3.32). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

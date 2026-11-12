@@ -1,10 +1,14 @@
 import type { GameSummary } from '../../../../shared/ipc/contract'
+import settingsBackground from '../../assets/backgrounds/settings.png'
 import settingsIcon from '../../assets/icons/settings.svg'
 import { useNavigation } from '../../app/navigation'
 import { useFocusManager } from '../../focus/focus-context'
 import { t } from '../../strings'
 import { CoverShelf } from './CoverShelf'
 import { GameSpotlight, SPOTLIGHT_PREFIX } from './GameSpotlight'
+import { QUICK_PREFIX, QuickSettings } from './QuickSettings'
+
+const SHORTCUT_ID = 'home:settings'
 
 /**
  * "Capas da home" › Em cima (D-27, D-29): the shelf by the top bar, with the focused game's panel
@@ -48,19 +52,30 @@ export function TopHome({
       onCardDown={enterPanel}
       // A shortcut to Settings before the first game (owner decision, D-32).
       leading={{
-        id: 'home:settings',
+        id: SHORTCUT_ID,
         label: t.settings.title,
         icon: settingsIcon,
-        onConfirm: () => navigation.openSettings()
+        // The owner's image behind the Home while the shortcut is focused (D-32).
+        art: settingsBackground,
+        onConfirm: () => navigation.openSettings(),
+        // Into the quick settings (D-33); it always stays on the shelf otherwise.
+        onDown: () => {
+          manager.focus(`${QUICK_PREFIX}0`)
+          return true
+        }
       }}
-      below={({ game, hidden, cardId }) => (
-        <GameSpotlight
-          game={game}
-          hidden={hidden}
-          cardId={cardId}
-          onOpenAchievements={(target) => navigation.openGameAchievements(target.id)}
-        />
-      )}
+      below={({ game, hidden, cardId, leadingFocused }) =>
+        leadingFocused ? (
+          <QuickSettings shortcutId={SHORTCUT_ID} hidden={hidden} />
+        ) : (
+          <GameSpotlight
+            game={game}
+            hidden={hidden}
+            cardId={cardId}
+            onOpenAchievements={(target) => navigation.openGameAchievements(target.id)}
+          />
+        )
+      }
     />
   )
 }

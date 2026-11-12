@@ -70,6 +70,15 @@ export const t = {
       recent: 'Últimas conquistas',
       all: 'Ver todas',
       allHint: 'Abre as conquistas deste jogo.'
+    },
+    /** "Em cima"'s quick settings under the Settings shortcut (D-33). */
+    quick: {
+      title: 'Configurações rápidas',
+      refreshedAt: (time: string) => `Atualizada às ${time}`,
+      fullscreen: 'Tela cheia',
+      limitGames: 'Limitar jogos na home',
+      on: 'Ligado',
+      off: 'Desligado'
     }
   },
   game: {
