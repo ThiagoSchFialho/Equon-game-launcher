@@ -39,7 +39,8 @@ const PANELS: readonly { kind: ArtworkEditKind; igdb: boolean; grid: boolean; st
   { kind: 'cover_square', igdb: false, grid: true, steam: false },
   { kind: 'logo', igdb: true, grid: true, steam: false },
   { kind: 'background', igdb: true, grid: false, steam: true },
-  { kind: 'launch', igdb: true, grid: false, steam: true }
+  { kind: 'launch', igdb: true, grid: false, steam: true },
+  { kind: 'home', igdb: true, grid: false, steam: true }
 ]
 
 const isSteamGalleryKind = (kind: ArtworkEditKind): kind is SteamGalleryKind =>
@@ -339,14 +340,22 @@ export function GameArtworkScreen({ id }: { id: number }): React.JSX.Element {
             const change = changes[kind]
             const hasArt = change?.type === 'draft' || (!change && shown.artwork.includes(kind))
             const own = imageSource(shown, kind, change)
-            // With no launch image of its own, the game opens over its background.
-            const fallback =
-              kind === 'launch' && own === null
-                ? imageSource(shown, 'background', changes.background)
-                : null
+            // With no image of its own, the launch image uses the background, and the Home
+            // image the launch image, then the background (D-30), choices of this visit included.
+            const launchOwn = imageSource(shown, 'launch', changes.launch)
+            const background = imageSource(shown, 'background', changes.background)
+            const fallback: { source: string; note: string } | null =
+              own !== null
+                ? null
+                : kind === 'launch' && background
+                  ? { source: background, note: t.artEditor.usingBackground }
+                  : kind === 'home' && launchOwn
+                    ? { source: launchOwn, note: t.artEditor.usingLaunch }
+                    : kind === 'home' && background
+                      ? { source: background, note: t.artEditor.usingBackground }
+                      : null
             const current =
-              notes[kind] ??
-              (fallback ? { text: t.artEditor.usingBackground, tone: 'info' as const } : undefined)
+              notes[kind] ?? (fallback ? { text: fallback.note, tone: 'info' as const } : undefined)
             return (
               <section
                 key={kind}
@@ -357,7 +366,7 @@ export function GameArtworkScreen({ id }: { id: number }): React.JSX.Element {
               >
                 <div className="art-editor__side">
                   <h2 className="art-editor__name">{t.artEditor.kinds[kind]}</h2>
-                  <Preview kind={kind} source={own ?? fallback} />
+                  <Preview kind={kind} source={own ?? fallback?.source ?? null} />
                   {current && (
                     <p
                       className="art-editor__note"

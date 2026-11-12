@@ -21,7 +21,8 @@
 }
 
 .art-gallery__grid[data-kind='background'],
-.art-gallery__grid[data-kind='launch'] {
+.art-gallery__grid[data-kind='launch'],
+.art-gallery__grid[data-kind='home'] {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
@@ -63,7 +64,8 @@
 
 .art-gallery__item[data-kind='logo'] .art-gallery__image,
 .art-gallery__item[data-kind='background'] .art-gallery__image,
-.art-gallery__item[data-kind='launch'] .art-gallery__image {
+.art-gallery__item[data-kind='launch'] .art-gallery__image,
+.art-gallery__item[data-kind='home'] .art-gallery__image {
   aspect-ratio: 16 / 9;
 }
 

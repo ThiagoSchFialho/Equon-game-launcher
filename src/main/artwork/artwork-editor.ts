@@ -29,9 +29,16 @@ import {
 import { igdbArtUrls } from './artwork-fetcher'
 
 /** Kinds with no source on IGDB (square covers) or none that fits on SteamGridDB (backgrounds). */
-const IGDB_KINDS: readonly ArtworkEditKind[] = ['cover_portrait', 'logo', 'background', 'launch']
-/** The launch image is a background-shaped picture: it comes from the same IGDB image. */
-const igdbKind = (kind: ArtworkEditKind): ArtworkKind => (kind === 'launch' ? 'background' : kind)
+const IGDB_KINDS: readonly ArtworkEditKind[] = [
+  'cover_portrait',
+  'logo',
+  'background',
+  'launch',
+  'home'
+]
+/** The launch and Home images are background-shaped pictures: the same IGDB image. */
+const igdbKind = (kind: ArtworkEditKind): ArtworkKind =>
+  kind === 'launch' || kind === 'home' ? 'background' : kind
 const GRID_KINDS = ['cover_portrait', 'cover_square', 'logo'] as const
 type GridKind = (typeof GRID_KINDS)[number]
 const isGridKind = (kind: ArtworkEditKind): kind is GridKind =>
@@ -94,7 +101,7 @@ export interface ArtworkEditor {
     kind: ArtworkEditKind,
     assetId: number
   ): Promise<Result<ArtworkDraftInfo>>
-  /** The store background and screenshots of a Steam game, for its background or launch image. */
+  /** The store background and screenshots of a Steam game, for its 16:9 images. */
   steamChoices(gameId: number): Promise<Result<SteamChoiceInfo[]>>
   fromSteam(
     gameId: number,

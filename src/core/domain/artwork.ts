@@ -5,7 +5,10 @@ export const ARTWORK_KINDS = [
   'background',
   'header',
   // Shown over the screen while the game opens (D-22); only chosen by the user.
-  'launch'
+  'launch',
+  // Behind the Home screen (D-30); only chosen by the user, else the launch image, then the
+  // background.
+  'home'
 ] as const
 export type ArtworkKind = (typeof ARTWORK_KINDS)[number]
 

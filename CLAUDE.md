@@ -10,7 +10,7 @@ Controller-first game launcher for Windows (Electron + React + TypeScript, embed
 
 ## Source of truth (read before coding)
 
-1. `docs/ARCHITECTURE.md` — decision log (D-01…D-29), process model, layers, security. **Start here.**
+1. `docs/ARCHITECTURE.md` — decision log (D-01…D-30), process model, layers, security. **Start here.**
 2. `docs/DATA_BASE_CONTEXT.md` — schema, integrity rules, sync rules.
 3. `docs/PRODUCT.md` — MVP scope and acceptance criteria.
 4. `docs/DESIGN_SYSTEM.md` and `design/` — visual tokens and mockups.
@@ -78,7 +78,7 @@ If code and docs disagree, stop and ask. When a decision changes, update the doc
 
 ## Artwork
 
-- Six kinds: `cover_square` (Library), `cover_portrait` (Home, shown 2:3), `logo`, `background` 1920×1080 (Game details), `header` (Achievements list), `launch` 16:9 (shown while a game opens, D-22; falls back to `background`; only chosen by the user, never downloaded automatically).
+- Seven kinds: `cover_square` (Library), `cover_portrait` (Home, shown 2:3), `logo`, `background` 1920×1080 (Game details), `header` (Achievements list), `launch` 16:9 (shown while a game opens, D-22; falls back to `background`; only chosen by the user, never downloaded automatically), `home` 16:9 ("Imagem da home", the Home background, D-30; falls back to `launch`, then `background`; only chosen by the user).
 - Sources: Steam `appdetails`, SteamGridDB (user's own key), IGDB (user's own Twitch app, D-18: fills manual games; first source of logo and background for Steam games, found by App ID; fallback for the portrait cover, which comes from SteamGridDB first), local files. **No Google Images or scraping.**
 - "Editar artes" (D-19, `ARCHITECTURE.md` §3.18) changes each image by hand; chosen images wait in memory until Salvar. Art the user removed stays in `GAME_ARTWORK_REMOVED` and automatic downloads must skip it.
 - Portrait covers accept 2:3 to 3:4; the Home card is 2:3 and stretches the whole art to fit, never cropping or letterboxing (owner decision). Fetch lazily through a throttled queue, validate downloads (type, size, decoded dimensions), cache on disk, never hotlink at runtime. The app must work with placeholders and without a SteamGridDB key.

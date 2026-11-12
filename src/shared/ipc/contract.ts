@@ -311,7 +311,8 @@ export const ARTWORK_KINDS = [
   'logo',
   'background',
   'header',
-  'launch'
+  'launch',
+  'home'
 ] as const
 export type ArtworkKind = (typeof ARTWORK_KINDS)[number]
 
@@ -338,12 +339,13 @@ export const ARTWORK_EDIT_KINDS = [
   'cover_square',
   'logo',
   'background',
-  'launch'
+  'launch',
+  'home'
 ] as const
 export type ArtworkEditKind = (typeof ARTWORK_EDIT_KINDS)[number]
 
 /** 16:9 kinds the Steam gallery (store background and screenshots) can fill. */
-export const STEAM_GALLERY_KINDS = ['background', 'launch'] as const
+export const STEAM_GALLERY_KINDS = ['background', 'launch', 'home'] as const
 export type SteamGalleryKind = (typeof STEAM_GALLERY_KINDS)[number]
 
 /** Preview of an image chosen but not saved yet. */

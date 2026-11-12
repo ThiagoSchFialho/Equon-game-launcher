@@ -101,6 +101,46 @@ describe('migrate', () => {
     expect(() => db.prepare('UPDATE users SET home_cover_size = 101').run()).toThrow(/CHECK/)
   })
 
+  it('0022 keeps existing art and removal marks, and accepts the Home image', () => {
+    const db = openDatabase(':memory:')
+    migrate(db, migrations.slice(0, 21))
+    const gameId = db
+      .prepare<[], { id: number }>(
+        "INSERT INTO games (origin, title) VALUES ('manual', 'A') RETURNING id"
+      )
+      .get()!.id
+    db.prepare(
+      "INSERT INTO game_artwork (game_id, kind, local_path, source, user_selected) VALUES (?, 'launch', 'a/launch.png', 'user', 1)"
+    ).run(gameId)
+    db.prepare(
+      "INSERT INTO game_artwork_removed (game_id, kind, removed_at) VALUES (?, 'logo', '2026-11-11T10:00:00Z')"
+    ).run(gameId)
+
+    migrate(db, migrations)
+
+    expect(db.prepare('SELECT kind, local_path, user_selected FROM game_artwork').all()).toEqual([
+      { kind: 'launch', local_path: 'a/launch.png', user_selected: 1 }
+    ])
+    expect(db.prepare('SELECT kind FROM game_artwork_removed').all()).toEqual([{ kind: 'logo' }])
+    db.prepare(
+      "INSERT INTO game_artwork (game_id, kind, local_path, source) VALUES (?, 'home', 'a/home.png', 'user')"
+    ).run(gameId)
+    db.prepare(
+      "INSERT INTO game_artwork_removed (game_id, kind, removed_at) VALUES (?, 'home', '2026-11-11T10:00:00Z')"
+    ).run(gameId)
+    expect(() =>
+      db
+        .prepare(
+          "INSERT INTO game_artwork (game_id, kind, local_path, source) VALUES (?, 'poster', 'a/x.png', 'user')"
+        )
+        .run(gameId)
+    ).toThrow(/CHECK/)
+    // Deleting the game still takes its art along.
+    db.prepare('DELETE FROM games WHERE id = ?').run(gameId)
+    expect(db.prepare('SELECT count(*) AS n FROM game_artwork').get()).toEqual({ n: 0 })
+    expect(db.prepare('SELECT count(*) AS n FROM game_artwork_removed').get()).toEqual({ n: 0 })
+  })
+
   it('is a no-op when the database is up to date', () => {
     const db = openDatabase(':memory:')
     migrate(db, migrations)

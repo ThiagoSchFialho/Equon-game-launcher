@@ -90,6 +90,7 @@ describe('Editar artes', () => {
     expect(buttons('Logo')).toEqual([igdb, grid, file, remove])
     expect(buttons('Imagem de fundo')).toEqual([igdb, 'Imagens da Steam', file, remove])
     expect(buttons('Imagem de abertura')).toEqual([igdb, 'Imagens da Steam', file, remove])
+    expect(buttons('Imagem da home')).toEqual([igdb, 'Imagens da Steam', file, remove])
     expect(screen.queryByRole('heading', { name: 'Cabeçalho' })).toBeNull()
   })
 
@@ -111,6 +112,27 @@ describe('Editar artes', () => {
     await clickText('art.png')
     await waitFor(() => expect(launch()).toBe('equon-art://draft/launch?v=1'))
     expect(within(panelOf('Imagem de abertura')).queryByText('Usando a imagem de fundo')).toBeNull()
+  })
+
+  it('shows the launch image, then the background, as the Home image until one is chosen', async () => {
+    installFakeApi([steam({ artwork: ['background', 'launch'], artworkVersion: 'v1' })], {
+      files: { list: pickFile }
+    })
+    await open()
+    const home = (): string | null | undefined =>
+      previewOf('home').querySelector('img')?.getAttribute('src')
+    expect(home()).toBe('equon-art://game/1/launch?v=v1')
+    expect(within(panelOf('Imagem da home')).getByText('Usando a imagem de abertura')).toBeTruthy()
+
+    // Without a launch image (removed on this visit), the background.
+    await click('Remover imagem: Imagem de abertura')
+    await waitFor(() => expect(home()).toBe('equon-art://game/1/background?v=v1'))
+    expect(within(panelOf('Imagem da home')).getByText('Usando a imagem de fundo')).toBeTruthy()
+
+    await click('Selecionar imagem do PC: Imagem da home')
+    await clickText('art.png')
+    await waitFor(() => expect(home()).toBe('equon-art://draft/home?v=1'))
+    expect(within(panelOf('Imagem da home')).queryByText(/^Usando a imagem/)).toBeNull()
   })
 
   it('follows a background chosen or removed on the same visit', async () => {
@@ -367,8 +389,11 @@ describe('Steam gallery', () => {
     await open()
     expect(screen.getByLabelText(button)).toBeTruthy()
     expect(screen.getByLabelText('Imagens da Steam: Imagem de abertura')).toBeTruthy()
+    expect(screen.getByLabelText('Imagens da Steam: Imagem da home')).toBeTruthy()
     expect(
-      screen.queryByLabelText(/^Imagens da Steam: (?!Imagem de fundo|Imagem de abertura)/)
+      screen.queryByLabelText(
+        /^Imagens da Steam: (?!Imagem de fundo|Imagem de abertura|Imagem da home)/
+      )
     ).toBeNull()
     cleanup()
 

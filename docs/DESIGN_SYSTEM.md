@@ -72,10 +72,11 @@ aparecerem anéis entre os tons (banding, em telas de 8 bits), os degradês
 usam paradas suavizadas e um ruído fino, quase invisível, por cima.
 
 Com "Mostrar arte do jogo como background" (Configurações › Aparência,
-D-25), a imagem de abertura do jogo em foco (ou a imagem de fundo, se ele
-não tiver) cobre a tela atrás de tudo, desfocada e escurecida nos níveis
-escolhidos pelo usuário. Ela é ampliada 10% para as bordas desfocadas
-ficarem fora da tela. Ao trocar de jogo, a nova entra num fade cruzado
+D-25), a imagem da home do jogo em foco (D-30; sem ela, a de abertura e,
+sem esta, a de fundo) cobre a tela atrás de tudo, desfocada e escurecida
+nos níveis escolhidos pelo usuário. Ela aparece inteira, sem ampliar nem
+cortar as bordas: o desfoque é feito pela camada de escurecimento
+(`backdrop-filter`), que repete a imagem nas bordas. Ao trocar de jogo, a nova entra num fade cruzado
 (`--motion-screen`, só opacidade; sem fade com movimento reduzido), e só
 depois que o foco para por 150 ms.
 
@@ -521,6 +522,7 @@ artes independentes; nenhuma é recortada a partir da outra.
 | `background` | Imagem 1920×1080 (16:9) | Detalhes do jogo, como arte dominante |
 | `header` | Imagem larga (`header_image` da Steam, cerca de 2:1) | Lista de conquistas, miniatura de cada jogo |
 | `launch` | Imagem de abertura, 16:9, com `cover`; sem ela, usa-se o `background` | Tela inteira enquanto o jogo abre |
+| `home` | Imagem da home, 16:9, com `cover`; sem ela, usa-se o `launch` e, sem ele, o `background` (D-30) | Fundo do Início, desfocado e escurecido (D-25) |
 
 ### Regras
 

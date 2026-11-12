@@ -243,8 +243,9 @@ limitações, condições de teste e método de inicialização suportado.
     sistema", desmarcadas por padrão, e "Sons da interface", marcada por
     padrão.
 -   Aba "Aparência" com "Mostrar arte do jogo como background", desmarcada
-    por padrão: no Início, a imagem de abertura do jogo em foco fica atrás
-    de tudo, desfocada e escurecida. O usuário escolhe o desfoque (0 a 10)
+    por padrão: no Início, a imagem da home do jogo em foco (D-30; sem ela,
+    a de abertura e, sem esta, a de fundo) fica atrás de tudo, desfocada e
+    escurecida. O usuário escolhe o desfoque (0 a 10)
     e o escurecimento (0% a 90%).
 -   Sons da interface: ao mover o foco, trocar de seção (LB/RB), confirmar,
     voltar, jogar ou instalar, abrir um modal e abrir o menu do sistema. Em silêncio

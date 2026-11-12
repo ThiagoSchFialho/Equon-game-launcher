@@ -81,7 +81,8 @@
 
 .art-editor__preview[data-kind='logo'],
 .art-editor__preview[data-kind='background'],
-.art-editor__preview[data-kind='launch'] {
+.art-editor__preview[data-kind='launch'],
+.art-editor__preview[data-kind='home'] {
   aspect-ratio: 16 / 9;
 }
 

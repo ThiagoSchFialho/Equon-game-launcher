@@ -266,7 +266,7 @@ Artes de cada jogo, guardadas em cache local.
 | --- | --- | --- |
 | `id` | `INTEGER PRIMARY KEY` | |
 | `game_id` | `INTEGER NOT NULL` | FK para `GAMES(id)` com `ON DELETE CASCADE` |
-| `kind` | `TEXT NOT NULL` | `CHECK (kind IN ('cover_square','cover_portrait','logo','background','header','launch'))` |
+| `kind` | `TEXT NOT NULL` | `CHECK (kind IN ('cover_square','cover_portrait','logo','background','header','launch','home'))` |
 | `local_path` | `TEXT NOT NULL` | Caminho relativo à pasta de cache de artes |
 | `source` | `TEXT NOT NULL` | `CHECK (source IN ('steam','steamgriddb','igdb','user'))` |
 | `source_url` | `TEXT` | Origem remota, se houver |
@@ -287,6 +287,7 @@ Tipos de arte:
 | `background` | Imagem 1920×1080 | Página do jogo |
 | `header` | Imagem larga (`header_image` da Steam, ~460×215) | Lista de conquistas |
 | `launch` | Imagem de abertura, 16:9 | Sobre a tela enquanto o jogo abre (D-22); sem ela, usa-se o `background` |
+| `home` | Imagem da home, 16:9 | Fundo do Início (D-25, D-30); sem ela, usa-se o `launch` e, sem ele, o `background` |
 
 Regras:
 
@@ -298,6 +299,7 @@ Regras:
 - A capa vertical (`cover_portrait`) e a quadrada (`cover_square`) são artes **independentes**: uma não é recortada a partir da outra. A tela Início usa a vertical; a Biblioteca usa a quadrada.
 - Validar as dimensões decodificadas de cada tipo: a vertical deve ter proporção de 2:3 a 3:4 (SteamGridDB e IGDB, respectivamente; o card do Início é 2:3 e estica a arte para caber inteira) e a quadrada proporção 1:1.
 - A imagem de abertura (`launch`) só é escolhida pelo usuário em "Editar artes"; nenhum download automático a preenche. Migração `0013` (recria `GAME_ARTWORK` e `GAME_ARTWORK_REMOVED` com o novo `CHECK`).
+- A imagem da home (`home`, D-30) também só é escolhida pelo usuário em "Editar artes", com as mesmas fontes da imagem de abertura. Migração `0022` (recria as duas tabelas de novo, com `'home'` no `CHECK`).
 
 ### 3.9.1 `GAME_ARTWORK_REMOVED` (D-19)
 

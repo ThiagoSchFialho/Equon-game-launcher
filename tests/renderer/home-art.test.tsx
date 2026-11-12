@@ -39,6 +39,18 @@ describe('Home background art', () => {
     expect(backdrop.parentElement?.classList.contains('home')).toBe(true)
   })
 
+  it('prefers the Home image to the launch image (D-30)', async () => {
+    installFakeApi(
+      [
+        summary(1, 'Tidebound', { artwork: ['home', 'launch', 'background'], artworkVersion: 'v1' })
+      ],
+      { settings: { get: async () => settingsInfo({ homeArt: on() }) } }
+    )
+    render(<App />)
+    await screen.findByText('12h 22m')
+    await waitFor(() => expect(images()).toEqual(['equon-art://game/1/home?v=v1']))
+  })
+
   it('falls back to the background image, and shows nothing with neither', async () => {
     installFakeApi([summary(1, 'Tidebound', { artwork: ['background'] })], {
       settings: { get: async () => settingsInfo({ homeArt: on() }) }

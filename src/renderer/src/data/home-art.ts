@@ -1,13 +1,12 @@
 import { createContext, useContext } from 'react'
 import { artworkUrl, type GameSummary, type HomeArtSettings } from '../../../shared/ipc/contract'
 
-/** The art the Home background shows for a game: its launch image, else its background. */
+/**
+ * The art the Home background shows for a game (D-30): its Home image, else its launch image,
+ * else its background.
+ */
 export function homeArtUrl(game: GameSummary): string | null {
-  const kind = game.artwork.includes('launch')
-    ? 'launch'
-    : game.artwork.includes('background')
-      ? 'background'
-      : null
+  const kind = (['home', 'launch', 'background'] as const).find((k) => game.artwork.includes(k))
   return kind ? artworkUrl(game.id, kind, game.artworkVersion) : null
 }
 

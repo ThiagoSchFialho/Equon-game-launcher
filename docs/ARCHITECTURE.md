@@ -78,6 +78,7 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-27 | Home covers: size, spacing and position | Accepted | Settings › Aparência › "Capas da home": two levels 1–100 and Em cima / Centro / Embaixo (portrait covers in Centro, a square-cover shelf on either edge); `USERS.home_cover_*`; see §3.26 |
 | D-28 | A on a Home cover can start the game | Accepted | Settings › Sistema › "Ignorar tela do jogo na home", off by default; Home only; a failed launch opens the game page; `USERS.home_direct_launch`; see §3.27 |
 | D-29 | "Em cima" panel: play stats and latest achievements | Accepted | Under the "Em cima" shelf: logo, play stats, the 4 latest achievements; down enters it, A opens the game achievements; icons download when the user comes down; size 18 and spacing 4 fixed in "Em cima"; see §3.28 |
+| D-30 | "Imagem da home", a seventh art kind | Accepted | `home` 16:9, only chosen by the user in "Editar artes"; the Home background uses it, then the launch image, then the background; migration 0022; see §3.29 |
 | D-24 | Interface sounds | Accepted | Sounds on moving, confirming, going back and opening modals; on by default, `USERS.ui_sounds`; silent while a game runs; see §3.23 |
 | D-16 | Refresh frequency for `appdetails` metadata | Accepted | Fetched only when a game is discovered/added; failed fetches are retried (§3.14) |
 | D-17 | Steam launch mechanism | Accepted | `steam://rungameid/<appid>`, built in the main process (§3.12) |
@@ -504,6 +505,14 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 
 **Code.** `home/TopHome.tsx` puts `CoverShelf` (unchanged for "Embaixo") and `home/GameSpotlight.tsx` together: the shelf takes a `below` slot, drawn inside it so the panel uses its sizes, and an `onCardDown` for entering the panel. A panel too tall for the window is cut at the bottom; with the fixed size there is room at 1920×1080 and 1280×720 (not yet checked on screen).
 
+### 3.29 D-30 — "Imagem da home", a seventh art kind (Accepted, after Phase 8)
+
+**Owner decisions (2026-11-11):** a new art kind, `home` ("Imagem da home"), used only as the Home background (D-25), in the three cover positions. By default it is the launch image, then the background: the Home background shows the Home image, else the launch image, else the background (`data/home-art.ts`). The launch cover (D-22) is unchanged and keeps using the launch image.
+
+**Editing.** A sixth panel in "Editar artes" (§3.18), after "Imagem de abertura", with the same sources, all 16:9: the IGDB image (the same background-shaped picture as the launch image), the Steam gallery and a local file. Nothing downloads it automatically. With no image of its own, the panel previews what the Home would use and says "Usando a imagem de abertura" or "Usando a imagem de fundo", following choices and removals of the same visit. Removing it deletes only the Home image.
+
+**Storage.** Migration 0022 rebuilds `GAME_ARTWORK` and `GAME_ARTWORK_REMOVED` with `'home'` in the kind `CHECK`, copying every row (as 0013 did for the launch image). The import checks it is 16:9, like the background and the launch image.
+
 ## 4. Inconsistencies found across the project docs
 
 Items 1–6 have accepted decisions (D-02, D-04 to D-08) and are now reflected in `DATA_BASE_CONTEXT.md` v0.2 and `PRODUCT.md` v0.2. Item 7 follows the Epic/GOG decision. Items 8–9 are housekeeping; item 9 (documentation language) is still open.
@@ -891,6 +900,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-10 | 0.63 | D-27: "Capas da home" › Posição gains "Em cima", the "Embaixo" shelf mirrored; migration 0020 rebuilds `USERS` to widen the CHECK (§3.26). |
 | 2026-11-10 | 0.64 | D-28: "Ignorar tela do jogo na home" in Configurações › Sistema: A on a Home cover starts the game; a failed launch opens its page; "Ver página do jogo" in the Home options menu (`USERS.home_direct_launch`, migration 0021; §3.27). |
 | 2026-11-11 | 0.65 | D-29: "Em cima" panel under the shelf, with play stats and the latest achievements, navigable; "Em cima" fixes size 18 and spacing 4 (§3.28). |
+| 2026-11-11 | 0.66 | D-30: "Imagem da home", art kind `home` (migration 0022), edited in "Editar artes"; the Home background uses it, then the launch image, then the background (§3.29). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

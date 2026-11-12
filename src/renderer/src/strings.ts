@@ -332,9 +332,11 @@ export const t = {
       cover_square: 'Capa quadrada',
       logo: 'Logo',
       background: 'Imagem de fundo',
-      launch: 'Imagem de abertura'
+      launch: 'Imagem de abertura',
+      home: 'Imagem da home'
     },
     usingBackground: 'Usando a imagem de fundo',
+    usingLaunch: 'Usando a imagem de abertura',
     fromIgdb: 'Imagem do IGDB',
     fromGrid: 'Selecionar imagem do SteamGridDB',
     fromSteam: 'Imagens da Steam',
@@ -367,7 +369,8 @@ export const t = {
       cover_square: 'A capa quadrada precisa ter proporção 1:1.',
       logo: 'Esta imagem não serve como logo.',
       background: 'A imagem de fundo precisa ser 16:9 (ex.: 1920×1080).',
-      launch: 'A imagem de abertura precisa ser 16:9 (ex.: 1920×1080).'
+      launch: 'A imagem de abertura precisa ser 16:9 (ex.: 1920×1080).',
+      home: 'A imagem da home precisa ser 16:9 (ex.: 1920×1080).'
     },
     igdbTitle: 'Jogo no IGDB',
     gridTitle: 'Jogo no SteamGridDB',
@@ -455,7 +458,7 @@ export const t = {
     appearance: {
       homeArt: 'Mostrar arte do jogo como background',
       homeArtHint:
-        'No Início, a imagem de abertura do jogo em foco fica atrás de tudo, desfocada e escurecida.',
+        'No Início, a imagem da home do jogo em foco (ou a de abertura, ou a de fundo) fica atrás de tudo, desfocada e escurecida.',
       blur: 'Desfoque',
       dim: 'Escurecimento',
       /** "Capas da home" (D-27). */
