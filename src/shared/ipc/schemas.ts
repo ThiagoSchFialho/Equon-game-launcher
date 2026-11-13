@@ -18,6 +18,7 @@ import {
   type EditableGame,
   type GameAchievements,
   type GameDetails,
+  type GameSizeInfo,
   type GameSummary,
   type HomeArtSettings,
   type HomeCoverSettings,
@@ -105,6 +106,20 @@ export const driveListSchema = z.array(
     freeBytes: z.number().nonnegative()
   })
 )
+
+export const gameSizeSchema = z.strictObject({
+  gameId: id,
+  title: z.string(),
+  drive: z
+    .string()
+    .regex(/^[A-Z]:$/)
+    .nullable(),
+  bytes: z.number().int().nonnegative().nullable(),
+  kind: z.enum(['exact', 'approx', 'pending', 'unknown']),
+  truncated: z.boolean(),
+  shared: z.boolean()
+}) satisfies z.ZodType<GameSizeInfo>
+export const gameSizeListSchema = z.array(gameSizeSchema)
 
 export const systemInfoSchema = z.strictObject({
   appVersion: z.string(),

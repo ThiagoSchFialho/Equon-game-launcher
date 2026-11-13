@@ -119,6 +119,8 @@ export function installFakeApi(
         schemaVersion: 12
       }),
       listDrives: async () => ({ ok: true, data: [] }),
+      gameSizes: async () => [],
+      gameFolderSize: async () => null,
       isFullscreen: async () => false,
       toggleFullscreen: async () => true,
       claimFocus: async () => true,

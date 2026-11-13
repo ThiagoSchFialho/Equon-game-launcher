@@ -82,6 +82,7 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-31 | Limit the Home to 12 games | Accepted | "Limitar quantidade de jogos na home" in Aparência › Capas da home, off by default: the 12 most recently played; `USERS.home_limit_games`; see §3.30 |
 | D-32 | Settings shortcut on the "Em cima" shelf | Accepted | A cover-shaped shortcut to Settings before the first game; the focus still starts on the first game; see §3.31 |
 | D-33 | Quick settings under the Settings shortcut | Accepted | "Configurações rápidas": Atualizar biblioteca, Tela cheia, Ignorar tela do jogo na home, Limitar jogos na home, changed at once from the "Em cima" Home; see §3.32 |
+| D-34 | Game sizes in Settings › Armazenamento | Accepted | Each drive's bar split by game: Steam from the manifest, ROMs from the file, manual games by summing their folder (with guards); nine games coloured from a new chart palette; nothing stored; see §3.33 |
 | D-24 | Interface sounds | Accepted | Sounds on moving, confirming, going back and opening modals; on by default, `USERS.ui_sounds`; silent while a game runs; see §3.23 |
 | D-16 | Refresh frequency for `appdetails` metadata | Accepted | Fetched only when a game is discovered/added; failed fetches are retried (§3.14) |
 | D-17 | Steam launch mechanism | Accepted | `steam://rungameid/<appid>`, built in the main process (§3.12) |
@@ -536,6 +537,21 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 
 **Code.** `home/QuickSettings.tsx`, drawn by `TopHome` in the shelf's `below` slot when the shortcut is the focused item (`leadingFocused`); the shortcut takes an `onDown`. Each item uses the existing IPC (`library:refresh`, `app:toggle-fullscreen`, `settings:set-home-direct-launch`, `settings:set-home-covers`) and updates the same renderer state Settings updates, so the Home follows at once. No new setting and no new column. The tiles share the achievement tiles' frosted look, with four new white icons (`quick-*.svg`). The text of the last refresh moved to `data/library-refresh.ts`, shared with Configurações.
 
+### 3.33 D-34 — Game sizes in Settings › Armazenamento (Accepted, after Phase 8)
+
+**Owner decisions (2026-11-13):** each drive card of Configurações › Armazenamento shows how much each installed game of Equon takes on it. The drive's bar is split like Steam's storage page: one segment per game, largest first, in a colour of its own for the nine largest (so the legend fills about three lines); the rest of the games share one neutral segment ("Outros N jogos"), everything else on the drive another ("Outros arquivos"), then the free space, striped. The segments touch, with no gap and square ends (owner decision). Under the bar, a legend with a dot, the name and the size of each segment, and the free space ("X GB livres de Y GB", in red under 10% free, since the bar now carries the games' colours). Above it, "Jogos no Equon: X GB". "Ver todos" lists every game of the drive, unknown sizes included.
+
+**Where the sizes come from.** Read-only, never stored, kept in memory for the run (`main/system/game-sizes.ts`):
+
+- Steam: the manifest's `SizeOnDisk`, re-read from the manifests of the last scan; the manifest's path tells the drive. Exact.
+- ROM games (Yuzu): the ROM file's size. Exact.
+- Games started by an executable: the executable's folder, summed (`infrastructure/filesystem/folder-size.ts`), shown as "aprox.". Guards: a drive root or a system folder (Program Files, Windows, the user's home, Desktop, Downloads, Documents, passed in by main) is never summed; links and junctions are not followed, so nothing counts twice and no other drive is entered; the sum stops after 200 000 files or 30 s and then says "mais de X"; an unreadable folder is "tamanho desconhecido"; a folder two games share is summed once, shown on both with "pasta compartilhada" and counted once on the drive.
+- `.url` shortcuts (D-07) have no folder: "tamanho desconhecido".
+
+**When.** On opening the tab: `app:game-sizes` returns every installed game with its drive and the sizes known at once; the renderer then asks `app:game-folder-size` for each folder still to sum, one at a time, and stops asking when the tab closes. Opening the tab again is instant for folders already summed. No new column.
+
+**Colours.** A new chart palette (`--color-chart-1` … `-9`: blue, orange, aqua, violet, magenta, green, purple, olive, cyan, in that fixed order, never cycled) plus two neutrals (`--color-chart-other`, `--color-chart-rest`). It was validated on the dark surface (`--color-surface`) with the data-viz palette validator: lightness band, chroma floor, colour-blind separation of neighbours (worst ΔE 9.4), normal-vision separation (worst ΔE 19.0) and 3:1 contrast all pass; it leaves out the accent and the danger red. With no gap between segments, the neighbours' separation carries the boundary on its own; the worst pair still clears the ΔE 8 target. Names and sizes are always written next to their colour, so colour is never the only cue.
+
 ## 4. Inconsistencies found across the project docs
 
 Items 1–6 have accepted decisions (D-02, D-04 to D-08) and are now reflected in `DATA_BASE_CONTEXT.md` v0.2 and `PRODUCT.md` v0.2. Item 7 follows the Epic/GOG decision. Items 8–9 are housekeeping; item 9 (documentation language) is still open.
@@ -927,6 +943,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-12 | 0.67 | D-31: "Limitar quantidade de jogos na home", the 12 most recently played (`USERS.home_limit_games`, migration 0023; §3.30). |
 | 2026-11-12 | 0.68 | D-32: a cover-shaped Settings shortcut before the first game on the "Em cima" shelf (§3.31). |
 | 2026-11-12 | 0.69 | D-32: the Settings image behind the Home while the shortcut is focused. D-33: "Configurações rápidas" under the shortcut (§3.31, §3.32). |
+| 2026-11-13 | 0.70 | D-34: game sizes per drive in Settings › Armazenamento, with a validated chart palette (§3.33). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

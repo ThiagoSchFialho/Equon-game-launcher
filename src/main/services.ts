@@ -1,5 +1,6 @@
 import { nativeImage, shell, type BrowserWindow } from 'electron'
 import { readdir, readFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { join } from 'node:path'
 import {
   createGameRunner,
@@ -49,6 +50,7 @@ import { createBackgroundActivity } from './background-activity'
 import { createSteamInstall } from './steam/steam-install'
 import { createSteamOnline } from './steam/steam-online'
 import { createSteamService } from './steam/steam-service'
+import { createGameSizes } from './system/game-sizes'
 
 /** Heartbeat interval for running sessions (DATA_BASE_CONTEXT.md §3.8). */
 const HEARTBEAT_MS = 30_000
@@ -356,6 +358,22 @@ export function createServices(
     achievementSync,
     romLibrary,
     activity,
+    gameSizes: createGameSizes({
+      games,
+      configs,
+      steamSizes: () => adapter.installedSizes(),
+      // Folders that hold far more than one game: never summed (D-34).
+      systemFolders: [
+        process.env['ProgramFiles'],
+        process.env['ProgramFiles(x86)'],
+        process.env['ProgramW6432'],
+        process.env['SystemRoot'],
+        homedir(),
+        join(homedir(), 'Desktop'),
+        join(homedir(), 'Downloads'),
+        join(homedir(), 'Documents')
+      ].filter((folder): folder is string => Boolean(folder))
+    }),
     igdb,
     users,
     artworkCacheDir,

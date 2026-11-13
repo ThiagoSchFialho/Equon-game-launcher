@@ -265,9 +265,17 @@ depois que o foco para por 150 ms.
     numa capa do Início inicia o jogo, a dica do A no rodapé diz "Jogar" e
     o menu de opções da capa começa com "Ver página do jogo"; se o jogo não
     abrir, a página dele abre e mostra o motivo.
--   Armazenamento: um cartão por disco local ou removível, com nome e letra,
-    barra do espaço usado e "X GB livres de Y GB", lidos ao abrir a aba. A
-    barra usa `color.install` e fica em `color.danger` com menos de 10% livre.
+-   Armazenamento: um cartão por disco local ou removível, com nome e
+    letra, "Jogos no Equon: X GB" e uma barra dividida por jogo (D-34),
+    como a da Steam: os 9 maiores jogos daquele disco, do maior para o
+    menor, cada um numa cor da paleta de gráficos; os outros jogos juntos
+    em `color.chart-other`; o resto do disco em `color.chart-rest`; e o
+    espaço livre, listrado. Os trechos ficam
+    colados, sem espaço entre eles e sem cantos arredondados. Embaixo, a
+    legenda com bolinha, nome e tamanho ("aprox." para pastas somadas,
+    "mais de" quando a soma parou no limite) e "X GB livres de Y GB", que
+    fica em `color.danger` com menos de 10% livre. "Ver todos" abre a lista
+    de todos os jogos do disco, inclusive os de tamanho desconhecido.
 -   Sobre: versão do Equon, sistema, pasta da Steam detectada, pasta de
     dados, versão do banco e versões de Electron, Chromium e Node.js. Por
     último, o crédito dos sons ("Cosy User Interface SFX", de Jacob,
@@ -315,6 +323,12 @@ de iluminação.
   `color.warning`          `#E7B86A`      Avisos
 
   `color.danger`           `#F07C7C`      Erros e ações destrutivas
+
+  `color.chart-1` … `-9`   `#3987E5` `#D95926` `#199E70` `#9085E9` `#D55181` `#008300` `#B062D6` `#7A9A12` `#1B9FB8`   Paleta de gráficos (D-34), nesta ordem fixa, nunca reaproveitada: um jogo por cor na barra de cada disco. Validada no fundo escuro, inclusive para daltonismo
+
+  `color.chart-other`      `#7D8594`      Gráficos: os demais jogos, juntos
+
+  `color.chart-rest`       `#4A5262`      Gráficos: o resto do disco, que não é jogo do Equon
 
   `color.footer`           `#080A0D`      Rodapé com as dicas de botões
 

@@ -3,6 +3,7 @@ import type { DiscoveryResult, IntegrationAdapter } from '../../core/application
 import type { SteamLiveState } from '../../core/domain'
 import {
   readManifest,
+  readManifestSize,
   scanSteamLibraries,
   type SteamFs,
   type SteamLibraryReport
@@ -28,6 +29,11 @@ export interface SteamAdapter extends IntegrationAdapter {
    * and live state, or null when it cannot be read (nothing changes then).
    */
   readGame(appId: number): Promise<{ installed: boolean; live: SteamLiveState } | null>
+  /**
+   * The size on disk of each game of the last scan, from its manifest, and the manifest file,
+   * whose folder tells the drive (D-34). Unreadable manifests are left out.
+   */
+  installedSizes(): Promise<Map<number, { bytes: number; manifest: string }>>
 }
 
 /**
@@ -81,6 +87,19 @@ export function createSteamAdapter(deps: SteamAdapterDeps): SteamAdapter {
     steamPath: () => found,
     libraries: () => libraries,
     liveState: (appId) => live.get(appId) ?? null,
+
+    async installedSizes() {
+      const sizes = new Map<number, { bytes: number; manifest: string }>()
+      for (const [appId, file] of manifests) {
+        try {
+          const bytes = readManifestSize(await deps.fs.readText(file))
+          if (bytes !== null) sizes.set(appId, { bytes, manifest: file })
+        } catch {
+          // An unreadable manifest: that game's size is unknown.
+        }
+      }
+      return sizes
+    },
 
     async readGame(appId) {
       const file = manifests.get(appId)

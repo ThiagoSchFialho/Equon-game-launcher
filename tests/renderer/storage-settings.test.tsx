@@ -3,7 +3,7 @@ import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from '../../src/renderer/src/App'
 import { formatBytes } from '../../src/renderer/src/data/format'
-import type { DriveInfo, EquonApi } from '../../src/shared/ipc/contract'
+import type { DriveInfo, EquonApi, GameSizeInfo } from '../../src/shared/ipc/contract'
 import { installFakeApi, summary } from './fake-api'
 
 afterEach(cleanup)
@@ -22,8 +22,21 @@ const clickText = async (text: string): Promise<void> => {
   const [element] = await screen.findAllByText(text)
   act(() => (element.closest('button') ?? element).click())
 }
-const openTab = async (listDrives: EquonApi['app']['listDrives']): Promise<void> => {
-  installFakeApi([summary(1, 'Tidebound')], { app: { listDrives } })
+const size = (gameId: number, title: string, extra: Partial<GameSizeInfo>): GameSizeInfo => ({
+  gameId,
+  title,
+  drive: 'C:',
+  bytes: null,
+  kind: 'exact',
+  truncated: false,
+  shared: false,
+  ...extra
+})
+const openTab = async (
+  listDrives: EquonApi['app']['listDrives'],
+  sizes: Partial<Pick<EquonApi['app'], 'gameSizes' | 'gameFolderSize'>> = {}
+): Promise<void> => {
+  installFakeApi([summary(1, 'Tidebound')], { app: { listDrives, ...sizes } })
   render(<App />)
   await screen.findByText('12h 22m')
   act(() => (screen.getByLabelText('Menu do sistema') as HTMLElement).click())
@@ -60,18 +73,72 @@ describe('Settings › Armazenamento', () => {
     expect(screen.getByText('192 GB livres de 931 GB')).toBeTruthy()
   })
 
-  it('fills the bar with the space in use', async () => {
-    await openTab(async () => ({ ok: true, data: [drive({ freeBytes: 25 * GB })] }))
-    const bar = await screen.findByRole('progressbar', { name: 'Disco Local' })
-    expect(bar.getAttribute('aria-valuenow')).toBe('75')
-    expect((bar.firstElementChild as HTMLElement).style.transform).toBe('scaleX(0.75)')
-    expect((bar.firstElementChild as HTMLElement).dataset.low).toBe('false')
+  it('splits the bar by game, largest first, then other files and the free space (D-34)', async () => {
+    await openTab(async () => ({ ok: true, data: [drive({ freeBytes: 25 * GB })] }), {
+      gameSizes: async () => [
+        size(1, 'Small', { bytes: 5 * GB }),
+        size(2, 'Large', { bytes: 30 * GB }),
+        size(3, 'Elsewhere', { bytes: 9 * GB, drive: 'D:' })
+      ]
+    })
+    await screen.findByText('Jogos no Equon: 35 GB')
+    const bar = screen.getByRole('img', { name: /^Disco Local:/ })
+    const widths = Array.from(bar.children).map((child) => (child as HTMLElement).style.width)
+    // Large, Small, other files (75 used - 35 games = 40), free; percentages of 100 GB.
+    expect(widths).toEqual(['30%', '5%', '40%', '25%'])
+    const labels = Array.from(document.querySelectorAll('.settings__drive-label')).map(
+      (label) => label.textContent
+    )
+    expect(labels).toEqual(['Large', 'Small', 'Outros arquivos', 'Espaço livre'])
+    // A game on another drive is not on this one.
+    expect(screen.queryByText('Elsewhere')).toBeNull()
   })
 
-  it('warns in red when under 10% is free', async () => {
+  it('colours nine games at most; the rest share one neutral segment', async () => {
+    await openTab(async () => ({ ok: true, data: [drive({ freeBytes: 10 * GB })] }), {
+      gameSizes: async () =>
+        Array.from({ length: 11 }, (_, i) => size(i + 1, `Jogo ${i + 1}`, { bytes: (12 - i) * GB }))
+    })
+    await screen.findByText('Outros 2 jogos')
+    const dots = Array.from(document.querySelectorAll<HTMLElement>('.settings__drive-dot')).map(
+      (dot) => dot.style.background
+    )
+    expect(dots.slice(0, 9)).toEqual(
+      [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `var(--color-chart-${n})`)
+    )
+    expect(dots[9]).toBe('var(--color-chart-other)')
+  })
+
+  it('sums game folders afterwards, one by one, and says when a size is approximate', async () => {
+    const gameFolderSize = vi.fn<EquonApi['app']['gameFolderSize']>(async (id) =>
+      size(id, 'Manual', { kind: 'approx', bytes: 2 * GB })
+    )
+    await openTab(async () => ({ ok: true, data: [drive({})] }), {
+      gameSizes: async () => [size(7, 'Manual', { kind: 'pending' })],
+      gameFolderSize
+    })
+    expect(await screen.findByText('aprox. 2 GB')).toBeTruthy()
+    expect(gameFolderSize).toHaveBeenCalledWith(7)
+  })
+
+  it('lists every game of a drive in "Ver todos", unknown and shared ones included', async () => {
+    await openTab(async () => ({ ok: true, data: [drive({})] }), {
+      gameSizes: async () => [
+        size(1, 'Steam game', { bytes: 3 * GB }),
+        size(2, 'Shortcut', { kind: 'unknown' }),
+        size(3, 'Big folder', { kind: 'approx', bytes: 4 * GB, truncated: true, shared: true })
+      ]
+    })
+    await clickText('Ver todos')
+    const dialog = await screen.findByRole('dialog', { name: 'Jogos em Disco Local (C:)' })
+    expect(dialog.textContent).toContain('tamanho desconhecido')
+    expect(dialog.textContent).toContain('mais de 4 GB · pasta compartilhada')
+  })
+
+  it('says little free space in red', async () => {
     await openTab(async () => ({ ok: true, data: [drive({ freeBytes: 5 * GB })] }))
-    const bar = await screen.findByRole('progressbar')
-    expect((bar.firstElementChild as HTMLElement).dataset.low).toBe('true')
+    const free = await screen.findByText('5 GB livres de 100 GB')
+    expect(free.dataset.low).toBe('true')
   })
 
   it('has loading, empty and error states, and can try again', async () => {

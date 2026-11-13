@@ -460,7 +460,20 @@ export const t = {
       empty: 'Nenhum disco encontrado.',
       local: 'Disco Local',
       removable: 'Disco removível',
-      space: (free: string, total: string) => `${free} livres de ${total}`
+      space: (free: string, total: string) => `${free} livres de ${total}`,
+      /** The games on each drive (D-34). */
+      gamesTotal: (size: string) => `Jogos no Equon: ${size}`,
+      otherGames: (n: number) => (n === 1 ? 'Outro jogo' : `Outros ${n} jogos`),
+      otherFiles: 'Outros arquivos',
+      free: 'Espaço livre',
+      approx: (size: string) => `aprox. ${size}`,
+      atLeast: (size: string) => `mais de ${size}`,
+      calculating: 'calculando…',
+      unknown: 'tamanho desconhecido',
+      shared: 'pasta compartilhada',
+      seeAll: 'Ver todos',
+      allTitle: (drive: string) => `Jogos em ${drive}`,
+      close: 'Fechar'
     },
     appearance: {
       homeArt: 'Mostrar arte do jogo como background',

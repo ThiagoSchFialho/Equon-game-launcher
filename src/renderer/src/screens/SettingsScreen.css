@@ -272,33 +272,95 @@
   border-radius: var(--radius-panel);
 }
 
+.settings__drive-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
 .settings__drive-name {
   margin: 0;
   font-size: var(--font-size-card-title);
   font-weight: var(--font-weight-medium);
 }
 
-.settings__drive-bar {
-  height: 1.25rem;
-  overflow: hidden;
-  background: var(--color-surface-raised);
-  border-radius: var(--radius-button);
-}
-
-.settings__drive-used {
-  height: 100%;
-  background: var(--color-install);
-  transform-origin: left;
-}
-
-.settings__drive-used[data-low='true'] {
-  background: var(--color-danger);
-}
-
-.settings__drive-space {
+.settings__drive-games {
   margin: 0;
   color: var(--color-text-secondary);
   font-size: var(--font-size-meta);
+}
+
+/*
+ * One segment per game (D-34): the six largest in the chart palette, the rest of the games and
+ * everything else on the drive in two neutrals, then the free space, striped. A 2px gap in the
+ * surface colour separates the fills; widths are set, never animated.
+ */
+.settings__drive-bar {
+  display: flex;
+  height: 1.25rem;
+  overflow: hidden;
+  border-radius: var(--radius-button);
+}
+
+.settings__drive-segment {
+  flex: 0 0 auto;
+  min-width: 0.125rem;
+  height: 100%;
+}
+
+.settings__drive-free {
+  flex: 1 1 auto;
+  height: 100%;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--color-surface-raised) 0 0.375rem,
+    var(--color-border) 0.375rem 0.5rem
+  );
+}
+
+.settings__drive-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-size-meta);
+}
+
+.settings__drive-legend li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.settings__drive-dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+}
+
+.settings__drive-dot--free {
+  background: var(--color-border);
+}
+
+.settings__drive-label {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.settings__drive-value {
+  color: var(--color-text-secondary);
+}
+
+/* Little free space: said in red, as Windows warns (the bar carries the games' colours). */
+.settings__drive-value[data-low='true'] {
+  color: var(--color-danger);
+}
+
+.settings__drive .button {
+  align-self: flex-start;
 }
 
 .settings__about {

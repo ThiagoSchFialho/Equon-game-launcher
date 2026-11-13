@@ -6,6 +6,8 @@ export const IpcChannel = {
   appGetInfo: 'app:get-info',
   appGetSystemInfo: 'app:get-system-info',
   appListDrives: 'app:list-drives',
+  appGameSizes: 'app:game-sizes',
+  appGameFolderSize: 'app:game-folder-size',
   appIsFullscreen: 'app:is-fullscreen',
   appToggleFullscreen: 'app:toggle-fullscreen',
   appClaimFocus: 'app:claim-focus',
@@ -101,6 +103,25 @@ export interface DriveInfo {
   removable: boolean
   totalBytes: number
   freeBytes: number
+}
+
+/**
+ * How much one installed game takes and on which drive (Settings › Armazenamento, D-34).
+ * `exact`: Steam's manifest or the ROM file; `approx`: the executable's folder, summed;
+ * `pending`: that folder is still to be summed (app:game-folder-size); `unknown`: no size (a
+ * .url shortcut, a system folder, a read failure).
+ */
+export interface GameSizeInfo {
+  gameId: number
+  title: string
+  /** "C:"; null when the drive is not known. */
+  drive: string | null
+  bytes: number | null
+  kind: 'exact' | 'approx' | 'pending' | 'unknown'
+  /** The sum stopped at its limit: at least `bytes`. */
+  truncated: boolean
+  /** Another game is in the same folder: on the drive it counts once. */
+  shared: boolean
 }
 
 /** Settings › Sobre. */
@@ -559,6 +580,10 @@ export interface EquonApi {
     getSystemInfo(): Promise<SystemInfo>
     /** Settings › Armazenamento. */
     listDrives(): Promise<Result<DriveInfo[]>>
+    /** Every installed game with its drive and the sizes known at once (D-34). */
+    gameSizes(): Promise<GameSizeInfo[]>
+    /** Sums one game's folder; null when the game is gone. */
+    gameFolderSize(id: number): Promise<GameSizeInfo | null>
     isFullscreen(): Promise<boolean>
     /** Resolves with the new state. */
     toggleFullscreen(): Promise<boolean>

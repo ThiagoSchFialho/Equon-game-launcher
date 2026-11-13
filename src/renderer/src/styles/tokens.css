@@ -27,6 +27,24 @@
   --color-btn-x: #6092fd;
   --color-btn-y: #f2bd65;
 
+  /*
+   * Chart palette (D-34): one hue per game on a drive's bar, in this fixed order, never cycled.
+   * Validated on --color-surface for dark mode (lightness band, chroma, colour-blind separation
+   * of neighbours, contrast); apart from the accent and the danger red. Then the two neutrals:
+   * the games past the ninth, and everything on the drive that is not a game of Equon.
+   */
+  --color-chart-1: #3987e5;
+  --color-chart-2: #d95926;
+  --color-chart-3: #199e70;
+  --color-chart-4: #9085e9;
+  --color-chart-5: #d55181;
+  --color-chart-6: #008300;
+  --color-chart-7: #b062d6;
+  --color-chart-8: #7a9a12;
+  --color-chart-9: #1b9fb8;
+  --color-chart-other: #7d8594;
+  --color-chart-rest: #4a5262;
+
   /* Typography (§3 scale, middle of each range) */
   --font-family: 'Montserrat', 'Segoe UI', sans-serif;
   --font-size-display: 2.5rem; /* 40px */

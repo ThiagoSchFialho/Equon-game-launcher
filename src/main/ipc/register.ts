@@ -68,6 +68,8 @@ import {
   artworkKindListSchema,
   artworkSearchArgs,
   duplicateListSchema,
+  gameSizeListSchema,
+  gameSizeSchema,
   steamGridDbGameListSchema,
   connectionTestSchema,
   systemInfoSchema
@@ -86,6 +88,7 @@ import type { ArtworkFetcher } from '../artwork/artwork-fetcher'
 import type { SteamOnline } from '../steam/steam-online'
 import type { SteamInstall } from '../steam/steam-install'
 import type { SteamService } from '../steam/steam-service'
+import type { GameSizes } from '../system/game-sizes'
 import { isAppUrl, type AppOrigin } from '../security/navigation'
 import {
   getEditableGame,
@@ -118,6 +121,8 @@ export interface IpcDeps {
   systemInfo?: () => SystemInfo
   /** Settings › Armazenamento. */
   listDrives?: () => Promise<Result<DriveInfo[]>>
+  /** Settings › Armazenamento's game sizes (D-34). */
+  gameSizes?: GameSizes
   /** The system menu (D-21). */
   system?: SystemControl
   /** The image that covers the screen while a game opens (D-22). */
@@ -157,6 +162,20 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
     ipcMain.handle(
       IpcChannel.appGetSystemInfo,
       createValidatedHandler(noArgs, systemInfoSchema, trusted, () => systemInfo())
+    )
+  }
+
+  if (deps.gameSizes) {
+    const sizes = deps.gameSizes
+    ipcMain.handle(
+      IpcChannel.appGameSizes,
+      createValidatedHandler(noArgs, gameSizeListSchema, trusted, () => sizes.list())
+    )
+    ipcMain.handle(
+      IpcChannel.appGameFolderSize,
+      createValidatedHandler(gameIdArgs, gameSizeSchema.nullable(), trusted, (id) =>
+        sizes.folder(id)
+      )
     )
   }
 

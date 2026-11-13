@@ -143,3 +143,16 @@ export function readManifest(textContent: string): {
   if (!isSteamAppId(appId) || !title) throw new Error('Incomplete manifest')
   return { appId, title, state: steamStateFromFlags(Number(text(manifest, 'StateFlags') ?? 0)) }
 }
+
+/**
+ * The bytes an installed game takes on disk, as Steam records it (`SizeOnDisk`, D-34); null when
+ * the manifest has none or it is not a whole number.
+ */
+export function readManifestSize(textContent: string): number | null {
+  const manifest = vdfGet(parseVdf(textContent), 'AppState')
+  if (!manifest || typeof manifest !== 'object') return null
+  const value = text(manifest, 'SizeOnDisk')
+  if (value === null || !/^\d+$/.test(value)) return null
+  const bytes = Number(value)
+  return Number.isSafeInteger(bytes) ? bytes : null
+}

@@ -257,7 +257,10 @@ limitações, condições de teste e método de inicialização suportado.
 -   Sons da interface: ao mover o foco, trocar de seção (LB/RB), confirmar,
     voltar, jogar ou instalar, abrir um modal e abrir o menu do sistema. Em silêncio
     enquanto um jogo está aberto ou com o Equon em segundo plano.
--   Aba "Armazenamento" com o espaço livre de cada disco.
+-   Aba "Armazenamento" com o espaço livre de cada disco e quanto cada jogo
+    instalado ocupa nele (D-34), numa barra dividida por jogo com legenda.
+    Jogos da Steam e ROMs com o tamanho exato; jogos manuais pela soma da
+    pasta do executável ("aprox."); atalhos `.url` sem tamanho.
 -   Aba "Sobre" com informações básicas do sistema.
 -   Opções para adicionar, editar e remover jogos manuais.
 -   Informações básicas de diagnóstico para facilitar suporte.

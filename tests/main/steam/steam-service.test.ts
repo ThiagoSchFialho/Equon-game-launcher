@@ -33,7 +33,8 @@ describe('steam service: duplicate review', () => {
       steamPath: () => null,
       libraries: () => [],
       liveState: () => null,
-      readGame: async () => null
+      readGame: async () => null,
+      installedSizes: async () => new Map()
     } satisfies SteamAdapter
     const service = createSteamService({
       games,
@@ -159,7 +160,8 @@ describe('steam service: local check', () => {
         steamPath: () => null,
         libraries: () => [],
         liveState: () => null,
-        readGame: async () => null
+        readGame: async () => null,
+        installedSizes: async () => new Map()
       } satisfies SteamAdapter,
       sessions: createSteamSessions({
         games,
@@ -311,7 +313,8 @@ describe('steam service: removed games (D-26)', () => {
         steamPath: () => null,
         libraries: () => [],
         liveState: () => null,
-        readGame: async () => null
+        readGame: async () => null,
+        installedSizes: async () => new Map()
       },
       sessions: createSteamSessions({
         games,
