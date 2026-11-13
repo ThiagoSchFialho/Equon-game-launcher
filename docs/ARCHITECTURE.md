@@ -491,7 +491,7 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 
 ### 3.27 D-28 — A on a Home cover can start the game (Accepted, after Phase 8)
 
-**Owner decisions (2026-11-10):** a "Ignorar tela do jogo na home" checkbox in Configurações › Sistema, off by default. When on, A on a Home cover starts the game, in any of the three cover positions (D-27), instead of opening its page; the Library and every other screen still open the page. The footer hint for A says "Jogar" instead of "Abrir", and A plays the Play sound (D-24).
+**Owner decisions (2026-11-10):** a "Ignorar tela do jogo na home" checkbox in Configurações › Sistema, off by default. When on, A on a Home cover starts the game, in any of the three cover positions (D-27), instead of opening its page; the Library and every other screen still open the page. The footer hint for A says "Jogar" instead of "Abrir", and A plays the Play sound (D-24). X on a cover then opens the game's page, with the confirm sound, and the footer adds "X Detalhes" (owner decision, 2026-11-13); with the option off, X does nothing on the Home.
 
 **Starting.** It is the same `games:launch` as the page's Jogar, so everything Jogar does holds: the launch image (D-22), the running check and the session. One launch at a time: another A while one is on its way does nothing. If the game cannot start (a missing executable, an emulator not configured, the game already running), the Home screen has nowhere to say why, so the game's page opens, and it explains the reason as it always does.
 

@@ -183,7 +183,8 @@ limitações, condições de teste e método de inicialização suportado.
     continua gravando a última sessão quando ela termina.
 -   Com "Ignorar tela do jogo na home" (Configurações › Sistema, D-28), o
     A numa capa do Início inicia o jogo em vez de abrir a página dele; se
-    o jogo não abrir, a página abre e explica o motivo. O menu de opções
+    o jogo não abrir, a página abre e explica o motivo. O X numa capa
+    abre a página do jogo, e o rodapé mostra "X Detalhes". O menu de opções
     da capa oferece "Ver página do jogo". A Biblioteca não muda.
 -   Na posição "Em cima" das capas (D-29), um painel abaixo delas mostra
     o jogo em foco: logo, tempo de jogo e as 4

@@ -14,6 +14,7 @@ export const t = {
     options: 'Opções',
     open: 'Abrir',
     play: 'Jogar',
+    details: 'Detalhes',
     select: 'Selecionar',
     back: 'Voltar',
     sort: 'Ordenar',

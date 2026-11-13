@@ -45,6 +45,30 @@ describe('"Ignorar tela do jogo na home" (D-28)', () => {
     expect(onGamePage()).toBe(false)
   })
 
+  it('on: X on a cover opens the game page, and the footer says so', async () => {
+    const launch = vi.fn<EquonApi['games']['launch']>(async () => ({ ok: true, data: null }))
+    installFakeApi([summary(1, 'Tidebound')], {
+      games: { launch },
+      settings: { get: async () => settingsInfo({ homeDirectLaunch: true }) }
+    })
+    render(<App />)
+    await screen.findByText('12h 22m')
+    await waitFor(() => expect(footer()).toContain('Jogar'))
+    expect(footer()).toContain('Detalhes')
+    press('x')
+    await waitFor(() => expect(onGamePage()).toBe(true))
+    expect(launch).not.toHaveBeenCalled()
+  })
+
+  it('off: X does nothing on Home and the footer has no Detalhes', async () => {
+    installFakeApi([summary(1, 'Tidebound')])
+    render(<App />)
+    await screen.findByText('12h 22m')
+    expect(footer()).not.toContain('Detalhes')
+    press('x')
+    expect(onGamePage()).toBe(false)
+  })
+
   it('on: a game that cannot start opens its page, which says why', async () => {
     const launch = vi.fn<EquonApi['games']['launch']>(async () => ({
       ok: false,

@@ -8,19 +8,22 @@ import { TopBar } from '../components/TopBar'
 import { useGames } from '../data/games'
 import { useHomeCovers } from '../data/home-covers'
 import { useHomeLaunch } from '../data/home-launch'
-import { useScreenActions } from '../focus/focus-context'
+import { useFocusManager, useScreenActions } from '../focus/focus-context'
 import { FocusScope } from '../focus/FocusProvider'
 import { homeGames } from '../../../shared/library-view'
 import { t } from '../strings'
 import { CenteredCovers } from './home/CenteredCovers'
 import { CoverShelf } from './home/CoverShelf'
 import { TopHome } from './home/TopHome'
-import { HOME_SCOPE } from './home/useCoverFocus'
+import { HOME_SCOPE, homeCardId } from './home/useCoverFocus'
+import { useUiSounds } from '../sound/sound-context'
 import './HomeScreen.css'
 
 const hints = (directLaunch: boolean): Hint[] => [
   { button: 'LB/RB', label: t.hints.navigate },
   { button: 'menu', label: t.hints.options },
+  // A starts the game, so X opens its page (owner decision, D-28).
+  ...(directLaunch ? [{ button: 'X', label: t.hints.details } satisfies Hint] : []),
   { button: 'A', label: directLaunch ? t.hints.play : t.hints.open }
 ]
 const MENU_HINTS: Hint[] = [
@@ -30,6 +33,8 @@ const MENU_HINTS: Hint[] = [
 
 export function HomeScreen(): React.JSX.Element {
   const navigation = useNavigation()
+  const manager = useFocusManager()
+  const sounds = useUiSounds()
   const { games, reload, markLaunched } = useGames()
   const [menuGame, setMenuGame] = useState<GameSummary | null>(null)
   const [homeElement, setHomeElement] = useState<HTMLDivElement | null>(null)
@@ -62,15 +67,24 @@ export function HomeScreen(): React.JSX.Element {
       })
   }
 
-  useScreenActions({
-    previousSection: () => navigation.stepSection(-1),
-    nextSection: () => navigation.stepSection(1)
-  })
-
   // "Limitar quantidade de jogos na home" (D-31): the most recently played first, so the limit
   // keeps the latest ones.
   const all = games.status === 'ready' ? homeGames(games.data) : []
   const shown = covers.limited ? all.slice(0, HOME_GAMES_LIMIT) : all
+
+  useScreenActions({
+    previousSection: () => navigation.stepSection(-1),
+    nextSection: () => navigation.stepSection(1),
+    // With "Ignorar tela do jogo na home", X on a cover opens the game's page (owner decision).
+    secondary: directLaunch
+      ? () => {
+          const game = shown.find((candidate) => homeCardId(candidate) === manager.focusedId)
+          if (!game) return
+          sounds.play('confirm')
+          navigation.openGame(game.id)
+        }
+      : undefined
+  })
 
   let content: React.JSX.Element
   if (games.status === 'loading') {
