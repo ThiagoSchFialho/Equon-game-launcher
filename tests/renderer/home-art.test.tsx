@@ -39,6 +39,23 @@ describe('Home background art', () => {
     expect(backdrop.parentElement?.classList.contains('home')).toBe(true)
   })
 
+  it('"Em cima" fixes the blur at 0 and the dim at 10%, whatever is stored (D-29)', async () => {
+    installFakeApi([summary(1, 'Tidebound', { artwork: ['launch'], artworkVersion: 'v1' })], {
+      settings: {
+        get: async () =>
+          settingsInfo({
+            homeArt: on({ blur: 6, dim: 70 }),
+            homeCovers: { size: 74, gap: 35, position: 'top', limited: false }
+          })
+      }
+    })
+    render(<App />)
+    await waitFor(() => expect(images()).toEqual(['equon-art://game/1/launch?v=v1']))
+    const backdrop = document.querySelector('.home-art') as HTMLElement
+    expect(backdrop.style.getPropertyValue('--home-art-blur')).toBe('0')
+    expect(backdrop.style.getPropertyValue('--home-art-dim')).toBe('0.1')
+  })
+
   it('prefers the Home image to the launch image (D-30)', async () => {
     installFakeApi(
       [
@@ -351,13 +368,19 @@ describe('Home covers (D-27)', () => {
     press('ArrowLeft')
     press('ArrowLeft')
     expect(setHomeCovers).toHaveBeenLastCalledWith({ position: 'top' })
-    // "Em cima" has its own recommended values, and fixes its size and spacing (D-29).
+    // "Em cima" fixes its blur, dim, size and spacing (D-29).
     expect(hints()).toEqual([
-      '(padrão 0)',
-      '(padrão 10%)',
+      '(fixo no Em cima)',
+      '(fixo no Em cima)',
       '(fixo no Em cima)',
       '(fixo no Em cima)'
     ])
+    const fixedBlur = screen.getByRole('slider', { name: 'Desfoque' })
+    expect(fixedBlur.getAttribute('aria-disabled')).toBe('true')
+    expect(fixedBlur.getAttribute('aria-valuenow')).toBe('0')
+    expect(
+      screen.getByRole('slider', { name: 'Escurecimento' }).getAttribute('aria-valuenow')
+    ).toBe('10')
     const fixedSize = screen.getByRole('slider', { name: 'Tamanho' })
     expect(fixedSize.getAttribute('aria-disabled')).toBe('true')
     expect(fixedSize.getAttribute('aria-valuenow')).toBe('13')

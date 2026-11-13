@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { GameSummary } from '../../../../shared/ipc/contract'
 import { HomeArtBackdrop } from '../../components/HomeArtBackdrop'
-import { homeArtUrl, useHomeArt } from '../../data/home-art'
+import { homeArtUrl, shownHomeArt, useHomeArt } from '../../data/home-art'
+import { useHomeCovers } from '../../data/home-covers'
 import { useFocusManager } from '../../focus/focus-context'
 import { prefersReducedMotion } from '../../focus/focus-manager'
 
@@ -53,7 +54,7 @@ export function useCoverFocus(
   /** The background art of the item at index -1 (D-32: the Settings shortcut), if any. */
   leadingArt: string | null = null
 ): CoverFocus {
-  const homeArt = useHomeArt().settings
+  const homeArt = shownHomeArt(useHomeArt().settings, useHomeCovers().settings.position)
   const manager = useFocusManager()
   // The focused item and the one the name shows are kept as game ids (LEADING_ART for index -1),
   // not positions: when a game closes it moves to the front of the Home, and the focus, which

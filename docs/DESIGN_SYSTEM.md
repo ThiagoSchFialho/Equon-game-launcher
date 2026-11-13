@@ -237,7 +237,8 @@ depois que o foco para por 150 ms.
     raridade e data). Sem nenhuma conquista obtida, o bloco de conquistas
     inteiro some (decisão do dono do projeto); ficam o logo e o tempo de
     jogo. O painel troca junto com o nome. No "Em cima",
-    Tamanho e Espaçamento ficam fixos em 13 e 5 e aparecem indisponíveis
+    Tamanho e Espaçamento ficam fixos em 13 e 5, e Desfoque e
+    Escurecimento da arte de fundo em 0 e 10%; todos aparecem indisponíveis
     em Aparência, com "(fixo no Em cima)". Nas duas posições o nome aparece inteiro, numa linha, mesmo
     passando da largura da capa. O tamanho 100 é o maior que ainda fica bom. Os padrões são
     o tamanho e o espaço de antes.

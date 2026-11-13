@@ -11,7 +11,7 @@ import {
   type SettingsInfo
 } from '../../../shared/ipc/contract'
 import { RECOMMENDED_APPEARANCE } from '../data/appearance-defaults'
-import { useHomeArt } from '../data/home-art'
+import { shownHomeArt, useHomeArt } from '../data/home-art'
 import { shownCovers, useHomeCovers } from '../data/home-covers'
 import { errorMessage, t } from '../strings'
 import { Checkbox } from './Checkbox'
@@ -39,9 +39,11 @@ export function AppearanceSettings({
   // The recommended values follow the chosen position: each layout looks best with its own.
   const recommended = RECOMMENDED_APPEARANCE[covers.position]
   const hint = t.settings.appearance.recommended
-  // "Em cima" fixes its size and spacing (D-29): shown, unavailable; the stored ones stay.
+  // "Em cima" fixes its size and spacing, blur and dim (D-29): shown, unavailable; the stored
+  // ones stay.
   const fixed = covers.position === 'top'
   const shown = shownCovers(covers)
+  const shownArt = shownHomeArt(art, covers.position)
   const levelHint = (value: number): string =>
     fixed ? t.settings.appearance.fixedForTop : hint(String(value))
 
@@ -98,24 +100,24 @@ export function AppearanceSettings({
         <LevelRow
           id="settings:home-art-blur"
           label={t.settings.appearance.blur}
-          hint={hint(String(recommended.blur))}
-          valueText={String(art.blur)}
-          value={art.blur}
+          hint={levelHint(recommended.blur)}
+          valueText={String(shownArt.blur)}
+          value={shownArt.blur}
           min={0}
           max={HOME_ART_BLUR_MAX}
-          unavailable={!art.enabled}
+          unavailable={!art.enabled || fixed}
           onChange={(blur) => save({ blur })}
         />
         <LevelRow
           id="settings:home-art-dim"
           label={t.settings.appearance.dim}
-          hint={hint(`${recommended.dim}%`)}
-          valueText={`${art.dim}%`}
-          value={art.dim}
+          hint={fixed ? t.settings.appearance.fixedForTop : hint(`${recommended.dim}%`)}
+          valueText={`${shownArt.dim}%`}
+          value={shownArt.dim}
           min={0}
           max={HOME_ART_DIM_MAX}
           step={HOME_ART_DIM_STEP}
-          unavailable={!art.enabled}
+          unavailable={!art.enabled || fixed}
           onChange={(dim) => save({ dim })}
         />
         {error && (
