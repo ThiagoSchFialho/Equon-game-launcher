@@ -30,7 +30,7 @@ const MENU_HINTS: Hint[] = [
 
 export function HomeScreen(): React.JSX.Element {
   const navigation = useNavigation()
-  const { games, reload } = useGames()
+  const { games, reload, markLaunched } = useGames()
   const [menuGame, setMenuGame] = useState<GameSummary | null>(null)
   const [homeElement, setHomeElement] = useState<HTMLDivElement | null>(null)
   // "Capas da home" › Posição (D-27): "Centro" is its own layout; "Em cima" and "Embaixo" are
@@ -56,7 +56,7 @@ export function HomeScreen(): React.JSX.Element {
     const failed = (): void => navigation.openGame(game.id)
     void window.equon.games
       .launch(game.id)
-      .then((result) => (result.ok ? undefined : failed()), failed)
+      .then((result) => (result.ok ? markLaunched(game.id) : failed()), failed)
       .finally(() => {
         launching.current = false
       })

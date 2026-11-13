@@ -23,6 +23,12 @@ const ART_SETTLE_MS = 150
 /** The art layer of the item at index -1; game ids are always positive. */
 const LEADING_ART = -1
 
+/** An item of the row by its game id (LEADING_ART for index -1), and where it was then. */
+interface Item {
+  key: number
+  at: number
+}
+
 export interface CoverFocus {
   /** The focused card: the layout moves to it at once. */
   index: number
@@ -49,14 +55,26 @@ export function useCoverFocus(
 ): CoverFocus {
   const homeArt = useHomeArt().settings
   const manager = useFocusManager()
-  const [index, setIndex] = useState(() => {
+  // The focused item and the one the name shows are kept as game ids (LEADING_ART for index -1),
+  // not positions: when a game closes it moves to the front of the Home, and the focus, which
+  // stays on its card, must take the layout with it.
+  const [focused, setFocused] = useState<Item>(() => {
     const restored = manager.rememberedFocus(HOME_SCOPE)
-    return Math.max(
+    const at = Math.max(
       games.findIndex((game) => homeCardId(game) === restored),
       0
     )
+    return { key: games[at]?.id ?? LEADING_ART, at }
   })
-  const [infoIndex, setInfoIndex] = useState(index)
+  const [info, setInfo] = useState<Item>(focused)
+  const indexOf = (item: Item): number => {
+    if (item.key === LEADING_ART) return -1
+    const found = games.findIndex((game) => game.id === item.key)
+    // A game that has just left the list: where it was.
+    return found !== -1 ? found : Math.max(0, Math.min(item.at, games.length - 1))
+  }
+  const index = indexOf(focused)
+  const infoIndex = indexOf(info)
   const [infoHidden, setInfoHidden] = useState(false)
   const infoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // The background art: the games of the last two images, the newest fading in on top. Empty
@@ -91,8 +109,13 @@ export function useCoverFocus(
     })
   }
 
+  const itemAt = (i: number): Item => ({
+    key: i === -1 ? LEADING_ART : (games[i]?.id ?? LEADING_ART),
+    at: i
+  })
+
   const focusCard = (i: number): void => {
-    setIndex(i)
+    setFocused(itemAt(i))
     // The first focus (the screen opening or coming back) shows its art at once, without a fade.
     const opening = artIdAt(i)
     if (opening !== undefined) setArtLayers((layers) => (layers.length === 0 ? [opening] : layers))
@@ -109,7 +132,7 @@ export function useCoverFocus(
     infoTimer.current = setTimeout(
       () => {
         infoTimer.current = null
-        setInfoIndex(i)
+        setInfo(itemAt(i))
         setInfoHidden(false)
       },
       prefersReducedMotion() ? 0 : INFO_FADE_MS
@@ -134,7 +157,7 @@ export function useCoverFocus(
 
   return {
     index,
-    infoIndex: Math.min(infoIndex, games.length - 1),
+    infoIndex,
     infoHidden,
     focusCard,
     backdrop

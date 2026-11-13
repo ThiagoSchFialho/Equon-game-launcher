@@ -177,6 +177,10 @@ limitações, condições de teste e método de inicialização suportado.
     do mais recente para o mais antigo. Com "Limitar quantidade de jogos
     na home" (Configurações › Aparência, D-31), só os 12 mais recentes;
     sem a opção, não há limite.
+    Um jogo iniciado pelo botão Jogar ou por uma capa do Início vai para
+    o começo da lista 5 s depois de abrir, com o foco nele, sem esperar a
+    sessão terminar (decisão do dono do projeto). Só a tela muda: o banco
+    continua gravando a última sessão quando ela termina.
 -   Com "Ignorar tela do jogo na home" (Configurações › Sistema, D-28), o
     A numa capa do Início inicia o jogo em vez de abrir a página dele; se
     o jogo não abrir, a página abre e explica o motivo. O menu de opções

@@ -117,7 +117,7 @@ function Details({
   running: boolean
   onOpenMenu: () => void
   /** A .url game changes its last played time at once, with no running state to wait for. */
-  onLaunched: () => void
+  onLaunched: (id: number) => void
 }): React.JSX.Element {
   const [launching, setLaunching] = useState(false)
   const [launchError, setLaunchError] = useState<string | null>(null)
@@ -140,7 +140,7 @@ function Details({
     setLaunchError(null)
     void window.equon.games.launch(game.id).then((result) => {
       setLaunching(false)
-      if (result.ok) onLaunched()
+      if (result.ok) onLaunched(game.id)
       else setLaunchError(t.launchErrors[result.error.code] ?? t.launchErrors['start-failed'])
     })
   }
@@ -258,7 +258,7 @@ function Details({
 
 export function GameDetailsScreen({ id, from }: { id: number; from: Section }): React.JSX.Element {
   const navigation = useNavigation()
-  const { reload: reloadGames, refresh: refreshGames } = useGames()
+  const { reload: reloadGames, refresh: refreshGames, markLaunched } = useGames()
   const { details, reload, refresh } = useGameDetails(id)
   const [overlay, setOverlay] = useState<'menu' | 'remove' | null>(null)
   const [removeError, setRemoveError] = useState<string | null>(null)
@@ -322,9 +322,10 @@ export function GameDetailsScreen({ id, from }: { id: number; from: Section }): 
         from={from}
         running={running}
         onOpenMenu={() => setOverlay('menu')}
-        onLaunched={() => {
+        onLaunched={(id) => {
           refresh()
           refreshGames()
+          markLaunched(id)
         }}
       />
     )
