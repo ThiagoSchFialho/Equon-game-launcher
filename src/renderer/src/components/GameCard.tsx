@@ -15,6 +15,11 @@ interface Props extends FocusableOptions {
   stat?: string | null
   /** "Instalado" and "Zerado" badges: the Library's; off on Home, which lists installed games. */
   statusBadges?: boolean
+  /**
+   * Its focus id; by default it names the variant and the game. Home gives its own, so a card of
+   * the same game in the Library is never taken for the one focused on Home.
+   */
+  focusId?: string
 }
 
 /**
@@ -26,12 +31,10 @@ export function GameCard({
   variant,
   stat,
   statusBadges = variant === 'square',
+  focusId = `game-card:${variant}:${game.id}`,
   ...focusOptions
 }: Props): React.JSX.Element {
-  const { setElement, focused, mouse } = useFocusable<HTMLButtonElement>(
-    `game-card:${variant}:${game.id}`,
-    focusOptions
-  )
+  const { setElement, focused, mouse } = useFocusable<HTMLButtonElement>(focusId, focusOptions)
   // Home only lists installed games, so these two say something only in the Library.
   const badges = [
     game.hidden && { label: t.library.hiddenBadge, icon: hiddenIcon },

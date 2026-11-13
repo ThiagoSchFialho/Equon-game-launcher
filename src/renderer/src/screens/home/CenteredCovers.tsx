@@ -3,7 +3,7 @@ import homeClockIcon from '../../assets/icons/home-clock.svg'
 import { GameCard } from '../../components/GameCard'
 import { formatPlaytime } from '../../data/format'
 import { homeCoverStyle, useHomeCovers } from '../../data/home-covers'
-import { useCoverFocus } from './useCoverFocus'
+import { homeCardId, useCoverFocus } from './useCoverFocus'
 import './CenteredCovers.css'
 
 /**
@@ -27,7 +27,7 @@ export function CenteredCovers({
   backdropTarget: HTMLElement | null
 }): React.JSX.Element {
   const covers = useHomeCovers().settings
-  const focus = useCoverFocus(games, 'portrait', backdropTarget)
+  const focus = useCoverFocus(games, backdropTarget)
   const focusedGame = games[focus.infoIndex]
   return (
     <div
@@ -48,6 +48,7 @@ export function CenteredCovers({
             <GameCard
               game={game}
               variant="portrait"
+              focusId={homeCardId(game)}
               statusBadges={false}
               scroll="none"
               autoFocus={i === 0}

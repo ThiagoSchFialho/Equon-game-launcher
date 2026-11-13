@@ -8,7 +8,7 @@ import {
   shownCovers,
   useHomeCovers
 } from '../../data/home-covers'
-import { useCoverFocus } from './useCoverFocus'
+import { homeCardId, useCoverFocus } from './useCoverFocus'
 import './CoverShelf.css'
 
 /**
@@ -68,7 +68,7 @@ export function CoverShelf({
   }
 }): React.JSX.Element {
   const covers = shownCovers(useHomeCovers().settings)
-  const focus = useCoverFocus(games, 'square', backdropTarget, leading?.art ?? null)
+  const focus = useCoverFocus(games, backdropTarget, leading?.art ?? null)
   const focusedGame = games[focus.infoIndex]
   return (
     <div
@@ -109,6 +109,7 @@ export function CoverShelf({
             <GameCard
               game={game}
               variant="square"
+              focusId={homeCardId(game)}
               statusBadges={false}
               scroll="none"
               autoFocus={i === 0}
@@ -131,7 +132,7 @@ export function CoverShelf({
       {below?.({
         game: focusedGame,
         hidden: focus.infoHidden,
-        cardId: focusedGame ? `game-card:square:${focusedGame.id}` : null,
+        cardId: focusedGame ? homeCardId(focusedGame) : null,
         leadingFocused: Boolean(leading) && focus.infoIndex === -1
       })}
     </div>

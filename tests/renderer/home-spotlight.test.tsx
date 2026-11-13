@@ -263,6 +263,28 @@ describe('"Em cima" panel (D-29)', () => {
     expect(focused()).toBe('Configurações')
   })
 
+  it('going to the Library starts on its first game, not the one focused on Home', async () => {
+    // Home orders by last session (Zeta first), the Library by title (Alpha first).
+    installFakeApi(
+      [
+        summary(1, 'Alpha', { timeLastPlayed: '2026-01-01T10:00:00Z' }),
+        summary(2, 'Zeta', { timeLastPlayed: '2026-11-01T10:00:00Z' })
+      ],
+      {
+        settings: {
+          get: async () =>
+            settingsInfo({ homeCovers: { size: 74, gap: 35, position: 'top', limited: false } })
+        },
+        achievements: { game: async () => null }
+      }
+    )
+    render(<App />)
+    await waitFor(() => expect(focused()).toBe('Zeta'))
+    press('e')
+    await screen.findByRole('heading', { name: 'Biblioteca' })
+    await waitFor(() => expect(focused()).toBe('Alpha'))
+  })
+
   it('stays off the other positions', async () => {
     installFakeApi([summary(1, 'Tidebound')], {
       settings: {

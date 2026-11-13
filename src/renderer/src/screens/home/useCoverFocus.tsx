@@ -7,6 +7,12 @@ import { useFocusManager } from '../../focus/focus-context'
 import { prefersReducedMotion } from '../../focus/focus-manager'
 
 export const HOME_SCOPE = 'screen:home'
+
+/**
+ * The focus id of a Home cover, in every layout. Its own: the Library's square cards are
+ * `game-card:square:<id>`, and the same id on both screens kept a Home focus in the Library.
+ */
+export const homeCardId = (game: GameSummary): string => `home-card:${game.id}`
 /** Each half of the name's fade: half of --motion-focus (CenteredCovers.css, CoverShelf.css). */
 const INFO_FADE_MS = 70
 /**
@@ -32,12 +38,11 @@ export interface CoverFocus {
 /**
  * What both Home layouts share (D-27, "Centro" and "Embaixo"): which card is focused, the name
  * that fades out, moves while hidden and fades in for the new card, and the background art.
- * `variant` is the card kind the layout shows, which is part of the focus id: coming back to
- * Home starts on the restored game, so the row does not travel to it on screen.
+ * Coming back to Home starts on the restored game (homeCardId), so the row does not travel to
+ * it on screen.
  */
 export function useCoverFocus(
   games: GameSummary[],
-  variant: 'portrait' | 'square',
   backdropTarget: HTMLElement | null,
   /** The background art of the item at index -1 (D-32: the Settings shortcut), if any. */
   leadingArt: string | null = null
@@ -47,7 +52,7 @@ export function useCoverFocus(
   const [index, setIndex] = useState(() => {
     const restored = manager.rememberedFocus(HOME_SCOPE)
     return Math.max(
-      games.findIndex((game) => `game-card:${variant}:${game.id}` === restored),
+      games.findIndex((game) => homeCardId(game) === restored),
       0
     )
   })
