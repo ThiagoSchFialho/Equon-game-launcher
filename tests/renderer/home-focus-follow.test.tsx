@@ -86,4 +86,49 @@ describe('Home focus after a game closes', () => {
     expect(focused()).toContain('Alpha')
     expect(title()).toBe('Alpha')
   })
+
+  it('a focus on the first place moves to a game that takes it, as at startup', async () => {
+    let games = [summary(1, 'Alpha'), summary(2, 'Beta'), summary(3, 'Gamma')]
+    let changed: () => void = () => {}
+    installFakeApi(games, {
+      games: { list: async () => games },
+      library: {
+        onChanged: (listener) => {
+          changed = listener
+          return () => {}
+        }
+      }
+    })
+    render(<App />)
+    await waitFor(() => expect(focused()).toContain('Gamma'))
+    // Alpha was played outside Equon: the Steam sync makes it the most recent.
+    games = [summary(1, 'Alpha', { timeLastPlayed: '2026-11-13T10:00:00Z' }), games[1], games[2]]
+    act(() => changed())
+    await waitFor(() => expect(focused()).toContain('Alpha'))
+    expect(carouselIndex()).toBe('0')
+  })
+
+  it('shows the background art when Settings answers after the games', async () => {
+    let answer: (info: Awaited<ReturnType<EquonApi['settings']['get']>>) => void = () => {}
+    installFakeApi([summary(1, 'Alpha', { artwork: ['launch'], artworkVersion: 'v1' })], {
+      settings: { get: () => new Promise((resolve) => (answer = resolve)) }
+    })
+    render(<App />)
+    await waitFor(() => expect(focused()).toContain('Alpha'))
+    // "Em cima" mounts the shelf again, with the same focus id on the card.
+    act(() =>
+      answer(
+        settingsInfo({
+          homeArt: { enabled: true, blur: 4, dim: 60 },
+          homeCovers: { size: 74, gap: 35, position: 'top', limited: false }
+        })
+      )
+    )
+    await waitFor(() => expect(document.querySelector('.home-shelf')).toBeTruthy())
+    await waitFor(() =>
+      expect(document.querySelector('.home-art__image')?.getAttribute('src')).toBe(
+        'equon-art://game/1/launch?v=v1'
+      )
+    )
+  })
 })

@@ -181,6 +181,10 @@ limitações, condições de teste e método de inicialização suportado.
     o começo da lista 5 s depois de abrir, com o foco nele, sem esperar a
     sessão terminar (decisão do dono do projeto). Só a tela muda: o banco
     continua gravando a última sessão quando ela termina.
+    Quando a ordem muda, o foco segue o jogo em que estava; mas, se estava
+    no primeiro lugar e outro jogo passa à frente (um jogo aberto fora do
+    Equon, trazido pela sincronização da Steam ao abrir), o foco vai para
+    o novo primeiro.
 -   Com "Ignorar tela do jogo na home" (Configurações › Sistema, D-28), o
     A numa capa do Início inicia o jogo em vez de abrir a página dele; se
     o jogo não abrir, a página abre e explica o motivo. O X numa capa

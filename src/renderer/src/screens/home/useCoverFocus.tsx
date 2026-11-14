@@ -78,8 +78,9 @@ export function useCoverFocus(
   const infoIndex = indexOf(info)
   const [infoHidden, setInfoHidden] = useState(false)
   const infoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // The background art: the games of the last two images, the newest fading in on top. Empty
-  // until the first focus, which may land on another card than the one guessed here.
+  // The background art: the games of the last two images, the newest fading in on top. Until
+  // the first focus, the guessed item: a layout that mounts again (Settings answering after the
+  // games, "Centro" giving way to "Em cima") keeps the same focus id, so no focus comes.
   const [artLayers, setArtLayers] = useState<number[]>([])
   const artTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(
@@ -89,6 +90,20 @@ export function useCoverFocus(
     },
     []
   )
+
+  // The first place is the most recent game. When another game takes it (one played outside
+  // Equon, synced from Steam at startup), a focus on the first place moves to it; a focus on any
+  // other card stays on its game, as for a game that just started (owner decision).
+  const firstId = games[0]?.id
+  const previousFirst = useRef(firstId)
+  useEffect(() => {
+    const before = previousFirst.current
+    previousFirst.current = firstId
+    const first = games[0]
+    if (before === undefined || before === firstId || !first) return
+    const was = games.find((game) => game.id === before)
+    if (was && manager.focusedId === homeCardId(was)) manager.focus(homeCardId(first))
+  }, [firstId, games, manager])
 
   const byId = new Map(games.map((game) => [game.id, game]))
   // A layer is a game id, or LEADING_ART for the item at index -1; both resolve to a URL.
@@ -144,7 +159,7 @@ export function useCoverFocus(
     homeArt.enabled && backdropTarget
       ? createPortal(
           <HomeArtBackdrop
-            layers={artLayers.flatMap((id) => {
+            layers={(artLayers.length > 0 ? artLayers : [focused.key]).flatMap((id) => {
               const url = artUrl(id)
               return url === undefined ? [] : [{ gameId: id, url }]
             })}
