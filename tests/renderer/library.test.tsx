@@ -129,6 +129,29 @@ describe('library organization', () => {
     expect(screen.getByLabelText('Filtrar: Nenhum')).toBeTruthy()
   })
 
+  it('shows where the focused game stands in the sort, in the left margin', async () => {
+    installFakeApi(games)
+    await openLibrary()
+    const letter = (): string | null =>
+      document.querySelector('.library__letter')?.textContent ?? null
+    await waitFor(() => expect(letter()).toBe('C'))
+    // Right click focuses a card (and opens its menu; B closes it).
+    const zelda = document.querySelector<HTMLElement>('.library__grid [aria-label="Zelda"]')
+    act(() => {
+      if (zelda) fireEvent.contextMenu(zelda)
+    })
+    press('Escape')
+    await waitFor(() => expect(letter()).toBe('Z'))
+    // By playtime, the band of the focused game: Pokémon Red, 500 minutes.
+    press('x')
+    await clickText('Tempo de jogo')
+    await waitFor(() => expect(letter()).toBe('>8h'))
+    // A sort without one: nothing.
+    press('x')
+    await clickText('Recentes')
+    await waitFor(() => expect(letter()).toBeNull())
+  })
+
   it('searches with the on-screen keyboard, ignoring accents', async () => {
     installFakeApi(games)
     await openLibrary()

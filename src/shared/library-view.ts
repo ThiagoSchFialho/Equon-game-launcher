@@ -120,3 +120,51 @@ export function applyLibraryView(games: readonly GameSummary[], view: LibraryVie
 export function homeGames(games: readonly GameSummary[]): GameSummary[] {
   return games.filter((g) => g.installed === true && !g.hidden).sort(byRecent)
 }
+
+/**
+ * The letter a title files under when sorted by title (owner decision): its first letter without
+ * accents ("Á" → "A"), or "#" for a number or a symbol.
+ */
+export function titleInitial(title: string): string {
+  const first = title.trim().normalize('NFD').charAt(0).toUpperCase()
+  return /^[A-Z]$/.test(first) ? first : '#'
+}
+
+/**
+ * Sorted by playtime, the band the focused game is in (owner decisions): "0h", ">0h" under an
+ * hour, ">1h" … ">9h" hour by hour, ">10h" … ">90h" in steps of 10 hours, and ">100h" from 100
+ * hours up.
+ */
+export function playtimeBand(minutes: number): string {
+  if (minutes <= 0) return '0h'
+  const hours = minutes / 60
+  if (hours >= 100) return '>100h'
+  if (hours < 10) return `>${Math.floor(hours)}h`
+  return `>${Math.floor(hours / 10) * 10}h`
+}
+
+/**
+ * Sorted by achievements, the band of the focused game (owner decisions): "100%", ">90%" …
+ * ">10%" in steps of 10, then ">5%", ">1%", ">0%" under 1%, and "0%"; null for a game with no
+ * known achievements.
+ */
+export function achievementBand(percent: number | null): string | null {
+  if (percent === null) return null
+  if (percent >= 100) return '100%'
+  if (percent <= 0) return '0%'
+  if (percent < 1) return '>0%'
+  if (percent < 5) return '>1%'
+  if (percent < 10) return '>5%'
+  return `>${Math.floor(percent / 10) * 10}%`
+}
+
+/**
+ * What the Library's left margin shows for the focused game (owner decision): its letter by
+ * title, its band by playtime or by achievements; nothing for the other sorts.
+ */
+export function libraryMarker(game: GameSummary, sort: LibrarySort): string | null {
+  if (sort === 'title') return titleInitial(game.title)
+  if (sort === 'playtime') return playtimeBand(game.playtime)
+  if (sort === 'achievements') return achievementBand(game.achievementPercent)
+  return null
+}

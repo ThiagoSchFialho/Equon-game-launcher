@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useSyncExternalStore } from 'react'
 import type { GameSummary } from '../../../shared/ipc/contract'
 import {
   DEFAULT_LIBRARY_VIEW,
   activeFilterCount,
   applyLibraryView,
   isFiltered,
+  libraryMarker,
   type LibrarySort,
   type LibraryView
 } from '../../../shared/library-view'
@@ -223,7 +224,10 @@ export function LibraryScreen(): React.JSX.Element {
               </Button>
             </div>
           </div>
-          <div className="library__scroll">{content}</div>
+          <div className="library__body">
+            <SortMarker games={shown} sort={view.sort} />
+            <div className="library__scroll">{content}</div>
+          </div>
         </main>
         <Footer hints={overlay ? MENU_HINTS : HINTS} />
       </div>
@@ -299,5 +303,30 @@ export function LibraryScreen(): React.JSX.Element {
         />
       )}
     </FocusScope>
+  )
+}
+
+/**
+ * In the empty margin left of the covers, large, where the focused game stands in the sort
+ * (owner decisions): its letter by title, its band by playtime or by achievements. Only while a
+ * cover has the focus; decorative, the card says the rest.
+ */
+function SortMarker({
+  games,
+  sort
+}: {
+  games: readonly GameSummary[]
+  sort: LibrarySort
+}): React.JSX.Element | null {
+  const manager = useFocusManager()
+  const focusedId = useSyncExternalStore(manager.subscribe, () => manager.focusedId)
+  const game = games.find((candidate) => `game-card:square:${candidate.id}` === focusedId)
+  const marker = game ? libraryMarker(game, sort) : null
+  if (marker === null) return null
+  // A new marker fades in (LibraryScreen.css); the same one stays put.
+  return (
+    <p key={marker} className="library__letter" aria-hidden="true">
+      {marker}
+    </p>
   )
 }

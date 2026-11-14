@@ -7,6 +7,9 @@ import {
   homeGames,
   isFiltered,
   searchKey,
+  achievementBand,
+  playtimeBand,
+  titleInitial,
   type LibraryView
 } from '../../src/shared/library-view'
 
@@ -174,5 +177,45 @@ describe('homeGames', () => {
   it('has no limit', () => {
     const list = Array.from({ length: 40 }, (_, i) => game(i + 1, 'G' + String(i)))
     expect(homeGames(list)).toHaveLength(40)
+  })
+})
+
+describe('titleInitial', () => {
+  it('is the first letter without accents, or # for a number or a symbol', () => {
+    expect(titleInitial('Celeste')).toBe('C')
+    expect(titleInitial('  ōkami')).toBe('O')
+    expect(titleInitial('Ácaro')).toBe('A')
+    expect(titleInitial('7 Days to Die')).toBe('#')
+    expect(titleInitial('[REDACTED]')).toBe('#')
+    expect(titleInitial('')).toBe('#')
+  })
+})
+
+describe('playtimeBand and achievementBand', () => {
+  it('bands playtime hour by hour under 10h, then in 10-hour steps up to >100h', () => {
+    expect(playtimeBand(0)).toBe('0h')
+    expect(playtimeBand(1)).toBe('>0h')
+    expect(playtimeBand(59)).toBe('>0h')
+    expect(playtimeBand(60)).toBe('>1h')
+    expect(playtimeBand(5 * 60 + 30)).toBe('>5h')
+    expect(playtimeBand(9 * 60 + 59)).toBe('>9h')
+    expect(playtimeBand(10 * 60)).toBe('>10h')
+    expect(playtimeBand(99 * 60)).toBe('>90h')
+    expect(playtimeBand(100 * 60)).toBe('>100h')
+    expect(playtimeBand(2000 * 60)).toBe('>100h')
+  })
+
+  it('bands achievements in steps of 10%, then >5%, >1%, >0% and 0%', () => {
+    expect(achievementBand(100)).toBe('100%')
+    expect(achievementBand(99.9)).toBe('>90%')
+    expect(achievementBand(80)).toBe('>80%')
+    expect(achievementBand(10)).toBe('>10%')
+    expect(achievementBand(9.9)).toBe('>5%')
+    expect(achievementBand(5)).toBe('>5%')
+    expect(achievementBand(4.9)).toBe('>1%')
+    expect(achievementBand(1)).toBe('>1%')
+    expect(achievementBand(0.5)).toBe('>0%')
+    expect(achievementBand(0)).toBe('0%')
+    expect(achievementBand(null)).toBeNull()
   })
 })

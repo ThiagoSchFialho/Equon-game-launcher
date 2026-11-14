@@ -1,13 +1,20 @@
 .library {
   display: flex;
   flex-direction: column;
+  /*
+   * Five covers a row, each as large as when six fitted between the usual margins: the side
+   * margins grow by half a cover and a gap instead (owner decision). % is the screen's width.
+   */
+  /* 25px at 1920×1080, between the covers both ways (owner decision; between two tokens). */
+  --library-gap: 1.5625rem;
+  --library-gutter: calc(var(--space-12) + (100% - 2 * var(--space-12) + var(--library-gap)) / 12);
 }
 
 .library__header {
   display: flex;
   align-items: baseline;
   gap: var(--space-4);
-  padding: var(--space-2) var(--space-12) var(--space-5);
+  padding: var(--space-2) var(--library-gutter) var(--space-5);
 }
 
 .library__title {
@@ -29,7 +36,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-6);
-  padding: 0 var(--space-12) var(--space-6);
+  padding: 0 var(--library-gutter) var(--space-6);
 }
 
 .library__toolbar-actions {
@@ -45,18 +52,52 @@
   font-size: var(--font-size-body);
 }
 
+/* The grid's area, and the margin left of it where the title letter goes. */
+.library__body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/*
+ * Sorted by title, the focused game's letter, centred in the left margin at the height of the
+ * focused row (the list keeps it in the middle). Decorative and never focusable.
+ */
+.library__letter {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: var(--library-gutter);
+  margin: 0;
+  transform: translateY(-50%);
+  text-align: center;
+  font-size: var(--font-size-display);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-secondary);
+  pointer-events: none;
+  animation: library-letter-in var(--motion-focus) var(--motion-easing);
+}
+
+@keyframes library-letter-in {
+  from {
+    opacity: 0;
+  }
+}
+
 .library__scroll {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   scrollbar-width: none;
   /* Room for the focus ring at the edges. */
-  padding: var(--space-2) var(--space-12) var(--space-10);
+  padding: var(--space-2) var(--library-gutter) var(--space-10);
   scroll-padding: var(--space-8) 0;
 }
 
 .library__grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: var(--space-10);
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--library-gap);
 }

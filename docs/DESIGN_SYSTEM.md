@@ -94,6 +94,23 @@ depois que o foco para por 150 ms.
 
 -   Densidade equilibrada: cards grandes o suficiente para reconhecer a
     arte, com quantidade suficiente para navegar pela coleção.
+-   Cinco capas por linha, cada uma do tamanho que tinha quando cabiam
+    seis: as margens laterais da tela (título, barra e grade) crescem meia
+    capa e meio espaçamento de cada lado (decisão do dono do projeto,
+    2026-11-14). Entre as capas, 25 px em 1920×1080 nas duas direções
+    (1,5625 rem, entre `space-6` e `space-8`, decisão do dono do projeto).
+-   A margem esquerda mostra onde o jogo em foco está na ordenação,
+    centralizado na margem e na altura da linha em foco (que fica no meio
+    da lista), em `font-size-display` negrito `color.text-secondary`
+    (decisões do dono do projeto, 2026-11-14): por Título, a letra ("C";
+    sem acento, "Á" → "A"; "#" para número ou símbolo); por Tempo de jogo,
+    a faixa ("0h", ">0h" abaixo de 1 hora, ">1h" … ">9h" de hora em hora,
+    ">10h" … ">90h" de 10 em 10 horas, ">100h"); por % de conquistas, a
+    faixa ("100%", ">90%" … ">10%" de 10 em 10%, ">5%", ">1%", ">0%"
+    abaixo de 1%, "0%";
+    nada para jogo sem conquistas conhecidas). Nas outras ordenações, ou
+    com o foco fora das capas, nada. Um valor novo entra com fade
+    (`motion-focus`). É decorativo e nunca recebe foco.
 -   Busca, filtro e ordenação acessíveis sem abandonar o contexto.
 -   O card em foco fica no centro da lista, e a rolagem acompanha o foco
     mesmo com o direcional segurado. Passar de uma linha para a outra leva
