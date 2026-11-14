@@ -126,6 +126,11 @@ describe('achievements overview', () => {
     await openOverview()
     expect(await screen.findByText('797')).toBeTruthy()
     expect(screen.getByText('458')).toBeTruthy()
+    // No visible title; Ordenar and the sync come under the total (owner decision).
+    expect(screen.getByRole('heading', { name: 'Conquistas' }).className).toBe('visually-hidden')
+    const totals = document.querySelector('.achievements__summary')
+    const toolbar = document.querySelector('.achievements__header')
+    expect(totals?.compareDocumentPosition(toolbar as Node)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
     expect(cards()).toEqual(['Newest', 'Older', 'Never played'])
     expect(document.querySelector('[data-focused="true"]')?.getAttribute('aria-label')).toBe(
       'Newest'

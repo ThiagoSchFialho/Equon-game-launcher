@@ -3,18 +3,14 @@
   flex-direction: column;
 }
 
+/* Under the total: the sync status, Ordenar and the sync button (owner decision). */
 .achievements__header {
   display: flex;
   align-items: center;
   gap: var(--space-5);
-  padding: var(--space-2) var(--space-12) var(--space-4);
-}
-
-.achievements__title {
-  margin: 0;
-  color: var(--color-accent);
-  font-size: var(--font-size-display);
-  font-weight: var(--font-weight-bold);
+  /* Inside the scrolling area, which gives the side margins; room before the list (owner decision). */
+  /* 60px at 1920×1080 (owner decision). */
+  padding: 0 0 calc(var(--space-12) + 0.75rem);
 }
 
 .achievements__status {
@@ -39,7 +35,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 0 var(--space-12) var(--space-6);
+  /*
+   * First in the scrolling area, whose top padding (space-2) makes it as far from the top bar
+   * as the Library's toolbar (no title); the area gives the side margins.
+   */
+  margin: var(--space-6) 0 var(--space-5);
   padding: var(--space-3) var(--space-6);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -65,7 +65,7 @@
   overflow-y: auto;
   scrollbar-width: none;
   /* Room for the focus ring at the edges. */
-  padding: var(--space-2) var(--space-12) var(--space-10);
+  padding: var(--space-2) var(--library-gutter) var(--space-10);
   scroll-padding: var(--space-4) 0;
 }
 

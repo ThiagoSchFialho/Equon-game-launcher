@@ -104,45 +104,50 @@ export function AchievementsScreen(): React.JSX.Element {
       <div className="screen">
         <TopBar active="achievements" />
         <main className="screen__main achievements">
-          <div className="achievements__header">
-            <h1 className="achievements__title">{t.achievements.title}</h1>
-            <p className="achievements__status" aria-live="polite">
-              {statusText(status)}
-            </p>
-            {/* After the list loads, so its first game gets the initial focus. */}
+          {/* No visible title (owner decision); screen readers still get one. */}
+          <h1 className="visually-hidden">{t.achievements.title}</h1>
+          {/* The total and the toolbar scroll up with the list (owner decision). */}
+          <div className="achievements__scroll">
             {overview.status === 'ready' && (
-              <>
-                <ToolbarField
-                  id="achievements:sort"
-                  kind="select"
-                  label={t.library.sort}
-                  value={t.achievements.sorts[sort]}
-                  onConfirm={toggleSort}
-                />
-                <Button
-                  id="achievements:sync"
-                  variant="primary"
-                  label={t.achievements.sync}
-                  unavailable={running}
-                  autoFocus={games.length === 0}
-                  onConfirm={sync}
-                >
-                  <img src={syncIcon} alt="" />
-                  {running ? t.achievements.syncing : t.achievements.sync}
-                </Button>
-              </>
+              <section className="achievements__summary">
+                <div>
+                  <p className="achievements__summary-label">{t.achievements.total}</p>
+                  <p className="achievements__summary-value">{overview.data.total}</p>
+                </div>
+                <TrophyRow totals={overview.data.trophies} />
+              </section>
             )}
+            {/* Under the total (owner decision): the status, Ordenar and the sync. */}
+            <div className="achievements__header">
+              <p className="achievements__status" aria-live="polite">
+                {statusText(status)}
+              </p>
+              {/* After the list loads, so its first game gets the initial focus. */}
+              {overview.status === 'ready' && (
+                <>
+                  <ToolbarField
+                    id="achievements:sort"
+                    kind="select"
+                    label={t.library.sort}
+                    value={t.achievements.sorts[sort]}
+                    onConfirm={toggleSort}
+                  />
+                  <Button
+                    id="achievements:sync"
+                    variant="primary"
+                    label={t.achievements.sync}
+                    unavailable={running}
+                    autoFocus={games.length === 0}
+                    onConfirm={sync}
+                  >
+                    <img src={syncIcon} alt="" />
+                    {running ? t.achievements.syncing : t.achievements.sync}
+                  </Button>
+                </>
+              )}
+            </div>
+            {content}
           </div>
-          {overview.status === 'ready' && (
-            <section className="achievements__summary">
-              <div>
-                <p className="achievements__summary-label">{t.achievements.total}</p>
-                <p className="achievements__summary-value">{overview.data.total}</p>
-              </div>
-              <TrophyRow totals={overview.data.trophies} />
-            </section>
-          )}
-          <div className="achievements__scroll">{content}</div>
         </main>
         <Footer hints={HINTS} />
       </div>

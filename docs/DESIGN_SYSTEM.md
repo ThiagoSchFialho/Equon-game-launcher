@@ -687,6 +687,15 @@ inteiramente operável por controle, teclado e mouse.
 
 ### Visão geral
 
+-   As margens laterais são as da Biblioteca, então o conteúdo (resumo,
+    barra e lista) tem a mesma largura que a grade de jogos dela
+    (decisão do dono do projeto, 2026-11-14).
+-   Sem título visível (só para leitores de tela): a tela começa pelo
+    resumo do total de conquistas, 32 px abaixo da barra superior, como a
+    barra da Biblioteca; embaixo dele, a linha com o estado da
+    sincronização, "Ordenar" e "Sincronizar conquistas"; depois a lista.
+    O resumo e essa linha rolam junto com a lista (decisões do dono do
+    projeto, 2026-11-14).
 -   Exibir um resumo agregado com o total (soma de platinas, ouro, prata
     e bronze) e os totais por categoria.
 -   Jogos ocultos também aparecem na lista, com o selo "Oculto" e a arte
