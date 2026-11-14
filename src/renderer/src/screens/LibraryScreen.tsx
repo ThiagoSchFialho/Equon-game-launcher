@@ -167,21 +167,13 @@ export function LibraryScreen(): React.JSX.Element {
     )
   }
 
-  const total = view.hiddenOnly ? all.length : all.filter((g) => !g.hidden).length
-
   return (
     <FocusScope id="screen:library">
       <div className="screen">
         <TopBar active="library" />
         <main className="screen__main library">
-          <header className="library__header">
-            <h1 className="library__title">{t.library.title}</h1>
-            {games.status === 'ready' && (
-              <span className="library__count">
-                {filtered ? t.library.countOf(shown.length, total) : t.library.count(total)}
-              </span>
-            )}
-          </header>
+          {/* No visible title (owner decision); screen readers still get one. */}
+          <h1 className="visually-hidden">{t.library.title}</h1>
           <div className="library__toolbar">
             <ToolbarField
               id="library:search"
@@ -227,6 +219,11 @@ export function LibraryScreen(): React.JSX.Element {
           <div className="library__body">
             <SortMarker games={shown} sort={view.sort} />
             <div className="library__scroll">{content}</div>
+            {/* No title (owner decision): the game count sits at the bottom right. */}
+            {games.status === 'ready' && (
+              // The games shown, filtered or not, never "N de M" (owner decision).
+              <p className="library__count">{t.library.count(shown.length)}</p>
+            )}
           </div>
         </main>
         <Footer hints={overlay ? MENU_HINTS : HINTS} />

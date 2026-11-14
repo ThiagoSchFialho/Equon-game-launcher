@@ -94,6 +94,13 @@ depois que o foco para por 150 ms.
 
 -   Densidade equilibrada: cards grandes o suficiente para reconhecer a
     arte, com quantidade suficiente para navegar pela coleção.
+-   Sem título visível (só para leitores de tela): a tela começa pela
+    barra de busca. A contagem dos jogos mostrados ("27 jogos", com ou
+    sem filtro, nunca "27 de 262") fica no canto inferior direito, acima
+    do rodapé (fora dele), numa etiqueta de uma linha em
+    `color.surface-raised` a 90%, com `radius-button`, texto
+    18,5 px (entre `font-size-body` e `font-size-card-title`) em
+    `color.text-secondary` (decisões do dono do projeto, 2026-11-14).
 -   Cinco capas por linha, cada uma do tamanho que tinha quando cabiam
     seis: as margens laterais da tela (título, barra e grade) crescem meia
     capa e meio espaçamento de cada lado (decisão do dono do projeto,

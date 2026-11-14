@@ -27,7 +27,6 @@ export const t = {
   library: {
     title: 'Biblioteca',
     count: (n: number) => (n === 1 ? '1 jogo' : `${n} jogos`),
-    countOf: (shown: number, total: number) => `${shown} de ${total} jogos`,
     loading: 'Carregando biblioteca…',
     error: 'Não foi possível carregar a biblioteca.',
     retry: 'Tentar novamente',

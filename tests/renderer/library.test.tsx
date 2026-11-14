@@ -124,7 +124,10 @@ describe('library organization', () => {
     installFakeApi(games)
     await openLibrary()
     expect(cards()).toEqual(['Celeste', 'Pokémon Red', 'Zelda'])
-    expect(screen.getByText('3 jogos')).toBeTruthy()
+    // The count sits at the bottom right, outside the footer; the title is for screen readers only.
+    expect(screen.getByText('3 jogos').closest('footer')).toBeNull()
+    expect(screen.getByText('3 jogos').className).toBe('library__count')
+    expect(screen.getByRole('heading', { name: 'Biblioteca' }).className).toBe('visually-hidden')
     expect(screen.getByLabelText('Ordenar: Título')).toBeTruthy()
     expect(screen.getByLabelText('Filtrar: Nenhum')).toBeTruthy()
   })
@@ -160,7 +163,8 @@ describe('library organization', () => {
     type('pokemon')
     press('Enter')
     await waitFor(() => expect(cards()).toEqual(['Pokémon Red']))
-    expect(screen.getByText('1 de 3 jogos')).toBeTruthy()
+    // With a filter, the count is the games shown, never "1 de 3" (owner decision).
+    expect(document.querySelector('.library__count')?.textContent).toBe('1 jogo')
     expect(screen.getByText('pokemon', { selector: '.toolbar-field__text' })).toBeTruthy()
   })
 

@@ -10,33 +10,12 @@
   --library-gutter: calc(var(--space-12) + (100% - 2 * var(--space-12) + var(--library-gap)) / 12);
 }
 
-.library__header {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-4);
-  padding: var(--space-2) var(--library-gutter) var(--space-5);
-}
-
-.library__title {
-  margin: 0;
-  color: var(--color-accent);
-  font-size: var(--font-size-display);
-  font-weight: var(--font-weight-bold);
-  text-transform: uppercase;
-}
-
-.library__count {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-medium);
-  text-transform: uppercase;
-}
-
 .library__toolbar {
   display: flex;
   align-items: center;
   gap: var(--space-6);
-  padding: 0 var(--library-gutter) var(--space-6);
+  /* First on the screen now that the title is gone, a little away from the top bar (owner decision). */
+  padding: var(--space-8) var(--library-gutter) var(--space-6);
 }
 
 .library__toolbar-actions {
@@ -84,6 +63,28 @@
   from {
     opacity: 0;
   }
+}
+
+/*
+ * The game count, at the bottom right of the Library, above the footer, in the right margin
+ * beside the covers (owner decision): it never covers a cover.
+ */
+.library__count {
+  position: absolute;
+  /* Close to the screen's right edge (owner decision). */
+  right: var(--space-6);
+  bottom: var(--space-5);
+  margin: 0;
+  /* A chip on one line, readable over the covers scrolling under it (owner decision). */
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-button);
+  background: color-mix(in srgb, var(--color-surface-raised) 90%, transparent);
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+  /* 18.5px, between the body (17px) and card title (20px) sizes (owner decision). */
+  font-size: 1.15625rem;
+  font-weight: var(--font-weight-medium);
+  pointer-events: none;
 }
 
 .library__scroll {
