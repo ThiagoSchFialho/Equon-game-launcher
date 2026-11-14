@@ -3,8 +3,9 @@
   /* Above what a screen draws behind it, as the Home shelf's shade (CoverShelf.css). */
   z-index: 1;
   display: flex;
-  justify-content: center;
-  padding-top: var(--space-5);
+  align-items: flex-start;
+  /* At the left of the screen, on the footer's margin; the clock keeps the right. */
+  padding: var(--space-5) calc(var(--space-12) + 8rem) 0 var(--space-12);
   height: var(--top-bar-height);
   flex-shrink: 0;
 }
@@ -13,29 +14,32 @@
   display: flex;
   align-items: center;
   height: 3.75rem;
-  padding: 0 var(--space-6);
-  /* See-through, so the Home background or game art shows a little (owner decision). */
-  background: color-mix(in srgb, var(--color-surface) 75%, transparent);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  /* Stronger than the cards' shadow: it stands over the screen's art. */
-  box-shadow: 0 0.5rem 2rem rgb(0 0 0 / 0.5);
+  /* 70px further in than the screen's margin (owner decision). */
+  margin-left: 4.375rem;
+  /* Plain text on the screen: no background, border or shadow (owner's test, header-left). */
 }
 
 .top-bar__tab {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-4);
   height: 2rem;
   padding: 0 var(--space-8);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-card-title);
-  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  /*
+   * Every tab is laid out at the current tab's size (24px name and icon, owner decisions) and
+   * the others are only drawn smaller, with a transform: the tabs never move when the current
+   * one changes, and the change animates with transforms only.
+   */
+  font-size: var(--font-size-shelf-title);
+  font-weight: var(--font-weight-regular);
   transition: color var(--motion-focus) var(--motion-easing);
 }
 
-.top-bar__tab + .top-bar__tab {
-  border-left: 1px solid var(--color-border);
+/* The first tab starts on the screen's margin. */
+.top-bar__tab:first-child {
+  padding-left: 0;
 }
 
 .top-bar__tab img {
@@ -43,8 +47,89 @@
   width: auto;
 }
 
+/* The name keeps the width of its semibold self, so the weight changing moves nothing. */
+.top-bar__tab span {
+  display: inline-flex;
+  flex-direction: column;
+}
+
+.top-bar__tab span::after {
+  content: attr(data-label);
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  font-weight: var(--font-weight-semibold);
+}
+
+.top-bar__tab img,
+.top-bar__tab span {
+  transform-origin: left center;
+}
+
+/* The other tabs: 20px instead of 24px. */
+.top-bar__tab:not([data-selected='true']) img,
+.top-bar__tab:not([data-selected='true']) span {
+  transform: scale(0.8333);
+}
+
 .top-bar__tab[data-selected='true'] {
-  color: var(--color-accent);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* With no capsule around the tabs, a bar under the current one marks it, a little wider than it. */
+.top-bar__tab[data-selected='true']::after {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--space-2));
+  right: calc(var(--space-8) - var(--space-2));
+  bottom: calc(-1 * var(--space-3));
+  height: 0.1875rem;
+  border-radius: 999px;
+  background: var(--color-text-primary);
+}
+
+/* The first tab has no left padding; the others' bar starts after it. */
+.top-bar__tab:not(:first-child)[data-selected='true']::after {
+  left: calc(var(--space-8) - var(--space-2));
+}
+
+/*
+ * A section change (TopBar.tsx): the underline slides over from the previous tab, the new tab's
+ * icon and name grow to their size and the previous tab's shrink to theirs. Transforms only;
+ * --motion-nav is 0 with reduced motion.
+ */
+.top-bar__tab[data-entering='true']::after {
+  transform-origin: left center;
+  animation: top-bar-underline var(--motion-nav) var(--motion-easing);
+}
+
+.top-bar__tab[data-entering='true'] img,
+.top-bar__tab[data-entering='true'] span {
+  animation: top-bar-grow var(--motion-nav) var(--motion-easing);
+}
+
+.top-bar__tab[data-leaving='true'] img,
+.top-bar__tab[data-leaving='true'] span {
+  animation: top-bar-shrink var(--motion-nav) var(--motion-easing);
+}
+
+@keyframes top-bar-underline {
+  from {
+    transform: translateX(var(--underline-from-x, 0)) scaleX(var(--underline-from-scale, 1));
+  }
+}
+
+/* From the other tabs' size to the full one; each ends on its own transform. */
+@keyframes top-bar-grow {
+  from {
+    transform: scale(0.8333);
+  }
+}
+
+@keyframes top-bar-shrink {
+  from {
+    transform: none;
+  }
 }
 
 .top-bar__tab:hover {
@@ -68,11 +153,11 @@
   font-weight: var(--font-weight-semibold);
 }
 
-/* Left of the tabs; never wider than the room they leave. */
+/* Right after the tabs, in the room they leave before the clock. */
 .top-bar__activity {
-  position: absolute;
-  left: var(--space-12);
-  top: var(--space-5);
+  order: 1;
+  flex: 0 1 auto;
+  min-width: 0;
   height: 3.75rem;
-  max-width: calc(50% - 20rem - var(--space-12) - var(--space-4));
+  margin-left: var(--space-6);
 }

@@ -93,6 +93,8 @@
   --motion-focus: 140ms;
   --motion-panel: 200ms;
   --motion-screen: 240ms;
+  /* The top bar's current tab changing (owner decision, header-left). */
+  --motion-nav: 300ms;
   --motion-easing: cubic-bezier(0.2, 0, 0, 1);
 }
 
@@ -101,5 +103,6 @@
     --motion-focus: 0ms;
     --motion-panel: 0ms;
     --motion-screen: 0ms;
+    --motion-nav: 0ms;
   }
 }

@@ -465,13 +465,20 @@ apenas de animação para mostrar que uma ação foi ativada.
 
 ### Navegação
 
--   A barra superior (Início, Biblioteca, Conquistas) é uma pílula em
-    `--color-surface` a 75% de opacidade, com a borda `--color-border` e
-    uma sombra forte (`0 0.5rem 2rem`, preto a 50%), para se destacar sobre
-    o fundo e a arte do jogo (decisão do dono do projeto).
+-   A barra superior (Início, Biblioteca, Conquistas) fica à esquerda da
+    tela, 70 px além da margem lateral, sem fundo, borda, sombra ou
+    separadores: só ícone e nome em `color.text-primary`, inclusive na
+    aba atual (decisões do dono do projeto, 2026-11-14). A aba atual tem
+    nome em `font-size-shelf-title` seminegrito, ícone de 24 px e um traço
+    de 3 px em `color.text-primary` embaixo, 8 px mais largo de cada lado;
+    as outras aparecem em 20 px e peso regular. Todas ocupam o tamanho da
+    aba atual (as outras só são desenhadas menores, com `transform`), para
+    nada mudar de lugar quando a aba atual muda. Ao trocar de seção, o
+    traço desliza da aba anterior para a nova e as duas mudam de tamanho
+    em `motion-nav` (300 ms), só com `transform`.
 -   Trabalho em segundo plano (sincronização de conquistas, inclusive a
     espera depois de fechar um jogo; sincronização dos jogos da Steam;
-    download de artes) aparece à esquerda da barra superior (nas telas sem barra superior, como
+    download de artes) aparece logo depois das abas da barra superior (nas telas sem barra superior, como
     a página do jogo, à esquerda do rodapé), com uma animação simples
     de carregamento e o progresso ("Baixando artes… 12 de 225"). O indicador
     nunca recebe foco, não bloqueia a tela e some ao terminar.
@@ -534,7 +541,8 @@ Direção: suave, curta e funcional.
 
 Faixas iniciais para protótipo: - Resposta de foco: 100--160 ms. -
 Hover/pressionamento: 100--160 ms. - Transição entre painéis: 160--240
-ms. - Transição de tela: 180--280 ms.
+ms. - Transição de tela: 180--280 ms. - Troca da aba atual da barra
+superior: 300 ms (`motion-nav`, decisão do dono do projeto).
 
 Esses tempos são hipóteses para teste. Não atrasar ações críticas, como
 iniciar um jogo, apenas para completar uma animação.
