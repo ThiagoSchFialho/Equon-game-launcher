@@ -66,6 +66,8 @@ describe('sound cues', () => {
     act(() => void manager.handle('left'))
     act(() => manager.focus('c'))
     act(() => void manager.handle('confirm'))
+    // No section that way (the screen gives no handler at an end): silent too.
+    act(() => void manager.handle('previousSection'))
     expect(cues).toHaveLength(6)
 
     // A mouse click confirms with the same sound.

@@ -5,7 +5,7 @@ import {
   formatPlaytime,
   releaseYear
 } from '../../../src/renderer/src/data/format'
-import { stepSection } from '../../../src/renderer/src/app/navigation'
+import { hasSection, stepSection } from '../../../src/renderer/src/app/navigation'
 
 describe('formatPlaytime', () => {
   it.each([
@@ -72,5 +72,13 @@ describe('stepSection', () => {
     expect(stepSection('library', 1)).toBe('achievements')
     expect(stepSection('achievements', 1)).toBe('achievements')
     expect(stepSection('home', -1)).toBe('home')
+  })
+
+  it('knows there is nothing past either end, so LB/RB stay silent there', () => {
+    expect(hasSection('home', -1)).toBe(false)
+    expect(hasSection('home', 1)).toBe(true)
+    expect(hasSection('library', -1)).toBe(true)
+    expect(hasSection('library', 1)).toBe(true)
+    expect(hasSection('achievements', 1)).toBe(false)
   })
 })

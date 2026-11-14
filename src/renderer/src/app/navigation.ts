@@ -52,6 +52,12 @@ export function currentSection(route: Route): Section {
 }
 
 /** Pure section stepping (no wrap-around, DESIGN_SYSTEM.md §4 "evitar ciclos inesperados"). */
+/** Whether LB (-1) or RB (1) leads anywhere from this section: not past either end. */
+export function hasSection(section: Section, delta: -1 | 1): boolean {
+  const index = SECTIONS.indexOf(section) + delta
+  return index >= 0 && index < SECTIONS.length
+}
+
 export function stepSection(section: Section, delta: -1 | 1): Section {
   const index = SECTIONS.indexOf(section) + delta
   return SECTIONS[Math.min(SECTIONS.length - 1, Math.max(0, index))]

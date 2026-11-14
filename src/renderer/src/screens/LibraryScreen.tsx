@@ -8,7 +8,7 @@ import {
   type LibrarySort,
   type LibraryView
 } from '../../../shared/library-view'
-import { useNavigation } from '../app/navigation'
+import { hasSection, useNavigation } from '../app/navigation'
 import { Button } from '../components/Button'
 import { ChoiceDialog, type ChoiceItem } from '../components/Dialog'
 import { Footer, type Hint } from '../components/Footer'
@@ -96,8 +96,9 @@ export function LibraryScreen(): React.JSX.Element {
     focus.handle(direction)
   }
   useScreenActions({
-    previousSection: () => navigation.stepSection(-1),
-    nextSection: () => navigation.stepSection(1),
+    // At either end there is no handler, so LB/RB do nothing and play no sound.
+    previousSection: hasSection('library', -1) ? () => navigation.stepSection(-1) : undefined,
+    nextSection: hasSection('library', 1) ? () => navigation.stepSection(1) : undefined,
     scrollUp: page('up'),
     scrollDown: page('down'),
     secondary: () => setOverlay({ kind: 'sort' }),

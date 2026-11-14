@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { HOME_GAMES_LIMIT, type GameSummary } from '../../../shared/ipc/contract'
-import { useNavigation } from '../app/navigation'
+import { hasSection, useNavigation } from '../app/navigation'
 import { Footer, type Hint } from '../components/Footer'
 import { GameOptionsLayer } from '../components/GameOptionsLayer'
 import { StateMessage } from '../components/StateMessage'
@@ -73,8 +73,9 @@ export function HomeScreen(): React.JSX.Element {
   const shown = covers.limited ? all.slice(0, HOME_GAMES_LIMIT) : all
 
   useScreenActions({
-    previousSection: () => navigation.stepSection(-1),
-    nextSection: () => navigation.stepSection(1),
+    // At either end there is no handler, so LB/RB do nothing and play no sound.
+    previousSection: hasSection('home', -1) ? () => navigation.stepSection(-1) : undefined,
+    nextSection: hasSection('home', 1) ? () => navigation.stepSection(1) : undefined,
     // With "Ignorar tela do jogo na home", X on a cover opens the game's page (owner decision).
     secondary: directLaunch
       ? () => {

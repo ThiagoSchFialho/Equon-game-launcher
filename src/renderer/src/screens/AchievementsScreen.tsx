@@ -5,7 +5,7 @@ import chevronIcon from '../assets/icons/arrow-right.svg'
 import steamIcon from '../assets/icons/steam-white.svg'
 import syncIcon from '../assets/icons/sync.svg'
 import trophyIcon from '../assets/icons/trophy.svg'
-import { useNavigation } from '../app/navigation'
+import { hasSection, useNavigation } from '../app/navigation'
 import { Artwork } from '../components/Artwork'
 import { Button } from '../components/Button'
 import { Footer, type Hint } from '../components/Footer'
@@ -48,8 +48,9 @@ export function AchievementsScreen(): React.JSX.Element {
   const sounds = useUiSounds()
 
   useScreenActions({
-    previousSection: () => navigation.stepSection(-1),
-    nextSection: () => navigation.stepSection(1),
+    // At either end there is no handler, so LB/RB do nothing and play no sound.
+    previousSection: hasSection('achievements', -1) ? () => navigation.stepSection(-1) : undefined,
+    nextSection: hasSection('achievements', 1) ? () => navigation.stepSection(1) : undefined,
     // X changes the sort at once, with the sound of confirming it (owner decision).
     secondary: () => {
       sounds.play('confirm')
