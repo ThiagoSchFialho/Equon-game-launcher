@@ -273,7 +273,8 @@ depois que o foco para por 150 ms.
     mudam. "Iniciar com o sistema" fica indisponível, com o motivo, fora da
     versão instalada. Com "Ignorar tela do jogo na home" ligado (D-28), o A
     numa capa do Início inicia o jogo, a dica do A no rodapé diz "Jogar",
-    o X abre a página do jogo (dica "X Detalhes" no rodapé) e
+    o X abre a página do jogo (dica "X Detalhes" no rodapé; no "Em
+    cima", também com o foco nas conquistas do painel) e
     o menu de opções da capa começa com "Ver página do jogo"; se o jogo não
     abrir, a página dele abre e mostra o motivo.
 -   Armazenamento: um cartão por disco local ou removível, com nome e

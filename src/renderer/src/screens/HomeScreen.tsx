@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { HOME_GAMES_LIMIT, type GameSummary } from '../../../shared/ipc/contract'
 import { hasSection, useNavigation } from '../app/navigation'
 import { Footer, type Hint } from '../components/Footer'
@@ -14,6 +14,7 @@ import { homeGames } from '../../../shared/library-view'
 import { t } from '../strings'
 import { CenteredCovers } from './home/CenteredCovers'
 import { CoverShelf } from './home/CoverShelf'
+import { SPOTLIGHT_PREFIX } from './home/GameSpotlight'
 import { TopHome } from './home/TopHome'
 import { HOME_SCOPE, homeCardId } from './home/useCoverFocus'
 import { useUiSounds } from '../sound/sound-context'
@@ -43,6 +44,11 @@ export function HomeScreen(): React.JSX.Element {
   const covers = useHomeCovers().settings
   const position = covers.position
   const { directLaunch } = useHomeLaunch()
+  // The game "Em cima"'s panel shows, for X while the focus is in the panel.
+  const panelGame = useRef<GameSummary | null>(null)
+  const setPanelGame = useCallback((game: GameSummary | null) => {
+    panelGame.current = game
+  }, [])
   // One launch at a time: a second A while the first is on its way does nothing.
   const launching = useRef(false)
 
@@ -79,9 +85,15 @@ export function HomeScreen(): React.JSX.Element {
     // With "Ignorar tela do jogo na home", X on a cover opens the game's page (owner decision).
     secondary: directLaunch
       ? () => {
-          const game = shown.find((candidate) => homeCardId(candidate) === manager.focusedId)
+          const focused = manager.focusedId
+          // On a cover, its game; in "Em cima"'s panel, the game the panel shows (owner decision).
+          const game =
+            shown.find((candidate) => homeCardId(candidate) === focused) ??
+            (focused?.startsWith(SPOTLIGHT_PREFIX) ? panelGame.current : null)
           if (!game) return
           sounds.play('confirm')
+          // Back from the game page, the Home comes back to its cover.
+          manager.focus(homeCardId(game))
           navigation.openGame(game.id)
         }
       : undefined
@@ -128,6 +140,7 @@ export function HomeScreen(): React.JSX.Element {
           opensToPlay={directLaunch}
           onMenu={setMenuGame}
           backdropTarget={homeElement}
+          onPanelGame={setPanelGame}
         />
       ) : (
         <CoverShelf

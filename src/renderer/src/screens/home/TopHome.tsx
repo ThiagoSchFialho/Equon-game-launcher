@@ -20,13 +20,16 @@ export function TopHome({
   onOpen,
   opensToPlay,
   onMenu,
-  backdropTarget
+  backdropTarget,
+  onPanelGame
 }: {
   games: GameSummary[]
   onOpen: (game: GameSummary) => void
   opensToPlay: boolean
   onMenu: (game: GameSummary) => void
   backdropTarget: HTMLElement | null
+  /** The game the panel shows (GameSpotlight), or null with none. */
+  onPanelGame?: (game: GameSummary | null) => void
 }): React.JSX.Element {
   const navigation = useNavigation()
   const manager = useFocusManager()
@@ -73,6 +76,7 @@ export function TopHome({
             hidden={hidden}
             cardId={cardId}
             onOpenAchievements={(target) => navigation.openGameAchievements(target.id)}
+            onShown={onPanelGame}
           />
         )
       }

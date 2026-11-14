@@ -50,12 +50,16 @@ const achievements = (extra: Partial<GameAchievements> = {}): GameAchievements =
 const openTopHome = async (
   data: GameAchievements | null,
   overrides: { ensureIcons?: EquonApi['achievements']['ensureIcons'] } = {},
-  game: GameSummary = summary(1, 'Tidebound')
+  game: GameSummary = summary(1, 'Tidebound'),
+  homeDirectLaunch = false
 ): Promise<void> => {
   installFakeApi([game], {
     settings: {
       get: async () =>
-        settingsInfo({ homeCovers: { size: 74, gap: 35, position: 'top', limited: false } })
+        settingsInfo({
+          homeCovers: { size: 74, gap: 35, position: 'top', limited: false },
+          homeDirectLaunch
+        })
     },
     achievements: { game: async () => data, ...overrides }
   })
@@ -113,6 +117,16 @@ describe('"Em cima" panel (D-29)', () => {
     press('ArrowDown')
     press('Enter')
     expect(await screen.findByRole('heading', { name: 'Tidebound' })).toBeTruthy()
+    expect(document.querySelector('.home-spotlight')).toBeNull()
+  })
+
+  it('X in the panel opens the page of the game it shows, with A starting games', async () => {
+    await openTopHome(achievements(), {}, summary(1, 'Tidebound'), true)
+    await screen.findByText('Últimas conquistas')
+    press('ArrowDown')
+    expect(focused()).toBe('Conquista 6')
+    press('x')
+    await waitFor(() => expect(screen.queryByLabelText('Jogar')).not.toBeNull())
     expect(document.querySelector('.home-spotlight')).toBeNull()
   })
 

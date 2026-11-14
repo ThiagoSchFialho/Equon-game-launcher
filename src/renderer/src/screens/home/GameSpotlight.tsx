@@ -67,7 +67,8 @@ export function GameSpotlight({
   game,
   hidden,
   cardId,
-  onOpenAchievements
+  onOpenAchievements,
+  onShown
 }: {
   game: GameSummary | undefined
   /** While the name fades out and in for another game, so does the panel. */
@@ -75,6 +76,8 @@ export function GameSpotlight({
   /** The focused cover, where up goes back to. */
   cardId: string | null
   onOpenAchievements: (game: GameSummary) => void
+  /** The game the panel shows, for the Home's X (owner decision). */
+  onShown?: (game: GameSummary | null) => void
 }): React.JSX.Element | null {
   const manager = useFocusManager()
   const achievements = useSpotlightAchievements(game?.id ?? null)
@@ -84,6 +87,10 @@ export function GameSpotlight({
   const inPanel = focusedId?.startsWith(SPOTLIGHT_PREFIX) ?? false
   // B only does something inside the panel: back to the cover of the game it shows.
   useScreenActions({ back: inPanel && cardId ? () => manager.focus(cardId) : undefined })
+  useEffect(() => {
+    onShown?.(game ?? null)
+    return () => onShown?.(null)
+  }, [game, onShown])
   useEffect(() => {
     if (!inPanel || !game || iconsAsked.current.has(game.id)) return
     iconsAsked.current.add(game.id)
