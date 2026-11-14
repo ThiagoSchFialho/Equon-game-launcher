@@ -240,6 +240,10 @@ limitações, condições de teste e método de inicialização suportado.
 -   Disponibilizar alternativas de teclado e mouse.
 -   Definir comportamento para controle desconectado e reconectado.
 -   Usar uma estratégia de entrada que possa ser testada e ampliada.
+-   Ao abrir, uma tela com o ícone e o nome do Equon (D-35) fica até as
+    configurações, os jogos e a atualização da biblioteca da Steam
+    estarem prontos, por pelo menos 1 s e no máximo 6 s; enquanto isso,
+    os botões não fazem nada.
 
 ### 6.7 Configurações
 

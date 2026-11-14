@@ -83,6 +83,7 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-32 | Settings shortcut on the "Em cima" shelf | Accepted | A cover-shaped shortcut to Settings before the first game; the focus still starts on the first game; see §3.31 |
 | D-33 | Quick settings under the Settings shortcut | Accepted | "Configurações rápidas": Atualizar biblioteca, Tela cheia, Ignorar tela do jogo na home, Limitar jogos na home, changed at once from the "Em cima" Home; see §3.32 |
 | D-34 | Game sizes in Settings › Armazenamento | Accepted | Each drive's bar split by game: Steam from the manifest, ROMs from the file, manual games by summing their folder (with guards); nine games coloured from a new chart palette; nothing stored; see §3.33 |
+| D-35 | Opening screen | Accepted | The app icon with "Equon" under it, over everything, until settings, games and the startup library refresh are in (at least 1 s, at most 6 s); renderer only; see §3.34 |
 | D-24 | Interface sounds | Accepted | Sounds on moving, confirming, going back and opening modals; on by default, `USERS.ui_sounds`; silent while a game runs; see §3.23 |
 | D-16 | Refresh frequency for `appdetails` metadata | Accepted | Fetched only when a game is discovered/added; failed fetches are retried (§3.14) |
 | D-17 | Steam launch mechanism | Accepted | `steam://rungameid/<appid>`, built in the main process (§3.12) |
@@ -552,6 +553,14 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 
 **Colours.** A new chart palette (`--color-chart-1` … `-9`: blue, orange, aqua, violet, magenta, green, purple, olive, cyan, in that fixed order, never cycled) plus two neutrals (`--color-chart-other`, `--color-chart-rest`). It was validated on the dark surface (`--color-surface`) with the data-viz palette validator: lightness band, chroma floor, colour-blind separation of neighbours (worst ΔE 9.4), normal-vision separation (worst ΔE 19.0) and 3:1 contrast all pass; it leaves out the accent and the danger red. With no gap between segments, the neighbours' separation carries the boundary on its own; the worst pair still clears the ΔE 8 target. Names and sizes are always written next to their colour, so colour is never the only cue.
 
+### 3.34 D-35 — Opening screen (Accepted, after Phase 8)
+
+**Owner decisions (2026-11-13):** the app opens on a screen with its icon (`build/icon.png`, copied to the renderer's assets) and "Equon" written under it in the app's font, with a quiet loading indicator, until everything the Home needs is in: Settings (the cover position and the background), the games, and the startup library refresh (local Steam scan and owned games, D-12, D-08), whose `GetOwnedGames` can move a game played outside Equon to the front. Without it, the Home showed the defaults and then rearranged itself about a second later.
+
+**Rules.** It stays at least 1 s, so it does not blink, and at most 6 s, so a slow or missing Steam never holds the app back (the refresh then finishes behind the Home, as before). The refresh is known to be over when `settings.get()` reports `refreshing: false`, asked every 300 ms; main starts the refresh before the window loads, and a failing `settings.get()` counts as nothing to wait for. While it is up, input does nothing; it then fades out (opacity only, none with reduced motion). It lives in the renderer, above every screen, so the Home is already mounted below it with the right layout and focus. A renderer reload after a crash shows it again. No IPC change.
+
+**Code.** `data/splash.ts` (`useSplash`, `SPLASH_TIMING`) and `components/SplashScreen.tsx`; `App.tsx` ignores input while it is up. Screen tests turn it off (`tests/renderer/fake-api.ts`); `tests/renderer/splash.test.tsx` covers it.
+
 ## 4. Inconsistencies found across the project docs
 
 Items 1–6 have accepted decisions (D-02, D-04 to D-08) and are now reflected in `DATA_BASE_CONTEXT.md` v0.2 and `PRODUCT.md` v0.2. Item 7 follows the Epic/GOG decision. Items 8–9 are housekeeping; item 9 (documentation language) is still open.
@@ -944,6 +953,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-12 | 0.68 | D-32: a cover-shaped Settings shortcut before the first game on the "Em cima" shelf (§3.31). |
 | 2026-11-12 | 0.69 | D-32: the Settings image behind the Home while the shortcut is focused. D-33: "Configurações rápidas" under the shortcut (§3.31, §3.32). |
 | 2026-11-13 | 0.70 | D-34: game sizes per drive in Settings › Armazenamento, with a validated chart palette (§3.33). |
+| 2026-11-13 | 0.71 | D-35: opening screen until settings, games and the startup library refresh are in (§3.34). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

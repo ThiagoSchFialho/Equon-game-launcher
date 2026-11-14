@@ -9,6 +9,10 @@ export const t = {
     library: 'Biblioteca',
     achievements: 'Conquistas'
   },
+  splash: {
+    name: 'Equon',
+    loading: 'Carregando o Equon…'
+  },
   hints: {
     navigate: 'Navegar',
     options: 'Opções',

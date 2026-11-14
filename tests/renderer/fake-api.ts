@@ -7,6 +7,7 @@ import type {
   GameSummary,
   OriginInfo
 } from '../../src/shared/ipc/contract'
+import { SPLASH_TIMING } from '../../src/renderer/src/data/splash'
 
 export const summary = (
   id: number,
@@ -105,6 +106,8 @@ export function installFakeApi(
     artworkEdit?: Partial<EquonApi['artworkEdit']>
   } = {}
 ): EquonApi {
+  // No opening screen (D-35) in screen tests; its own test turns it back on.
+  SPLASH_TIMING.enabled = false
   const runningListeners = new Set<(ids: number[]) => void>()
   const api: EquonApi = {
     app: {

@@ -41,6 +41,12 @@ sem excesso de efeitos, legível a distância e funcional com controle.
     reduzir excessivamente a área útil.
 -   A navegação deve funcionar por controle, teclado e mouse.
 -   A região ativa precisa ter estado visual e semântico claro.
+-   Tela de abertura (D-35): fundo `color.background`, o ícone do app no
+    centro, "Equon" embaixo em `font-size-display` seminegrito
+    (`color.text-primary`) e três pontos que pulsam em
+    `color.text-secondary` (parados com movimento reduzido). Fica até a
+    Home estar pronta, entre 1 s e 6 s, e sai com fade de opacidade
+    (`motion-screen`). Nada nela recebe foco.
 
 ### Home
 

@@ -16,6 +16,7 @@ import { DEFAULT_LIBRARY_VIEW, type LibraryView } from '../../shared/library-vie
 import type { AchievementSort } from '../../shared/achievements-view'
 import { SystemMenuContext, type SystemMenuState } from './app/system-menu'
 import { ScreenErrorBoundary } from './components/ScreenErrorBoundary'
+import { SplashScreen } from './components/SplashScreen'
 import { SYSTEM_MENU_SCOPE, SystemMenu } from './components/SystemMenu'
 import { AchievementSortContext, type AchievementSortState } from './data/achievements'
 import { BackgroundActivityContext, useBackgroundActivityLoader } from './data/background-activity'
@@ -27,6 +28,7 @@ import type { HomeArtSettings, HomeCoverSettings } from '../../shared/ipc/contra
 import { LibraryViewContext, type LibraryViewState } from './data/library-view'
 import { OpeningContext, useOpeningLoader } from './data/opening'
 import { RunningContext, useRunningLoader } from './data/running'
+import { useSplash } from './data/splash'
 import { FocusManager } from './focus/focus-manager'
 import { FocusProvider } from './focus/FocusProvider'
 import { useInput } from './input/useInput'
@@ -145,8 +147,17 @@ function App(): React.JSX.Element {
   }, [sounds])
   useEffect(() => sounds.setGameRunning(running.ids.length > 0), [sounds, running.ids])
 
+  // The opening screen (D-35): up until settings, games and the startup refresh are in; nothing
+  // below it reacts meanwhile.
+  const splash = useSplash(games.games.status !== 'loading')
+  const splashUp = useRef(splash === 'up')
+  useEffect(() => {
+    splashUp.current = splash === 'up'
+  }, [splash])
+
   const dispatch = useCallback(
     (action: Parameters<FocusManager['handle']>[0]) => {
+      if (splashUp.current) return
       if (launchCoverUp.current) {
         if (action === 'back') void window.equon.games.cancelLaunchCover()
         return
@@ -219,6 +230,7 @@ function App(): React.JSX.Element {
                               {systemMenuOpen && (
                                 <SystemMenu onClose={() => setSystemMenuOpen(false)} />
                               )}
+                              <SplashScreen state={splash} />
                             </SystemMenuContext.Provider>
                           </OpeningContext.Provider>
                         </BackgroundActivityContext.Provider>

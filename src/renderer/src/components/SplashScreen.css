@@ -1,0 +1,71 @@
+/* The opening screen (D-35): above every screen and dialog, opaque, fading out when ready. */
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  background: var(--color-background);
+  opacity: 1;
+  transition: opacity var(--motion-screen) var(--motion-easing);
+}
+
+.splash[data-leaving='true'] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.splash__icon {
+  width: 9rem;
+  height: 9rem;
+}
+
+.splash__name {
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: var(--font-size-display);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.splash__dots {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.splash__dots span {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-text-secondary);
+  animation: splash-dot 1.2s var(--motion-easing) infinite;
+}
+
+.splash__dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.splash__dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes splash-dot {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash__dots span {
+    animation: none;
+    opacity: 0.6;
+  }
+}
