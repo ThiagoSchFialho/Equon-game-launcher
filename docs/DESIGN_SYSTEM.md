@@ -74,7 +74,10 @@ rápido e aparecem num fade rápido embaixo do novo card (metade de
 O fundo do Início não é liso (decisão do dono do projeto): sobre
 `--color-background` há um brilho radial bem sutil do centro, na cor
 `--color-surface-raised`, e uma vinheta igualmente sutil que escurece as
-bordas. Ambos são estáticos; o rodapé mantém a cor própria. Para não
+bordas. Ambos são estáticos e vão até o rodapé, que no Início não tem
+fundo (nas outras telas mantém `color.footer`), só um degradê sutil de `--color-background` (45% na base até
+transparente, no dobro da altura do rodapé) para as dicas continuarem
+legíveis sobre a arte (decisões do dono do projeto, 2026-11-14). Para não
 aparecerem anéis entre os tons (banding, em telas de 8 bits), os degradês
 usam paradas suavizadas e um ruído fino, quase invisível, por cima.
 
@@ -211,7 +214,7 @@ depois que o foco para por 150 ms.
     (decisão do dono do projeto): perto da barra superior, as capas
     pequenas alinhadas pelo topo da capa em foco, o nome 10 px abaixo
     delas e sem o degradê de cima (decisão do dono do projeto),
-    mas com uma vinheta, do topo da tela por trás da barra superior, que escurece as bordas em volta de uma área
+    mas com uma vinheta, do topo da tela por trás da barra superior até a base da tela, por trás do rodapé transparente, sutil (decisão do dono do projeto, 2026-11-14), que escurece as bordas em volta de uma área
     clara à direita, onde costuma ficar o personagem da arte (como no
     PS5); mesmos comportamentos do "Embaixo". No "Em cima", a capa em foco é 15% maior (as
     pequenas não mudam) e o nome fica em 28 px com peso normal (decisões
@@ -338,7 +341,7 @@ de iluminação.
 
   `color.chart-rest`       `#4A5262`      Gráficos: o resto do disco, que não é jogo do Equon
 
-  `color.footer`           `#080A0D`      Rodapé com as dicas de botões
+  `color.footer`           `#080A0D`      Rodapé com as dicas de botões (no Início, transparente)
 
   `color.success-bg`       `#268E60`      Fundo de mensagens de sucesso
 

@@ -11,6 +11,35 @@
   flex-shrink: 0;
 }
 
+/*
+ * On the Home, a subtle shade rising from the bottom of the screen, only so the hints stay
+ * readable over the art (owner decision). Twice the footer's height, so it fades out above it; behind the
+ * footer's content (the footer is its own stacking context). Eased stops against banding.
+ */
+.home .footer {
+  /* On the Home, no background of its own: the art and its shade show through (owner decision). */
+  background: transparent;
+}
+
+.home .footer::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--footer-height) * 2);
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--color-background) 45%, transparent) 0%,
+    color-mix(in srgb, var(--color-background) 35%, transparent) 30%,
+    color-mix(in srgb, var(--color-background) 18%, transparent) 60%,
+    color-mix(in srgb, var(--color-background) 5%, transparent) 85%,
+    transparent 100%
+  );
+}
+
 .footer__system {
   position: absolute;
   left: var(--space-12);

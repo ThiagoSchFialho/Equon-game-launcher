@@ -49,8 +49,9 @@
   z-index: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  height: calc(var(--row-edge) + var(--card-width) + var(--space-16) * 3);
+  /* Down to the bottom of the screen, behind the footer, which has no background of its own. */
+  bottom: calc(var(--footer-height) * -1);
+  height: calc(var(--footer-height) + var(--row-edge) + var(--card-width) + var(--space-16) * 3);
   pointer-events: none;
   background: linear-gradient(
     to top,
@@ -145,21 +146,23 @@
 .home-shelf[data-side='top']::before {
   /*
    * The whole screen behind the covers, from the top of the screen (behind the top bar) down to
-   * the footer: a vignette that darkens the edges around a clear area on the right, where the
+   * the bottom of the screen: a vignette that darkens the edges around a clear area on the right, where the
    * art's subject usually is, so the logo and the panel on the left stand out (owner decision,
    * after the PS5 home). "Em cima" has no shade from the top (owner decision).
    */
   top: calc(var(--top-bar-height) * -1);
-  bottom: 0;
+  /* To the bottom of the screen, behind the see-through footer (owner decision). */
+  bottom: calc(var(--footer-height) * -1);
   height: auto;
+  /* A little subtler than at first (owner decision, 2026-11-14). */
   background: radial-gradient(
     ellipse 45% 62% at 66% 44%,
     transparent 0%,
     transparent 55%,
-    color-mix(in srgb, var(--color-background) 12%, transparent) 68%,
-    color-mix(in srgb, var(--color-background) 30%, transparent) 80%,
-    color-mix(in srgb, var(--color-background) 50%, transparent) 92%,
-    color-mix(in srgb, var(--color-background) 65%, transparent) 100%
+    color-mix(in srgb, var(--color-background) 10%, transparent) 68%,
+    color-mix(in srgb, var(--color-background) 25%, transparent) 80%,
+    color-mix(in srgb, var(--color-background) 42%, transparent) 92%,
+    color-mix(in srgb, var(--color-background) 55%, transparent) 100%
   );
 }
 
