@@ -1,5 +1,5 @@
 import { useSystemMenu } from '../app/system-menu'
-import xboxIcon from '../assets/icons/xbox.svg'
+import equonIcon from '../assets/equon-icon.png'
 import { t } from '../strings'
 import { ActivityIndicator } from './ActivityIndicator'
 import './Footer.css'
@@ -53,7 +53,8 @@ function SystemMenuButton(): React.JSX.Element {
       tabIndex={-1}
       onClick={toggle}
     >
-      <img src={xboxIcon} alt="" />
+      {/* The app's own icon (owner decision); the controller still opens it with Xbox. */}
+      <img src={equonIcon} alt="" />
     </button>
   )
 }

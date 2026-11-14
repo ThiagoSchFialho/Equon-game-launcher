@@ -45,7 +45,7 @@
 .home-shelf::before {
   content: '';
   position: absolute;
-  /* Over the background art (z-index -1), under the covers and the top bar. */
+  /* Inside the Home content, so over the background art; under the covers and the top bar. */
   z-index: 0;
   left: 0;
   right: 0;

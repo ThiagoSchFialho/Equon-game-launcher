@@ -159,7 +159,7 @@ depois que o foco para por 150 ms.
 -   Explicar consequências de configurações potencialmente disruptivas.
 -   Evitar diálogos complexos que sejam difíceis de operar por controle.
 -   Sempre indicar como voltar e onde o foco está.
--   Acesso pelo menu do sistema (botão Xbox ou ícone no rodapé).
+-   Acesso pelo menu do sistema (botão Xbox ou ícone do Equon no rodapé).
 -   Sem barra superior de navegação (decisão do dono do projeto, depois da
     Fase 8): sai-se com Voltar (B), com o foco nas abas, ou pelo link
     "← <tela anterior>" acima delas, igual ao da página do jogo e alcançado
@@ -417,7 +417,7 @@ todos os espaços.
 
 ### Menu do sistema
 
-Ícone do Xbox no canto esquerdo do rodapé, em todas as telas. O botão Xbox do
+Ícone do Equon no canto esquerdo do rodapé, em todas as telas. O botão Xbox do
 controle, o clique no ícone ou a tecla Home abrem o menu logo acima do ícone,
 inclusive sobre um diálogo; B, o botão Xbox ou um clique fora fecham, e o foco
 volta para onde estava. O ícone não entra na navegação por direcional, para o

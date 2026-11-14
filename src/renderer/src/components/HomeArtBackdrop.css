@@ -1,5 +1,5 @@
 /*
- * Behind everything on the Home screen (.home isolates it): the focused game's art, blurred and
+ * Behind everything on the Home screen (HomeScreen.css orders the layers): the focused game's art, blurred and
  * darkened (D-25). Blur is level × 0.25rem, so 2.5rem at the top level.
  *
  * The whole image shows, edges included (owner decision): it is not enlarged. Blurring the
@@ -9,7 +9,7 @@
 .home-art {
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: 0;
   overflow: hidden;
   pointer-events: none;
 }
