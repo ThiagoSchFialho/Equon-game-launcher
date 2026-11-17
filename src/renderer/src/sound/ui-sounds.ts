@@ -40,7 +40,7 @@ export const UI_SOUND_URLS: Record<UiSound, string> = {
 }
 
 /** Every sound at this level; the files come at full volume. Tuned by ear (owner). */
-export const UI_SOUND_VOLUME = 0.5
+export const UI_SOUND_VOLUME = 0.15
 
 /**
  * One press, one sound: A that opens a menu would play confirm, then the menu's own sound
