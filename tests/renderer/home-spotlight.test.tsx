@@ -19,6 +19,12 @@ const press = (key: string): void => {
 }
 const focused = (): string | null =>
   document.querySelector('[data-focused="true"]')?.getAttribute('aria-label') ?? null
+/** The facts shown where the achievements would be: [label, value] each. */
+const facts = (): string[][] =>
+  Array.from(document.querySelectorAll('.home-spotlight__info')).map((info) => [
+    info.querySelector('.home-spotlight__info-label')?.textContent ?? '',
+    info.querySelector('.home-spotlight__info-value')?.textContent ?? ''
+  ])
 const detail = (): string => document.querySelector('.home-spotlight__detail')?.textContent ?? ''
 
 const achievement = (id: number, name: string): AchievementItem => ({
@@ -130,7 +136,7 @@ describe('"Em cima" panel (D-29)', () => {
     expect(document.querySelector('.home-spotlight')).toBeNull()
   })
 
-  it('hides the whole achievements block when none is unlocked (owner decision)', async () => {
+  it('with no achievement unlocked, shows the last session where they would be', async () => {
     for (const data of [
       achievements({ status: 'none', total: 0, unlocked: [] }),
       achievements({ status: 'never-synced', unlocked: [] }),
@@ -138,14 +144,35 @@ describe('"Em cima" panel (D-29)', () => {
       null
     ]) {
       await openTopHome(data)
-      // The play stats stay; the block never shows, and down has nothing to enter.
+      // The play stats stay; no achievement tile, the last session instead (owner decision),
+      // and down has nothing to enter.
       expect(document.querySelector('.home-spotlight__playtime')?.textContent).toContain('12h 22m')
       await act(() => new Promise<void>((resolve) => setTimeout(resolve, 250)))
-      expect(document.querySelector('.home-spotlight__achievements')).toBeNull()
+      expect(document.querySelector('.home-spotlight__tile')).toBeNull()
+      expect(screen.queryByText('Últimas conquistas')).toBeNull()
+      expect(facts()).toEqual([['Última sessão', expect.stringMatching(/^(Hoje|Ontem|Há .+)$/)]])
       press('ArrowDown')
       expect(focused()).toBe('Tidebound')
       cleanup()
     }
+  })
+
+  it('a game never played and with no achievement shows its genres, studio and year', async () => {
+    await openTopHome(
+      achievements({ status: 'none', total: 0, unlocked: [] }),
+      {},
+      summary(1, 'Tidebound', { playtime: 0, timeLastPlayed: null })
+    )
+    await waitFor(() =>
+      expect(facts()).toEqual([
+        ['Gêneros', 'Ação'],
+        ['Estúdio', 'Estúdio A'],
+        ['Ano', '2020']
+      ])
+    )
+    expect(document.querySelector('.home-spotlight__playtime')?.textContent).toContain(
+      'Nunca jogado'
+    )
   })
 
   it('fixes the size and spacing of "Em cima" at 13 and 5, whatever is stored', async () => {

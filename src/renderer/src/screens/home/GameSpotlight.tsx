@@ -4,12 +4,13 @@ import {
   artworkUrl,
   type AchievementItem,
   type GameAchievements,
+  type GameDetails,
   type GameSummary
 } from '../../../../shared/ipc/contract'
 import homeClockIcon from '../../assets/icons/home-clock.svg'
 import trophyIcon from '../../assets/icons/trophy.svg'
 import { TROPHY_IMAGES } from '../../components/trophy-images'
-import { formatPlaytime, formatUnlockDate } from '../../data/format'
+import { formatLastPlayed, formatPlaytime, formatUnlockDate, releaseYear } from '../../data/format'
 import { useFocusable, useFocusManager, useScreenActions } from '../../focus/focus-context'
 import type { Direction } from '../../input/actions'
 import { t } from '../../strings'
@@ -58,6 +59,30 @@ function useSpotlightAchievements(gameId: number | null): Loaded {
 }
 
 /**
+ * The focused game's page data (genres, studio, release), from the local database, for a game
+ * with no achievement to show that was never played (owner decision); asked only then, once
+ * the focus settles, like the achievements.
+ */
+function useSpotlightDetails(gameId: number | null): GameDetails | null {
+  const [loaded, setLoaded] = useState<{ gameId: number; data: GameDetails | null } | null>(null)
+  useEffect(() => {
+    if (gameId === null) return
+    let cancelled = false
+    const timer = setTimeout(() => {
+      window.equon.games.get(gameId).then(
+        (data) => !cancelled && setLoaded({ gameId, data }),
+        () => !cancelled && setLoaded({ gameId, data: null })
+      )
+    }, SETTLE_MS)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [gameId])
+  return loaded?.gameId === gameId ? loaded.data : null
+}
+
+/**
  * "Em cima"'s panel under the shelf (owner decision, D-29): the focused game's logo, its play
  * stats and its latest achievements. Down on the focused cover enters the row of achievements,
  * left and right walk it, up (or B) goes back to that cover, and A opens the game's
@@ -81,6 +106,9 @@ export function GameSpotlight({
 }): React.JSX.Element | null {
   const manager = useFocusManager()
   const achievements = useSpotlightAchievements(game?.id ?? null)
+  // Never played: no session, no playtime (Steam may report one without a session here).
+  const neverPlayed = game !== undefined && game.playtime === 0 && game.timeLastPlayed === null
+  const details = useSpotlightDetails(neverPlayed ? (game?.id ?? null) : null)
   const focusedId = useSyncExternalStore(manager.subscribe, () => manager.focusedId)
   // Icons are downloaded once the user comes down to the panel (owner decision, D-29).
   const iconsAsked = useRef(new Set<number>())
@@ -159,12 +187,56 @@ export function GameSpotlight({
         </div>
       )}
 
+      {/* No achievement to show, once that is known (no flash while loading): where they would
+          be, the game's genres, studio and year if it was never played, or its last session
+          (owner decisions). Not focusable: down from the cover stays on it. */}
+      {achievements.status !== 'loading' && recent.length === 0 && (
+        <InfoRow
+          items={
+            neverPlayed
+              ? [
+                  { label: t.home.spotlight.genres, value: details?.genres.join(', ') || null },
+                  { label: t.home.spotlight.studio, value: details?.developer ?? null },
+                  { label: t.home.spotlight.year, value: releaseYear(details?.releaseDate ?? null) }
+                ]
+              : [
+                  {
+                    label: t.game.lastSession,
+                    value: game.timeLastPlayed ? formatLastPlayed(game.timeLastPlayed) : null
+                  }
+                ]
+          }
+        />
+      )}
+
       {/* Bottom right: only the playtime, on a dark see-through chip (owner decision). */}
       <p className="home-spotlight__playtime">
         <img src={homeClockIcon} alt="" />
         {game.playtime > 0 ? formatPlaytime(game.playtime) : t.game.neverPlayed}
       </p>
     </section>
+  )
+}
+
+/** Facts about the game where the achievements would be: a label over each value. */
+function InfoRow({
+  items
+}: {
+  items: { label: string; value: string | null }[]
+}): React.JSX.Element | null {
+  const known = items.filter((item): item is { label: string; value: string } => !!item.value)
+  if (known.length === 0) return null
+  return (
+    <div className="home-spotlight__achievements">
+      <div className="home-spotlight__row">
+        {known.map((item) => (
+          <div key={item.label} className="home-spotlight__info">
+            <span className="home-spotlight__info-label">{item.label}</span>
+            <span className="home-spotlight__info-value">{item.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 

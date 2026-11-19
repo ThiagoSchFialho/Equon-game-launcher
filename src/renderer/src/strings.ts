@@ -73,7 +73,11 @@ export const t = {
     spotlight: {
       recent: 'Últimas conquistas',
       all: 'Ver todas',
-      allHint: 'Abre as conquistas deste jogo.'
+      allHint: 'Abre as conquistas deste jogo.',
+      // Where the achievements would be, for a game with none to show (owner decision).
+      genres: 'Gêneros',
+      studio: 'Estúdio',
+      year: 'Ano'
     },
     /** "Em cima"'s quick settings under the Settings shortcut (D-33). */
     quick: {
