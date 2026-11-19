@@ -9,8 +9,15 @@ const FADE_MS = 600
 const FADE_STEP_MS = 16
 /** The fade out waits this long at most for "Carregando..." to go. */
 const HIDE_LOADING_LIMIT_MS = 200
-/** The game's window stays covered this long after it appears (owner decision). */
+/** The game stays covered this long after its window goes fullscreen (owner decision). */
 const AFTER_GAME_WINDOW_MS = 2000
+/**
+ * A game that stays in a window never covers the monitor: this long after its window appears,
+ * the cover leaves anyway, instead of waiting for the time limit.
+ */
+const WINDOWED_GAME_MS = 15_000
+/** Windows rounds a fullscreen window by a pixel or so (measured: 1919 of 1920). */
+const FULLSCREEN_TOLERANCE_PX = 2
 /** The whole screen is covered, so it must always leave (owner decision). */
 const TIME_LIMIT_MS = 60_000
 /** Process start times are not exact, and a game may start just before the launch returns. */
@@ -61,6 +68,20 @@ export function isGameWindow(
     return false
   }
   return window.startedAt === null || window.startedAt >= launchedAt - START_MARGIN_MS
+}
+
+/**
+ * The game's window covers the whole monitor: fullscreen, or borderless at the monitor's size.
+ * The cover leaves only then (owner decision, 2026-11-19): a game shows its window first and
+ * goes fullscreen a moment later. `monitor` is in Electron's scaled units, the smaller of the
+ * two sizes Windows may report, so a fullscreen window counts whether the watcher sees scaled
+ * or real pixels, and a smaller window does not.
+ */
+export function isFullscreenWindow(window: ForegroundWindow, monitor: Size): boolean {
+  return (
+    window.width >= monitor.width - FULLSCREEN_TOLERANCE_PX &&
+    window.height >= monitor.height - FULLSCREEN_TOLERANCE_PX
+  )
 }
 
 export interface CoverWindow {
@@ -116,7 +137,9 @@ export function createLaunchCover(deps: LaunchCoverDeps): LaunchCover {
       let left = false
       let launchedAt: number | null = null
       let gameSeen = false
+      let fullscreenSeen = false
       let afterGameWindow: ReturnType<typeof setTimeout> | undefined
+      let windowedGame: ReturnType<typeof setTimeout> | undefined
 
       const fade = async (to: number, keepGoing: () => boolean): Promise<void> => {
         if (deps.reducedMotion()) {
@@ -136,10 +159,18 @@ export function createLaunchCover(deps: LaunchCoverDeps): LaunchCover {
         }
       }
 
+      // The watcher reports each change of the foreground window, size included, so a window
+      // that goes fullscreen is reported again.
       const watch = deps.watch((window) => {
-        if (launchedAt === null || gameSeen || left) return
+        if (launchedAt === null || fullscreenSeen || left) return
         if (!isGameWindow(window, launchedAt, deps.ownPid, cover.monitor)) return
-        gameSeen = true
+        if (!gameSeen) {
+          gameSeen = true
+          windowedGame = setTimeout(() => finish(), WINDOWED_GAME_MS)
+        }
+        if (!isFullscreenWindow(window, cover.monitor)) return
+        fullscreenSeen = true
+        clearTimeout(windowedGame)
         afterGameWindow = setTimeout(() => finish(), AFTER_GAME_WINDOW_MS)
       })
       const timeLimit = setTimeout(() => finish(), TIME_LIMIT_MS)
@@ -150,6 +181,7 @@ export function createLaunchCover(deps: LaunchCoverDeps): LaunchCover {
         leave = null
         clearTimeout(timeLimit)
         clearTimeout(afterGameWindow)
+        clearTimeout(windowedGame)
         watch.stop()
         deps.onChanged(false)
         if (options.instantly) {

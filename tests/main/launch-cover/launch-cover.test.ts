@@ -3,6 +3,7 @@ import { parseForegroundLine } from '../../../src/main/launch-cover/foreground'
 import {
   coverArt,
   createLaunchCover,
+  isFullscreenWindow,
   isGameWindow,
   type ForegroundWindow,
   type LaunchCover
@@ -85,6 +86,28 @@ describe('isGameWindow', () => {
 
   it('takes a program whose start time Windows does not tell, as one run as administrator', () => {
     expect(check({ startedAt: null })).toBe(true)
+  })
+})
+
+describe('isFullscreenWindow', () => {
+  const window = (width: number, height: number): ForegroundWindow => ({
+    pid: 7,
+    process: 'Balatro',
+    startedAt: null,
+    width,
+    height
+  })
+
+  it('takes a window that covers the monitor, rounded by a pixel or so', () => {
+    expect(isFullscreenWindow(window(1920, 1080), MONITOR)).toBe(true)
+    expect(isFullscreenWindow(window(1919, 1079), MONITOR)).toBe(true)
+    // The watcher may see real pixels on a scaled monitor: still fullscreen.
+    expect(isFullscreenWindow(window(2400, 1350), MONITOR)).toBe(true)
+  })
+
+  it('refuses a game still in a window', () => {
+    expect(isFullscreenWindow(window(1280, 720), MONITOR)).toBe(false)
+    expect(isFullscreenWindow(window(1920, 1040), MONITOR)).toBe(false)
   })
 })
 
@@ -250,6 +273,28 @@ describe('launch cover', () => {
     cover.cancel()
     await vi.advanceTimersByTimeAsync(700)
     expect(closed).toBe(2)
+  })
+
+  it('waits for the game window to go fullscreen, then leaves 2 s later', async () => {
+    await untilCovered()
+    onWindow(game({ width: 1280, height: 720 }))
+    await vi.advanceTimersByTimeAsync(5000)
+    // The game shows its window first: still covered.
+    expect(active).toEqual([true])
+    onWindow(game())
+    await vi.advanceTimersByTimeAsync(1900)
+    expect(active).toEqual([true])
+    await vi.advanceTimersByTimeAsync(100)
+    expect(active).toEqual([true, false])
+  })
+
+  it('leaves a game that stays in a window 15 s after its window appears', async () => {
+    await untilCovered()
+    onWindow(game({ width: 1280, height: 720 }))
+    await vi.advanceTimersByTimeAsync(14_900)
+    expect(active).toEqual([true])
+    await vi.advanceTimersByTimeAsync(100)
+    expect(active).toEqual([true, false])
   })
 
   it('counts the 2 s from the first window of the game', async () => {

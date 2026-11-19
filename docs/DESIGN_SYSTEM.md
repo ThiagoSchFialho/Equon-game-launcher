@@ -170,7 +170,8 @@ depois que o foco para por 150 ms.
     "Abrindo…" até terminar.
 -   Também ao apertar "Jogar", a imagem de abertura do jogo aparece com fade na
     frente de tudo, no monitor inteiro, e só então o jogo é chamado. Ela sai com
-    fade 2 s depois que o jogo abre, ou em no máximo 60 s; B a tira da tela sem
+    fade 2 s depois que a janela do jogo fica em tela cheia (num jogo em
+    janela, 15 s depois que ela aparece), ou em no máximo 60 s; B a tira da tela sem
     fechar o jogo. Sem imagem de abertura, mostra a imagem de fundo; sem ela, o
     logo; sem logo, o título. Fades
     de cerca de 0,6 s, e nenhum com movimento reduzido. No canto inferior
@@ -178,7 +179,7 @@ depois que o foco para por 150 ms.
     (só `opacity`, ciclo de 1,2 s; parados com movimento reduzido), em
     `--font-size-screen-title`, com uma sombra escura em volta de letras e pontos para ler sobre imagens claras.
     Ele entra com o fade da imagem, mas some de uma vez logo antes do fade de
-    saída (2 s depois que o jogo abre, ou com B, ou nos 60 s).
+    saída (2 s depois que o jogo fica em tela cheia, ou com B, ou nos 60 s).
 
 ### Configurações
 
