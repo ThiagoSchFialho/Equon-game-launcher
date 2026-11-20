@@ -166,8 +166,7 @@ describe('the Play button answers every press', () => {
           achievements: null,
           editable: true,
           launchable: false,
-          launchIssue: 'not-installed',
-          tracksTime: true
+          launchIssue: 'not-installed'
         })
       }
     })

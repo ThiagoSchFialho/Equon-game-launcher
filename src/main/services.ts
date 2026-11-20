@@ -1,4 +1,4 @@
-import { nativeImage, shell, type BrowserWindow } from 'electron'
+import { nativeImage, screen, shell, type BrowserWindow } from 'electron'
 import { readdir, readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -38,6 +38,8 @@ import {
 import { createIgdbClient } from '../integrations/igdb/igdb'
 import { MAX_ARTWORK_BYTES, webpSize } from '../infrastructure/artwork/import-artwork'
 import { createAchievementSync } from './achievements/achievement-sync'
+import { watchForeground } from './launch-cover/foreground'
+import { isGameWindow } from './launch-cover/launch-cover'
 import { createArtworkEditor } from './artwork/artwork-editor'
 import { createArtworkFetcher } from './artwork/artwork-fetcher'
 import { IpcEvent } from '../shared/ipc/contract'
@@ -54,6 +56,12 @@ import { createGameSizes } from './system/game-sizes'
 
 /** Heartbeat interval for running sessions (DATA_BASE_CONTEXT.md §3.8). */
 const HEARTBEAT_MS = 30_000
+/** D-37: a followed game process is checked this often. */
+const PROCESS_POLL_MS = 2000
+/** D-37: after starting an executable, how long another process may take the game over. */
+const HAND_OFF_WAIT_MS = 60_000
+/** D-37: after opening a .url shortcut; a store launcher may take a while to start the game. */
+const SHORTCUT_WAIT_MS = 180_000
 /** How long Steam may take to report a launched game running (first guess; measure). */
 const STEAM_START_TIMEOUT_MS = 90_000
 /** Steam updates a game that needs it before starting it. */
@@ -142,6 +150,26 @@ export function createServices(
     clock,
     repeat,
     heartbeatMs: HEARTBEAT_MS,
+    // D-37. Signal 0 only checks the process exists; EPERM means it does, run by another user.
+    processAlive: (pid) => {
+      try {
+        process.kill(pid, 0)
+        return true
+      } catch (error) {
+        return (error as NodeJS.ErrnoException).code === 'EPERM'
+      }
+    },
+    processPollMs: PROCESS_POLL_MS,
+    handOffWaitMs: HAND_OFF_WAIT_MS,
+    shortcutWaitMs: SHORTCUT_WAIT_MS,
+    // D-37: the same reading and rules as the launch cover, for as long as the runner waits.
+    watchGameWindows: (launchedAt, onWindow) => {
+      const monitor = screen.getPrimaryDisplay().size
+      const watch = watchForeground(process.env['SystemRoot'], (window) => {
+        if (isGameWindow(window, launchedAt.getTime(), process.pid, monitor)) onWindow(window.pid)
+      })
+      return () => watch.stop()
+    },
     onRunningChanged: () => sendRunning(),
     onError: (error) => console.error('Could not close a play session:', error),
     steam: {

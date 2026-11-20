@@ -155,8 +155,7 @@ describe('game queries', () => {
   it('offers Play for installed Steam games unless Steam is busy with them', () => {
     const game = deps.games.upsertSteamGame({ steamAppId: 620, title: 'Portal 2' })
     expect(getGameDetails(deps, game.id)).toMatchObject({
-      launchIssue: 'install-unknown',
-      tracksTime: true
+      launchIssue: 'install-unknown'
     })
     deps.games.setInstalled(game.id, false)
     expect(getGameDetails(deps, game.id)?.launchIssue).toBe('not-installed')

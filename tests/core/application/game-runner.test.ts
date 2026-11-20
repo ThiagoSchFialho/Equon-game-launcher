@@ -23,6 +23,12 @@ import { createTestDb } from '../../helpers/db'
 let db: SqliteDatabase
 let clock: Date
 let ticks: (() => void)[]
+/** The interval of each tick in `ticks`. */
+let intervals: Map<() => void, number>
+/** Fires every repeat of this interval once. */
+const fire = (ms: number): void => {
+  for (const tick of [...ticks]) if (intervals.get(tick) === ms) tick()
+}
 let exitProcess: () => void
 let launched: ProcessCommand[]
 let opened: string[]
@@ -46,6 +52,30 @@ const steamDeps = (): Parameters<typeof createGameRunner>[0]['steam'] => ({
   updateTimeoutMs: 600_000
 })
 
+/**
+ * D-37: processes alive in the test, and the game-window watchers the runner keeps; the
+ * hand-off waits and the polling run through `repeat`.
+ */
+let alive: Set<number>
+let windowWatchers: Set<(pid: number) => void>
+/** A game window shows in process `pid`, for every runner still watching. */
+const showWindow = (pid: number): void => {
+  for (const watcher of [...windowWatchers]) watcher(pid)
+}
+const handOffDeps = (): Pick<
+  Parameters<typeof createGameRunner>[0],
+  'processAlive' | 'processPollMs' | 'handOffWaitMs' | 'shortcutWaitMs' | 'watchGameWindows'
+> => ({
+  processAlive: (pid) => alive.has(pid),
+  processPollMs: 2000,
+  handOffWaitMs: 60_000,
+  shortcutWaitMs: 180_000,
+  watchGameWindows: (_launchedAt, onWindow) => {
+    windowWatchers.add(onWindow)
+    return () => windowWatchers.delete(onWindow)
+  }
+})
+
 const games = (): ReturnType<typeof createGameRepository> => createGameRepository(db)
 const flush = (): Promise<void> => new Promise((r) => setTimeout(r, 0))
 
@@ -65,6 +95,7 @@ beforeEach(() => {
   db = createTestDb()
   clock = new Date('2026-11-02T10:00:00Z')
   ticks = []
+  intervals = new Map()
   launched = []
   opened = []
   shortcutTargets = new Map()
@@ -73,6 +104,8 @@ beforeEach(() => {
   steamOpened = []
   live = new Map()
   timeouts = []
+  alive = new Set()
+  windowWatchers = new Set()
   steamSessions = createSteamSessions({
     games: createGameRepository(db),
     sessions: createSessionRepository(db),
@@ -105,11 +138,13 @@ beforeEach(() => {
     },
     inspector: { stateOf: (path) => (existing.has(path) ? 'file' : 'missing') },
     clock: { now: () => clock },
-    repeat: (_ms, tick) => {
+    repeat: (ms, tick) => {
       ticks.push(tick)
+      intervals.set(tick, ms)
       return () => (ticks = ticks.filter((t) => t !== tick))
     },
     heartbeatMs: 30_000,
+    ...handOffDeps(),
     onRunningChanged: (ids) => runningChanges.push(ids),
     steam: steamDeps()
   })
@@ -152,6 +187,8 @@ describe('game runner', () => {
     ]) {
       clock = new Date(start)
       await runner.launch(id)
+      // Played past the hand-off wait (D-37): the exit closes the session at once.
+      fire(60_000)
       clock = new Date(end)
       exitProcess()
       await flush()
@@ -214,14 +251,21 @@ describe('game runner', () => {
       },
       inspector: { stateOf: (path) => (existing.has(path) ? 'file' : 'missing') },
       clock: { now: () => clock },
-      repeat: () => () => {},
+      // Only the hand-off wait is kept, to end it: the game is played past it (D-37).
+      repeat: (ms, tick) => {
+        if (ms === 60_000) endWait = tick
+        return () => {}
+      },
       heartbeatMs: 30_000,
+      ...handOffDeps(),
       onRunningChanged: () => {},
       onError,
       steam: steamDeps()
     })
+    let endWait = (): void => {}
     const id = addManualGame()
     await runner.launch(id)
+    endWait()
     exitProcess()
     await flush()
     expect(onError).toHaveBeenCalledOnce()
@@ -297,7 +341,19 @@ describe('game runner: emulators and shortcuts', () => {
     expect(runner.runningGameIds()).toEqual([id])
   })
 
-  it('opens allowlisted .url shortcuts without a session', async () => {
+  it('keeps a ROM game on its own process: no wait for a window when the emulator ends', async () => {
+    const id = addGame('yuzu', null, 'D:/Switch/Zelda.nsp')
+    createEmulatorRepository(db).set('yuzu', 'C:/Yuzu/yuzu.exe')
+    existing.add('C:/Yuzu/yuzu.exe')
+    await runner.launch(id)
+    clock = new Date('2026-11-02T10:00:05Z')
+    exitProcess()
+    await flush()
+    expect(runner.runningGameIds()).toEqual([])
+    expect(createSessionRepository(db).listRunning()).toEqual([])
+  })
+
+  it('opens allowlisted .url shortcuts without a session until the game window shows', async () => {
     const id = addGame('manual', 'C:/Games/Epic.url', null)
     shortcutTargets.set('C:/Games/Epic.url', 'com.epicgames.launcher://apps/x?action=launch')
     await runner.launch(id)
@@ -372,5 +428,150 @@ describe('game runner: Steam games', () => {
     live.set(2379780, 'updating')
     await expect(runner.launch(id)).rejects.toMatchObject({ code: 'steam-busy' })
     expect(steamOpened).toEqual([])
+  })
+})
+
+describe('game runner: following the game window (D-37)', () => {
+  const sessions = (id: number): { startedAt: string; endedAt: string | null }[] =>
+    db
+      .prepare('SELECT started_at, ended_at FROM play_sessions WHERE game_id = ? ORDER BY id')
+      .all(id)
+      .map((row) => {
+        const { started_at, ended_at } = row as { started_at: string; ended_at: string | null }
+        return { startedAt: started_at, endedAt: ended_at }
+      })
+  const addShortcut = (title: string): number => {
+    const game = games().create({ origin: 'manual', title, installed: true })
+    createLaunchConfigRepository(db).save({
+      gameId: game.id,
+      executablePath: `C:/Games/${title}.url`,
+      romPath: null,
+      arguments: [],
+      workingDirectory: null
+    })
+    shortcutTargets.set(`C:/Games/${title}.url`, 'com.epicgames.launcher://apps/x?action=launch')
+    return game.id
+  }
+
+  it('Minecraft: its own window, it ends, then the game in a new process is followed', async () => {
+    const id = addManualGame()
+    await runner.launch(id)
+    // Measured (owner's report): the process started shows a window, then hands off and ends.
+    alive.add(4242)
+    showWindow(4242)
+    clock = new Date('2026-11-02T10:00:07Z')
+    alive.delete(4242)
+    exitProcess()
+    await flush()
+    expect(runner.runningGameIds()).toEqual([id])
+
+    clock = new Date('2026-11-02T10:00:10Z')
+    alive.add(777)
+    showWindow(777)
+    clock = new Date('2026-11-02T10:30:00Z')
+    fire(60_000)
+    fire(2000)
+    expect(runner.runningGameIds()).toEqual([id])
+
+    alive.delete(777)
+    clock = new Date('2026-11-02T10:45:00Z')
+    fire(2000)
+    expect(runner.runningGameIds()).toEqual([])
+    expect(sessions(id)).toEqual([
+      { startedAt: '2026-11-02T10:00:00Z', endedAt: '2026-11-02T10:45:00Z' }
+    ])
+    expect(games().getById(id)?.playtime).toBe(45)
+    // Nothing is watched any more.
+    expect(windowWatchers.size).toBe(0)
+  })
+
+  it('a launcher that stays open hands over when it ends, to the game window it opened', async () => {
+    const id = addManualGame()
+    await runner.launch(id)
+    alive.add(777)
+    showWindow(777)
+    clock = new Date('2026-11-02T10:00:20Z')
+    exitProcess()
+    await flush()
+    alive.delete(777)
+    clock = new Date('2026-11-02T10:20:00Z')
+    fire(2000)
+    // Within the wait: it may restart, so the session waits; once the wait ends, it closes.
+    fire(60_000)
+    expect(sessions(id)).toEqual([
+      { startedAt: '2026-11-02T10:00:00Z', endedAt: '2026-11-02T10:20:00Z' }
+    ])
+  })
+
+  it('without another window, closes when the process ended, once the wait is over', async () => {
+    const id = addManualGame()
+    await runner.launch(id)
+    clock = new Date('2026-11-02T10:00:01Z')
+    exitProcess()
+    await flush()
+    clock = new Date('2026-11-02T10:01:00Z')
+    fire(60_000)
+    expect(runner.runningGameIds()).toEqual([])
+    expect(sessions(id)).toEqual([
+      { startedAt: '2026-11-02T10:00:00Z', endedAt: '2026-11-02T10:00:01Z' }
+    ])
+  })
+
+  it('a game played past the wait closes at once when it ends, as before', async () => {
+    const id = addManualGame()
+    await runner.launch(id)
+    fire(60_000)
+    showWindow(777)
+    clock = new Date('2026-11-02T11:00:00Z')
+    exitProcess()
+    await flush()
+    expect(runner.runningGameIds()).toEqual([])
+    expect(games().getById(id)?.playtime).toBe(60)
+  })
+
+  it('times a .url shortcut from its game window to the end of that process', async () => {
+    const id = addShortcut('Fortnite')
+    await runner.launch(id)
+    expect(runner.runningGameIds()).toEqual([])
+
+    // The store launcher takes its time; its own process is left out by the watcher.
+    clock = new Date('2026-11-02T10:02:00Z')
+    alive.add(888)
+    showWindow(888)
+    expect(runner.runningGameIds()).toEqual([id])
+
+    fire(180_000)
+    alive.delete(888)
+    clock = new Date('2026-11-02T11:12:00Z')
+    fire(2000)
+    expect(sessions(id)).toEqual([
+      { startedAt: '2026-11-02T10:02:00Z', endedAt: '2026-11-02T11:12:00Z' }
+    ])
+    expect(games().getById(id)?.playtime).toBe(70)
+  })
+
+  it('a .url shortcut whose game window never shows gets no session', async () => {
+    const id = addShortcut('Epic')
+    await runner.launch(id)
+    fire(180_000)
+    showWindow(888)
+    expect(sessions(id)).toEqual([])
+    expect(games().getById(id)?.timeLastPlayed).toBe('2026-11-02T10:00:00Z')
+    expect(windowWatchers.size).toBe(0)
+  })
+
+  it('watches nothing for a ROM game', async () => {
+    const game = games().create({ origin: 'yuzu', title: 'Zelda', installed: true })
+    createLaunchConfigRepository(db).save({
+      gameId: game.id,
+      executablePath: null,
+      romPath: 'D:/Switch/Zelda.nsp',
+      arguments: [],
+      workingDirectory: null
+    })
+    createEmulatorRepository(db).set('yuzu', 'C:/Yuzu/yuzu.exe')
+    existing.add('C:/Yuzu/yuzu.exe')
+    await runner.launch(game.id)
+    expect(windowWatchers.size).toBe(0)
   })
 })

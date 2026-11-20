@@ -111,8 +111,9 @@ com o computador ligado a uma TV.
     as próprias origens (por exemplo, "Nintendo 64" para um emulador
     novo). Só a Steam tem integração automática; jogos de qualquer outra
     origem são adicionados manualmente, apontando para o `.exe` do jogo ou
-    para um atalho `.url` (atalhos das lojas, como Epic; nesse caso o
-    tempo de jogo não é medido).
+    para um atalho `.url` (atalhos das lojas, como Epic). O tempo de um
+    atalho `.url`, ou de um jogo que se reabre por outro programa (como os
+    do app Xbox), é medido pelo processo da janela do jogo (D-37).
 -   **Emuladores:** as Configurações têm a aba "Emuladores", onde o usuário
     escolhe um emulador suportado (por enquanto só o Yuzu) e indica o
     executável dele. Ao adicionar um jogo, escolher uma ROM no campo

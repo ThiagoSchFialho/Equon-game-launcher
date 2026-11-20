@@ -91,7 +91,7 @@ function playNote(
   if (launching && steam) return t.game.steamLaunching
   switch (game.launchIssue) {
     case null:
-      return game.tracksTime ? null : t.game.untracked
+      return null
     case 'steam-busy':
       return t.game.steamBusy
     case 'install-unknown':

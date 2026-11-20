@@ -107,7 +107,6 @@ export const t = {
     notInstalled: 'Arquivo do jogo não encontrado. Edite o jogo para corrigir o caminho.',
     installUnknown: 'Não foi possível verificar o arquivo do jogo (disco desconectado?).',
     emulatorMissing: 'Configure o Yuzu em Configurações › Emuladores.',
-    untracked: 'Atalho .url: o tempo de jogo não é medido.',
     noConfig: 'Configure o executável editando o jogo.',
     runningNote: 'O tempo desta sessão será somado quando o jogo fechar.',
     more: 'Mais opções',

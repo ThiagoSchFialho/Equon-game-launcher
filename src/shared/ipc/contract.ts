@@ -463,8 +463,6 @@ export interface GameDetails extends GameSummary {
   launchable: boolean
   /** Why Play is unavailable, or null. */
   launchIssue: LaunchIssue | null
-  /** False for .url shortcuts: no process is observed, so no playtime is measured. */
-  tracksTime: boolean
 }
 
 export type LaunchIssue =

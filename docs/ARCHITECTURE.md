@@ -85,6 +85,7 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-34 | Game sizes in Settings › Armazenamento | Accepted | Each drive's bar split by game: Steam from the manifest, ROMs from the file, manual games by summing their folder (with guards); nine games coloured from a new chart palette; nothing stored; see §3.33 |
 | D-35 | Opening screen | Accepted | The app icon with "Equon" under it, over everything, until settings, games and the startup library refresh are in (at least 1 s, at most 6 s); renderer only; see §3.34 |
 | D-36 | Mouse pointer out of the way when a game opens | Accepted | 1 s before the launch cover leaves for a game that opened, the pointer goes to the bottom right corner of the cover's monitor, by a fixed PowerShell script (`SetCursorPos`); see §3.35 |
+| D-37 | Manual games followed through their game window | Accepted | A manual game whose process hands off (an Xbox app game) or a `.url` shortcut is timed through the process of the game's window, watched by the runner for 60 s (3 min for `.url`); Steam and ROM games unchanged; see §3.36 |
 | D-24 | Interface sounds | Accepted | Sounds on moving, confirming, going back and opening modals; on by default, `USERS.ui_sounds`; silent while a game runs; see §3.23 |
 | D-16 | Refresh frequency for `appdetails` metadata | Accepted | Fetched only when a game is discovered/added; failed fetches are retried (§3.14) |
 | D-17 | Steam launch mechanism | Accepted | `steam://rungameid/<appid>`, built in the main process (§3.12) |
@@ -168,7 +169,7 @@ Origins are **data, not a fixed enum** (owner decision, Phase 2). An `ORIGINS` t
 - Games from Epic, GOG or any other PC launcher use `manual`.
 - TypeScript: the origin is a `string` key; built-in keys are constants, and adapter capabilities are keyed by `steam` only.
 - **Emulators (decided in Phase 4):** emulators are a separate feature, not origin settings. An `EMULATORS` table stores the executable the user configured per supported emulator (only **Yuzu** for now; Settings → "Emuladores"). A Yuzu game (origin `yuzu`) stores only its ROM path; at launch main builds `yuzu.exe -f -g "<rom>"` as an argument array, so changing `yuzu.exe` applies to every Yuzu game. The built-in `manual` origin is displayed as "Jogo Local" (migration `0002`). Details: `DATA_BASE_CONTEXT.md` §3.7 and §3.12.
-- **`.url` shortcuts (decided in Phase 4):** a manual game may point to a Windows internet shortcut. Main reads its `URL=` line and only accepts the schemes `com.epicgames.launcher:`, `steam:`, `uplay:`, `origin2:`, `link2ea:` and `battlenet:` (checked when saving and again when launching), then opens it through Electron's external-URL mechanism. No process is observed, so **no playtime is measured** for these games.
+- **`.url` shortcuts (decided in Phase 4):** a manual game may point to a Windows internet shortcut. Main reads its `URL=` line and only accepts the schemes `com.epicgames.launcher:`, `steam:`, `uplay:`, `origin2:`, `link2ea:` and `battlenet:` (checked when saving and again when launching), then opens it through Electron's external-URL mechanism. No process of the launcher's own is observed; since D-37 (§3.36) the game is timed through the process of its window.
 
 ### 3.6 D-06 — Installation state (Accepted: nullable)
 
@@ -572,6 +573,20 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 
 **How.** Electron cannot move the pointer, so `src/main/launch-cover/cursor.ts` runs one fixed PowerShell script, by absolute path, with no shell, like the foreground watcher. The point comes in two environment variables, read as integers by the script, so no command is built from text; main checks it is a whole number within a screen (`isScreenPoint`) before. The script declares the process DPI-aware and calls `SetCursorPos` with real pixels: main turns the monitor's last pixel from Electron's scaled units with `screen.dipToScreenPoint`. Best effort: without PowerShell nothing happens and the game goes on. Checked that the script compiles and does nothing without the variables; the actual move was not observed by the agent.
 
+### 3.36 D-37 — Manual games followed through their game window (Accepted, after Phase 8)
+
+**Owner's report (2026-11-20):** Minecraft (the Xbox app version, `D:\XboxGames\Minecraft for Windows\Content\Minecraft.Windows.exe`) and Fortnite (an Epic `.url` shortcut) never gained playtime. Measured in the database: every Minecraft session lasted 0 or 1 s, since the process the launcher starts relaunches itself through the Xbox app and ends; a `.url` shortcut has no process at all. The package's own entry point, `GameLaunchHelper.exe`, also ends once the game runs.
+
+**Owner decisions (2026-11-20):** the game runner watches for the game's window itself, with the launch cover's reading and rules (§3.21): a large foreground window of a process started after the launch, leaving out the launcher, the shell, Steam and the store launchers (`watchForeground` and `isGameWindow`, run from `main/services.ts`). A first version took the window from the launch cover, which reports only the first one: with Minecraft that was the window of the process started, shown for a few seconds before it handed off, so the session still ended after 7 s (measured, 2026-11-20). The runner watches for as long as it waits:
+
+- **A manual game started by its executable** (not a ROM game): the session opens when the process starts, as before, and the runner waits `handOffWaitMs` (60 s) from the launch. A window of the process started is its own and changes nothing. If that process ends within the wait, the session stays open, and the next game window of another process takes it; the session then follows that process. A window of another process seen while the process started still runs is kept, and followed if it still runs when the process started ends (a launcher that stays open until the game is up). A followed process that ends within the wait leaves the session waiting for another window (a game that restarts). Once the wait is over: with nothing followed, the session closes when the last process ended; a process started or followed that ends afterwards closes it at once, as before.
+- **A `.url` shortcut:** last played still moves to when it was opened. The runner waits `shortcutWaitMs` (3 min, since a store launcher may take a while to start the game); a session opens with the game's window and follows that process until it ends. The time the store launcher takes before the game is not counted. With no window in time, there is no session.
+- **Steam and ROM games (Yuzu)** do not change (owner decision): Steam sessions follow `RunningAppID`, and a ROM game's session follows the emulator it started; the runner watches nothing for them.
+
+**How a process is followed.** Main checks it every 2 s with `process.kill(pid, 0)`, which only asks whether it exists (`EPERM` counts as running); nothing is killed. The watcher is a second foreground watcher (one fixed PowerShell process, §3.21) that runs only while the runner waits. The session's heartbeat goes on as usual, so a launcher that dies leaves it `interrupted` at its last heartbeat (D-08). The session ends when the check first sees the process gone, up to 2 s late. A game that ends within the wait shows as running until the wait is over, then its session closes at the time it ended.
+
+**Limits.** A game window the rules leave out (a small window, a launcher not in the list) is not followed. The page no longer says that a `.url` shortcut's time is not measured.
+
 ## 4. Inconsistencies found across the project docs
 
 Items 1–6 have accepted decisions (D-02, D-04 to D-08) and are now reflected in `DATA_BASE_CONTEXT.md` v0.2 and `PRODUCT.md` v0.2. Item 7 follows the Epic/GOG decision. Items 8–9 are housekeeping; item 9 (documentation language) is still open.
@@ -966,6 +981,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-13 | 0.70 | D-34: game sizes per drive in Settings › Armazenamento, with a validated chart palette (§3.33). |
 | 2026-11-13 | 0.71 | D-35: opening screen until settings, games and the startup library refresh are in (§3.34). |
 | 2026-11-20 | 0.72 | D-36: the mouse pointer goes to the bottom right corner 1 s before the launch cover leaves for a game that opened (§3.35). |
+| 2026-11-20 | 0.73 | D-37: a manual game that hands off, or a `.url` shortcut, is timed through the process of the game's window, watched by the runner (§3.36). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

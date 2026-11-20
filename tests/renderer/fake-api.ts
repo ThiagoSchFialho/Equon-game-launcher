@@ -41,7 +41,6 @@ export const details = (game: GameSummary, extra: Partial<GameDetails> = {}): Ga
   launchable: game.installed === true,
   launchIssue:
     game.installed === true ? null : game.installed === false ? 'not-installed' : 'install-unknown',
-  tracksTime: true,
   ...extra
 })
 

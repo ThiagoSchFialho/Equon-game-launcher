@@ -400,8 +400,7 @@ export const gameDetailsSchema = z.strictObject({
   launchable: z.boolean(),
   launchIssue: z
     .enum(['not-installed', 'install-unknown', 'no-config', 'emulator-missing', 'steam-busy'])
-    .nullable(),
-  tracksTime: z.boolean()
+    .nullable()
 }) satisfies z.ZodType<GameDetails>
 
 export const gameDetailsResultSchema = gameDetailsSchema.nullable()

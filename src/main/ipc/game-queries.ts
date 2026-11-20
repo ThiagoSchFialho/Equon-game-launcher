@@ -13,7 +13,6 @@ import {
   BuiltinOrigin,
   EMULATORS,
   emulatorForOrigin,
-  isShortcutName,
   type Game,
   type LaunchConfig,
   type SteamLiveState
@@ -123,9 +122,7 @@ export function getGameDetails(deps: GameQueryDeps, id: number): GameDetails | n
     // Steam games edit only their details (owner decision); removing stays non-Steam only.
     editable: true,
     launchable: launchIssue === null,
-    launchIssue,
-    // .url shortcuts hand the game to a store launcher: no process to observe.
-    tracksTime: !(config?.executablePath && isShortcutName(config.executablePath))
+    launchIssue
   }
 }
 
