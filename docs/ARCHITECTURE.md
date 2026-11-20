@@ -84,6 +84,7 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-33 | Quick settings under the Settings shortcut | Accepted | "Configurações rápidas": Atualizar biblioteca, Tela cheia, Ignorar tela do jogo na home, Limitar jogos na home, changed at once from the "Em cima" Home; see §3.32 |
 | D-34 | Game sizes in Settings › Armazenamento | Accepted | Each drive's bar split by game: Steam from the manifest, ROMs from the file, manual games by summing their folder (with guards); nine games coloured from a new chart palette; nothing stored; see §3.33 |
 | D-35 | Opening screen | Accepted | The app icon with "Equon" under it, over everything, until settings, games and the startup library refresh are in (at least 1 s, at most 6 s); renderer only; see §3.34 |
+| D-36 | Mouse pointer out of the way when a game opens | Accepted | 1 s before the launch cover leaves for a game that opened, the pointer goes to the bottom right corner of the cover's monitor, by a fixed PowerShell script (`SetCursorPos`); see §3.35 |
 | D-24 | Interface sounds | Accepted | Sounds on moving, confirming, going back and opening modals; on by default, `USERS.ui_sounds`; silent while a game runs; see §3.23 |
 | D-16 | Refresh frequency for `appdetails` metadata | Accepted | Fetched only when a game is discovered/added; failed fetches are retried (§3.14) |
 | D-17 | Steam launch mechanism | Accepted | `steam://rungameid/<appid>`, built in the main process (§3.12) |
@@ -565,6 +566,12 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 
 **Code.** `data/splash.ts` (`useSplash`, `SPLASH_TIMING`) and `components/SplashScreen.tsx`; `App.tsx` ignores input while it is up. Screen tests turn it off (`tests/renderer/fake-api.ts`); `tests/renderer/splash.test.tsx` covers it.
 
+### 3.35 D-36 — Mouse pointer out of the way when a game opens (Accepted, after Phase 8)
+
+**Owner decisions (2026-11-20):** some games open with the mouse pointer in the middle of the screen, in the way until the first controller press or the main menu. So 1 s before the launch cover (D-22) leaves for a game that opened, the launcher moves the pointer to the bottom right corner of the monitor the cover is on (the corner rather than the middle of the right edge: a pointer resting on an edge makes some games open a side menu or turn the camera). That is 1 s after the game's window goes fullscreen, or 14 s after the first window of a game that stays in a window (§3.21). Nothing moves when the cover leaves otherwise: B, a failed launch or the 60 s limit.
+
+**How.** Electron cannot move the pointer, so `src/main/launch-cover/cursor.ts` runs one fixed PowerShell script, by absolute path, with no shell, like the foreground watcher. The point comes in two environment variables, read as integers by the script, so no command is built from text; main checks it is a whole number within a screen (`isScreenPoint`) before. The script declares the process DPI-aware and calls `SetCursorPos` with real pixels: main turns the monitor's last pixel from Electron's scaled units with `screen.dipToScreenPoint`. Best effort: without PowerShell nothing happens and the game goes on. Checked that the script compiles and does nothing without the variables; the actual move was not observed by the agent.
+
 ## 4. Inconsistencies found across the project docs
 
 Items 1–6 have accepted decisions (D-02, D-04 to D-08) and are now reflected in `DATA_BASE_CONTEXT.md` v0.2 and `PRODUCT.md` v0.2. Item 7 follows the Epic/GOG decision. Items 8–9 are housekeeping; item 9 (documentation language) is still open.
@@ -958,6 +965,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-12 | 0.69 | D-32: the Settings image behind the Home while the shortcut is focused. D-33: "Configurações rápidas" under the shortcut (§3.31, §3.32). |
 | 2026-11-13 | 0.70 | D-34: game sizes per drive in Settings › Armazenamento, with a validated chart palette (§3.33). |
 | 2026-11-13 | 0.71 | D-35: opening screen until settings, games and the startup library refresh are in (§3.34). |
+| 2026-11-20 | 0.72 | D-36: the mouse pointer goes to the bottom right corner 1 s before the launch cover leaves for a game that opened (§3.35). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

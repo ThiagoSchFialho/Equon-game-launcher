@@ -177,7 +177,8 @@ depois que o foco para por 150 ms.
     frente de tudo, no monitor inteiro, e só então o jogo é chamado. Ela sai com
     fade 2 s depois que a janela do jogo fica em tela cheia (num jogo em
     janela, 15 s depois que ela aparece), ou em no máximo 60 s; B a tira da tela sem
-    fechar o jogo. Sem imagem de abertura, mostra a imagem de fundo; sem ela, o
+    fechar o jogo. 1 s antes de sair por o jogo ter aberto, o cursor do
+    mouse vai para o canto inferior direito do monitor (D-36). Sem imagem de abertura, mostra a imagem de fundo; sem ela, o
     logo; sem logo, o título. Fades
     de cerca de 0,6 s, e nenhum com movimento reduzido. No canto inferior
     direito, sempre, "Carregando" com três pontos que acendem um de cada vez

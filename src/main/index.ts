@@ -13,6 +13,7 @@ import {
 } from '../infrastructure/persistence'
 import { APP_MENU } from './app-menu'
 import { handleArtworkProtocol, registerArtworkScheme } from './artwork/artwork-protocol'
+import { moveCursor } from './launch-cover/cursor'
 import { watchForeground } from './launch-cover/foreground'
 import {
   coverArt,
@@ -122,6 +123,14 @@ async function openCoverWindow(hash: string): Promise<CoverWindow> {
     },
     close: () => {
       if (!cover.isDestroyed()) cover.destroy()
+    },
+    // The monitor's last pixel, in real pixels for Windows (D-36).
+    parkCursor: () => {
+      const corner = screen.dipToScreenPoint({
+        x: display.x + display.width - 1,
+        y: display.y + display.height - 1
+      })
+      moveCursor(process.env['SystemRoot'], { x: Math.round(corner.x), y: Math.round(corner.y) })
     }
   }
 }

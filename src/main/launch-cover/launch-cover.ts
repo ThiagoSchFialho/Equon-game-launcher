@@ -16,6 +16,11 @@ const AFTER_GAME_WINDOW_MS = 2000
  * the cover leaves anyway, instead of waiting for the time limit.
  */
 const WINDOWED_GAME_MS = 15_000
+/**
+ * The mouse pointer goes to the monitor's bottom right corner this long before the cover leaves
+ * (owner decision, D-36): some games open with it in the middle of the screen.
+ */
+const CURSOR_LEAD_MS = 1000
 /** Windows rounds a fullscreen window by a pixel or so (measured: 1919 of 1920). */
 const FULLSCREEN_TOLERANCE_PX = 2
 /** The whole screen is covered, so it must always leave (owner decision). */
@@ -92,6 +97,8 @@ export interface CoverWindow {
   hideLoading(): Promise<void>
   setOpacity(opacity: number): void
   close(): void
+  /** Moves the mouse pointer to the bottom right corner of the monitor it covers. */
+  parkCursor?(): void
 }
 
 export interface LaunchCoverDeps {
@@ -140,6 +147,22 @@ export function createLaunchCover(deps: LaunchCoverDeps): LaunchCover {
       let fullscreenSeen = false
       let afterGameWindow: ReturnType<typeof setTimeout> | undefined
       let windowedGame: ReturnType<typeof setTimeout> | undefined
+      let cursorTimer: ReturnType<typeof setTimeout> | undefined
+      // Out of the game's way a moment before the screen shows it (D-36). Not on B, a failed
+      // launch or the time limit: only when the game is there.
+      const parkCursorBefore = (leaveInMs: number): void => {
+        clearTimeout(cursorTimer)
+        cursorTimer = setTimeout(
+          () => {
+            try {
+              cover.parkCursor?.()
+            } catch (error) {
+              deps.onError?.(error)
+            }
+          },
+          Math.max(0, leaveInMs - CURSOR_LEAD_MS)
+        )
+      }
 
       const fade = async (to: number, keepGoing: () => boolean): Promise<void> => {
         if (deps.reducedMotion()) {
@@ -167,11 +190,13 @@ export function createLaunchCover(deps: LaunchCoverDeps): LaunchCover {
         if (!gameSeen) {
           gameSeen = true
           windowedGame = setTimeout(() => finish(), WINDOWED_GAME_MS)
+          parkCursorBefore(WINDOWED_GAME_MS)
         }
         if (!isFullscreenWindow(window, cover.monitor)) return
         fullscreenSeen = true
         clearTimeout(windowedGame)
         afterGameWindow = setTimeout(() => finish(), AFTER_GAME_WINDOW_MS)
+        parkCursorBefore(AFTER_GAME_WINDOW_MS)
       })
       const timeLimit = setTimeout(() => finish(), TIME_LIMIT_MS)
 
@@ -182,6 +207,7 @@ export function createLaunchCover(deps: LaunchCoverDeps): LaunchCover {
         clearTimeout(timeLimit)
         clearTimeout(afterGameWindow)
         clearTimeout(windowedGame)
+        clearTimeout(cursorTimer)
         watch.stop()
         deps.onChanged(false)
         if (options.instantly) {

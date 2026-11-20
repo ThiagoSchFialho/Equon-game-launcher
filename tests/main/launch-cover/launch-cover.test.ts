@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { isScreenPoint } from '../../../src/main/launch-cover/cursor'
 import { parseForegroundLine } from '../../../src/main/launch-cover/foreground'
 import {
   coverArt,
@@ -111,6 +112,19 @@ describe('isFullscreenWindow', () => {
   })
 })
 
+describe('isScreenPoint', () => {
+  it('takes whole numbers within a screen, also left of or above the main monitor', () => {
+    expect(isScreenPoint({ x: 2559, y: 1439 })).toBe(true)
+    expect(isScreenPoint({ x: -1, y: 1079 })).toBe(true)
+  })
+
+  it('refuses anything else, so nothing odd reaches the script', () => {
+    expect(isScreenPoint({ x: 1.5, y: 10 })).toBe(false)
+    expect(isScreenPoint({ x: Number.NaN, y: 10 })).toBe(false)
+    expect(isScreenPoint({ x: 10, y: 1e9 })).toBe(false)
+  })
+})
+
 describe('parseForegroundLine', () => {
   it('reads what the watcher prints', () => {
     expect(
@@ -150,6 +164,8 @@ describe('launch cover', () => {
   let reduced: boolean
   let openFails: boolean
   let hideLoading: () => Promise<void>
+  /** When the cursor was moved, in ms after the test's start. */
+  let parked: number[]
 
   const game = (extra: Partial<ForegroundWindow> = {}): ForegroundWindow => ({
     pid: 7,
@@ -170,6 +186,7 @@ describe('launch cover', () => {
     reduced = false
     openFails = false
     hideLoading = async () => {}
+    parked = []
     launchOk.mockReset()
     launchOk.mockImplementation(async () => {
       order.push(`launch at ${opacity.at(-1)}`)
@@ -188,6 +205,9 @@ describe('launch cover', () => {
           setOpacity: (value) => opacity.push(value),
           close: () => {
             closed += 1
+          },
+          parkCursor: () => {
+            parked.push(Date.now() - 1_000_000)
           }
         }
       },
@@ -295,6 +315,46 @@ describe('launch cover', () => {
     expect(active).toEqual([true])
     await vi.advanceTimersByTimeAsync(100)
     expect(active).toEqual([true, false])
+  })
+
+  it('moves the mouse pointer to the corner 1 s before leaving a fullscreen game (D-36)', async () => {
+    await untilCovered()
+    onWindow(game({ width: 1280, height: 720 }))
+    await vi.advanceTimersByTimeAsync(3000)
+    onWindow(game())
+    const fullscreenAt = Date.now() - 1_000_000
+    await vi.advanceTimersByTimeAsync(900)
+    expect(parked).toEqual([])
+    await vi.advanceTimersByTimeAsync(100)
+    // Once, 1 s after fullscreen, 1 s before the cover leaves; not at 14 s for a window.
+    expect(parked).toEqual([fullscreenAt + 1000])
+    expect(active).toEqual([true])
+    await vi.advanceTimersByTimeAsync(20_000)
+    expect(parked).toHaveLength(1)
+  })
+
+  it('moves it 1 s before leaving a game that stays in a window', async () => {
+    await untilCovered()
+    const seenAt = Date.now() - 1_000_000
+    onWindow(game({ width: 1280, height: 720 }))
+    await vi.advanceTimersByTimeAsync(15_000)
+    expect(parked).toEqual([seenAt + 14_000])
+  })
+
+  it('leaves the pointer alone on B, a failed launch or the time limit', async () => {
+    await untilCovered()
+    onWindow(game())
+    await vi.advanceTimersByTimeAsync(500)
+    cover.cancel()
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(parked).toEqual([])
+
+    launchOk.mockImplementationOnce(async () => ({ ok: false, error: { code: 'missing' } }))
+    await untilCovered()
+    await vi.advanceTimersByTimeAsync(5000)
+    await untilCovered()
+    await vi.advanceTimersByTimeAsync(61_000)
+    expect(parked).toEqual([])
   })
 
   it('counts the 2 s from the first window of the game', async () => {
