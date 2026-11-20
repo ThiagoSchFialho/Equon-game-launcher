@@ -295,6 +295,11 @@ export interface HomeCoverSettings {
 }
 /** How many games the Home shows with "Limitar quantidade de jogos na home" (owner decision). */
 export const HOME_GAMES_LIMIT = 12
+/**
+ * With "Em cima" the limit is 10, and "Mostrar todos os jogos" after them shows every game until
+ * the launcher closes, without changing the setting (owner decision).
+ */
+export const TOP_HOME_GAMES_LIMIT = 10
 /** In the order they are offered, the order of the screen: top, middle, bottom. */
 export const HOME_COVER_POSITIONS = ['top', 'center', 'bottom'] as const
 export type HomeCoverPosition = (typeof HOME_COVER_POSITIONS)[number]

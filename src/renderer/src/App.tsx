@@ -124,9 +124,19 @@ function App(): React.JSX.Element {
   )
   // The Home covers (D-27): read once, then Settings › Aparência keeps them up to date.
   const [homeCoverSettings, setHomeCoverSettings] = useState<HomeCoverSettings>(DEFAULT_HOME_COVERS)
+  const [showAllCovers, setShowAllCovers] = useState(false)
   const homeCovers = useMemo<HomeCoversState>(
-    () => ({ settings: homeCoverSettings, set: setHomeCoverSettings }),
-    [homeCoverSettings]
+    () => ({
+      settings: homeCoverSettings,
+      set: (settings) => {
+        // Switching the limit again means it is wanted: "Mostrar todos" stops.
+        if (settings.limited !== homeCoverSettings.limited) setShowAllCovers(false)
+        setHomeCoverSettings(settings)
+      },
+      showAll: showAllCovers,
+      setShowAll: setShowAllCovers
+    }),
+    [homeCoverSettings, showAllCovers]
   )
   // "Ignorar tela do jogo na home" (D-28): read once, then Settings › Sistema keeps it up to date.
   const [directLaunch, setDirectLaunch] = useState(false)

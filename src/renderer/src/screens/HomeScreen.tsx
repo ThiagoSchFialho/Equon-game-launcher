@@ -1,5 +1,9 @@
-import { useCallback, useRef, useState } from 'react'
-import { HOME_GAMES_LIMIT, type GameSummary } from '../../../shared/ipc/contract'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import {
+  HOME_GAMES_LIMIT,
+  TOP_HOME_GAMES_LIMIT,
+  type GameSummary
+} from '../../../shared/ipc/contract'
 import { hasSection, useNavigation } from '../app/navigation'
 import { Footer, type Hint } from '../components/Footer'
 import { GameOptionsLayer } from '../components/GameOptionsLayer'
@@ -15,7 +19,7 @@ import { t } from '../strings'
 import { CenteredCovers } from './home/CenteredCovers'
 import { CoverShelf } from './home/CoverShelf'
 import { SPOTLIGHT_PREFIX } from './home/GameSpotlight'
-import { TopHome } from './home/TopHome'
+import { SHOW_ALL_ID, TopHome } from './home/TopHome'
 import { HOME_SCOPE, homeCardId } from './home/useCoverFocus'
 import { useUiSounds } from '../sound/sound-context'
 import './HomeScreen.css'
@@ -41,7 +45,8 @@ export function HomeScreen(): React.JSX.Element {
   const [homeElement, setHomeElement] = useState<HTMLDivElement | null>(null)
   // "Capas da home" › Posição (D-27): "Centro" is its own layout; "Em cima" and "Embaixo" are
   // the same shelf, mirrored, and "Em cima" adds a panel under it (D-29).
-  const covers = useHomeCovers().settings
+  const homeCovers = useHomeCovers()
+  const covers = homeCovers.settings
   const position = covers.position
   const { directLaunch } = useHomeLaunch()
   // The game "Em cima"'s panel shows, for X while the focus is in the panel.
@@ -76,7 +81,34 @@ export function HomeScreen(): React.JSX.Element {
   // "Limitar quantidade de jogos na home" (D-31): the most recently played first, so the limit
   // keeps the latest ones.
   const all = games.status === 'ready' ? homeGames(games.data) : []
-  const shown = covers.limited ? all.slice(0, HOME_GAMES_LIMIT) : all
+  // "Em cima" limits to 10 and offers "Mostrar todos os jogos" after them (owner decision).
+  const limit = position === 'top' ? TOP_HOME_GAMES_LIMIT : HOME_GAMES_LIMIT
+  const limited = covers.limited && !(position === 'top' && homeCovers.showAll)
+  const shown = limited ? all.slice(0, limit) : all
+  const canShowAll = position === 'top' && limited && all.length > limit
+  // Every game showing with the limit on: "Mostrar menos" goes back to 10 (owner decision).
+  const canShowLess =
+    position === 'top' && covers.limited && homeCovers.showAll && all.length > limit
+  // A on "Mostrar todos os jogos": every game, the setting unchanged, and the focus on the first
+  // game that was left out.
+  const pendingFocus = useRef<string | null>(null)
+  const showAll = (): void => {
+    const next = all[limit]
+    pendingFocus.current = next ? homeCardId(next) : null
+    homeCovers.setShowAll(true)
+  }
+  // "Mostrar menos": back to 10, the focus on "Mostrar todos", which takes its place.
+  const showLess = (): void => {
+    pendingFocus.current = SHOW_ALL_ID
+    homeCovers.setShowAll(false)
+  }
+  // Before the screen is painted: otherwise the shelf showed one frame with the focus past the
+  // last game, where "Mostrar todos" was, and slid back to the 11th (owner's report).
+  useLayoutEffect(() => {
+    if (!pendingFocus.current) return
+    manager.focus(pendingFocus.current)
+    pendingFocus.current = null
+  })
 
   useScreenActions({
     // At either end there is no handler, so LB/RB do nothing and play no sound.
@@ -141,6 +173,13 @@ export function HomeScreen(): React.JSX.Element {
           onMenu={setMenuGame}
           backdropTarget={homeElement}
           onPanelGame={setPanelGame}
+          more={
+            canShowAll
+              ? { expanded: false, onConfirm: showAll }
+              : canShowLess
+                ? { expanded: true, onConfirm: showLess }
+                : undefined
+          }
         />
       ) : (
         <CoverShelf

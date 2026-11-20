@@ -70,6 +70,10 @@ export const t = {
     emptyHint: 'Jogos instalados e não ocultos aparecem aqui, começando pelo último jogado.',
     openLibrary: 'Abrir biblioteca',
     /** "Em cima"'s panel under the shelf (D-29). */
+    /** "Em cima", after the last cover with the limit on (owner decision). */
+    showAll: 'Mostrar todos os jogos',
+    /** The same item once every game shows: back to 10 (owner decision). */
+    showLess: 'Mostrar menos',
     spotlight: {
       recent: 'Últimas conquistas',
       all: 'Ver todas',
@@ -496,7 +500,7 @@ export const t = {
       coverPosition: 'Posição',
       limitGames: 'Limitar quantidade de jogos na home',
       limitGamesHint:
-        'O Início mostra só os 12 jogos jogados mais recentemente. A Biblioteca continua com todos.',
+        'O Início mostra só os 12 jogos jogados mais recentemente (10 no "Em cima", com "Mostrar todos os jogos" no fim). A Biblioteca continua com todos.',
       coverPositions: { top: 'Em cima', center: 'Centro', bottom: 'Embaixo' },
       /** After each level: the value recommended for the chosen position (owner decision). */
       recommended: (value: string) => `(padrão ${value})`,

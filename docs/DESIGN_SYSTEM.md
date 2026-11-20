@@ -57,7 +57,9 @@ Regiões possíveis: - Navegação principal. - Continuar jogando. - Lista
 de jogos recentes. - Atalho claro para a biblioteca completa.
 
 Mostra todos os jogos instalados e não ocultos (sem limite, salvo com "Limitar quantidade de
-jogos na home", D-31: só os 12 mais recentes), pela última sessão (mais
+jogos na home", D-31: só os 12 mais recentes, ou 10 no "Em cima", que
+então termina com "Mostrar todos os jogos", e com todos à mostra, com
+"Mostrar menos"), pela última sessão (mais
 recente primeiro). A regra é fixa; o usuário não altera a ordem nem os
 filtros do Início.
 
@@ -218,7 +220,7 @@ depois que o foco para por 150 ms.
     sozinho ao trocar a posição.
 -   Aparência › "Capas da home" (D-27): título e, embaixo, um painel com o
     checkbox "Limitar quantidade de jogos na home" (D-31; só os 12 jogados
-    mais recentemente, desmarcado por padrão), "Tamanho" e "Espaçamento" (níveis de 1 a 100) e "Posição", com
+    mais recentemente, 10 no "Em cima", desmarcado por padrão), "Tamanho" e "Espaçamento" (níveis de 1 a 100) e "Posição", com
     "Em cima", "Centro" e "Embaixo" lado a lado; a escolhida fica em
     `--color-accent`. Esquerda e direita escolhem (no fim, movem o foco),
     A passa para a próxima e o mouse clica. Só a capa muda de tamanho; o

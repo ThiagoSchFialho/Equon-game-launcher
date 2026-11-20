@@ -57,11 +57,19 @@ export interface HomeCoversState {
   settings: HomeCoverSettings
   /** Configurações › Aparência saved a change: the Home screen follows at once. */
   set(settings: HomeCoverSettings): void
+  /**
+   * "Em cima"'s "Mostrar todos os jogos" was chosen: every game shows, limit or not, until the
+   * launcher closes or the limit is switched again. The setting stays as it is (owner decision).
+   */
+  showAll: boolean
+  setShowAll(showAll: boolean): void
 }
 
 export const HomeCoversContext = createContext<HomeCoversState>({
   settings: DEFAULT_HOME_COVERS,
-  set: () => {}
+  set: () => {},
+  showAll: false,
+  setShowAll: () => {}
 })
 
 export const useHomeCovers = (): HomeCoversState => useContext(HomeCoversContext)

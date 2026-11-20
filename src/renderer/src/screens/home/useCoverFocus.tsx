@@ -23,6 +23,15 @@ const INFO_FADE_MS = 70
 const ART_SETTLE_MS = 150
 /** The art layer of the item at index -1; game ids are always positive. */
 const LEADING_ART = -1
+/**
+ * The item after the last game (`games.length`), which has no art: "Mostrar todos os jogos"
+ * (TRAILING_MORE) or "Mostrar menos" (TRAILING_LESS), two items as far as the focus goes.
+ */
+const TRAILING_MORE = -2
+const TRAILING_LESS = -3
+export type TrailingKind = 'more' | 'less'
+const trailingKey = (kind: TrailingKind): number =>
+  kind === 'more' ? TRAILING_MORE : TRAILING_LESS
 
 /** An item of the row by its game id (LEADING_ART for index -1), and where it was then. */
 interface Item {
@@ -52,7 +61,9 @@ export function useCoverFocus(
   games: GameSummary[],
   backdropTarget: HTMLElement | null,
   /** The background art of the item at index -1 (D-32: the Settings shortcut), if any. */
-  leadingArt: string | null = null
+  leadingArt: string | null = null,
+  /** The item drawn after the last game, if any. */
+  trailing: TrailingKind | null = null
 ): CoverFocus {
   const homeArt = shownHomeArt(useHomeArt().settings, useHomeCovers().settings.position)
   const manager = useFocusManager()
@@ -70,6 +81,15 @@ export function useCoverFocus(
   const [info, setInfo] = useState<Item>(focused)
   const indexOf = (item: Item): number => {
     if (item.key === LEADING_ART) return -1
+    if (item.key === TRAILING_MORE || item.key === TRAILING_LESS) {
+      // While drawn, after the last game.
+      if (trailing && item.key === trailingKey(trailing)) return games.length
+      // Gone, after "Mostrar todos": where it was, which is where the first game it showed now
+      // is, so the shelf does not move (owner's idea). After "Mostrar menos": its place is past
+      // the shorter list, so the item that follows it there, "Mostrar todos".
+      if (item.at < games.length) return item.at
+      return trailing ? games.length : games.length - 1
+    }
     const found = games.findIndex((game) => game.id === item.key)
     // A game that has just left the list: where it was.
     return found !== -1 ? found : Math.max(0, Math.min(item.at, games.length - 1))
@@ -126,7 +146,12 @@ export function useCoverFocus(
   }
 
   const itemAt = (i: number): Item => ({
-    key: i === -1 ? LEADING_ART : (games[i]?.id ?? LEADING_ART),
+    key:
+      i === -1
+        ? LEADING_ART
+        : i === games.length && trailing
+          ? trailingKey(trailing)
+          : (games[i]?.id ?? LEADING_ART),
     at: i
   })
 

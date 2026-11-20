@@ -176,7 +176,12 @@ limitações, condições de teste e método de inicialização suportado.
 -   Início: todos os jogos instalados e não ocultos, pela última sessão,
     do mais recente para o mais antigo. Com "Limitar quantidade de jogos
     na home" (Configurações › Aparência, D-31), só os 12 mais recentes;
-    sem a opção, não há limite.
+    sem a opção, não há limite. No "Em cima", o limite é de 10, e a
+    fileira termina com "Mostrar todos os jogos", no mesmo estilo do
+    atalho de Configurações: o A mostra todos os jogos instalados, sem
+    mudar a configuração, até fechar o Equon ou mudar o limite de novo.
+    Com todos à mostra, a fileira termina com "Mostrar menos", que volta
+    aos 10 com o foco em "Mostrar todos os jogos".
     Um jogo iniciado pelo botão Jogar ou por uma capa do Início vai para
     o começo da lista 5 s depois de abrir, com o foco nele, sem esperar a
     sessão terminar (decisão do dono do projeto). Só a tela muda: o banco

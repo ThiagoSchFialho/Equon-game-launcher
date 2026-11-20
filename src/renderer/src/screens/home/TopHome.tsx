@@ -1,5 +1,6 @@
 import type { GameSummary } from '../../../../shared/ipc/contract'
 import settingsBackground from '../../assets/backgrounds/settings.png'
+import libraryIcon from '../../assets/icons/library.svg'
 import settingsIcon from '../../assets/icons/settings.svg'
 import { useNavigation } from '../../app/navigation'
 import { useFocusManager } from '../../focus/focus-context'
@@ -9,6 +10,8 @@ import { GameSpotlight, SPOTLIGHT_PREFIX } from './GameSpotlight'
 import { QUICK_PREFIX, QuickSettings } from './QuickSettings'
 
 const SHORTCUT_ID = 'home:settings'
+export const SHOW_ALL_ID = 'home:show-all'
+export const SHOW_LESS_ID = 'home:show-less'
 
 /**
  * "Capas da home" › Em cima (D-27, D-29): the shelf by the top bar, with the focused game's panel
@@ -21,7 +24,8 @@ export function TopHome({
   opensToPlay,
   onMenu,
   backdropTarget,
-  onPanelGame
+  onPanelGame,
+  more
 }: {
   games: GameSummary[]
   onOpen: (game: GameSummary) => void
@@ -30,6 +34,11 @@ export function TopHome({
   backdropTarget: HTMLElement | null
   /** The game the panel shows (GameSpotlight), or null with none. */
   onPanelGame?: (game: GameSummary | null) => void
+  /**
+   * After the last cover, with the limit on: "Mostrar todos os jogos" while some games are left
+   * out, "Mostrar menos" once they all show. One item, so the focus stays on it either way.
+   */
+  more?: { expanded: boolean; onConfirm: () => void }
 }): React.JSX.Element {
   const navigation = useNavigation()
   const manager = useFocusManager()
@@ -67,6 +76,18 @@ export function TopHome({
           return true
         }
       }}
+      // After the last game, styled like the Settings shortcut (owner decision).
+      trailing={
+        more
+          ? {
+              id: more.expanded ? SHOW_LESS_ID : SHOW_ALL_ID,
+              kind: more.expanded ? 'less' : 'more',
+              label: more.expanded ? t.home.showLess : t.home.showAll,
+              icon: libraryIcon,
+              onConfirm: more.onConfirm
+            }
+          : undefined
+      }
       below={({ game, hidden, cardId, leadingFocused }) =>
         leadingFocused ? (
           <QuickSettings shortcutId={SHORTCUT_ID} hidden={hidden} />

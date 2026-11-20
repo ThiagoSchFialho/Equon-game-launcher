@@ -8,7 +8,7 @@ import {
   shownCovers,
   useHomeCovers
 } from '../../data/home-covers'
-import { homeCardId, useCoverFocus } from './useCoverFocus'
+import { homeCardId, useCoverFocus, type TrailingKind } from './useCoverFocus'
 import './CoverShelf.css'
 
 /**
@@ -27,7 +27,8 @@ export function CoverShelf({
   backdropTarget,
   below,
   onCardDown,
-  leading
+  leading,
+  trailing
 }: {
   /** "Embaixo" by the footer, or "Em cima" by the top bar: the same shelf, mirrored. */
   side: 'top' | 'bottom'
@@ -56,6 +57,17 @@ export function CoverShelf({
    * A shortcut drawn as a cover before the first game ("Em cima"'s Configurações, D-32). It sits
    * at index -1: the focus still starts on the first game.
    */
+  /**
+   * A shortcut drawn like `leading`, after the last game ("Em cima"'s "Mostrar todos os jogos").
+   */
+  trailing?: {
+    id: string
+    /** "Mostrar todos" or "Mostrar menos": to the focus, two items (useCoverFocus). */
+    kind: TrailingKind
+    label: string
+    icon: string
+    onConfirm: () => void
+  }
   leading?: {
     id: string
     label: string
@@ -68,7 +80,7 @@ export function CoverShelf({
   }
 }): React.JSX.Element {
   const covers = shownCovers(useHomeCovers().settings)
-  const focus = useCoverFocus(games, backdropTarget, leading?.art ?? null)
+  const focus = useCoverFocus(games, backdropTarget, leading?.art ?? null, trailing?.kind ?? null)
   const focusedGame = games[focus.infoIndex]
   return (
     <div
@@ -123,10 +135,31 @@ export function CoverShelf({
             />
           </div>
         ))}
+        {trailing && (
+          <div
+            className="home-shelf__slot"
+            data-current={focus.index === games.length}
+            style={{ '--rel': games.length - focus.index } as React.CSSProperties}
+          >
+            <ShelfShortcut
+              id={trailing.id}
+              label={trailing.label}
+              icon={trailing.icon}
+              onConfirm={trailing.onConfirm}
+              onFocus={() => focus.focusCard(games.length)}
+            />
+          </div>
+        )}
       </div>
-      {(focusedGame || (leading && focus.infoIndex === -1)) && (
+      {(focusedGame ||
+        (leading && focus.infoIndex === -1) ||
+        (trailing && focus.infoIndex === games.length)) && (
         <p className="home-shelf__name" data-hidden={focus.infoHidden}>
-          {focusedGame ? focusedGame.title : leading?.label}
+          {focusedGame
+            ? focusedGame.title
+            : focus.infoIndex === games.length
+              ? trailing?.label
+              : leading?.label}
         </p>
       )}
       {below?.({

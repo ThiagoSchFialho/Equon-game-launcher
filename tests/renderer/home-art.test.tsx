@@ -431,6 +431,115 @@ describe('"Limitar quantidade de jogos na home" (D-31)', () => {
     expect(cards()).not.toContain('Jogo 02')
   })
 
+  it('"Em cima": 10 games, then "Mostrar todos os jogos", which shows them all', async () => {
+    const setHomeCovers = vi.fn<EquonApi['settings']['setHomeCovers']>()
+    installFakeApi(many, {
+      settings: {
+        get: async () =>
+          settingsInfo({ homeCovers: { size: 74, gap: 35, position: 'top', limited: true } }),
+        setHomeCovers
+      }
+    })
+    render(<App />)
+    const shelfCards = (): string[] =>
+      Array.from(
+        document.querySelectorAll('.home-shelf .game-card:not(.home-shelf__shortcut)')
+      ).map((card) => card.getAttribute('aria-label') ?? '')
+    await waitFor(() => expect(shelfCards()).toHaveLength(10))
+    const showAll = screen.getByRole('button', { name: 'Mostrar todos os jogos' })
+    // Styled like the Settings shortcut, after the last game.
+    expect(showAll.className).toContain('home-shelf__shortcut')
+    // Watch every position change on the shelf while it opens.
+    const moves: MutationRecord[] = []
+    const observer = new MutationObserver((records) => moves.push(...records))
+    observer.observe(document.querySelector('.home-shelf__row') as Node, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['style', 'data-current']
+    })
+    act(() => showAll.click())
+    await waitFor(() => expect(shelfCards()).toHaveLength(14))
+    moves.push(...observer.takeRecords())
+    observer.disconnect()
+    // The 11th game appears where "Mostrar todos" was, already focused: it never moves, so the
+    // focus does not slide over from past the last game (owner's report).
+    const eleventh = screen.getByRole('button', { name: 'Jogo 04' }).closest('.home-shelf__slot')
+    expect(moves.filter((move) => move.target === eleventh)).toEqual([])
+    expect(eleventh?.getAttribute('data-current')).toBe('true')
+    expect(screen.queryByRole('button', { name: 'Mostrar todos os jogos' })).toBeNull()
+    // The focus goes to the first game that was left out; the setting is unchanged.
+    await waitFor(() =>
+      expect(document.querySelector('[data-focused="true"]')?.getAttribute('aria-label')).toBe(
+        'Jogo 04'
+      )
+    )
+    expect(setHomeCovers).not.toHaveBeenCalled()
+  })
+
+  it('"Mostrar menos" goes back to 10, with the focus on "Mostrar todos"', async () => {
+    installFakeApi(many, {
+      settings: {
+        get: async () =>
+          settingsInfo({ homeCovers: { size: 74, gap: 35, position: 'top', limited: true } })
+      }
+    })
+    render(<App />)
+    const covers = (): number =>
+      document.querySelectorAll('.home-shelf .game-card:not(.home-shelf__shortcut)').length
+    const focusedName = (): string | null | undefined =>
+      document.querySelector('[data-focused="true"]')?.getAttribute('aria-label')
+    /** Position changes of an element while `act` runs. */
+    const movesOf = (target: Element | null, action: () => void): MutationRecord[] => {
+      const observer = new MutationObserver(() => {})
+      observer.observe(document.querySelector('.home-shelf__row') as Node, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['style', 'data-current']
+      })
+      act(action)
+      const records = observer.takeRecords().filter((record) => record.target === target)
+      observer.disconnect()
+      return records
+    }
+    await waitFor(() => expect(covers()).toBe(10))
+    act(() => screen.getByRole('button', { name: 'Mostrar todos os jogos' }).click())
+    await waitFor(() => expect(covers()).toBe(14))
+
+    // At the end of the open shelf, "Mostrar menos".
+    const less = screen.getByRole('button', { name: 'Mostrar menos' })
+    expect(less.className).toContain('home-shelf__shortcut')
+    const slot = less.closest('.home-shelf__slot')
+    // Move to it first (a right click focuses it, as the controller would), then A.
+    act(() => {
+      fireEvent.contextMenu(less)
+    })
+    expect(focusedName()).toBe('Mostrar menos')
+    expect(movesOf(slot, () => less.click())).toEqual([])
+    await waitFor(() => expect(covers()).toBe(10))
+    // The same place, now "Mostrar todos", focused: nothing slid over to it.
+    expect(focusedName()).toBe('Mostrar todos os jogos')
+    expect(slot?.getAttribute('data-current')).toBe('true')
+
+    // And open again: the 11th game appears in its place, never moving.
+    act(() => screen.getByRole('button', { name: 'Mostrar todos os jogos' }).click())
+    await waitFor(() => expect(covers()).toBe(14))
+    expect(focusedName()).toBe('Jogo 04')
+  })
+
+  it('"Em cima" with 10 games or fewer has no "Mostrar todos os jogos"', async () => {
+    installFakeApi(many.slice(0, 10), {
+      settings: {
+        get: async () =>
+          settingsInfo({ homeCovers: { size: 74, gap: 35, position: 'top', limited: true } })
+      }
+    })
+    render(<App />)
+    await waitFor(() =>
+      expect(document.querySelectorAll('.home-shelf .game-card').length).toBeGreaterThan(0)
+    )
+    expect(screen.queryByRole('button', { name: 'Mostrar todos os jogos' })).toBeNull()
+  })
+
   it('is set in Aparência › Capas da home and the Home follows', async () => {
     const setHomeCovers = vi.fn<EquonApi['settings']['setHomeCovers']>(async (changes) => ({
       ok: true,
