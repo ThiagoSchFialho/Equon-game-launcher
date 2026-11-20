@@ -32,6 +32,8 @@ const TRAILING_LESS = -3
 export type TrailingKind = 'more' | 'less'
 const trailingKey = (kind: TrailingKind): number =>
   kind === 'more' ? TRAILING_MORE : TRAILING_LESS
+/** The art layer of the item after the last game: one image for both, so no fade between them. */
+const TRAILING_ART = -4
 
 /** An item of the row by its game id (LEADING_ART for index -1), and where it was then. */
 interface Item {
@@ -63,7 +65,9 @@ export function useCoverFocus(
   /** The background art of the item at index -1 (D-32: the Settings shortcut), if any. */
   leadingArt: string | null = null,
   /** The item drawn after the last game, if any. */
-  trailing: TrailingKind | null = null
+  trailing: TrailingKind | null = null,
+  /** Its background art ("Mostrar todos" and "Mostrar menos" share one), if any. */
+  trailingArt: string | null = null
 ): CoverFocus {
   const homeArt = shownHomeArt(useHomeArt().settings, useHomeCovers().settings.position)
   const manager = useFocusManager()
@@ -126,14 +130,19 @@ export function useCoverFocus(
   }, [firstId, games, manager])
 
   const byId = new Map(games.map((game) => [game.id, game]))
-  // A layer is a game id, or LEADING_ART for the item at index -1; both resolve to a URL.
+  // A layer is a game id, LEADING_ART for the item at index -1 or TRAILING_ART for the one after
+  // the last game; all resolve to a URL.
   const artUrl = (id: number): string | null | undefined => {
     if (id === LEADING_ART) return leadingArt
+    if (id === TRAILING_ART) return trailingArt
     const game = byId.get(id)
     return game ? homeArtUrl(game) : undefined
   }
-  const artIdAt = (i: number): number | undefined =>
-    i === -1 ? (leadingArt ? LEADING_ART : undefined) : games[i]?.id
+  const artIdAt = (i: number): number | undefined => {
+    if (i === -1) return leadingArt ? LEADING_ART : undefined
+    if (i === games.length && trailing) return trailingArt ? TRAILING_ART : undefined
+    return games[i]?.id
+  }
 
   const showArt = (id: number | undefined): void => {
     if (id === undefined) return

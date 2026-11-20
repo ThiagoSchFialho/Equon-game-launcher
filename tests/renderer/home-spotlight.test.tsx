@@ -221,6 +221,37 @@ describe('"Em cima" panel (D-29)', () => {
     await waitFor(() => expect(images().at(-1)).toMatch(/settings\.png$/))
   })
 
+  it('shows its own image behind the Home on "Mostrar todos" and "Mostrar menos"', async () => {
+    const many = Array.from({ length: 11 }, (_, i) =>
+      summary(i + 1, `Jogo ${i + 1}`, { timeLastPlayed: `2026-11-${10 + i}T20:00:00Z` })
+    )
+    installFakeApi(many, {
+      settings: {
+        get: async () =>
+          settingsInfo({
+            homeArt: { enabled: true, blur: 0, dim: 10 },
+            homeCovers: { size: 74, gap: 35, position: 'top', limited: true }
+          })
+      }
+    })
+    render(<App />)
+    const images = (): (string | null)[] =>
+      Array.from(document.querySelectorAll('.home-art__image')).map((img) =>
+        img.getAttribute('src')
+      )
+    const more = await screen.findByRole('button', { name: 'Mostrar todos os jogos' })
+    act(() => {
+      fireEvent.contextMenu(more)
+    })
+    await waitFor(() => expect(images().at(-1)).toMatch(/show-all\.png$/))
+    act(() => more.click())
+    const less = await screen.findByRole('button', { name: 'Mostrar menos' })
+    act(() => {
+      fireEvent.contextMenu(less)
+    })
+    await waitFor(() => expect(images().at(-1)).toMatch(/show-all\.png$/))
+  })
+
   it('shows the quick settings under the Settings shortcut, and changes them at once (D-33)', async () => {
     const setHomeDirectLaunch = vi.fn<EquonApi['settings']['setHomeDirectLaunch']>(
       async (homeDirectLaunch) => ({ ok: true, data: settingsInfo({ homeDirectLaunch }) })

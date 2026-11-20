@@ -1,5 +1,6 @@
 import type { GameSummary } from '../../../../shared/ipc/contract'
 import settingsBackground from '../../assets/backgrounds/settings.png'
+import showAllBackground from '../../assets/backgrounds/show-all.png'
 import libraryIcon from '../../assets/icons/library.svg'
 import settingsIcon from '../../assets/icons/settings.svg'
 import { useNavigation } from '../../app/navigation'
@@ -84,6 +85,8 @@ export function TopHome({
               kind: more.expanded ? 'less' : 'more',
               label: more.expanded ? t.home.showLess : t.home.showAll,
               icon: libraryIcon,
+              // The owner's image behind the Home while it is focused, both ways.
+              art: showAllBackground,
               onConfirm: more.onConfirm
             }
           : undefined

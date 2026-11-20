@@ -66,6 +66,8 @@ export function CoverShelf({
     kind: TrailingKind
     label: string
     icon: string
+    /** The Home background while it is focused. */
+    art?: string
     onConfirm: () => void
   }
   leading?: {
@@ -80,7 +82,13 @@ export function CoverShelf({
   }
 }): React.JSX.Element {
   const covers = shownCovers(useHomeCovers().settings)
-  const focus = useCoverFocus(games, backdropTarget, leading?.art ?? null, trailing?.kind ?? null)
+  const focus = useCoverFocus(
+    games,
+    backdropTarget,
+    leading?.art ?? null,
+    trailing?.kind ?? null,
+    trailing?.art ?? null
+  )
   const focusedGame = games[focus.infoIndex]
   return (
     <div

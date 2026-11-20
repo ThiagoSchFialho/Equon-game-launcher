@@ -62,6 +62,9 @@ então termina com "Mostrar todos os jogos", e com todos à mostra, com
 "Mostrar menos"), pela última sessão (mais
 recente primeiro). A regra é fixa; o usuário não altera a ordem nem os
 filtros do Início.
+Com "Mostrar todos os jogos" ou "Mostrar menos" em foco, o fundo da Home
+mostra uma imagem própria (estante de jogos, `show-all-bg.png`), a mesma
+para os dois, com o desfoque e o escurecimento da arte dos jogos.
 
 Os cards ficam numa fila horizontal, e o card em foco fica no centro da
 tela, com o nome e o tempo de jogo embaixo dele (decisão do dono do
@@ -249,7 +252,7 @@ depois que o foco para por 150 ms.
     atalho para as Configurações (D-32), desenhado como uma capa: um
     quadrado escuro meio transparente com a engrenagem no meio; o foco
     continua começando no primeiro jogo. Com ele em foco, o fundo da Home
-    mostra uma imagem própria (engrenagens azuladas, `settings-bg.png`),
+    mostra uma imagem própria (engrenagens e luz âmbar, `settings-bg2.png`),
     com o mesmo desfoque e escurecimento da arte dos jogos. Embaixo dela,
     no lugar do painel do jogo, aparecem as "Configurações rápidas" (D-33),
     só com o título, sem texto de explicação: "Atualizar biblioteca" (com "Atualizada às 18:02", ou o motivo se a última falhou), "Tela
