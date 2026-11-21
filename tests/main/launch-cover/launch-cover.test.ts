@@ -308,10 +308,10 @@ describe('launch cover', () => {
     expect(active).toEqual([true, false])
   })
 
-  it('leaves a game that stays in a window 15 s after its window appears', async () => {
+  it('leaves a game that stays in a window 35 s after its window appears', async () => {
     await untilCovered()
     onWindow(game({ width: 1280, height: 720 }))
-    await vi.advanceTimersByTimeAsync(14_900)
+    await vi.advanceTimersByTimeAsync(34_900)
     expect(active).toEqual([true])
     await vi.advanceTimersByTimeAsync(100)
     expect(active).toEqual([true, false])
@@ -326,7 +326,7 @@ describe('launch cover', () => {
     await vi.advanceTimersByTimeAsync(900)
     expect(parked).toEqual([])
     await vi.advanceTimersByTimeAsync(100)
-    // Once, 1 s after fullscreen, 1 s before the cover leaves; not at 14 s for a window.
+    // Once, 1 s after fullscreen, 1 s before the cover leaves; not at 34 s for a window.
     expect(parked).toEqual([fullscreenAt + 1000])
     expect(active).toEqual([true])
     await vi.advanceTimersByTimeAsync(20_000)
@@ -337,8 +337,8 @@ describe('launch cover', () => {
     await untilCovered()
     const seenAt = Date.now() - 1_000_000
     onWindow(game({ width: 1280, height: 720 }))
-    await vi.advanceTimersByTimeAsync(15_000)
-    expect(parked).toEqual([seenAt + 14_000])
+    await vi.advanceTimersByTimeAsync(35_000)
+    expect(parked).toEqual([seenAt + 34_000])
   })
 
   it('leaves the pointer alone on B, a failed launch or the time limit', async () => {

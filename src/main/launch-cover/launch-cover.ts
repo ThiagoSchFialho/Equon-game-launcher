@@ -15,7 +15,7 @@ const AFTER_GAME_WINDOW_MS = 2000
  * A game that stays in a window never covers the monitor: this long after its window appears,
  * the cover leaves anyway, instead of waiting for the time limit.
  */
-const WINDOWED_GAME_MS = 15_000
+const WINDOWED_GAME_MS = 35_000
 /**
  * The mouse pointer goes to the monitor's bottom right corner this long before the cover leaves
  * (owner decision, D-36): some games open with it in the middle of the screen.

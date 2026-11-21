@@ -176,7 +176,7 @@ depois que o foco para por 150 ms.
 -   Também ao apertar "Jogar", a imagem de abertura do jogo aparece com fade na
     frente de tudo, no monitor inteiro, e só então o jogo é chamado. Ela sai com
     fade 2 s depois que a janela do jogo fica em tela cheia (num jogo em
-    janela, 15 s depois que ela aparece), ou em no máximo 60 s; B a tira da tela sem
+    janela, 35 s depois que ela aparece), ou em no máximo 60 s; B a tira da tela sem
     fechar o jogo. 1 s antes de sair por o jogo ter aberto, o cursor do
     mouse vai para o canto inferior direito do monitor (D-36). Sem imagem de abertura, mostra a imagem de fundo; sem ela, o
     logo; sem logo, o título. Fades

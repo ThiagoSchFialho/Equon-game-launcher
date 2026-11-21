@@ -142,7 +142,7 @@ limitações, condições de teste e método de inicialização suportado.
 -   Disponibilizar ação principal para iniciar o jogo. Enquanto o jogo abre,
     a imagem de abertura dele (por padrão, a imagem de fundo) cobre o monitor
     inteiro, e o jogo só é chamado com a tela já coberta. A imagem sai 2 s
-    depois que o jogo entra em tela cheia (15 s depois que a janela dele
+    depois que o jogo entra em tela cheia (35 s depois que a janela dele
     aparece, se ficar em janela), em no máximo 60 s, ou com o botão B.
     1 s antes de ela sair por o jogo ter aberto, o cursor do mouse vai
     para o canto inferior direito do monitor, para não ficar no meio do
