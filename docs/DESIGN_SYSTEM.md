@@ -245,7 +245,7 @@ depois que o foco para por 150 ms.
     (decisão do dono do projeto): perto da barra superior, as capas
     pequenas alinhadas pelo topo da capa em foco, o nome 10 px abaixo
     delas e sem o degradê de cima (decisão do dono do projeto),
-    mas com uma vinheta, do topo da tela por trás da barra superior até a base da tela, por trás do rodapé transparente, sutil (decisão do dono do projeto, 2026-11-14), que escurece as bordas em volta de uma área
+    mas com uma vinheta, do topo da tela por trás da barra superior até a base da tela, por trás do rodapé transparente, sutil (decisões do dono do projeto, 2026-11-14 e, mais clara, 2026-11-22), que escurece as bordas em volta de uma área
     clara à direita, onde costuma ficar o personagem da arte (como no
     PS5); mesmos comportamentos do "Embaixo". No "Em cima", a capa em foco é 15% maior (as
     pequenas não mudam) e o nome fica em 28 px com peso normal (decisões
@@ -267,9 +267,10 @@ depois que o foco para por 150 ms.
     (jogo sem logo não mostra nada) no alto; no canto inferior esquerdo,
     perto do rodapé, "Últimas conquistas" (sem a contagem de progresso,
     decisão do dono do projeto) e, embaixo, as 4 mais recentes (ícone
-    e nome) e "Ver todas", em quadrinhos pequenos de vidro fosco
-    (`--color-surface-raised` a 45%, com desfoque do que fica atrás e
-    `--radius-panel`); no canto inferior direito, só o tempo de jogo,
+    e nome) e "Ver todas", em quadrinhos pequenos de vidro escuro
+    (`--color-background` a 65%, com desfoque do que fica atrás e
+    `--radius-panel`; o texto com a mesma sombra do nome do jogo,
+    decisões do dono do projeto, 2026-11-22); no canto inferior direito, só o tempo de jogo,
     num fundo escuro meio transparente (desenho e decisão do dono do
     projeto). Para baixo na capa entra na fileira; esquerda e direita andam;
     para cima ou B volta à mesma capa; A abre as conquistas do jogo. A

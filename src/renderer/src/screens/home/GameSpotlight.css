@@ -109,10 +109,14 @@
   height: 4rem;
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-panel);
-  /* The lighter surface, see-through, over a blur of what is behind (owner decisions). Set,
-     never animated. */
-  background: color-mix(in srgb, var(--color-surface-raised) 45%, transparent);
+  /* Dark and see-through over a blur of what is behind, like the facts tiles (owner decisions,
+     2026-11-22). Set, never animated. */
+  background: color-mix(in srgb, var(--color-background) 65%, transparent);
   backdrop-filter: blur(var(--space-3));
+  /* The same shadow as the game's name above (CoverShelf.css). */
+  text-shadow:
+    0 0 0.3rem rgb(0 0 0 / 0.95),
+    0 0.125rem 0.2rem rgb(0 0 0 / 0.65);
   text-align: left;
   outline: var(--focus-ring-width) solid transparent;
   outline-offset: var(--focus-ring-gap);
@@ -130,8 +134,13 @@
   height: 4rem;
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-panel);
-  background: color-mix(in srgb, var(--color-surface-raised) 45%, transparent);
+  /* As dark as the achievement tiles (owner decisions, 2026-11-22). */
+  background: color-mix(in srgb, var(--color-background) 65%, transparent);
   backdrop-filter: blur(var(--space-3));
+  /* The same shadow as the game's name above (CoverShelf.css), for both lines. */
+  text-shadow:
+    0 0 0.3rem rgb(0 0 0 / 0.95),
+    0 0.125rem 0.2rem rgb(0 0 0 / 0.65);
 }
 
 .home-spotlight__info-label {

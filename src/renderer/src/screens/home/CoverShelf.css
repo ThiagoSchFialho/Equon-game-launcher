@@ -154,15 +154,15 @@
   /* To the bottom of the screen, behind the see-through footer (owner decision). */
   bottom: calc(var(--footer-height) * -1);
   height: auto;
-  /* A little subtler than at first (owner decision, 2026-11-14). */
+  /* Subtler than at first, twice (owner decisions, 2026-11-14 and 2026-11-22). */
   background: radial-gradient(
     ellipse 45% 62% at 66% 44%,
     transparent 0%,
     transparent 55%,
-    color-mix(in srgb, var(--color-background) 10%, transparent) 68%,
-    color-mix(in srgb, var(--color-background) 25%, transparent) 80%,
-    color-mix(in srgb, var(--color-background) 42%, transparent) 92%,
-    color-mix(in srgb, var(--color-background) 55%, transparent) 100%
+    color-mix(in srgb, var(--color-background) 8%, transparent) 68%,
+    color-mix(in srgb, var(--color-background) 20%, transparent) 80%,
+    color-mix(in srgb, var(--color-background) 34%, transparent) 92%,
+    color-mix(in srgb, var(--color-background) 44%, transparent) 100%
   );
 }
 
