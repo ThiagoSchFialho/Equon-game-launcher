@@ -349,11 +349,11 @@ export const t = {
       cover_portrait: 'Capa vertical',
       cover_square: 'Capa quadrada',
       logo: 'Logo',
-      background: 'Imagem de fundo',
+      background: 'Imagem dos detalhes',
       launch: 'Imagem de abertura',
       home: 'Imagem da home'
     },
-    usingBackground: 'Usando a imagem de fundo',
+    usingBackground: 'Usando a imagem dos detalhes',
     usingLaunch: 'Usando a imagem de abertura',
     fromIgdb: 'Imagem do IGDB',
     fromGrid: 'Selecionar imagem do SteamGridDB',
@@ -386,7 +386,7 @@ export const t = {
       cover_portrait: 'A capa vertical precisa ter proporção entre 2:3 e 3:4.',
       cover_square: 'A capa quadrada precisa ter proporção 1:1.',
       logo: 'Esta imagem não serve como logo.',
-      background: 'A imagem de fundo precisa ser 16:9 (ex.: 1920×1080).',
+      background: 'A imagem dos detalhes precisa ser 16:9 (ex.: 1920×1080).',
       launch: 'A imagem de abertura precisa ser 16:9 (ex.: 1920×1080).',
       home: 'A imagem da home precisa ser 16:9 (ex.: 1920×1080).'
     },

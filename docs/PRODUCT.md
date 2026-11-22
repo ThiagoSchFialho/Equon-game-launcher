@@ -140,7 +140,7 @@ limitações, condições de teste e método de inicialização suportado.
     no lugar de "Jogar" quando o jogo não está instalado, e "Desinstalar" nas
     opções. O usuário conclui na janela da Steam, por enquanto com o mouse.
 -   Disponibilizar ação principal para iniciar o jogo. Enquanto o jogo abre,
-    a imagem de abertura dele (por padrão, a imagem de fundo) cobre o monitor
+    a imagem de abertura dele (por padrão, a imagem dos detalhes) cobre o monitor
     inteiro, e o jogo só é chamado com a tela já coberta. A imagem sai 2 s
     depois que o jogo entra em tela cheia (35 s depois que a janela dele
     aparece, se ficar em janela), em no máximo 60 s, ou com o botão B.
@@ -365,9 +365,9 @@ limitações, condições de teste e método de inicialização suportado.
 ### 6.9 Artes e metadados
 
 -   Cada jogo pode ter seis artes: **capa quadrada** (Biblioteca),
-    **capa vertical 2:3** (Início, esticada para caber inteira), **logotipo**, **imagem
+    **capa vertical 2:3** (Início, esticada para caber inteira), **logotipo**, **imagem dos detalhes
     1920×1080**, **imagem de cabeçalho** (header) e **imagem de abertura**
-    (mostrada enquanto o jogo abre; por padrão é a imagem de fundo, e o
+    (mostrada enquanto o jogo abre; por padrão é a imagem dos detalhes, e o
     usuário pode escolher outra em "Editar artes").
 -   Fontes: Steam (`header_image` e capturas de tela dos metadados),
     SteamGridDB (capas quadrada e vertical e logotipo, com chave de API
@@ -412,10 +412,10 @@ limitações, condições de teste e método de inicialização suportado.
     "Jogos ignorados", onde cada uma pode ser desfeita depois de confirmar;
     o jogo volta do mesmo jeito, no próximo "Atualizar biblioteca".
 -   O menu de opções de qualquer jogo tem "Editar artes", com a capa
-    vertical, a capa quadrada, o logotipo e a imagem de fundo. Cada arte pode
+    vertical, a capa quadrada, o logotipo e a imagem dos detalhes. Cada arte pode
     vir do IGDB (menos a capa quadrada), de uma galeria do SteamGridDB (menos
-    a imagem de fundo) ou de um arquivo do PC, e pode ser removida. Em jogos da
-    Steam, a imagem de fundo também pode vir de uma galeria com o fundo da
+    a imagem dos detalhes) ou de um arquivo do PC, e pode ser removida. Em jogos da
+    Steam, a imagem dos detalhes também pode vir de uma galeria com o fundo da
     loja e as prints em 16:9. Nada muda até o usuário salvar, e uma arte removida não
     volta sozinha.
 -   Os metadados da Steam (título, descrição, desenvolvedor, data,

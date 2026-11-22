@@ -88,7 +88,7 @@ describe('Editar artes', () => {
     expect(buttons('Capa vertical')).toEqual([igdb, grid, file, remove])
     expect(buttons('Capa quadrada')).toEqual([grid, file, remove])
     expect(buttons('Logo')).toEqual([igdb, grid, file, remove])
-    expect(buttons('Imagem de fundo')).toEqual([igdb, 'Imagens da Steam', file, remove])
+    expect(buttons('Imagem dos detalhes')).toEqual([igdb, 'Imagens da Steam', file, remove])
     expect(buttons('Imagem de abertura')).toEqual([igdb, 'Imagens da Steam', file, remove])
     expect(buttons('Imagem da home')).toEqual([igdb, 'Imagens da Steam', file, remove])
     expect(screen.queryByRole('heading', { name: 'Cabeçalho' })).toBeNull()
@@ -102,7 +102,9 @@ describe('Editar artes', () => {
     const launch = (): string | null | undefined =>
       previewOf('launch').querySelector('img')?.getAttribute('src')
     expect(launch()).toBe('equon-art://game/1/background?v=v1')
-    expect(within(panelOf('Imagem de abertura')).getByText('Usando a imagem de fundo')).toBeTruthy()
+    expect(
+      within(panelOf('Imagem de abertura')).getByText('Usando a imagem dos detalhes')
+    ).toBeTruthy()
     // Nothing of its own to remove.
     expect(
       screen.getByLabelText('Remover imagem: Imagem de abertura').getAttribute('aria-disabled')
@@ -111,7 +113,9 @@ describe('Editar artes', () => {
     await click('Selecionar imagem do PC: Imagem de abertura')
     await clickText('art.png')
     await waitFor(() => expect(launch()).toBe('equon-art://draft/launch?v=1'))
-    expect(within(panelOf('Imagem de abertura')).queryByText('Usando a imagem de fundo')).toBeNull()
+    expect(
+      within(panelOf('Imagem de abertura')).queryByText('Usando a imagem dos detalhes')
+    ).toBeNull()
   })
 
   it('shows the launch image, then the background, as the Home image until one is chosen', async () => {
@@ -127,7 +131,7 @@ describe('Editar artes', () => {
     // Without a launch image (removed on this visit), the background.
     await click('Remover imagem: Imagem de abertura')
     await waitFor(() => expect(home()).toBe('equon-art://game/1/background?v=v1'))
-    expect(within(panelOf('Imagem da home')).getByText('Usando a imagem de fundo')).toBeTruthy()
+    expect(within(panelOf('Imagem da home')).getByText('Usando a imagem dos detalhes')).toBeTruthy()
 
     await click('Selecionar imagem do PC: Imagem da home')
     await clickText('art.png')
@@ -138,7 +142,7 @@ describe('Editar artes', () => {
   it('follows a background chosen or removed on the same visit', async () => {
     installFakeApi([steam({ artwork: ['background'] })])
     await open()
-    await click('Remover imagem: Imagem de fundo')
+    await click('Remover imagem: Imagem dos detalhes')
     expect(previewOf('launch').querySelector('img')).toBeNull()
   })
 
@@ -153,7 +157,7 @@ describe('Editar artes', () => {
       'false'
     )
     expect(
-      screen.getByLabelText('Remover imagem: Imagem de fundo').getAttribute('aria-disabled')
+      screen.getByLabelText('Remover imagem: Imagem dos detalhes').getAttribute('aria-disabled')
     ).toBe('true')
   })
 
@@ -169,7 +173,7 @@ describe('Editar artes', () => {
     })
     await open()
 
-    await click('Selecionar imagem do PC: Imagem de fundo')
+    await click('Selecionar imagem do PC: Imagem dos detalhes')
     await clickText('art.png')
     await waitFor(() => expect(fromFile).toHaveBeenCalledWith(1, 'background', 'C:\\Art\\art.png'))
     await waitFor(() =>
@@ -279,7 +283,7 @@ describe('Editar artes', () => {
   })
 
   it.each([
-    ['wrong-proportion', 'A imagem de fundo precisa ser 16:9 (ex.: 1920×1080).'],
+    ['wrong-proportion', 'A imagem dos detalhes precisa ser 16:9 (ex.: 1920×1080).'],
     ['too-large', 'Imagem maior que 20 MB.']
   ])('explains a file it cannot use (%s) on its panel', async (code, message) => {
     installFakeApi([steam()], {
@@ -287,10 +291,10 @@ describe('Editar artes', () => {
       files: { list: pickFile }
     })
     await open()
-    await click('Selecionar imagem do PC: Imagem de fundo')
+    await click('Selecionar imagem do PC: Imagem dos detalhes')
     await clickText('art.png')
     const text = await screen.findByText(message)
-    expect(text.closest('section')).toBe(panelOf('Imagem de fundo'))
+    expect(text.closest('section')).toBe(panelOf('Imagem dos detalhes'))
   })
 })
 
@@ -342,7 +346,7 @@ describe('Imagem do IGDB', () => {
       igdb: { search: find }
     })
     await open()
-    await click('Imagem do IGDB: Imagem de fundo')
+    await click('Imagem do IGDB: Imagem dos detalhes')
     await waitFor(() => expect(find).toHaveBeenCalledWith('Tidebound Saga'))
     expect(fromIgdb).not.toHaveBeenCalled()
     await clickText('2021 · Team')
@@ -374,7 +378,7 @@ describe('Imagem do IGDB', () => {
 })
 
 describe('Steam gallery', () => {
-  const button = 'Imagens da Steam: Imagem de fundo'
+  const button = 'Imagens da Steam: Imagem dos detalhes'
   const choices: EquonApi['artworkEdit']['steamChoices'] = async () => ({
     ok: true,
     data: [
@@ -392,7 +396,7 @@ describe('Steam gallery', () => {
     expect(screen.getByLabelText('Imagens da Steam: Imagem da home')).toBeTruthy()
     expect(
       screen.queryByLabelText(
-        /^Imagens da Steam: (?!Imagem de fundo|Imagem de abertura|Imagem da home)/
+        /^Imagens da Steam: (?!Imagem dos detalhes|Imagem de abertura|Imagem da home)/
       )
     ).toBeNull()
     cleanup()
@@ -458,7 +462,7 @@ describe('Steam gallery', () => {
     })
     await open()
     await click(button)
-    expect(await within(panelOf('Imagem de fundo')).findByText(message)).toBeTruthy()
+    expect(await within(panelOf('Imagem dos detalhes')).findByText(message)).toBeTruthy()
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
@@ -467,7 +471,7 @@ describe('Steam gallery', () => {
     await open()
     await click(button)
     expect(
-      await within(panelOf('Imagem de fundo')).findByText(
+      await within(panelOf('Imagem dos detalhes')).findByText(
         'A Steam não tem imagens 16:9 deste jogo.'
       )
     ).toBeTruthy()

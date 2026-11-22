@@ -178,7 +178,7 @@ depois que o foco para por 150 ms.
     fade 2 s depois que a janela do jogo fica em tela cheia (num jogo em
     janela, 35 s depois que ela aparece), ou em no máximo 60 s; B a tira da tela sem
     fechar o jogo. 1 s antes de sair por o jogo ter aberto, o cursor do
-    mouse vai para o canto inferior direito do monitor (D-36). Sem imagem de abertura, mostra a imagem de fundo; sem ela, o
+    mouse vai para o canto inferior direito do monitor (D-36). Sem imagem de abertura, mostra a imagem dos detalhes; sem ela, o
     logo; sem logo, o título. Fades
     de cerca de 0,6 s, e nenhum com movimento reduzido. No canto inferior
     direito, sempre, "Carregando" com três pontos que acendem um de cada vez
@@ -550,7 +550,7 @@ apenas de animação para mostrar que uma ação foi ativada.
 -   Start salva de qualquer ponto da tela, com a dica no rodapé.
 -   A capa vertical é mostrada como no Início: 2:3 e esticada. As outras mantêm a proporção.
 -   Só aparecem os botões de fontes que têm aquela arte. "Remover imagem" fica indisponível quando não há o que remover.
--   "Imagens da Steam" aparece só na imagem de fundo de jogos da Steam e abre uma galeria com o "Fundo da loja", quando o jogo tem um próprio, e as prints ("Print 1", "Print 2"...). Só são listadas imagens 16:9.
+-   "Imagens da Steam" aparece só na imagem dos detalhes de jogos da Steam e abre uma galeria com o "Fundo da loja", quando o jogo tem um próprio, e as prints ("Print 1", "Print 2"...). Só são listadas imagens 16:9.
 -   Ações de remover nesta tela e nas Configurações usam o ícone `delete.svg`.
 
 ### Adicionar e editar jogo
@@ -606,7 +606,7 @@ artes independentes; nenhuma é recortada a partir da outra.
 | `cover_square` | Capa quadrada (1:1) | Biblioteca (grade de cards) |
 | `cover_portrait` | Capa vertical, exibida em 2:3 e sempre esticada para caber inteira, sem corte nem barras (decisão do dono do projeto) | Início (cards de continuar jogando e recentes) |
 | `logo` | Logotipo, preferencialmente com transparência; `contain`, centralizado no seu espaço (sem logo, o nome do jogo, também centralizado) | Detalhes do jogo, sobre o fundo |
-| `background` | Imagem 1920×1080 (16:9) | Detalhes do jogo, como arte dominante |
+| `background` | Imagem dos detalhes, 1920×1080 (16:9); assim chamada na interface (decisão do dono do projeto, 2026-11-22) | Detalhes do jogo, como arte dominante |
 | `header` | Imagem larga (`header_image` da Steam, cerca de 2:1) | Lista de conquistas, miniatura de cada jogo |
 | `launch` | Imagem de abertura, 16:9, com `cover`; sem ela, usa-se o `background` | Tela inteira enquanto o jogo abre |
 | `home` | Imagem da home, 16:9, com `cover`; sem ela, usa-se o `launch` e, sem ele, o `background` (D-30) | Fundo do Início, desfocado e escurecido (D-25) |
