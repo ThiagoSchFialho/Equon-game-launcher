@@ -35,6 +35,27 @@ describe('focus claimer', () => {
     expect(claim).toHaveBeenCalledOnce()
   })
 
+  it('ignores a button still held when a game hands the focus back (owner report)', () => {
+    const claimer = createFocusClaimer(vi.fn(async () => true))
+    claimer.markUsed()
+    expect(claimer.update(false, true)).toBe(false)
+    // In the game: A closes it, and the launcher gets the focus back with A still down.
+    expect(claimer.update(true, false)).toBe(true)
+    expect(claimer.update(true, true)).toBe(true)
+    expect(claimer.update(true, true)).toBe(true)
+    // Let go, then a new press counts.
+    expect(claimer.update(false, true)).toBe(false)
+    expect(claimer.update(true, true)).toBe(false)
+  })
+
+  it('lets a press count when nothing was held as the focus came back', () => {
+    const claimer = createFocusClaimer(vi.fn(async () => true))
+    claimer.markUsed()
+    claimer.update(false, false)
+    expect(claimer.update(false, true)).toBe(false)
+    expect(claimer.update(true, true)).toBe(false)
+  })
+
   it('does not claim once the launcher was used', () => {
     const claim = vi.fn(async () => true)
     const claimer = createFocusClaimer(claim)

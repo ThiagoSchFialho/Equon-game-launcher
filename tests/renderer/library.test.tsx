@@ -480,8 +480,11 @@ async function pressPad(button: number): Promise<void> {
       }))
     }) as unknown as Gamepad
   const focus = vi.spyOn(document, 'hasFocus').mockReturnValue(true)
-  let current = pad(true)
+  // The window has the focus first: a button already down as it comes back is ignored.
+  let current = pad(false)
   Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [current] })
+  await act(() => new Promise((resolve) => setTimeout(resolve, 50)))
+  current = pad(true)
   await act(() => new Promise((resolve) => setTimeout(resolve, 100)))
   current = pad(false)
   await act(() => new Promise((resolve) => setTimeout(resolve, 50)))

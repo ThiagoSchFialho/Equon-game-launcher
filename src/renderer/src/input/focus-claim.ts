@@ -10,16 +10,24 @@ export interface FocusClaimer {
  * But opened with Windows, it may never get the focus, leaving the controller with no effect
  * (ARCHITECTURE.md §3.20). So until the launcher is first used, a press brings it to the front.
  * That press does nothing else, and main refuses while a game is running.
+ *
+ * Also, a button already held when the launcher gets the focus back belongs to what had it:
+ * closing a game with A (Minecraft) handed the focus back with A still down, and that same A
+ * started the game again (owner's report). It must be let go before anything counts.
  */
 export function createFocusClaimer(claim: () => Promise<boolean>): FocusClaimer {
   let used = false
   let wasPressed = false
   let waitingForRelease = false
+  let wasFocused = true
 
   return {
     update(pressed, focused) {
       const isNewPress = pressed && !wasPressed
       wasPressed = pressed
+      const gotFocus = focused && !wasFocused
+      wasFocused = focused
+      if (gotFocus && pressed) waitingForRelease = true
       if (!focused) {
         if (isNewPress && !used) {
           // Set now: more presses may come before main answers.
