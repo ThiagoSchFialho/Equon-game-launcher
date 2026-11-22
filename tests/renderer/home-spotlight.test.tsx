@@ -136,7 +136,7 @@ describe('"Em cima" panel (D-29)', () => {
     expect(document.querySelector('.home-spotlight')).toBeNull()
   })
 
-  it('with no achievement unlocked, shows the last session where they would be', async () => {
+  it('with no achievement unlocked, shows the last session and the game facts there', async () => {
     for (const data of [
       achievements({ status: 'none', total: 0, unlocked: [] }),
       achievements({ status: 'never-synced', unlocked: [] }),
@@ -150,7 +150,15 @@ describe('"Em cima" panel (D-29)', () => {
       await act(() => new Promise<void>((resolve) => setTimeout(resolve, 250)))
       expect(document.querySelector('.home-spotlight__tile')).toBeNull()
       expect(screen.queryByText('Últimas conquistas')).toBeNull()
-      expect(facts()).toEqual([['Última sessão', expect.stringMatching(/^(Hoje|Ontem|Há .+)$/)]])
+      // Played: the last session, then the genres, studio and year (owner decisions).
+      await waitFor(() =>
+        expect(facts()).toEqual([
+          ['Última sessão', expect.stringMatching(/^(Hoje|Ontem|Há .+)$/)],
+          ['Gêneros', 'Ação'],
+          ['Estúdio', 'Estúdio A'],
+          ['Ano', '2020']
+        ])
+      )
       press('ArrowDown')
       expect(focused()).toBe('Tidebound')
       cleanup()

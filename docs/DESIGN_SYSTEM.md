@@ -277,10 +277,10 @@ depois que o foco para por 150 ms.
     raridade e data). Sem nenhuma conquista obtida, o bloco de conquistas
     inteiro some (decisão do dono do projeto); ficam o logo e o tempo de
     jogo. No lugar dele, em blocos com o mesmo fundo das conquistas, um
-    rótulo pequeno sobre cada valor, sem foco: num jogo nunca jogado,
-    Gêneros, Estúdio e Ano (o que for conhecido); num jogo já jogado, a
-    Última sessão ("Há 3 dias") (decisões do dono do projeto,
-    2026-11-19). O painel troca junto com o nome. No "Em cima",
+    rótulo pequeno sobre cada valor, sem foco: num jogo já jogado, a
+    Última sessão ("Há 3 dias"), e em todos Gêneros, Estúdio e Ano (o
+    que for conhecido) (decisões do dono do projeto, 2026-11-19 e
+    2026-11-22). O painel troca junto com o nome. No "Em cima",
     Tamanho e Espaçamento ficam fixos em 13 e 5, e Desfoque e
     Escurecimento da arte de fundo em 0 e 10%; todos aparecem indisponíveis
     em Aparência, com "(fixo no Em cima)". Nas duas posições o nome aparece inteiro, numa linha, mesmo

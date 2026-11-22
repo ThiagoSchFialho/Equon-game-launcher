@@ -59,9 +59,9 @@ function useSpotlightAchievements(gameId: number | null): Loaded {
 }
 
 /**
- * The focused game's page data (genres, studio, release), from the local database, for a game
- * with no achievement to show that was never played (owner decision); asked only then, once
- * the focus settles, like the achievements.
+ * The focused game's page data (genres, studio, release), from the local database, shown when it
+ * has no achievement to show (owner decisions); asked once the focus settles, like the
+ * achievements.
  */
 function useSpotlightDetails(gameId: number | null): GameDetails | null {
   const [loaded, setLoaded] = useState<{ gameId: number; data: GameDetails | null } | null>(null)
@@ -106,9 +106,7 @@ export function GameSpotlight({
 }): React.JSX.Element | null {
   const manager = useFocusManager()
   const achievements = useSpotlightAchievements(game?.id ?? null)
-  // Never played: no session, no playtime (Steam may report one without a session here).
-  const neverPlayed = game !== undefined && game.playtime === 0 && game.timeLastPlayed === null
-  const details = useSpotlightDetails(neverPlayed ? (game?.id ?? null) : null)
+  const details = useSpotlightDetails(game?.id ?? null)
   const focusedId = useSyncExternalStore(manager.subscribe, () => manager.focusedId)
   // Icons are downloaded once the user comes down to the panel (owner decision, D-29).
   const iconsAsked = useRef(new Set<number>())
@@ -188,24 +186,19 @@ export function GameSpotlight({
       )}
 
       {/* No achievement to show, once that is known (no flash while loading): where they would
-          be, the game's genres, studio and year if it was never played, or its last session
-          (owner decisions). Not focusable: down from the cover stays on it. */}
+          be, the game's last session if it was played, then its genres, studio and year (owner
+          decisions); each only when known. Not focusable: down from the cover stays on it. */}
       {achievements.status !== 'loading' && recent.length === 0 && (
         <InfoRow
-          items={
-            neverPlayed
-              ? [
-                  { label: t.home.spotlight.genres, value: details?.genres.join(', ') || null },
-                  { label: t.home.spotlight.studio, value: details?.developer ?? null },
-                  { label: t.home.spotlight.year, value: releaseYear(details?.releaseDate ?? null) }
-                ]
-              : [
-                  {
-                    label: t.game.lastSession,
-                    value: game.timeLastPlayed ? formatLastPlayed(game.timeLastPlayed) : null
-                  }
-                ]
-          }
+          items={[
+            {
+              label: t.game.lastSession,
+              value: game.timeLastPlayed ? formatLastPlayed(game.timeLastPlayed) : null
+            },
+            { label: t.home.spotlight.genres, value: details?.genres.join(', ') || null },
+            { label: t.home.spotlight.studio, value: details?.developer ?? null },
+            { label: t.home.spotlight.year, value: releaseYear(details?.releaseDate ?? null) }
+          ]}
         />
       )}
 
