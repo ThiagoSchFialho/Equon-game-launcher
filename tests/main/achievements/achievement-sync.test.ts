@@ -290,6 +290,41 @@ describe('sync after a game closes', () => {
   })
 })
 
+describe('sync of one game from its page (owner decision)', () => {
+  it('syncs only that game, at once, with the activity indicator', async () => {
+    const shown = addSteam(300, 'Shown')
+    const other = addSteam(200, 'Other')
+    expect(await sync.syncGame(shown)).toBeNull()
+    expect(waits).toEqual([])
+    expect(achievements().progress(shown).total).toBe(3)
+    expect(achievements().progress(other).total).toBe(0)
+    expect(requested.some((u) => /(appid|gameid)=200/.test(u))).toBe(false)
+    expect(progress).toEqual([{ done: 0, total: 0 }, null])
+    expect(getGameAchievements(queryDeps(), shown)?.syncable).toBe(true)
+  })
+
+  it('says why it could not, and keeps the last good data on a failure', async () => {
+    const id = addSteam(300, 'Game')
+    broken.add(300)
+    expect(await sync.syncGame(id)).not.toBeNull()
+    expect(sync.isStale(id)).toBe(true)
+
+    const manual = games().create({ origin: 'manual', title: 'M' }).id
+    expect(await sync.syncGame(manual)).toBe('not-steam')
+    expect(getGameAchievements(queryDeps(), manual)?.syncable).toBe(false)
+
+    credentials = { steamId: null, steamKey: null }
+    expect(await sync.syncGame(id)).toBe('not-configured')
+  })
+
+  it('shares one run when asked twice at once', async () => {
+    const id = addSteam(300, 'Game')
+    const [a, b] = await Promise.all([sync.syncGame(id), sync.syncGame(id)])
+    expect([a, b]).toEqual([null, null])
+    expect(requested.filter((u) => u.includes('GetPlayerAchievements'))).toHaveLength(1)
+  })
+})
+
 describe('overview and game queries', () => {
   it('lists games with achievements, hidden ones too, and totals count platinum', async () => {
     const hidden = addSteam(200, 'Hidden platinum')

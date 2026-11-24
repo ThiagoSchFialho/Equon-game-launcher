@@ -810,6 +810,8 @@ SQLite-specific points that must be handled deliberately:
 
 **Phase 7 decisions:** `GAMES.achievements_synced_at` tells "never synced" from "no achievements". The sync after a close waits 10 s so Steam can record what was unlocked, and is silent without credentials. A full sync pauses 1 s between games. Stale state (the last attempt for a game failed) is kept in memory for the run. Icons are downloaded only when a game's screen opens, served by `equon-art://achievement/<id>/<locked|unlocked>`; locked rows use Steam's `icongray` (`ACHIEVEMENTS.icon_locked`), which is not always a grey copy of the unlocked art; `steamcdn-a.akamaihd.net` joined the image host allowlist. The overview total counts platinum games too, and hidden games are listed (owner decisions).
 
+**Sync of one game (owner decision, 2026-11-23).** A Steam game's achievements page has "Sincronizar conquistas" on the right of its name: it syncs only that game, at once (no wait, unlike after a close), with the same activity indicator, and concurrent requests for the game share one run (`AchievementSync.syncGame`, IPC `achievements:sync-game`, returning `Result<null>`). A failure keeps the last good data, as every sync does, and the page says why ("Configure o ID Steam e a chave…" without credentials). `GameAchievements.syncable` tells the page whether to offer it (a Steam game with an App ID). It is an explicit user action, so it does not break the rule against periodic or automatic syncs.
+
 Per-game sync steps: fetch definitions, player state and global percentages → validate and normalize → in **one transaction**, upsert by `(game_id, api_name)`, recompute `tier` where `global_percent` changed, recompute `USERS` counters from `ACHIEVEMENTS`. If any fetch is invalid or incomplete, change nothing, keep the last known good data, mark it as stale in the UI, and record the error. A failed request must never set `unlocked = FALSE` or delete rows. Repeating a sync with identical data must change nothing.
 
 ---
@@ -987,6 +989,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-20 | 0.72 | D-36: the mouse pointer goes to the bottom right corner 1 s before the launch cover leaves for a game that opened (§3.35). |
 | 2026-11-20 | 0.73 | D-37: a manual game that hands off, or a `.url` shortcut, is timed through the process of the game's window, watched by the runner (§3.36). |
 | 2026-11-23 | 0.74 | Image previews in the file browser, made by Windows and served by main only for images in folders it listed (§3.13). |
+| 2026-11-23 | 0.75 | "Sincronizar conquistas" on a game's achievements page syncs only that game. |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

@@ -168,6 +168,7 @@ export function installFakeApi(
       }),
       game: async () => null,
       syncAll: async () => syncStatus,
+      syncGame: async () => ({ ok: true, data: null }),
       status: async () => syncStatus,
       ensureIcons: async () => {},
       onChanged: () => () => {},

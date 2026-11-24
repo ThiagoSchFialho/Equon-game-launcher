@@ -52,6 +52,7 @@ const overview: AchievementsOverview = {
 const details = (extra: Partial<GameAchievements> = {}): GameAchievements => ({
   id: 2,
   title: 'Newest',
+  syncable: true,
   status: 'ready',
   stale: false,
   unlockedCount: 1,
@@ -227,6 +228,37 @@ describe('game achievements', () => {
     await screen.findByText('797')
     press('Enter')
   }
+
+  it('syncs only this game from its page, and says when it could not', async () => {
+    let finish: (
+      result: Awaited<ReturnType<EquonApi['achievements']['syncGame']>>
+    ) => void = () => {}
+    const syncGame = vi.fn<EquonApi['achievements']['syncGame']>(
+      () => new Promise((resolve) => (finish = resolve))
+    )
+    installFakeApi([summary(1, 'A')], {
+      achievements: { overview: async () => overview, game: async () => details(), syncGame }
+    })
+    await openOverview()
+    await screen.findByText('797')
+    press('Enter')
+    const button = await screen.findByRole('button', { name: 'Sincronizar conquistas' })
+    act(() => button.click())
+    expect(syncGame).toHaveBeenCalledWith(2)
+    expect(button.textContent).toContain('Sincronizando…')
+    expect(button.getAttribute('aria-disabled')).toBe('true')
+    await act(async () => finish({ ok: false, error: { code: 'not-configured' } }))
+    expect(screen.getByRole('alert').textContent).toBe(
+      'Configure o ID Steam e a chave em Configurações › Conexões.'
+    )
+    expect(button.textContent).toContain('Sincronizar conquistas')
+  })
+
+  it('has no sync button for a game that is not from Steam', async () => {
+    await open(details({ syncable: false }))
+    await screen.findByText('Conquistas obtidas')
+    expect(screen.queryByRole('button', { name: 'Sincronizar conquistas' })).toBeNull()
+  })
 
   it('separates unlocked and locked, with unknown values shown as unknown', async () => {
     await open(details())

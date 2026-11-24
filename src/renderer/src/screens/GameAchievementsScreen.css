@@ -2,7 +2,35 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: var(--space-8) var(--space-12) 0;
+  /* As wide as the Library's grid (Screen.css, owner decision). */
+  /* More room above the title (owner decision). */
+  padding: var(--space-16) var(--library-gutter) 0;
+}
+
+/* The game's name, and "Sincronizar conquistas" on the right (owner decision). */
+.game-achievements__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  margin: 0 0 var(--space-4);
+}
+
+.game-achievements__head .game-achievements__title {
+  margin: 0;
+}
+
+/* As the toolbar button of Conquistas. */
+.game-achievements__head .button {
+  flex: 0 0 auto;
+  height: 3.125rem;
+  min-width: 0;
+  padding: 0 var(--space-6);
+  font-size: var(--font-size-body);
+}
+
+.game-achievements__head .button img {
+  height: 1.25rem;
 }
 
 .game-achievements__title {
@@ -51,7 +79,8 @@
   gap: var(--space-12);
   flex: 1;
   min-height: 0;
-  margin-top: var(--space-6);
+  /* More room under the summary bar (owner decision). */
+  margin-top: var(--space-14);
 }
 
 .game-achievements__column {

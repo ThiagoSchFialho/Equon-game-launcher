@@ -10,9 +10,9 @@
   min-height: 0;
   /*
    * The Library: five covers a row, each as large as when six fitted between the usual margins;
-   * the side margins grow by half a cover and a gap instead (owner decision). Conquistas uses the
-   * same margins, so its content is as wide as the Library's grid (owner decision). % is the
-   * screen's width where it is used.
+   * the side margins grow by half a cover and a gap instead (owner decision). Conquistas and a
+   * game's achievements page use the same margins, so their content is as wide as the Library's
+   * grid (owner decisions). % is the screen's width where it is used.
    */
   /* 25px at 1920×1080, between the covers both ways (owner decision; between two tokens). */
   --library-gap: 1.5625rem;

@@ -310,6 +310,15 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
     )
   )
   ipcMain.handle(
+    IpcChannel.achievementsSyncGame,
+    createValidatedHandler(gameIdArgs, resultSchema(z.null()), trusted, async (id) => {
+      const failure = await deps.achievementSync.syncGame(id)
+      const result: Result<null> =
+        failure === null ? { ok: true, data: null } : { ok: false, error: { code: failure } }
+      return result
+    })
+  )
+  ipcMain.handle(
     IpcChannel.achievementsStatus,
     createValidatedHandler(noArgs, achievementSyncStatusSchema, trusted, () =>
       deps.achievementSync.status()

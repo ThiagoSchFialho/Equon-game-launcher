@@ -442,7 +442,7 @@ API REST v2 com chave pessoal gratuita. Fornece capa quadrada e logo (e, para jo
 1. **Atualização da biblioteca:** cada fonte é varrida de forma independente; falhas parciais não derrubam o resto. Valores conhecidos só são substituídos por dados válidos.
 2. **Metadados e artes:** buscados na descoberta ou adição do jogo (D-15, D-16).
 3. **Conquistas — após fechar um jogo:** sincronizar **somente aquele jogo**, e só se o fechamento foi observado e o jogo suporta conquistas.
-4. **Conquistas — sincronização completa:** apenas quando o usuário pedir explicitamente, em segundo plano, com progresso e resultado por jogo.
+4. **Conquistas — sincronização completa:** apenas quando o usuário pedir explicitamente, em segundo plano, com progresso e resultado por jogo. **De um jogo:** "Sincronizar conquistas" na página de conquistas de um jogo da Steam sincroniza só aquele jogo, na hora, quando o usuário pede (decisão do dono do projeto, 2026-11-23).
 5. **Nunca:** sincronização periódica de conquistas, ou de todas as conquistas da biblioteca automaticamente (inclusive na abertura). A única exceção automática na abertura é o tempo de jogo da Steam (3.11), feito com uma única requisição.
 6. **Sincronização de um jogo:** buscar definições, estado pessoal e percentuais globais; validar e normalizar; então, em **uma transação**: upsert por `(game_id, api_name)`, recálculo de `tier` onde o percentual mudou e recálculo dos contadores de `USERS` a partir de `ACHIEVEMENTS`. Se qualquer busca for inválida ou incompleta, **não alterar nada**: manter os últimos dados bons, marcar como desatualizado na interface e registrar o erro.
 7. Uma requisição que falhou **nunca** define `unlocked = 0` nem apaga linhas.

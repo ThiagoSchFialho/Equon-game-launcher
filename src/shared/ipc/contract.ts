@@ -32,6 +32,7 @@ export const IpcChannel = {
   achievementsOverview: 'achievements:overview',
   achievementsGame: 'achievements:game',
   achievementsSyncAll: 'achievements:sync-all',
+  achievementsSyncGame: 'achievements:sync-game',
   achievementsStatus: 'achievements:status',
   achievementsEnsureIcons: 'achievements:ensure-icons',
   artworkSearch: 'artwork:search',
@@ -218,6 +219,8 @@ export interface AchievementItem {
 export interface GameAchievements {
   id: number
   title: string
+  /** A Steam game: its page offers "Sincronizar conquistas" (owner decision). */
+  syncable: boolean
   /** 'none': the game has no achievements, which is not an error. */
   status: 'ready' | 'none' | 'never-synced'
   /** The last sync of this game failed: the data below is the last known good. */
@@ -628,6 +631,8 @@ export interface EquonApi {
     game(id: number): Promise<GameAchievements | null>
     /** Explicit full sync; resolves when it ends. Concurrent calls share one run. */
     syncAll(): Promise<AchievementSyncStatus>
+    /** Only this game, from its achievements page; the change event refreshes it. */
+    syncGame(id: number): Promise<Result<null>>
     status(): Promise<AchievementSyncStatus>
     /** Downloads the missing icons of a game; the change event reports progress. */
     ensureIcons(id: number): Promise<void>

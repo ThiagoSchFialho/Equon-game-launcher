@@ -639,6 +639,8 @@ export const t = {
     noneForGame: 'Este jogo não possui conquistas.',
     notSyncedGame: 'As conquistas deste jogo ainda não foram sincronizadas.',
     syncFailed: 'A última sincronização deste jogo falhou.',
+    /** "Sincronizar conquistas" on a game's page could not finish (owner decision). */
+    syncGameFailed: 'Não foi possível sincronizar as conquistas deste jogo.',
     stale: 'Dados desatualizados: a última sincronização deste jogo falhou.',
     unlocked: 'Conquistas obtidas',
     locked: 'Conquistas bloqueadas',

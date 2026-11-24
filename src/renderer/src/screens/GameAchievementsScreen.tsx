@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react'
-import { achievementIconUrl, type AchievementItem } from '../../../shared/ipc/contract'
+import {
+  achievementIconUrl,
+  type AchievementItem,
+  type GameAchievements
+} from '../../../shared/ipc/contract'
 import clockIcon from '../assets/icons/game-page-clock.svg'
+import syncIcon from '../assets/icons/sync.svg'
 import { useNavigation } from '../app/navigation'
+import { Button } from '../components/Button'
 import { Footer, type Hint } from '../components/Footer'
 import { StateMessage } from '../components/StateMessage'
 import { TROPHY_IMAGES } from '../components/trophy-images'
@@ -48,7 +54,7 @@ export function GameAchievementsScreen({ id }: { id: number }): React.JSX.Elemen
   } else if (data.data.status !== 'ready') {
     content = (
       <>
-        <h1 className="game-achievements__title">{data.data.title}</h1>
+        <TitleRow game={data.data} />
         <StateMessage
           message={
             data.data.status === 'none' ? t.achievements.noneForGame : t.achievements.notSyncedGame
@@ -61,7 +67,7 @@ export function GameAchievementsScreen({ id }: { id: number }): React.JSX.Elemen
     const game = data.data
     content = (
       <>
-        <h1 className="game-achievements__title">{game.title}</h1>
+        <TitleRow game={game} />
         {game.stale && (
           <p className="game-achievements__stale" role="status">
             {t.achievements.stale}
@@ -109,6 +115,57 @@ export function GameAchievementsScreen({ id }: { id: number }): React.JSX.Elemen
         <Footer hints={HINTS} showActivity />
       </div>
     </FocusScope>
+  )
+}
+
+/**
+ * The game's name, and on the right "Sincronizar conquistas" for that game only (owner
+ * decision): a Steam game's achievements, at once. The page refreshes by itself when it ends.
+ */
+function TitleRow({ game }: { game: GameAchievements }): React.JSX.Element {
+  const [syncing, setSyncing] = useState(false)
+  const [failure, setFailure] = useState<string | null>(null)
+  const sync = (): void => {
+    setSyncing(true)
+    setFailure(null)
+    const failed = (code: string): void =>
+      setFailure(
+        code === 'not-configured' ? t.achievements.syncNeedsConfig : t.achievements.syncGameFailed
+      )
+    window.equon.achievements.syncGame(game.id).then(
+      (result) => {
+        setSyncing(false)
+        if (!result.ok) failed(result.error.code)
+      },
+      () => {
+        setSyncing(false)
+        failed('')
+      }
+    )
+  }
+  return (
+    <>
+      <div className="game-achievements__head">
+        <h1 className="game-achievements__title">{game.title}</h1>
+        {game.syncable && (
+          <Button
+            id="game-achievements:sync"
+            variant="primary"
+            label={t.achievements.sync}
+            unavailable={syncing}
+            onConfirm={sync}
+          >
+            <img src={syncIcon} alt="" />
+            {syncing ? t.achievements.syncing : t.achievements.sync}
+          </Button>
+        )}
+      </div>
+      {failure && (
+        <p className="game-achievements__stale" role="alert">
+          {failure}
+        </p>
+      )}
+    </>
   )
 }
 

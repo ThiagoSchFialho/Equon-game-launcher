@@ -702,6 +702,13 @@ inteiramente operável por controle, teclado e mouse.
 -   As margens laterais são as da Biblioteca, então o conteúdo (resumo,
     barra e lista) tem a mesma largura que a grade de jogos dela
     (decisão do dono do projeto, 2026-11-14).
+-   As conquistas de um jogo usam as mesmas margens laterais: título,
+    resumo e as duas colunas têm a largura da grade da Biblioteca
+    (decisão do dono do projeto, 2026-11-23). À direita do nome do jogo,
+    num jogo da Steam, "Sincronizar conquistas", como o botão da tela
+    Conquistas, sincroniza só aquele jogo; durante a sincronização ele
+    diz "Sincronizando…" e fica indisponível, e uma falha aparece embaixo
+    do nome.
 -   Sem título visível (só para leitores de tela): a tela começa pelo
     resumo do total de conquistas, 32 px abaixo da barra superior, como a
     barra da Biblioteca; embaixo dele, a linha com o estado da

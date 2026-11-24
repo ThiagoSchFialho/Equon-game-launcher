@@ -96,6 +96,7 @@ export function getGameAchievements(
   return {
     id,
     title: game.title,
+    syncable: game.origin === BuiltinOrigin.steam && game.steamAppId !== null,
     status: progress.total > 0 ? 'ready' : neverSynced ? 'never-synced' : 'none',
     stale: deps.isStale(id),
     unlockedCount: progress.unlocked,

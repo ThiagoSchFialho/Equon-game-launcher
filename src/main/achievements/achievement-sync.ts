@@ -52,6 +52,12 @@ export interface AchievementSync {
   syncAfterClose(gameId: number): Promise<void>
   /** Explicit user action; concurrent calls share the run in progress. */
   syncAll(): Promise<AchievementSyncStatus>
+  /**
+   * Explicit user action on one game's achievements page (owner decision): only that game,
+   * at once. Resolves with null, or why it failed ('not-configured', 'not-steam', or the
+   * failure of the request). Concurrent calls for the game share the run in progress.
+   */
+  syncGame(gameId: number): Promise<string | null>
   status(): AchievementSyncStatus
   /** True when the last attempt for this game failed: its data is stale. */
   isStale(gameId: number): boolean
@@ -66,6 +72,8 @@ export interface AchievementSync {
  */
 export function createAchievementSync(deps: AchievementSyncDeps): AchievementSync {
   const stale = new Map<number, string>()
+  /** Games synced on request right now (syncGame). */
+  const gameRuns = new Map<number, Promise<string | null>>()
   const iconRuns = new Map<number, Promise<void>>()
   let run: Promise<AchievementSyncStatus> | null = null
   let closing = 0
@@ -192,6 +200,31 @@ export function createAchievementSync(deps: AchievementSyncDeps): AchievementSyn
         run = null
       })
       return run
+    },
+
+    syncGame(gameId) {
+      const current = gameRuns.get(gameId)
+      if (current) return current
+      const started = (async (): Promise<string | null> => {
+        const { steamId, steamKey } = deps.credentials()
+        if (!steamId || !steamKey) return 'not-configured'
+        const game = deps.games.getById(gameId)
+        if (!game || game.origin !== BuiltinOrigin.steam || game.steamAppId === null) {
+          return 'not-steam'
+        }
+        // The activity indicator shows it, as after a game closes.
+        closing++
+        report()
+        try {
+          return await attempt(game)
+        } finally {
+          closing--
+          report()
+          deps.onChanged()
+        }
+      })().finally(() => gameRuns.delete(gameId))
+      gameRuns.set(gameId, started)
+      return started
     },
 
     status: () => status,

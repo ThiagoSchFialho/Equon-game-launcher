@@ -88,6 +88,7 @@ const api: EquonApi = {
     overview: () => ipcRenderer.invoke(IpcChannel.achievementsOverview),
     game: (id) => ipcRenderer.invoke(IpcChannel.achievementsGame, id),
     syncAll: () => ipcRenderer.invoke(IpcChannel.achievementsSyncAll),
+    syncGame: (id) => ipcRenderer.invoke(IpcChannel.achievementsSyncGame, id),
     status: () => ipcRenderer.invoke(IpcChannel.achievementsStatus),
     ensureIcons: (id) => ipcRenderer.invoke(IpcChannel.achievementsEnsureIcons, id),
     onChanged: (listener) => {

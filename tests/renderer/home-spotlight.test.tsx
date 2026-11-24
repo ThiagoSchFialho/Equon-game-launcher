@@ -39,6 +39,7 @@ const achievement = (id: number, name: string): AchievementItem => ({
 const achievements = (extra: Partial<GameAchievements> = {}): GameAchievements => ({
   id: 1,
   title: 'Tidebound',
+  syncable: true,
   status: 'ready',
   stale: false,
   unlockedCount: 6,

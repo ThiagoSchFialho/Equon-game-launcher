@@ -228,6 +228,7 @@ export const gameAchievementsResultSchema = z
   .strictObject({
     id,
     title: z.string(),
+    syncable: z.boolean(),
     status: z.enum(['ready', 'none', 'never-synced']),
     stale: z.boolean(),
     unlockedCount: z.number().int().nonnegative(),
