@@ -70,7 +70,8 @@ export const IpcChannel = {
   emulatorsSetRomDirectory: 'emulators:set-rom-directory',
   emulatorsRemove: 'emulators:remove',
   filesList: 'files:list',
-  filesPickNative: 'files:pick-native'
+  filesPickNative: 'files:pick-native',
+  filesThumbnail: 'files:thumbnail'
 } as const
 
 export type IpcChannel = (typeof IpcChannel)[keyof typeof IpcChannel]
@@ -729,5 +730,10 @@ export interface EquonApi {
     list(path: string | null, kind: PickKind): Promise<Result<BrowserListing>>
     /** Native Windows dialog (mouse/keyboard); null when cancelled. */
     pickNative(kind: PickKind): Promise<string | null>
+    /**
+     * A small preview of an image file the browser just listed, as a PNG data URL; null when
+     * there is none (not an image, not in a listed folder, unreadable).
+     */
+    thumbnail(path: string): Promise<string | null>
   }
 }

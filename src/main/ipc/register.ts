@@ -17,6 +17,7 @@ import {
   emulatorsSetRomDirectoryArgs,
   filesListArgs,
   filesPickNativeArgs,
+  filesThumbnailArgs,
   gameDetailsResultSchema,
   gameIdArgs,
   gamesCreateArgs,
@@ -30,6 +31,7 @@ import {
   gamesUpdateArgs,
   gamesUpdateSteamArgs,
   nativePickResultSchema,
+  thumbnailSchema,
   noArgs,
   originInfoSchema,
   originListSchema,
@@ -75,7 +77,7 @@ import {
   systemInfoSchema
 } from '../../shared/ipc/schemas'
 import { z } from 'zod'
-import { listFiles, pickNative } from '../files/file-service'
+import { fileThumbnail, listFiles, pickNative } from '../files/file-service'
 import type { RomLibrary } from '../emulators/rom-library'
 import type { ManualGameService } from '../games/manual-game-service'
 import type { SettingsService } from '../settings/settings-service'
@@ -603,6 +605,12 @@ export function registerIpcHandlers(origin: AppOrigin, deps: IpcDeps): void {
     IpcChannel.filesPickNative,
     createValidatedHandler(filesPickNativeArgs, nativePickResultSchema, trusted, (kind) =>
       pickNative(deps.window(), kind)
+    )
+  )
+  ipcMain.handle(
+    IpcChannel.filesThumbnail,
+    createValidatedHandler(filesThumbnailArgs, thumbnailSchema, trusted, (path) =>
+      fileThumbnail(path)
     )
   )
 }

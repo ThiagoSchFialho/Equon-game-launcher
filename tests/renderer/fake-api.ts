@@ -270,6 +270,7 @@ export function installFakeApi(
         data: { path: null, parent: null, entries: [], truncated: false }
       }),
       pickNative: async () => null,
+      thumbnail: async () => null,
       ...overrides.files
     }
   }

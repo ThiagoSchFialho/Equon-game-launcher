@@ -1,6 +1,6 @@
-import { app, dialog, type BrowserWindow } from 'electron'
+import { app, dialog, nativeImage, type BrowserWindow } from 'electron'
 import { existsSync } from 'node:fs'
-import { basename } from 'node:path'
+import { basename, dirname } from 'node:path'
 import { isAbsoluteWindowsPath } from '../../core/application'
 import {
   PICK_EXTENSIONS,
@@ -11,6 +11,40 @@ import {
 import type { BrowserListing, PickKind, Result } from '../../shared/ipc/contract'
 
 const KNOWN_FOLDERS = ['desktop', 'downloads', 'documents', 'home'] as const
+
+/** File browser previews: 16:9, this size in pixels (owner decisions), at least the row's. */
+const THUMBNAIL_SIZE = { width: 160, height: 90 }
+/** Folders recently listed for images: only their files get a preview. */
+const LISTED_LIMIT = 20
+const listedImageFolders: string[] = []
+const folderKey = (path: string): string => path.replace(/[\\/]+$/, '').toLowerCase()
+
+function rememberImageFolder(path: string): void {
+  const key = folderKey(path)
+  const at = listedImageFolders.indexOf(key)
+  if (at >= 0) listedImageFolders.splice(at, 1)
+  listedImageFolders.push(key)
+  if (listedImageFolders.length > LISTED_LIMIT) listedImageFolders.shift()
+}
+
+/**
+ * A small preview of an image the browser listed, made by Windows itself (the Explorer's
+ * thumbnails), as a PNG data URL. The renderer never reads files: it only gets this, and only
+ * for an image file inside a folder it was just shown. null for anything else.
+ */
+export async function fileThumbnail(path: string): Promise<string | null> {
+  if (!isAbsoluteWindowsPath(path) || !matchesPickKind(path, 'image')) return null
+  if (!listedImageFolders.includes(folderKey(dirname(path)))) return null
+  try {
+    const image = await nativeImage.createThumbnailFromPath(path, {
+      width: THUMBNAIL_SIZE.width,
+      height: THUMBNAIL_SIZE.height
+    })
+    return image.isEmpty() ? null : image.toDataURL()
+  } catch {
+    return null
+  }
+}
 
 /** Starting view: a few known folders, then the drives. */
 function rootListing(): BrowserListing {
@@ -26,7 +60,9 @@ export function listFiles(path: string | null, kind: PickKind): Result<BrowserLi
   if (!isAbsoluteWindowsPath(path)) return { ok: false, error: { code: 'not-absolute' } }
   try {
     // At a drive root parent is null: "up" goes back to the starting view.
-    return { ok: true, data: listDirectory(path, kind) }
+    const listing = listDirectory(path, kind)
+    if (kind === 'image') rememberImageFolder(path)
+    return { ok: true, data: listing }
   } catch {
     return { ok: false, error: { code: 'unreadable' } }
   }

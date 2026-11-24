@@ -354,6 +354,7 @@ export const pickKindSchema = z.enum([
 ])
 export const filesListArgs = z.tuple([path.nullable(), pickKindSchema])
 export const filesPickNativeArgs = z.tuple([pickKindSchema])
+export const filesThumbnailArgs = z.tuple([path])
 
 // Response schemas: main validates its own output before replying.
 export const appInfoSchema = z.strictObject({
@@ -436,6 +437,13 @@ export const emulatorInfoSchema = z.strictObject({
 export const emulatorListSchema = z.array(emulatorInfoSchema)
 
 export const runningIdsSchema = z.array(id)
+
+/** A file browser preview: a small PNG as a data URL, or none. */
+export const thumbnailSchema = z
+  .string()
+  .startsWith('data:image/png;base64,')
+  .max(200_000)
+  .nullable()
 
 export const browserListingSchema = z.strictObject({
   path: z.string().nullable(),

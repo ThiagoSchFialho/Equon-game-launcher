@@ -138,7 +138,8 @@ const api: EquonApi = {
   },
   files: {
     list: (path, kind) => ipcRenderer.invoke(IpcChannel.filesList, path, kind),
-    pickNative: (kind) => ipcRenderer.invoke(IpcChannel.filesPickNative, kind)
+    pickNative: (kind) => ipcRenderer.invoke(IpcChannel.filesPickNative, kind),
+    thumbnail: (path) => ipcRenderer.invoke(IpcChannel.filesThumbnail, path)
   }
 }
 

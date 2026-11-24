@@ -805,7 +805,11 @@ código.
 -   Layout definitivo da Home e da biblioteca.
 -   Proporções e tamanhos finais dos cards.
 -   Navegador de arquivos acessível por controle para escolher
-    executáveis e imagens.
+    executáveis e imagens. Ao escolher uma imagem, cada arquivo da lista
+    começa com uma miniatura 16:9 de 2,5 rem de altura (cantos de 2 px, fundo
+    `color.surface-raised` enquanto carrega ou sem miniatura) no lugar do
+    ponto; pastas mantêm o ícone, na mesma largura (decisão do dono do
+    projeto, 2026-11-23).
 -   Configurações de movimento e acessibilidade expostas ao usuário.
 -   Se haverá temas adicionais no futuro.
 

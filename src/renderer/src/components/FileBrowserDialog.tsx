@@ -8,6 +8,60 @@ import './FileBrowserDialog.css'
 type Loaded =
   { status: 'loading' } | { status: 'error' } | { status: 'ready'; listing: BrowserListing }
 
+/** Previews asked of main at the same time; the rest wait their turn. */
+const THUMBNAIL_CONCURRENCY = 4
+
+/**
+ * Image previews for the browser (owner decision): asked of main only for rows that show, a
+ * few at a time, and kept while the dialog is open. undefined = not known yet; null = none.
+ */
+function useThumbnails(): {
+  get(path: string): string | null | undefined
+  request(path: string): void
+} {
+  const [urls, setUrls] = useState<ReadonlyMap<string, string | null>>(new Map())
+  // The queue lives outside rendering: one object for the dialog's life, made once.
+  const [loader] = useState(() => {
+    const asked = new Set<string>()
+    const queue: string[] = []
+    let active = 0
+    let closed = false
+    const pump = (): void => {
+      while (active < THUMBNAIL_CONCURRENCY && queue.length > 0) {
+        const path = queue.shift() as string
+        active += 1
+        const done = (url: string | null): void => {
+          active -= 1
+          if (closed) return
+          setUrls((all) => new Map(all).set(path, url))
+          pump()
+        }
+        window.equon.files.thumbnail(path).then(done, () => done(null))
+      }
+    }
+    return {
+      request(path: string): void {
+        if (asked.has(path)) return
+        asked.add(path)
+        queue.push(path)
+        pump()
+      },
+      // Answers after the dialog closed are dropped; mounted again (React's dev check), kept.
+      open(): void {
+        closed = false
+      },
+      close(): void {
+        closed = true
+      }
+    }
+  })
+  useEffect(() => {
+    loader.open()
+    return () => loader.close()
+  }, [loader])
+  return { get: (path) => urls.get(path), request: loader.request }
+}
+
 function Row({
   id,
   label,
@@ -15,6 +69,7 @@ function Row({
   kind,
   primary,
   autoFocus,
+  thumbnail,
   onConfirm
 }: {
   id: string
@@ -26,15 +81,38 @@ function Row({
   /** The main action, in the accent color. */
   primary?: boolean
   autoFocus?: boolean
+  /**
+   * Choosing an image: the row starts with a 16:9 preview in place of its icon. `url` is
+   * undefined until known; `request` (stable) asks for `path`'s once the row shows.
+   */
+  thumbnail?: { url: string | null | undefined; path: string; request: (path: string) => void }
   onConfirm: () => void
 }): React.JSX.Element {
   const { setElement, focused, mouse } = useFocusable<HTMLButtonElement>(id, {
     onConfirm,
     autoFocus
   })
+  const [element, setRowElement] = useState<HTMLButtonElement | null>(null)
+  const request = thumbnail?.request
+  const previewPath = thumbnail?.path
+  // Asked once the row comes into view, so a long folder does not ask for every image.
+  useEffect(() => {
+    if (!element || !request || !previewPath) return
+    if (typeof IntersectionObserver === 'undefined') return request(previewPath)
+    const observer = new IntersectionObserver((seen) => {
+      if (!seen.some((entry) => entry.isIntersecting)) return
+      observer.disconnect()
+      request(previewPath)
+    })
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [element, request, previewPath])
   return (
     <button
-      ref={setElement}
+      ref={(node) => {
+        setElement(node)
+        setRowElement(node)
+      }}
       className={`file-row file-row--${kind}`}
       data-focused={focused}
       data-primary={primary}
@@ -43,11 +121,17 @@ function Row({
       {...mouse}
     >
       {/* Buttons start with their text; list entries keep the icon column aligned. */}
-      {kind !== 'action' && (
-        <span className="file-row__icon" aria-hidden>
-          {kind === 'directory' ? '▸' : kind === 'file' ? '•' : ''}
-        </span>
-      )}
+      {kind !== 'action' &&
+        (thumbnail && kind === 'file' ? (
+          // An empty frame until the preview comes, so the row does not move.
+          <span className="file-row__thumb" aria-hidden>
+            {thumbnail.url && <img src={thumbnail.url} alt="" />}
+          </span>
+        ) : (
+          <span className="file-row__icon" aria-hidden>
+            {kind === 'directory' ? '▸' : kind === 'file' ? '•' : ''}
+          </span>
+        ))}
       <span className="file-row__label">{label}</span>
     </button>
   )
@@ -73,6 +157,9 @@ export function FileBrowserDialog({
   const [path, setPath] = useState<string | null>(initialPath ?? null)
   const [cameFrom, setCameFrom] = useState<string | null>(null)
   const [loaded, setLoaded] = useState<Loaded>({ status: 'loading' })
+  // Choosing an image: each file shows a small preview (owner decision).
+  const thumbnails = useThumbnails()
+  const previews = kind === 'image'
 
   useEffect(() => {
     let cancelled = false
@@ -128,7 +215,7 @@ export function FileBrowserDialog({
       width="wide"
     >
       <h2 className="dialog__title">{t.files.titles[kind]}</h2>
-      <div className="dialog__panel file-browser">
+      <div className="dialog__panel file-browser" data-previews={previews}>
         <p className="file-browser__path">{path ?? t.files.start}</p>
         <div className="file-browser__actions">
           {kind === 'directory' && path !== null && (
@@ -169,6 +256,15 @@ export function FileBrowserDialog({
               label={entry.name}
               kind={entry.type}
               autoFocus={cameFromIndex >= 0 ? i === cameFromIndex : !hasParent && i === 0}
+              thumbnail={
+                previews && entry.type === 'file'
+                  ? {
+                      url: thumbnails.get(entry.path),
+                      path: entry.path,
+                      request: thumbnails.request
+                    }
+                  : undefined
+              }
               onConfirm={() => (entry.type === 'directory' ? open(entry.path) : onPick(entry.path))}
             />
           ))}
