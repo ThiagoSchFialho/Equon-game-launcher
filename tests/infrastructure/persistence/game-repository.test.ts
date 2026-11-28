@@ -20,6 +20,8 @@ describe('GameRepository basics', () => {
       origin: 'ps2',
       steamAppId: null,
       title: 'Shadow of the Colossus',
+      originalTitle: 'Shadow of the Colossus',
+      customTitle: false,
       description: null,
       developer: null,
       releaseDate: null,
@@ -131,7 +133,8 @@ describe('GameRepository: user edits of a Steam game', () => {
       description: 'My words.',
       developer: null,
       releaseDate: '2011-04-18',
-      requiredAge: null
+      requiredAge: null,
+      displayTitle: null
     })
     const updated = games.upsertSteamGame({
       steamAppId: 620,
@@ -153,15 +156,60 @@ describe('GameRepository: user edits of a Steam game', () => {
 
   it('writes only the details, and only for a Steam game', () => {
     const { id } = games.upsertSteamGame({ steamAppId: 620, title: 'Portal 2' })
-    const fields = { description: 'A', developer: 'B', releaseDate: null, requiredAge: 'L' }
+    const fields = {
+      description: 'A',
+      developer: 'B',
+      releaseDate: null,
+      requiredAge: 'L',
+      displayTitle: null
+    }
     expect(games.updateSteamDetails(id, fields)).toMatchObject({
-      ...fields,
+      description: 'A',
+      developer: 'B',
+      releaseDate: null,
+      requiredAge: 'L',
       title: 'Portal 2',
       origin: 'steam'
     })
     const manual = games.create({ origin: 'manual', title: 'Mine' })
     expect(() => games.updateSteamDetails(manual.id, fields)).toThrow(NotFoundError)
     expect(games.getById(manual.id)?.description).toBeNull()
+  })
+})
+
+describe("GameRepository: the user's own name for a game (D-38)", () => {
+  const details = { description: null, developer: null, releaseDate: null, requiredAge: null }
+
+  it('shows it instead of the title, and no sync replaces it', () => {
+    const { id } = games.upsertSteamGame({ steamAppId: 1238810, title: 'Battlefield™ V' })
+    expect(
+      games.updateSteamDetails(id, { ...details, displayTitle: 'Battlefield 5' })
+    ).toMatchObject({ title: 'Battlefield 5', originalTitle: 'Battlefield™ V', customTitle: true })
+    // Steam renames it: its own title follows, the user's name stays.
+    const synced = games.upsertSteamGame({
+      steamAppId: 1238810,
+      title: 'Battlefield™ V Definitive'
+    })
+    expect(synced).toMatchObject({
+      title: 'Battlefield 5',
+      originalTitle: 'Battlefield™ V Definitive',
+      customTitle: true
+    })
+    expect(games.list().find((g) => g.id === id)?.title).toBe('Battlefield 5')
+  })
+
+  it("keeps none when it is cleared or equal to the game's own title", () => {
+    const { id } = games.upsertSteamGame({ steamAppId: 620, title: 'Portal 2' })
+    games.updateSteamDetails(id, { ...details, displayTitle: 'Portal Two' })
+    expect(games.updateSteamDetails(id, { ...details, displayTitle: null })).toMatchObject({
+      title: 'Portal 2',
+      customTitle: false
+    })
+    games.updateSteamDetails(id, { ...details, displayTitle: 'Portal Two' })
+    expect(games.updateSteamDetails(id, { ...details, displayTitle: 'Portal 2' })).toMatchObject({
+      title: 'Portal 2',
+      customTitle: false
+    })
   })
 })
 

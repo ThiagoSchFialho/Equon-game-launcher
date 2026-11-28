@@ -57,6 +57,7 @@ Um registro por jogo, de qualquer origem.
 | `id` | `INTEGER PRIMARY KEY` | Identificador interno |
 | `steam_id` | `INTEGER` | App ID da Steam. Opcional e `UNIQUE` quando presente |
 | `title` | `TEXT NOT NULL` | |
+| `display_title` | `TEXT` | Nome que o usuário deu ao jogo (D-38): quando existe, é o nome mostrado, ordenado e buscado em todo o app; `NULL` = o próprio `title`. A sincronização nunca grava nele, então o nome da Steam não o substitui; salvar vazio ou igual ao `title` grava `NULL`. `CHECK` de 1 a 200 caracteres. Migração `0024` |
 | `description` | `TEXT` | |
 | `developer` | `TEXT` | |
 | `release_date` | `TEXT` | `YYYY-MM-DD` |

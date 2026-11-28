@@ -315,6 +315,7 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
   const saveSteam = async (gameId: number, values: FormState): Promise<number | null> => {
     setSaving(true)
     const result = await window.equon.games.updateSteam(gameId, {
+      title: values.title,
       description: values.description.trim() || null,
       developer: values.developer.trim() || null,
       releaseDate: values.releaseDate,
@@ -471,8 +472,8 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
       <div className="game-form">
         <h1 className="game-form__title">
           {id === null ? t.form.addTitle : t.form.editTitle}
-          {/* The name is not edited here, so it is shown with the title. */}
-          {steam && <span className="game-form__game">{form.title}</span>}
+          {/* The game it is, as opened: the name field below may change. */}
+          {steam && <span className="game-form__game">{initial?.title}</span>}
         </h1>
         <div className="game-form__body" data-steam={steam}>
           <div className="game-form__fields">
@@ -502,7 +503,10 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
               </>
             ) : (
               <>
-                {!steam && textRow('title', { required: true, autoFocus: true })}
+                {/* A Steam game's name is the user's own (D-38): empty goes back to Steam's. */}
+                {steam
+                  ? textRow('title', { autoFocus: true })
+                  : textRow('title', { required: true, autoFocus: true })}
                 {steam ? null : emulator ? (
                   <>
                     <FormRow
@@ -557,10 +561,7 @@ export function GameFormScreen({ id }: { id: number | null }): React.JSX.Element
                     )}
                   </>
                 )}
-                {withIgdb(
-                  'description',
-                  textRow('description', { multiline: true, autoFocus: steam })
-                )}
+                {withIgdb('description', textRow('description', { multiline: true }))}
                 {withIgdb('developer', textRow('developer'))}
                 {withIgdb(
                   'releaseDate',

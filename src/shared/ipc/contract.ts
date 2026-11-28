@@ -428,7 +428,10 @@ export type Result<T> = { ok: true; data: T } | { ok: false; error: AppError }
 /** A game as shown in Home and Library (hidden ones included; the views filter them). */
 export interface GameSummary {
   id: number
+  /** The name shown: the user's own (D-38), else the game's title. */
   title: string
+  /** The game's own title when the user gave it another name, for the search; else null. */
+  originalTitle: string | null
   origin: string
   originName: string
   installed: boolean | null
@@ -528,7 +531,10 @@ export interface ManualGameForm {
 export type SteamGameForm = Pick<
   ManualGameForm,
   'description' | 'developer' | 'releaseDate' | 'requiredAge' | 'genres'
->
+> & {
+  /** The name the user gives the game (D-38); empty goes back to Steam's name. */
+  title: string
+}
 
 /** A Steam game comes with origin 'steam' and no launch fields; only its details are edited. */
 export interface EditableGame {

@@ -86,6 +86,7 @@ When a decision is confirmed, change its status to **Accepted** and add a line t
 | D-35 | Opening screen | Accepted | The app icon with "Equon" under it, over everything, until settings, games and the startup library refresh are in (at least 1 s, at most 6 s); renderer only; see §3.34 |
 | D-36 | Mouse pointer out of the way when a game opens | Accepted | 1 s before the launch cover leaves for a game that opened, the pointer goes to the bottom right corner of the cover's monitor, by a fixed PowerShell script (`SetCursorPos`); see §3.35 |
 | D-37 | Manual games followed through their game window | Accepted | A manual game whose process hands off (an Xbox app game) or a `.url` shortcut is timed through the process of the game's window, watched by the runner for 60 s (3 min for `.url`); Steam and ROM games unchanged; see §3.36 |
+| D-38 | The user's own name for a game; titles sort without trademark signs | Accepted | `GAMES.display_title` (migration 0024), edited in a Steam game's form, shown, sorted and searched everywhere, never written by a sync; ™ ® © are ignored when sorting by title; see §3.37 |
 | D-24 | Interface sounds | Accepted | Sounds on moving, confirming, going back and opening modals; on by default, `USERS.ui_sounds`; silent while a game runs; see §3.23 |
 | D-16 | Refresh frequency for `appdetails` metadata | Accepted | Fetched only when a game is discovered/added; failed fetches are retried (§3.14) |
 | D-17 | Steam launch mechanism | Accepted | `steam://rungameid/<appid>`, built in the main process (§3.12) |
@@ -591,6 +592,16 @@ Whether to offer a manual "refresh metadata" action for a single game is not dec
 
 **Limits.** A game window the rules leave out (a small window, a launcher not in the list) is not followed. The page no longer says that a `.url` shortcut's time is not measured.
 
+### 3.37 D-38 — The user's own name for a game; titles sort without trademark signs (Accepted, after Phase 8)
+
+**Owner's report (2026-11-28):** 43 games carry ™, ® or © in their names, placed anywhere by the store ("Battlefield 4™", "Battlefield™ 1"), so the Library's order by title was wrong, and a Steam game's name could not be edited (its form edits only the details, and the sync rewrites `title`).
+
+**Owner decisions:**
+
+- **Sorting.** Sorting by title (the Library and Conquistas) ignores ™, ® and © (`sortableTitle`, `compareTitles` in `shared/library-view.ts`), so those games fall into place with no edit. The names shown keep their signs; the search already ignored them.
+- **The user's own name.** `GAMES.display_title` (migration 0024), nullable: when set, it is the name shown everywhere (the domain's `Game.title` is it; `originalTitle` keeps the game's own, `customTitle` tells), and the one sorted by. The search finds a renamed game by both names (`GameSummary.originalTitle`, set only for a renamed game). No sync writes the column, so Steam's name never replaces the user's; the game's own `title` still follows Steam.
+- **Editing.** A Steam game's "Editar jogo" form now starts with "Título do jogo", prefilled with the name shown and without an IGDB button. Saving it empty, or equal to Steam's name, keeps none (`display_title` back to `NULL`, decided in the repository's update). Manual games already edit their `title` and are unchanged.
+
 ## 4. Inconsistencies found across the project docs
 
 Items 1–6 have accepted decisions (D-02, D-04 to D-08) and are now reflected in `DATA_BASE_CONTEXT.md` v0.2 and `PRODUCT.md` v0.2. Item 7 follows the Epic/GOG decision. Items 8–9 are housekeeping; item 9 (documentation language) is still open.
@@ -992,6 +1003,7 @@ A change is ready when it meets its acceptance criteria, respects layer boundari
 | 2026-11-20 | 0.73 | D-37: a manual game that hands off, or a `.url` shortcut, is timed through the process of the game's window, watched by the runner (§3.36). |
 | 2026-11-23 | 0.74 | Image previews in the file browser, made by Windows and served by main only for images in folders it listed (§3.13). |
 | 2026-11-23 | 0.75 | "Sincronizar conquistas" on a game's achievements page syncs only that game. |
+| 2026-11-28 | 0.76 | D-38: the user's own name for a game (`GAMES.display_title`, migration 0024), and titles sorted without ™ ® © (§3.37). |
 | 2026-11-04 | 0.21 | Emulators move from a Library button and screen to a Settings tab. |
 | 2026-11-04 | 0.20 | Fullscreen presentation fix: `disable-direct-composition` at startup (§12). |
 | 2026-11-04 | 0.19 | Phase 6c: artwork queue (Steam `header_image` and `background_raw`, best-voted SteamGridDB covers and logo), image host allowlist, WebP header check, SteamGridDB search for manual games, duplicate review in Settings. |

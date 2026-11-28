@@ -71,10 +71,17 @@ export interface ManualGameFields {
  * What the user may edit on a Steam game (owner decision): no title, launch, playtime or origin,
  * which come from Steam.
  */
-export type SteamGameFields = Pick<
+/** The details any game's form edits. */
+export type GameDetailFields = Pick<
   ManualGameFields,
   'description' | 'developer' | 'releaseDate' | 'requiredAge'
 >
+
+/** What a Steam game's form saves: its details and the user's own name for it. */
+export type SteamGameFields = GameDetailFields & {
+  /** The user's own name (D-38); null or Steam's own name: Steam's name is shown. */
+  displayTitle: string | null
+}
 
 /**
  * Data the Steam adapter owns. Missing or empty values never replace stored ones, and store

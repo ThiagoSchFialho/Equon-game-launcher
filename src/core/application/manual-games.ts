@@ -16,7 +16,7 @@ import type {
   GameRepository,
   LaunchConfigRepository,
   ManualGameFields,
-  SteamGameFields,
+  GameDetailFields,
   UnitOfWork
 } from './ports'
 
@@ -68,7 +68,7 @@ function requireFile(field: string, state: FileState): void {
 }
 
 /** The fields every game's form has: a Steam game edits only these. */
-export function validateGameDetails(input: SteamGameFields): SteamGameFields {
+export function validateGameDetails(input: GameDetailFields): GameDetailFields {
   const releaseDate = input.releaseDate?.trim() || null
   if (releaseDate !== null && !isValidIsoDate(releaseDate)) fail('releaseDate', 'invalid')
   if (

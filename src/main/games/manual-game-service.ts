@@ -158,11 +158,13 @@ export function createManualGameService(deps: ManualGameServiceDeps): ManualGame
 
     updateSteam: (id: number, form: SteamGameForm) =>
       asResult(() => {
-        const { genres, ...fields } = form
+        const { genres, title, ...fields } = form
         const details = validateGameDetails(fields)
+        // An empty name goes back to Steam's own (D-38).
+        const displayTitle = title.trim() === '' ? null : title.trim()
         return deps.uow.transaction(() => {
           // NotFoundError for anything but a Steam game.
-          const game = deps.games.updateSteamDetails(id, details)
+          const game = deps.games.updateSteamDetails(id, { ...details, displayTitle })
           fillGenres(game.id, genres)
           return { id: game.id }
         })

@@ -390,10 +390,13 @@ limitações, condições de teste e método de inicialização suportado.
     nome ou salvar sem dados do IGDB.
 -   Ao editar um jogo, o IGDB só preenche campos vazios e nunca troca artes
     que o jogo já tem.
--   Jogos da Steam também têm "Editar jogo", só com descrição,
-    desenvolvedor, data de lançamento e classificação indicativa. Nome,
-    executável, tempo de jogo e origem vêm da Steam e não são editados; o
-    nome aparece ao lado do título do formulário. Cada um desses campos tem
+-   Jogos da Steam também têm "Editar jogo", com o nome, a descrição, o
+    desenvolvedor, a data de lançamento e a classificação indicativa.
+    Executável, tempo de jogo e origem vêm da Steam e não são editados; o
+    nome do jogo aparece ao lado do título do formulário. O nome que o
+    usuário der (D-38) é o mostrado, ordenado e buscado em todo o app, e a
+    Steam nunca o substitui; deixar vazio volta ao nome da Steam.
+-   A ordenação por título ignora ™, ® e © (D-38). Cada um desses campos tem
     o seu próprio "Preencher com IGDB", que preenche só aquele campo e troca
     o valor mesmo se ele já estiver preenchido (nada é gravado até salvar).
     O primeiro botão usado pede para confirmar o jogo no IGDB; os outros

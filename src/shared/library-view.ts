@@ -68,8 +68,24 @@ export function searchKey(text: string): string {
 }
 
 const collator = new Intl.Collator('pt-BR', { sensitivity: 'base', numeric: true })
-const byTitle = (a: GameSummary, b: GameSummary): number =>
-  collator.compare(a.title, b.title) || a.id - b.id
+
+/**
+ * A title as it sorts (owner decision, D-38): without the trademark signs, which stores place
+ * anywhere in a name ("Battlefield 4™", "Battlefield™ 1"), so they never decide the order.
+ */
+export function sortableTitle(title: string): string {
+  return title
+    .replace(/[™®©℠]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** By title as it sorts, then by id: one fixed order. */
+export function compareTitles(a: { title: string; id: number }, b: typeof a): number {
+  return collator.compare(sortableTitle(a.title), sortableTitle(b.title)) || a.id - b.id
+}
+
+const byTitle = (a: GameSummary, b: GameSummary): number => compareTitles(a, b)
 
 /** Most recent session first; never-played games last, by title. */
 const byRecent = (a: GameSummary, b: GameSummary): number => {
@@ -110,7 +126,8 @@ export function applyLibraryView(games: readonly GameSummary[], view: LibraryVie
       if (view.installedOnly && game.installed !== true) return false
       if (view.notInstalledOnly && game.installed !== false) return false
       if (words.length === 0) return true
-      const title = searchKey(game.title)
+      // The name shown and, if the user renamed the game, its own title too (D-38).
+      const title = searchKey(`${game.title} ${game.originalTitle ?? ''}`)
       return words.every((word) => title.includes(word))
     })
     .sort(SORTS[view.sort])

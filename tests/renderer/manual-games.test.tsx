@@ -646,7 +646,7 @@ describe('edit game form', () => {
       await screen.findByRole('heading', { name: /Editar jogo/ })
     }
 
-    it('offers only the details, showing the name it does not edit', async () => {
+    it("offers the details and the user's own name (D-38), no launch fields", async () => {
       installFakeApi([steamGame], { games: { getEditable: async () => steamEditable } })
       await openSteamEdit()
       expect(screen.getByRole('heading', { name: /Editar jogo/ }).textContent).toContain('Portal 2')
@@ -665,8 +665,10 @@ describe('edit game form', () => {
       }
       // No button for all of them at once.
       expect(screen.queryByLabelText('Preencher com IGDB')).toBeNull()
+      // Its name: the user's own, prefilled with the one shown; no IGDB beside it.
+      expect(screen.getByLabelText('Título do jogo')).toBeTruthy()
+      expect(screen.queryByLabelText('Preencher com IGDB: Título do jogo')).toBeNull()
       for (const label of [
-        'Título do jogo',
         'ROM',
         'Executável',
         'Tempo de jogo',
@@ -756,6 +758,7 @@ describe('edit game form', () => {
       expect(updateSteam.mock.calls[0]).toEqual([
         1,
         {
+          title: 'Portal 2',
           description: 'Two portals, from IGDB.',
           developer: null,
           releaseDate: null,

@@ -1,10 +1,10 @@
 import type { AchievementGameSummary } from './ipc/contract'
+import { compareTitles } from './library-view'
 
 export type AchievementSort = 'recent' | 'completion' | 'title'
 
-const collator = new Intl.Collator('pt-BR', { sensitivity: 'base', numeric: true })
 const byTitle = (a: AchievementGameSummary, b: AchievementGameSummary): number =>
-  collator.compare(a.title, b.title) || a.id - b.id
+  compareTitles(a, b)
 
 /** Last session descending, unknown last (PRODUCT.md §6.8). */
 const byRecent = (a: AchievementGameSummary, b: AchievementGameSummary): number => {

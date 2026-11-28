@@ -16,6 +16,7 @@ export const summary = (
 ): GameSummary => ({
   id,
   title,
+  originalTitle: null,
   origin: 'manual',
   originName: 'Jogo Local',
   installed: true,

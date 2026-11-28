@@ -67,6 +67,7 @@ function toSummary(
   return {
     id: game.id,
     title: game.title,
+    originalTitle: game.customTitle ? game.originalTitle : null,
     origin: game.origin,
     originName: originNames.get(game.origin) ?? game.origin,
     installed: game.installed,

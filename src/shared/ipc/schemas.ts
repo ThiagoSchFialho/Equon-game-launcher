@@ -61,6 +61,7 @@ export const manualGameFormSchema = z.strictObject({
 export const gamesCreateArgs = z.tuple([manualGameFormSchema])
 export const gamesUpdateArgs = z.tuple([id, manualGameFormSchema])
 export const steamGameFormSchema = manualGameFormSchema.pick({
+  title: true,
   description: true,
   developer: true,
   releaseDate: true,
@@ -368,6 +369,7 @@ export const artworkKindSchema = z.enum(ARTWORK_KINDS)
 const gameSummaryShape = {
   id,
   title: z.string(),
+  originalTitle: z.string().nullable(),
   origin: z.string().min(1),
   originName: z.string().min(1),
   installed: z.boolean().nullable(),

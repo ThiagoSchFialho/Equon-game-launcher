@@ -117,6 +117,7 @@ describe('manual game service', () => {
     const steam = games.upsertSteamGame({ steamAppId: 620, title: 'Portal 2' })
     db.prepare('UPDATE games SET playtime = 42, installed = 1 WHERE id = ?').run(steam.id)
     const details = {
+      title: '',
       description: '  Two portals.  ',
       developer: 'Valve',
       releaseDate: '2011-04-18',

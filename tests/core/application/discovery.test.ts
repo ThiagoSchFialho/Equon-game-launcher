@@ -13,6 +13,8 @@ const game = (id: number, extra: Partial<Game>): Game => ({
   origin: 'steam',
   steamAppId: null,
   title: `Game ${id}`,
+  originalTitle: `Game ${id}`,
+  customTitle: false,
   description: null,
   developer: null,
   releaseDate: null,

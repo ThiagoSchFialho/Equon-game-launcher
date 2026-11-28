@@ -53,15 +53,24 @@ describe('createValidatedHandler', () => {
 })
 
 describe('games:update-steam arguments', () => {
-  const details = { description: null, developer: 'Valve', releaseDate: null, requiredAge: null }
+  const details = {
+    title: '',
+    description: null,
+    developer: 'Valve',
+    releaseDate: null,
+    requiredAge: null
+  }
 
-  it('takes the details only: never a name, launch, playtime or origin', () => {
+  it("takes the details and the user's name for it (D-38): never launch, playtime or origin", () => {
     expect(gamesUpdateSteamArgs.safeParse([1, details]).success).toBe(true)
     expect(gamesUpdateSteamArgs.safeParse([1, { ...details, genres: ['Puzzle'] }]).success).toBe(
       true
     )
+    expect(gamesUpdateSteamArgs.safeParse([1, { ...details, title: 'Renamed' }]).success).toBe(true)
+    expect(
+      gamesUpdateSteamArgs.safeParse([1, { ...details, title: 'x'.repeat(201) }]).success
+    ).toBe(false)
     for (const extra of [
-      { title: 'Renamed' },
       { executablePath: 'C:\\evil.exe' },
       { playtimeOffset: 9 },
       { origin: 'manual' }

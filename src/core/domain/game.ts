@@ -7,7 +7,12 @@ export interface Game {
   id: number
   origin: OriginKey
   steamAppId: number | null
+  /** The name shown, sorted and searched: the user's own (D-38), else the game's title. */
   title: string
+  /** The game's own title, from Steam or as added; equal to `title` without a name of the user's. */
+  originalTitle: string
+  /** The user gave the game a name of their own (D-38). */
+  customTitle: boolean
   description: string | null
   developer: string | null
   /** YYYY-MM-DD */

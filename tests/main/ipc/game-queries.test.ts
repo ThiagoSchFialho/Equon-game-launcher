@@ -59,6 +59,7 @@ describe('game queries', () => {
         {
           id: shown.id,
           title: 'Shown',
+          originalTitle: null,
           origin: 'ps2',
           originName: 'PlayStation 2',
           installed: null,
@@ -73,6 +74,7 @@ describe('game queries', () => {
         {
           id: hidden.id,
           title: 'Hidden',
+          originalTitle: null,
           origin: 'manual',
           originName: 'Jogo Local',
           installed: null,

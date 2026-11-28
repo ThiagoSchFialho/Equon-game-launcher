@@ -8,6 +8,7 @@ import {
   isFiltered,
   searchKey,
   achievementBand,
+  sortableTitle,
   playtimeBand,
   titleInitial,
   type LibraryView
@@ -16,6 +17,7 @@ import {
 const game = (id: number, title: string, extra: Partial<GameSummary> = {}): GameSummary => ({
   id,
   title,
+  originalTitle: null,
   origin: 'manual',
   originName: 'Jogo Local',
   installed: true,
@@ -217,5 +219,40 @@ describe('playtimeBand and achievementBand', () => {
     expect(achievementBand(0.5)).toBe('>0%')
     expect(achievementBand(0)).toBe('0%')
     expect(achievementBand(null)).toBeNull()
+  })
+})
+
+describe("titles: the trademark signs and the user's own names (D-38)", () => {
+  it('sorts by title ignoring ™, ® and ©, wherever the store put them', () => {
+    const games = [
+      game(1, 'Battlefield™ V'),
+      game(2, 'Battlefield™ 1'),
+      game(3, 'Battlefield 4™'),
+      game(4, 'Battlefield™ 2042'),
+      game(5, 'Batman™: Arkham Origins'),
+      game(6, 'Batman: Arkham City GOTY')
+    ]
+    expect(
+      applyLibraryView(games, { ...DEFAULT_LIBRARY_VIEW, sort: 'title' }).map((g) => g.title)
+    ).toEqual([
+      'Batman: Arkham City GOTY',
+      'Batman™: Arkham Origins',
+      'Battlefield™ 1',
+      'Battlefield 4™',
+      'Battlefield™ 2042',
+      'Battlefield™ V'
+    ])
+    expect(sortableTitle('Call of Duty®  Black Ops')).toBe('Call of Duty Black Ops')
+  })
+
+  it("finds a renamed game by the user's name and by its own title", () => {
+    const renamed = game(1, 'BF5', { originalTitle: 'Battlefield™ V' })
+    const search = (query: string): string[] =>
+      applyLibraryView([renamed, game(2, 'Portal 2')], { ...DEFAULT_LIBRARY_VIEW, query }).map(
+        (g) => g.title
+      )
+    expect(search('bf5')).toEqual(['BF5'])
+    expect(search('battlefield v')).toEqual(['BF5'])
+    expect(search('portal')).toEqual(['Portal 2'])
   })
 })

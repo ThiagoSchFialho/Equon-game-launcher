@@ -8,6 +8,7 @@ interface GameRow {
   origin: string
   steam_id: number | null
   title: string
+  display_title: string | null
   description: string | null
   developer: string | null
   release_date: string | null
@@ -29,7 +30,9 @@ const toGame = (row: GameRow): Game => ({
   id: row.id,
   origin: row.origin,
   steamAppId: row.steam_id,
-  title: row.title,
+  title: row.display_title ?? row.title,
+  originalTitle: row.title,
+  customTitle: row.display_title !== null,
   description: row.description,
   developer: row.developer,
   releaseDate: row.release_date,
@@ -94,10 +97,12 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
       release_date = @releaseDate, required_age = @requiredAge, playtime_offset = @playtimeOffset
     WHERE id = @id AND origin <> 'steam'
     RETURNING *`)
+  // The user's own name (D-38) is set here, never by a sync; equal to Steam's, none is kept.
   const updateSteamDetails = db.prepare<Record<string, unknown>, GameRow>(`
     UPDATE games SET
       description = @description, developer = @developer,
-      release_date = @releaseDate, required_age = @requiredAge
+      release_date = @releaseDate, required_age = @requiredAge,
+      display_title = CASE WHEN @displayTitle = title THEN NULL ELSE @displayTitle END
     WHERE id = @id AND origin = 'steam'
     RETURNING *`)
   const updateInstalled = db.prepare<[number | null, number]>(
@@ -205,7 +210,8 @@ export function createGameRepository(db: SqliteDatabase): GameRepository {
           description: fields.description,
           developer: fields.developer,
           releaseDate: fields.releaseDate,
-          requiredAge: fields.requiredAge
+          requiredAge: fields.requiredAge,
+          displayTitle: fields.displayTitle
         }),
         id
       ),
