@@ -67,7 +67,8 @@ export const fetchPost: HttpPost = async (url, headers, body) => {
 export type HttpGetBytes = (url: string) => Promise<Uint8Array | null>
 
 /** Hosts artwork may be downloaded from (ARCHITECTURE.md §3.13); https only. */
-// steamcdn-a.akamaihd.net serves the achievement icons (measured on 2026-11-04).
+// steamcdn-a.akamaihd.net serves the achievement icons (measured on 2026-11-04); for newer games
+// only shared.fastly.steamstatic.com does (measured on 2026-11-27, see currentCdnIconUrl).
 const IMAGE_HOSTS = [
   /\.steamstatic\.com$/,
   /^steamcdn-a\.akamaihd\.net$/,

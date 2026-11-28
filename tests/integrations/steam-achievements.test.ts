@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { NetworkError, isAllowedImageUrl, type HttpGet } from '../../src/integrations/http'
 import {
+  currentCdnIconUrl,
   fetchAchievementSchema,
   fetchGlobalPercentages,
   fetchPlayerAchievements
@@ -182,5 +183,32 @@ describe('icon host', () => {
     expect(isAllowedImageUrl('https://steamcdn-a.akamaihd.net/x/a.jpg')).toBe(true)
     expect(isAllowedImageUrl('https://evil-steamcdn-a.akamaihd.net/a.jpg')).toBe(false)
     expect(isAllowedImageUrl('https://steamcdn-a.akamaihd.net.evil.example/a.jpg')).toBe(false)
+  })
+})
+
+describe('currentCdnIconUrl', () => {
+  const old = 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps'
+  const current = 'https://shared.fastly.steamstatic.com/community_assets/images/apps'
+
+  // Measured on 2026-11-27: the old address answers 404 for newer games.
+  it('moves an icon the Web API gives to the current CDN, file and app kept', () => {
+    expect(currentCdnIconUrl(`${old}/3981100/9362cd51982b4cc14f61ebf04c26c8708063715a.jpg`)).toBe(
+      `${current}/3981100/9362cd51982b4cc14f61ebf04c26c8708063715a.jpg`
+    )
+    expect(currentCdnIconUrl(`${old}/367520/054a9800b71efbf708869cb55f611658ecffa2f3.png`)).toBe(
+      `${current}/367520/054a9800b71efbf708869cb55f611658ecffa2f3.png`
+    )
+    // Still an allowed image host.
+    expect(isAllowedImageUrl(`${current}/1/abc.jpg`)).toBe(true)
+  })
+
+  it('gives nothing for an icon without a file, or any other address', () => {
+    // Hollow Knight: some locked icons come as the app's folder only.
+    expect(currentCdnIconUrl(`${old}/367520/`)).toBeNull()
+    expect(currentCdnIconUrl(`${old}/367520/../../secret.jpg`)).toBeNull()
+    expect(
+      currentCdnIconUrl('https://example.com/steamcommunity/public/images/apps/1/a.jpg')
+    ).toBeNull()
+    expect(currentCdnIconUrl(`${current}/1/abc.jpg`)).toBeNull()
   })
 })

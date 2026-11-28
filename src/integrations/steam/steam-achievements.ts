@@ -182,3 +182,19 @@ async function request(
     throw error
   }
 }
+
+/** An icon path as the Web API gives it: the app, then the file. */
+const COMMUNITY_ICON =
+  /^https:\/\/steamcdn-a\.akamaihd\.net\/steamcommunity\/public\/images\/apps\/(\d+)\/([0-9a-f]+\.(?:jpg|png))$/
+
+/**
+ * The same icon on Steam's current CDN. The Web API still gives the old one, which answers 404
+ * for newer games (measured on 2026-11-27: Leaf it Alone, PEAK, The Spell Brigade), while the
+ * current one serves old and new alike. null for anything that is not such an icon, as the
+ * locked icons Steam leaves without a file (only `/apps/<appid>/`).
+ */
+export function currentCdnIconUrl(url: string): string | null {
+  const match = COMMUNITY_ICON.exec(url)
+  if (!match) return null
+  return `https://shared.fastly.steamstatic.com/community_assets/images/apps/${match[1]}/${match[2]}`
+}

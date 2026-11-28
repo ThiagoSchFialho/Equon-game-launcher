@@ -17,6 +17,7 @@ import {
 } from '../../infrastructure/artwork/achievement-icons'
 import type { HttpGet, HttpGetBytes } from '../../integrations/http'
 import {
+  currentCdnIconUrl,
   fetchAchievementSchema,
   fetchGlobalPercentages,
   fetchPlayerAchievements
@@ -161,7 +162,10 @@ export function createAchievementSync(deps: AchievementSyncDeps): AchievementSyn
       const locked = !row.unlocked
       const url = locked ? row.iconLocked : row.icon
       if (!url || achievementIconPath(deps.cacheDir, gameId, row.id, locked)) continue
-      const bytes = await deps.getBytes(url)
+      // The address the Web API gives, then the same file on Steam's current CDN (it moved).
+      let bytes = await deps.getBytes(url)
+      const current = bytes === null ? currentCdnIconUrl(url) : null
+      if (current) bytes = await deps.getBytes(current)
       if (bytes === null) continue
       try {
         // "logo" has no required proportion; icons are small squares.
